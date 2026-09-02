@@ -1,0 +1,216 @@
+const app = document.querySelector('#app');
+const CFG = window.BOARDMATE_CONFIG || {};
+const STORAGE_PREFIX = 'boardmate:';
+const LINKS = {
+  instagram: 'https://www.instagram.com/board__mate/',
+  somoim: 'https://www.somoim.co.kr/e4ed5ffc-a013-11ee-8110-0a96f0ba00151',
+  shop: 'https://marpple.shop/kr/mate'
+};
+
+const esc = s => String(s ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+const kstDate = () => new Date(Date.now() + 9*3600*1000).toISOString().slice(0,10);
+const formatDate = d => `${d.slice(0,4)}.${d.slice(5,7)}.${d.slice(8,10)}`;
+const formatClock = iso => new Intl.DateTimeFormat('ko-KR',{timeZone:'Asia/Seoul',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).format(new Date(iso));
+const configured = () => Boolean(CFG.supabaseUrl && CFG.supabaseAnonKey);
+
+function playerId(){
+  let id = localStorage.getItem(STORAGE_PREFIX+'player_id');
+  if(!id){ id = crypto.randomUUID(); localStorage.setItem(STORAGE_PREFIX+'player_id', id); }
+  return id;
+}
+function nickname(){ return localStorage.getItem(STORAGE_PREFIX+'nickname') || ''; }
+function saveNickname(n){ localStorage.setItem(STORAGE_PREFIX+'nickname', n); }
+function toast(message){
+  const el=document.createElement('div'); el.className='toast'; el.textContent=message; document.body.appendChild(el);
+  setTimeout(()=>el.remove(),2200);
+}
+function footer(){
+  return `<footer class="footer"><span>© BoardMate · 모임원용 게임 아케이드</span><div class="footer-links"><a href="${LINKS.instagram}" target="_blank" rel="noreferrer">Instagram</a><a href="${LINKS.somoim}" target="_blank" rel="noreferrer">소모임</a><a href="${LINKS.shop}" target="_blank" rel="noreferrer">마플샵</a></div></footer>`;
+}
+function shell(content){
+  app.innerHTML=`<div class="app-shell"><header class="topbar"><button class="brand-btn" id="homeBtn"><span class="brand-mark">●</span> BOARDMATE</button><div class="top-date">${formatDate(kstDate())}</div></header><main class="container">${content}${footer()}</main></div>`;
+  document.querySelector('#homeBtn')?.addEventListener('click',()=>location.hash='#/');
+}
+
+// -------------------- shared leaderboard --------------------
+function periodKey(game){ return game==='yahtzee' ? 'alltime' : kstDate(); }
+function localKey(game){ return `${STORAGE_PREFIX}scores:${game}:${periodKey(game)}`; }
+function getLocalRows(game){ try{return JSON.parse(localStorage.getItem(localKey(game))||'[]');}catch{return [];} }
+function sortedRows(game, rows){
+  return [...rows].sort((a,b)=>{
+    if(game==='yahtzee') return b.metric-a.metric || a.completed_at.localeCompare(b.completed_at);
+    if(game==='pensterdam') return a.completed_at.localeCompare(b.completed_at);
+    return a.metric-b.metric || a.completed_at.localeCompare(b.completed_at);
+  });
+}
+function rankRows(game, rows){
+  const s=sortedRows(game,rows).map((x,i)=>({...x,rank:i+1}));
+  return {items:s, me:s.find(x=>x.player_id===playerId())||null};
+}
+function saveLocal(game,n,metric){
+  const rows=getLocalRows(game), id=playerId(), now=new Date().toISOString();
+  const idx=rows.findIndex(x=>x.player_id===id);
+  if(idx<0) rows.push({player_id:id,nickname:n,metric,completed_at:now});
+  else {
+    const old=rows[idx];
+    if(game==='ricochet' && metric<old.metric) rows[idx]={...old,nickname:n,metric,completed_at:now};
+    else if(game==='yahtzee' && metric>old.metric) rows[idx]={...old,nickname:n,metric,completed_at:now};
+    else rows[idx]={...old,nickname:n};
+  }
+  localStorage.setItem(localKey(game),JSON.stringify(rows));
+  return rankRows(game,rows);
+}
+function supaHeaders(extra={}){
+  return {'apikey':CFG.supabaseAnonKey,'Authorization':`Bearer ${CFG.supabaseAnonKey}`,'Content-Type':'application/json',...extra};
+}
+async function loadLeaderboard(game,limit=5){
+  if(!configured()){
+    const r=rankRows(game,getLocalRows(game)); return {...r,items:r.items.slice(0,limit),local:true};
+  }
+  try{
+    const period=encodeURIComponent(periodKey(game));
+    const order=game==='yahtzee'?'metric.desc,completed_at.asc':game==='pensterdam'?'completed_at.asc':'metric.asc,completed_at.asc';
+    const url=`${CFG.supabaseUrl}/rest/v1/boardmate_results?game=eq.${game}&period_key=eq.${period}&select=player_id,nickname,metric,completed_at&order=${order}&limit=${Math.max(limit,100)}`;
+    const res=await fetch(url,{headers:supaHeaders({'Content-Type':'application/json'})});
+    if(!res.ok) throw new Error('순위표 연결 실패');
+    const rows=await res.json();
+    const ranked=rows.map((x,i)=>({...x,rank:i+1}));
+    return {items:ranked.slice(0,limit),me:ranked.find(x=>x.player_id===playerId())||null,local:false};
+  }catch(e){
+    const r=rankRows(game,getLocalRows(game)); return {...r,items:r.items.slice(0,limit),local:true,error:e.message};
+  }
+}
+async function submitResult(game,n,metric){
+  saveNickname(n);
+  if(!configured()){
+    const r=saveLocal(game,n,metric); return {items:r.items.slice(0,5),me:r.me,local:true};
+  }
+  try{
+    const res=await fetch(`${CFG.supabaseUrl}/rest/v1/rpc/submit_boardmate_result`,{method:'POST',headers:supaHeaders(),body:JSON.stringify({p_game:game,p_period_key:periodKey(game),p_player_id:playerId(),p_nickname:n,p_metric:metric})});
+    if(!res.ok) throw new Error((await res.text())||'기록 등록 실패');
+    const lb=await loadLeaderboard(game,100); return lb;
+  }catch(e){
+    const r=saveLocal(game,n,metric); return {items:r.items.slice(0,5),me:r.me,local:true,error:e.message};
+  }
+}
+function scoreText(game,row){
+  if(game==='yahtzee') return `${row.metric}점`;
+  if(game==='pensterdam') return formatClock(row.completed_at);
+  return `${row.metric}회 · ${formatClock(row.completed_at)}`;
+}
+function leaderboardHtml(game,data,expanded=false,showMore=true){
+  const items=data?.items||[];
+  const rows=items.length?items.map(r=>`<div class="rank-row"><span class="rank">${r.rank}</span><span class="rank-name">${esc(r.nickname)}</span><span class="rank-score">${scoreText(game,r)}</span></div>`).join(''):`<div class="empty">아직 등록된 기록이 없습니다.</div>`;
+  const me=data?.me && !items.some(x=>x.player_id===data.me.player_id)?`<div class="me-row"><span>내 순위 ${data.me.rank}위 · ${esc(data.me.nickname)}</span><span>${scoreText(game,data.me)}</span></div>`:'';
+  return `<div class="leaderboard">${rows}</div>${me}${showMore?`<button class="more-btn" data-more="${game}">${expanded?'접기':'더보기'}</button>`:''}`;
+}
+function openNameModal({title,big,rankText,onSubmit,onCloseLabel='다시 도전',onClose}){
+  const wrap=document.createElement('div'); wrap.className='modal-backdrop';
+  wrap.innerHTML=`<div class="modal"><h2>${esc(title)}</h2><div class="big-score">${esc(big)}</div><div class="rank-message">${esc(rankText||'')}</div><label>순위표에 남길 이름</label><input id="nickInput" maxlength="20" value="${esc(nickname())}" placeholder="닉네임"><div class="modal-actions"><button class="ghost" id="modalClose">${esc(onCloseLabel)}</button><button class="primary" id="modalSubmit">기록 등록</button></div><div id="modalStatus" class="bonus-note"></div></div>`;
+  document.body.appendChild(wrap); const input=wrap.querySelector('#nickInput'); input.focus(); input.select();
+  wrap.querySelector('#modalClose').onclick=()=>{wrap.remove();onClose?.();};
+  wrap.querySelector('#modalSubmit').onclick=async()=>{
+    const n=input.value.trim(); if(!n){input.focus();return;}
+    const btn=wrap.querySelector('#modalSubmit'); btn.disabled=true; btn.textContent='등록 중…';
+    try{
+      const result=await onSubmit(n); const rank=result?.me?.rank;
+      wrap.querySelector('#modalStatus').textContent=rank?`등록 완료 · 현재 ${rank}위${result.local?' (이 브라우저)':''}`:'등록했습니다.';
+      btn.textContent='완료'; setTimeout(()=>{wrap.remove();onClose?.();},850);
+    }catch(e){ wrap.querySelector('#modalStatus').textContent=e.message; btn.disabled=false; btn.textContent='기록 등록'; }
+  };
+}
+
+// -------------------- Ricochet --------------------
+const BOARD_SIZE=16;
+const BLOCKED_CELLS=new Set([119,120,135,136]);
+const ROBOT_COLORS=['red','yellow','green','blue'];
+const DIRS=[{dr:-1,dc:0,bit:1},{dr:0,dc:1,bit:2},{dr:1,dc:0,bit:4},{dr:0,dc:-1,bit:8}];
+const BASE_WALLS=[9,1,1,1,1,1,1,1,1,1,1,1,5,1,5,3,8,0,0,0,0,0,2,12,0,0,4,0,3,8,3,10,8,6,8,2,12,2,12,1,0,0,3,8,0,0,0,2,8,1,0,4,1,0,1,6,12,0,0,0,4,0,0,2,8,4,2,9,0,0,2,9,1,0,4,2,9,4,0,2,10,9,0,0,0,0,0,0,0,2,9,0,0,3,8,2,8,0,0,0,0,0,0,1,1,0,0,0,0,0,4,2,8,0,0,0,0,0,8,0,0,2,0,0,4,2,9,2,8,0,0,0,6,8,8,0,0,2,0,2,9,0,4,2,8,0,0,0,1,0,0,4,4,0,6,8,0,2,9,2,8,0,0,0,0,0,6,12,0,0,5,0,0,6,8,2,8,0,0,0,0,6,9,3,8,6,9,0,4,1,0,2,8,0,0,6,8,1,0,0,2,9,0,2,9,0,6,10,10,12,0,1,0,0,0,0,6,8,4,0,0,0,5,2,8,1,0,0,6,8,6,8,1,0,3,8,0,2,9,2,12,4,4,4,5,4,5,4,4,4,4,4,4,4,4,6];
+const BASE_PUZZLES=[
+{robots:[97,150,87,8],targetRobot:2,target:169},{robots:[179,130,55,246],targetRobot:3,target:42},{robots:[121,182,124,252],targetRobot:3,target:239},{robots:[103,240,93,156],targetRobot:3,target:22},{robots:[198,33,42,128],targetRobot:0,target:22},{robots:[238,79,29,40],targetRobot:1,target:228},{robots:[246,37,68,216],targetRobot:3,target:14},{robots:[78,13,62,97],targetRobot:2,target:32},{robots:[99,254,248,149],targetRobot:2,target:47},{robots:[46,37,0,142],targetRobot:1,target:30},{robots:[48,36,141,194],targetRobot:2,target:160},{robots:[28,19,93,184],targetRobot:0,target:185},{robots:[209,249,223,8],targetRobot:0,target:13},{robots:[33,157,153,137],targetRobot:1,target:137},{robots:[65,89,213,12],targetRobot:2,target:10},{robots:[56,161,69,18],targetRobot:2,target:211},{robots:[217,155,166,1],targetRobot:1,target:228},{robots:[158,61,155,45],targetRobot:0,target:60},{robots:[80,244,16,245],targetRobot:3,target:210},{robots:[216,239,45,134],targetRobot:3,target:75},{robots:[97,176,146,72],targetRobot:3,target:247},{robots:[195,185,113,142],targetRobot:1,target:254},{robots:[92,185,91,196],targetRobot:3,target:185},{robots:[57,97,184,242],targetRobot:3,target:55},{robots:[165,28,154,65],targetRobot:1,target:132},{robots:[228,233,173,238],targetRobot:2,target:209},{robots:[110,36,76,34],targetRobot:2,target:14},{robots:[115,146,12,205],targetRobot:2,target:244},{robots:[64,243,43,41],targetRobot:0,target:189},{robots:[227,160,99,229],targetRobot:2,target:151}
+];
+const COLOR_PERMUTATIONS=(()=>{const out=[];const p=(pre,rest)=>{if(!rest.length)return out.push(pre);rest.forEach((v,i)=>p([...pre,v],[...rest.slice(0,i),...rest.slice(i+1)]));};p([], [0,1,2,3]);return out;})();
+function dateNumber(dateKey){const [y,m,d]=dateKey.split('-').map(Number);return Math.floor(Date.UTC(y,m-1,d)/86400000);}
+function transformCoord(r,c,sym,size=16){const flip=sym>=4,rot=sym%4;if(flip)c=size-1-c;for(let i=0;i<rot;i++)[r,c]=[c,size-1-r];return[r,c];}
+function transformVector(dr,dc,sym){const flip=sym>=4,rot=sym%4;if(flip)dc=-dc;for(let i=0;i<rot;i++)[dr,dc]=[dc,-dr];return[dr,dc];}
+function vectorBit(dr,dc){if(dr===-1&&dc===0)return 1;if(dr===0&&dc===1)return 2;if(dr===1&&dc===0)return 4;return 8;}
+function transformCell(index,sym){const [r,c]=transformCoord(Math.floor(index/16),index%16,sym);return r*16+c;}
+function transformWalls(sym){if(sym===0)return BASE_WALLS;const out=Array(256).fill(0),vec=[[-1,0,1],[0,1,2],[1,0,4],[0,-1,8]];for(let i=0;i<256;i++){const ni=transformCell(i,sym);for(const [dr,dc,bit] of vec){if(!(BASE_WALLS[i]&bit))continue;const [a,b]=transformVector(dr,dc,sym);out[ni]|=vectorBit(a,b);}}return out;}
+function getRicochetPuzzle(dateKey){const n=Math.abs(dateNumber(dateKey)), combo=n%(BASE_PUZZLES.length*COLOR_PERMUTATIONS.length*8),sym=combo%8,baseIndex=Math.floor(combo/8)%BASE_PUZZLES.length,permIndex=Math.floor(combo/(8*BASE_PUZZLES.length))%COLOR_PERMUTATIONS.length,base=BASE_PUZZLES[baseIndex],perm=COLOR_PERMUTATIONS[permIndex];return{date:dateKey,walls:transformWalls(sym),blocked:[...BLOCKED_CELLS].map(i=>transformCell(i,sym)),robots:perm.map(old=>transformCell(base.robots[old],sym)),targetRobot:perm.findIndex(old=>old===base.targetRobot),target:transformCell(base.target,sym)};}
+function moveRobot(state,robotIndex,dirIndex,puzzle){const dir=DIRS[dirIndex],current=state[robotIndex];let r=Math.floor(current/16),c=current%16;const occupied=new Set(state);occupied.delete(current);const blocked=new Set(puzzle.blocked);while(true){const pos=r*16+c;if(puzzle.walls[pos]&dir.bit)break;const nr=r+dir.dr,nc=c+dir.dc;if(nr<0||nr>=16||nc<0||nc>=16)break;const np=nr*16+nc;if(blocked.has(np)||occupied.has(np))break;r=nr;c=nc;}const next=r*16+c;if(next===current)return state;const copy=[...state];copy[robotIndex]=next;return copy;}
+
+// -------------------- Pensterdam --------------------
+const PIECES={F:[[0,1],[0,2],[1,0],[1,1],[2,1]],I:[[0,0],[1,0],[2,0],[3,0],[4,0]],L:[[0,0],[1,0],[2,0],[3,0],[3,1]],P:[[0,0],[0,1],[1,0],[1,1],[2,0]],N:[[0,1],[1,1],[2,0],[2,1],[3,0]],T:[[0,0],[0,1],[0,2],[1,1],[2,1]],U:[[0,0],[0,2],[1,0],[1,1],[1,2]],V:[[0,0],[1,0],[2,0],[2,1],[2,2]],W:[[0,0],[1,0],[1,1],[2,1],[2,2]],X:[[0,1],[1,0],[1,1],[1,2],[2,1]],Y:[[0,0],[1,0],[2,0],[3,0],[2,1]],Z:[[0,0],[0,1],[1,1],[2,1],[2,2]]};
+function normalize(points){const mr=Math.min(...points.map(p=>p[0])),mc=Math.min(...points.map(p=>p[1]));return points.map(([r,c])=>[r-mr,c-mc]).sort((a,b)=>a[0]-b[0]||a[1]-b[1]);}
+function transformPiece(points,rotation=0,flipped=false){return normalize(points.map(([r,c])=>{let x=r,y=flipped?-c:c;for(let i=0;i<((rotation%4)+4)%4;i++)[x,y]=[y,-x];return[x,y];}));}
+const PEN_LABELS=['Jan','Feb','Mar','Apr','Sun','Mon','Tue','May','Jun','Jul','Aug','Wed','Thu','Fri','Sep','Oct','Nov','Dec','26','27','Sat','1','2','3','☀','☂','☁','❄','4','5','6','7','8','9','10','11','12','13','14','15','16','17','18','19','20','21','22','日','月','23','24','25','26','27','火','水','28','29','30','31','木','金','土'];
+const MONTH_CELL={1:0,2:1,3:2,4:3,5:7,6:8,7:9,8:10,9:14,10:15,11:16,12:17};
+const WEEKDAY_CELL={0:4,1:5,2:6,3:11,4:12,5:13,6:20}; // JS Sun=0
+const DATE_CELL={};
+[1,2,3].forEach((d,i)=>DATE_CELL[d]=21+i); for(let d=4;d<=10;d++)DATE_CELL[d]=28+d-4; for(let d=11;d<=17;d++)DATE_CELL[d]=35+d-11; for(let d=18;d<=22;d++)DATE_CELL[d]=42+d-18; for(let d=23;d<=27;d++)DATE_CELL[d]=49+d-23; for(let d=28;d<=31;d++)DATE_CELL[d]=56+d-28;
+function getPensterdamPuzzle(dateKey){const d=new Date(`${dateKey}T12:00:00+09:00`);const m=Number(dateKey.slice(5,7)),day=Number(dateKey.slice(8,10)),wd=d.getDay();return{date:dateKey,rows:9,cols:7,holes:[MONTH_CELL[m],DATE_CELL[day],WEEKDAY_CELL[wd]],month:m,day,weekday:wd};}
+
+// -------------------- Yahtzee --------------------
+const UPPER=['aces','twos','threes','fours','fives','sixes'],LOWER=['threeKind','fourKind','fullHouse','smallStraight','largeStraight','yahtzee','chance'],ALL=[...UPPER,...LOWER];
+const LABELS={aces:'Aces',twos:'Twos',threes:'Threes',fours:'Fours',fives:'Fives',sixes:'Sixes',threeKind:'3 of a Kind',fourKind:'4 of a Kind',fullHouse:'Full House',smallStraight:'Small Straight',largeStraight:'Large Straight',yahtzee:'YAHTZEE',chance:'Chance'};
+function counts(dice){const c=[0,0,0,0,0,0,0];dice.forEach(v=>c[v]++);return c;}
+function isYahtzee(dice){return dice.length===5&&dice.every(v=>v===dice[0]);}
+function normalScore(category,dice){const c=counts(dice),sum=dice.reduce((a,b)=>a+b,0);if(UPPER.includes(category)){const face=UPPER.indexOf(category)+1;return c[face]*face;}switch(category){case'threeKind':return c.some(v=>v>=3)?sum:0;case'fourKind':return c.some(v=>v>=4)?sum:0;case'fullHouse':return c.includes(3)&&c.includes(2)?25:0;case'smallStraight':{const u=new Set(dice);return([1,2,3,4].every(v=>u.has(v))||[2,3,4,5].every(v=>u.has(v))||[3,4,5,6].every(v=>u.has(v)))?30:0;}case'largeStraight':{const s=[...new Set(dice)].sort().join('');return(s==='12345'||s==='23456')?40:0;}case'yahtzee':return isYahtzee(dice)?50:0;case'chance':return sum;default:return 0;}}
+function getScoringOptions(scorecard,dice){const empty=ALL.filter(c=>scorecard[c]==null),options={};if(!isYahtzee(dice)||scorecard.yahtzee==null){empty.forEach(c=>options[c]=normalScore(c,dice));return{options,yahtzeeBonus:0,forced:false};}const face=dice[0],matching=UPPER[face-1],bonus=scorecard.yahtzee===50?100:0;if(scorecard[matching]==null){options[matching]=face*5;return{options,yahtzeeBonus:bonus,forced:true};}const lowers=LOWER.filter(c=>c!=='yahtzee'&&scorecard[c]==null);if(lowers.length){for(const c of lowers){if(c==='fullHouse')options[c]=25;else if(c==='smallStraight')options[c]=30;else if(c==='largeStraight')options[c]=40;else options[c]=normalScore(c,dice);}return{options,yahtzeeBonus:bonus,forced:true};}for(const c of UPPER)if(scorecard[c]==null)options[c]=0;return{options,yahtzeeBonus:bonus,forced:true};}
+function totals(scorecard,bonusCount=0){const upper=UPPER.reduce((s,c)=>s+(scorecard[c]??0),0),upperBonus=upper>=63?35:0,lower=LOWER.reduce((s,c)=>s+(scorecard[c]??0),0),bonusPoints=bonusCount*100;return{upper,upperBonus,lower,bonusPoints,total:upper+upperBonus+lower+bonusPoints};}
+function rollOne(){const a=new Uint32Array(1);crypto.getRandomValues(a);return a[0]%6+1;}
+
+// -------------------- pages --------------------
+async function renderHome(){
+  shell(`<section class="hero"><div><h1><span>BoardMate</span> Arcade</h1><p>보드메이트 모임원끼리 매일 가볍게 겨루는 게임 공간.<br>오늘의 리코셰와 펜스테르담, 그리고 올타임 Yahtzee 기록에 도전하세요.</p><div class="social-links"><a class="social-link" href="${LINKS.instagram}" target="_blank" rel="noreferrer">📷 Instagram</a><a class="social-link" href="${LINKS.somoim}" target="_blank" rel="noreferrer">👥 소모임</a><a class="social-link" href="${LINKS.shop}" target="_blank" rel="noreferrer">🛍 마플샵</a></div></div><div class="hero-badge">🎲</div></section><div class="section-title"><h2>게임</h2><small>${formatDate(kstDate())} · KST</small></div><section class="game-grid">${homeCard('ricochet','🤖','리코셰','적은 이동 수 → 동률이면 먼저 클리어')} ${homeCard('pensterdam','🧩','펜스테르담','오늘의 월·일·요일을 남기고 완성 · 먼저 클리어')} ${homeCard('yahtzee','🎲','Yahtzee','언제든 플레이 · 올타임 최고 점수')}</section><div id="connection"></div>`);
+  for(const g of ['ricochet','pensterdam','yahtzee']){const data=await loadLeaderboard(g,5);const el=document.querySelector(`#lb-${g}`);if(el)el.innerHTML=leaderboardHtml(g,data,false);}
+  bindHome();
+  if(!configured()) document.querySelector('#connection').innerHTML='<div class="connection-note">현재는 로컬 순위 모드입니다. <b>config.js</b>에 Supabase 주소/키 두 개만 넣으면 모임원 모두가 같은 순위표를 봅니다.</div>';
+}
+function homeCard(game,icon,title,desc){return `<article class="game-card"><div class="icon">${icon}</div><h3>${title}</h3><p>${desc}</p><button class="primary" data-play="${game}">게임하기</button><div id="lb-${game}"><div class="empty">순위표 불러오는 중…</div></div></article>`;}
+function bindHome(){document.querySelectorAll('[data-play]').forEach(b=>b.onclick=()=>location.hash=`#/${b.dataset.play}`);document.querySelectorAll('[data-more]').forEach(b=>b.onclick=async()=>{const g=b.dataset.more,card=b.closest('.game-card'),expanded=b.textContent==='접기',data=await loadLeaderboard(g,expanded?5:100);card.querySelector(`#lb-${g}`).innerHTML=leaderboardHtml(g,data,!expanded);bindHome();});}
+
+async function renderRicochet(){
+  const puzzle=getRicochetPuzzle(kstDate());let state=[...puzzle.robots],selected=puzzle.targetRobot,moves=[];
+  shell(`<div class="page-head"><div><h1>🤖 오늘의 리코셰</h1><p>${formatDate(puzzle.date)} · 같은 색 로봇을 목표 칸으로 보내세요.</p></div><div class="actions"><button class="ghost" id="backHome">← 홈</button><button class="danger" id="resetRicochet">도전 초기화</button></div></div><div class="game-layout"><section class="panel"><div id="rboard" class="ricochet-board"></div></section><aside class="panel"><div class="stat-grid"><div class="stat"><span>현재 이동</span><b id="moveCount">0</b></div><div class="stat"><span>출제 조건</span><b>최소 6수+</b></div></div><div class="robot-picker" id="robotPicker"></div><div class="direction-pad"><button class="up" data-dir="0">↑</button><button class="left" data-dir="3">←</button><button class="right" data-dir="1">→</button><button class="down" data-dir="2">↓</button></div><div class="hint">로봇은 벽이나 다른 로봇을 만나기 직전까지 멈추지 않습니다. 어떤 로봇이든 움직일 수 있으며, 모든 로봇의 이동이 횟수에 포함됩니다.</div><h3 style="margin-top:18px">오늘의 순위</h3><div id="sideLb"><div class="empty">불러오는 중…</div></div></aside></div>`);
+  document.querySelector('#backHome').onclick=()=>location.hash='#/';
+  const refreshLb=async()=>document.querySelector('#sideLb').innerHTML=leaderboardHtml('ricochet',await loadLeaderboard('ricochet',5),false,false); await refreshLb();
+  const render=()=>{document.querySelector('#moveCount').textContent=moves.length;const blocked=new Set(puzzle.blocked);const el=document.querySelector('#rboard');el.innerHTML=Array.from({length:256},(_,i)=>{const w=puzzle.walls[i],robot=state.findIndex(x=>x===i),isTarget=i===puzzle.target;return `<div class="r-cell ${w&1?'wall-u':''} ${w&2?'wall-r':''} ${w&4?'wall-d':''} ${w&8?'wall-l':''} ${blocked.has(i)?'blocked':''}">${isTarget?`<span class="target ${ROBOT_COLORS[puzzle.targetRobot]}"></span>`:''}${robot>=0?`<span class="robot ${ROBOT_COLORS[robot]} ${robot===selected?'selected':''}"></span>`:''}</div>`;}).join('');};
+  const renderPicker=()=>{document.querySelector('#robotPicker').innerHTML=ROBOT_COLORS.map((c,i)=>`<button class="robot-pick ${c} ${i===selected?'active':''}" data-robot="${i}">${['R','Y','G','B'][i]}</button>`).join('');document.querySelectorAll('[data-robot]').forEach(b=>b.onclick=()=>{selected=Number(b.dataset.robot);renderPicker();render();});};
+  const reset=()=>{state=[...puzzle.robots];moves=[];selected=puzzle.targetRobot;renderPicker();render();};
+  const doMove=dir=>{const next=moveRobot(state,selected,dir,puzzle);if(next===state){toast('그 방향으로는 움직일 수 없습니다.');return;}state=next;moves.push([selected,dir]);render();if(state[puzzle.targetRobot]===puzzle.target){const count=moves.length;setTimeout(()=>openNameModal({title:'클리어!',big:`${count}회`,rankText:'더 적은 횟수로 다시 성공하면 개인 기록이 갱신됩니다.',onSubmit:n=>submitResult('ricochet',n,count),onClose:()=>{reset();refreshLb();}}),120);}};
+  document.querySelectorAll('[data-dir]').forEach(b=>b.onclick=()=>doMove(Number(b.dataset.dir)));document.querySelector('#resetRicochet').onclick=()=>{reset();toast('도전을 초기화했습니다.');};
+  window.onkeydown=e=>{const map={ArrowUp:0,ArrowRight:1,ArrowDown:2,ArrowLeft:3};if(map[e.key]!=null){e.preventDefault();doMove(map[e.key]);}};render();renderPicker();
+}
+
+async function renderPensterdam(){
+  const puzzle=getPensterdamPuzzle(kstDate()),pieceNames=Object.keys(PIECES);let board=Array(63).fill(null),selected='F',rotation=0,flipped=false;const placed={};
+  puzzle.holes.forEach(i=>board[i]='#');
+  shell(`<div class="page-head"><div><h1>🧩 오늘의 펜스테르담</h1><p>${formatDate(puzzle.date)} · 오늘의 월 / 일 / 요일 3칸을 남기고 나머지를 모두 채우세요.</p></div><div class="actions"><button class="ghost" id="backHome">← 홈</button><button class="danger" id="resetPento">도전 초기화</button></div></div><div class="pento-wrap"><section class="panel"><div id="pboard" class="pento-board"></div></section><aside class="panel"><h3>조각</h3><div id="piecePreview" class="piece-preview"></div><div class="transform-actions"><button class="secondary" id="rotatePiece">↻ 회전</button><button class="secondary" id="flipPiece">⇋ 뒤집기</button></div><div id="pieceBank" class="piece-bank"></div><p class="pento-tip">조각 선택 → 회전/뒤집기 → 보드의 시작 칸 클릭. 이미 놓은 조각을 누르면 다시 가져옵니다.</p><h3 style="margin-top:18px">오늘의 순위</h3><div id="sideLb"><div class="empty">불러오는 중…</div></div><details class="reference-block"><summary>실물 참고 이미지</summary><div class="photo-grid"><img src="./pensterdam_play.jpg" alt="펜스테르담 조각 배치 참고"><img src="./pensterdam_board.jpg" alt="펜스테르담 캘린더 보드 참고"></div></details></aside></div>`);
+  document.querySelector('#backHome').onclick=()=>location.hash='#/';
+  const refreshLb=async()=>document.querySelector('#sideLb').innerHTML=leaderboardHtml('pensterdam',await loadLeaderboard('pensterdam',5),false,false); await refreshLb();
+  const currentShape=()=>transformPiece(PIECES[selected],rotation,flipped);
+  const removePiece=name=>{if(!placed[name])return;placed[name].forEach(i=>board[i]=null);delete placed[name];puzzle.holes.forEach(i=>board[i]='#');};
+  const renderPreview=()=>{const s=currentShape(),h=Math.max(...s.map(x=>x[0]))+1,w=Math.max(...s.map(x=>x[1]))+1,cells=new Set(s.map(([r,c])=>`${r},${c}`));document.querySelector('#piecePreview').innerHTML=`<div class="mini-grid" style="grid-template-columns:repeat(${w},18px)">${Array.from({length:h*w},(_,i)=>`<span class="mini-cell" style="opacity:${cells.has(`${Math.floor(i/w)},${i%w}`)?1:0}"></span>`).join('')}</div>`;};
+  const renderBank=()=>{document.querySelector('#pieceBank').innerHTML=pieceNames.map(n=>`<button class="piece-btn ${selected===n?'selected':''} ${placed[n]?'placed':''}" data-piece="${n}">${n}</button>`).join('');document.querySelectorAll('[data-piece]').forEach(b=>b.onclick=()=>{const n=b.dataset.piece;if(placed[n])removePiece(n);selected=n;rotation=0;flipped=false;renderAll();});};
+  const tryPlace=anchor=>{removePiece(selected);const ar=Math.floor(anchor/7),ac=anchor%7,shape=currentShape(),coords=shape.map(([r,c])=>[ar+r,ac+c]),inBounds=coords.every(([r,c])=>r>=0&&r<9&&c>=0&&c<7),cells=coords.map(([r,c])=>r*7+c),valid=inBounds&&cells.every(i=>board[i]==null);if(!valid){toast('그 위치에는 놓을 수 없습니다.');renderAll();return;}cells.forEach(i=>board[i]=selected);placed[selected]=cells;renderAll();if(pieceNames.every(n=>placed[n]))setTimeout(()=>openNameModal({title:'완성!',big:formatClock(new Date().toISOString()),rankText:'순위는 걸린 시간이 아니라 실제로 먼저 완성한 현재 시각 순입니다.',onSubmit:n=>submitResult('pensterdam',n,0),onClose:()=>{reset();refreshLb();}}),120);};
+  const renderBoard=()=>{const el=document.querySelector('#pboard');el.innerHTML=board.map((v,i)=>`<button class="p-cell ${v==='#'?'today-hole':''}" data-cell="${i}"><span class="calendar-label">${PEN_LABELS[i]}</span>${v&&v!=='#'?`<span class="piece-mark piece-${v}">${v}</span>`:''}</button>`).join('');el.querySelectorAll('[data-cell]').forEach(c=>c.onclick=()=>{const i=Number(c.dataset.cell),v=board[i];if(v==='#')return;if(v){removePiece(v);selected=v;rotation=0;flipped=false;renderAll();}else tryPlace(i);});};
+  const renderAll=()=>{renderBoard();renderBank();renderPreview();};
+  const reset=()=>{board=Array(63).fill(null);puzzle.holes.forEach(i=>board[i]='#');Object.keys(placed).forEach(k=>delete placed[k]);selected='F';rotation=0;flipped=false;renderAll();};
+  document.querySelector('#rotatePiece').onclick=()=>{rotation=(rotation+1)%4;renderPreview();};document.querySelector('#flipPiece').onclick=()=>{flipped=!flipped;renderPreview();};document.querySelector('#resetPento').onclick=()=>{reset();toast('도전을 초기화했습니다.');};renderAll();
+}
+
+async function renderYahtzee(){
+  let scorecard=Object.fromEntries(ALL.map(c=>[c,null])),dice=[0,0,0,0,0],held=[false,false,false,false,false],rollCount=0,round=1,bonusCount=0;
+  shell(`<div class="page-head"><div><h1>🎲 Yahtzee</h1><p>13라운드 · 라운드당 최대 3번 굴림 · Forced Joker Rule 적용</p></div><div class="actions"><button class="ghost" id="backHome">← 홈</button><button class="danger" id="newYahtzee">새 게임</button></div></div><div class="yahtzee-layout"><section class="panel dice-area"><div class="round-info" id="roundInfo"></div><div class="dice-row" id="diceRow"></div><button class="primary roll-btn" id="rollDice">주사위 굴리기</button><div class="hint" style="margin-top:12px">굴린 뒤 남길 주사위를 눌러 HOLD. 다시 눌러 해제할 수 있습니다. 빈 점수칸 하나를 반드시 기록하면 다음 라운드로 갑니다.</div><h3 style="margin-top:18px">올타임 TOP 5</h3><div id="sideLb"><div class="empty">불러오는 중…</div></div></section><section class="panel"><table class="score-table"><thead><tr><th>족보</th><th>기록</th></tr></thead><tbody id="scoreBody"></tbody></table></section></div>`);
+  document.querySelector('#backHome').onclick=()=>location.hash='#/';const refreshLb=async()=>document.querySelector('#sideLb').innerHTML=leaderboardHtml('yahtzee',await loadLeaderboard('yahtzee',5),false,false);await refreshLb();
+  const renderDice=()=>{document.querySelector('#diceRow').innerHTML=dice.map((v,i)=>`<button class="die ${held[i]?'held':''}" data-die="${i}" ${rollCount===0?'disabled':''}>${v||'–'}</button>`).join('');document.querySelectorAll('[data-die]').forEach(b=>b.onclick=()=>{const i=Number(b.dataset.die);held[i]=!held[i];renderDice();});document.querySelector('#roundInfo').textContent=`라운드 ${round}/13 · ${rollCount}/3회 굴림`;const rb=document.querySelector('#rollDice');rb.disabled=rollCount>=3;rb.textContent=rollCount===0?'주사위 굴리기':rollCount<3?'다시 굴리기':'점수칸을 선택하세요';};
+  const renderScores=()=>{const scoring=rollCount?getScoringOptions(scorecard,dice):{options:{},forced:false,yahtzeeBonus:0};const row=c=>{const val=scorecard[c],has=Object.prototype.hasOwnProperty.call(scoring.options,c);return `<tr><td><b>${LABELS[c]}</b>${c==='yahtzee'?'<div class="bonus-note">50점 · 이후 조건 충족 Yahtzee마다 +100</div>':''}</td><td>${val!=null?`<span class="filled-score">${val}</span>`:has?`<button class="score-option ${scoring.forced?'forced':''}" data-score="${c}">${scoring.options[c]}점 기록</button>`:'—'}</td></tr>`;};const t=totals(scorecard,bonusCount);document.querySelector('#scoreBody').innerHTML=UPPER.map(row).join('')+`<tr class="score-total"><td>Upper Bonus (63+)</td><td>${t.upperBonus}</td></tr>`+LOWER.map(row).join('')+`<tr><td><b>YAHTZEE BONUS</b></td><td>${bonusCount}회 · ${t.bonusPoints}점</td></tr><tr class="score-total"><td>총점</td><td>${t.total}</td></tr>`;document.querySelectorAll('[data-score]').forEach(b=>b.onclick=()=>chooseScore(b.dataset.score));};
+  const finish=async()=>{const t=totals(scorecard,bonusCount),data=await loadLeaderboard('yahtzee',100),others=(data.items||[]).filter(x=>x.player_id!==playerId()),estimated=1+others.filter(x=>x.metric>=t.total).length;openNameModal({title:'게임 종료!',big:`${t.total}점`,rankText:`현재 예상 전체 ${estimated}위`,onSubmit:n=>submitResult('yahtzee',n,t.total),onCloseLabel:'새 게임',onClose:()=>{reset();refreshLb();}});};
+  const chooseScore=category=>{if(!rollCount)return;const scoring=getScoringOptions(scorecard,dice);if(!Object.prototype.hasOwnProperty.call(scoring.options,category))return;scorecard[category]=scoring.options[category];if(scoring.yahtzeeBonus)bonusCount++;if(ALL.every(c=>scorecard[c]!=null)){renderScores();finish();return;}round++;dice=[0,0,0,0,0];held=[false,false,false,false,false];rollCount=0;renderDice();renderScores();};
+  const reset=()=>{scorecard=Object.fromEntries(ALL.map(c=>[c,null]));dice=[0,0,0,0,0];held=[false,false,false,false,false];rollCount=0;round=1;bonusCount=0;renderDice();renderScores();};
+  document.querySelector('#rollDice').onclick=()=>{if(rollCount>=3)return;dice=dice.map((v,i)=>held[i]&&rollCount>0?v:rollOne());rollCount++;renderDice();renderScores();};document.querySelector('#newYahtzee').onclick=()=>{reset();toast('새 게임을 시작했습니다.');};renderDice();renderScores();
+}
+
+async function router(){window.onkeydown=null;const route=(location.hash||'#/').slice(2);if(route==='ricochet')return renderRicochet();if(route==='pensterdam')return renderPensterdam();if(route==='yahtzee')return renderYahtzee();return renderHome();}
+window.addEventListener('hashchange',router);router();
