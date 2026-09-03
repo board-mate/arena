@@ -205,6 +205,7 @@ let G = {
 let selectedHandIdx = null;
 
 function startGame() {
+  localStorage.removeItem('boardmate:solo:thegame:v1');
   const pCount = parseInt(document.getElementById('player-count').value);
   const useFire = document.getElementById('opt-fire').checked;
 
@@ -236,6 +237,7 @@ function startGame() {
 }
 
 function resetGame() {
+  localStorage.removeItem('boardmate:solo:thegame:v1');
   document.getElementById('setup').style.display = 'flex';
   document.getElementById('game-controls').style.display = 'none';
   document.getElementById('hand-wrapper').style.display = 'none';
@@ -405,6 +407,13 @@ function render() {
   });
 }
 </script>
-<div style="margin-top:18px;font-size:12px"><a href="./rules-the-game.pdf" target="_blank" style="color:#f1c40f">한국어 룰북 열기</a></div>
+
+<script>
+const BOARDMATE_THEGAME_SAVE='boardmate:solo:thegame:v1';
+function boardmateTheGameSave(){try{if(G?.active)localStorage.setItem(BOARDMATE_THEGAME_SAVE,JSON.stringify({G,savedAt:new Date().toISOString()}));}catch(e){}}
+function boardmateTheGameRestore(){try{const raw=localStorage.getItem(BOARDMATE_THEGAME_SAVE);if(!raw)return;const d=JSON.parse(raw);G=d.G;selectedHandIdx=null;document.getElementById('setup').style.display='none';document.getElementById('game-controls').style.display='flex';document.getElementById('hand-wrapper').style.display='block';render();}catch(e){alert('저장된 게임을 불러오지 못했습니다.');}}
+setInterval(boardmateTheGameSave,1500);window.addEventListener('beforeunload',boardmateTheGameSave);document.addEventListener('visibilitychange',()=>{if(document.hidden)boardmateTheGameSave()});
+</script>
+<div style="position:fixed;left:10px;top:10px;z-index:9999;display:flex;gap:6px"><a href="./index.html#/" style="background:#111827;color:white;border:2px solid #000;border-radius:999px;padding:8px 12px;font:800 12px system-ui;text-decoration:none;box-shadow:0 4px 12px #0004">← 홈</a><a href="./index.html#/solo" style="background:white;color:#111827;border:2px solid #000;border-radius:999px;padding:8px 12px;font:800 12px system-ui;text-decoration:none">1인플</a><button onclick="boardmateTheGameRestore()" style="background:#10b981;color:#052e16;border:2px solid #000;border-radius:999px;padding:7px 11px;font:900 12px system-ui;cursor:pointer">💾 이어하기</button></div>
 </body>
 </html>

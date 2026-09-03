@@ -56,7 +56,7 @@ function footer(){
   return `<footer class="footer"><span>© BoardMate · 모임원용 게임 아케이드</span><div class="footer-links"><a href="${LINKS.instagram}" target="_blank" rel="noreferrer">Instagram</a><a href="${LINKS.somoim}" target="_blank" rel="noreferrer">소모임</a><a href="${LINKS.shop}" target="_blank" rel="noreferrer">마플샵</a></div></footer>`;
 }
 function shell(content){
-  app.innerHTML=`<div class="app-shell"><header class="topbar"><button class="brand-btn" id="homeBtn"><span class="brand-mark">●</span> BOARDMATE</button><nav class="topnav"><button data-nav="">오늘 게임</button><button data-nav="solo">1인플</button><button data-nav="multi">다인플</button></nav><div class="top-date">${formatDate(kstDate())}</div></header><main class="container">${content}${footer()}</main></div>`;
+  app.innerHTML=`<div class="app-shell"><header class="topbar"><button class="brand-btn" id="homeBtn"><span class="brand-mark">●</span> BOARDMATE</button><nav class="topnav"><button data-nav="">오늘 게임</button><button data-nav="solo">1인플</button><button data-nav="multi">다인플</button><button data-nav="mypage">마이페이지</button></nav><div class="top-date">${formatDate(kstDate())}</div></header><main class="container">${content}${footer()}</main></div>`;
   document.querySelector('#homeBtn')?.addEventListener('click',()=>location.hash='#/');
   document.querySelectorAll('[data-nav]').forEach(b=>b.onclick=()=>location.hash=`#/${b.dataset.nav}`);
   const route=(location.hash||'#/').slice(2).split('/')[0];
@@ -167,39 +167,53 @@ function rotateLocal(r,c,rot){for(let i=0;i<rot;i++)[r,c]=[c,7-r];return[r,c];}
 function rotateMask(mask,rot){let out=0;const v=[[1,-1,0],[2,0,1],[4,1,0],[8,0,-1]];for(const [bit,dr,dc] of v)if(mask&bit){let a=dr,b=dc;for(let i=0;i<rot;i++)[a,b]=[b,-a];out|=a===-1?1:b===1?2:a===1?4:8;}return out;}
 
 // 한 사분면(8×8)은 정확히:
-// - 바깥쪽 두 변에 붙는 1칸짜리 벽 2개
-// - 서로 닿지 않는 ㄱ자 벽 4개
-// 를 가집니다. 4장을 합치면 1칸 벽 8개 + ㄱ자 벽 16개입니다.
+// - 완성 보드의 바깥쪽 두 변에 1칸짜리 벽을 각각 1개씩 = 2개
+// - 서로 닿지 않는 ㄱ자 벽 4개 = 8개 선분
+// 4장을 합치면 바깥 1칸 벽 8개 + ㄱ자 벽 16개입니다.
+// 서로 다른 벽 오브젝트는 끝점조차 공유하지 않도록 생성합니다.
+function localWallSegments(r,c,mask){
+  const seg=[];
+  if(mask&1)seg.push([[r,c],[r,c+1]]);
+  if(mask&2)seg.push([[r,c+1],[r+1,c+1]]);
+  if(mask&4)seg.push([[r+1,c],[r+1,c+1]]);
+  if(mask&8)seg.push([[r,c],[r+1,c]]);
+  return seg;
+}
+function endpointKey(p){return `${p[0]},${p[1]}`;}
+function segmentObjectEndpoints(segs){const out=new Set();segs.forEach(([a,b])=>{out.add(endpointKey(a));out.add(endpointKey(b));});return out;}
+function objectsTouch(a,b){for(const k of a)if(b.has(k))return true;return false;}
 function makeRicochetQuadrant(seed){
   const rnd=seededRand(seed);
-  const topStub=1+Math.floor(rnd()*6);
-  const leftStub=1+Math.floor(rnd()*6);
-  const pool=[]; for(let r=1;r<=6;r++)for(let c=1;c<=6;c++)pool.push([r,c]);
+  // 모서리에서 한 칸 이상 떨어진 외곽 벽. canonical 사분면은 좌상단 모서리를 향합니다.
+  const topStub=1+Math.floor(rnd()*6),leftStub=1+Math.floor(rnd()*6);
+  const objects=[
+    segmentObjectEndpoints(localWallSegments(0,topStub,1)), // 실제 top 외곽선 1칸
+    segmentObjectEndpoints(localWallSegments(leftStub,0,8)) // 실제 left 외곽선 1칸
+  ];
+  const pool=[];for(let r=1;r<=6;r++)for(let c=1;c<=6;c++)for(const mask of [3,6,12,9])pool.push([r,c,mask]);
   for(let i=pool.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[pool[i],pool[j]]=[pool[j],pool[i]];}
   const corners=[];
-  const stubPoints=[[0,topStub],[0,topStub+1],[leftStub,0],[leftStub+1,0]];
-  const farFromStubs=(r,c)=>stubPoints.every(([sr,sc])=>Math.max(Math.abs(r-sr),Math.abs(c-sc))>=2);
-  for(const [r,c] of pool){
-    if(!farFromStubs(r,c))continue;
-    if(corners.every(([rr,cc])=>Math.max(Math.abs(r-rr),Math.abs(c-cc))>=3)){
-      corners.push([r,c]);
-      if(corners.length===4)break;
-    }
+  for(const cand of pool){
+    const [r,c,mask]=cand,ep=segmentObjectEndpoints(localWallSegments(r,c,mask));
+    if(objects.some(o=>objectsTouch(o,ep)))continue;
+    // 벽 사이에 눈에 띄는 최소 간격을 하나 더 둡니다. 끝점의 체비쇼프 거리가 1 이하면 제외.
+    const pts=[...ep].map(k=>k.split(',').map(Number));
+    let tooClose=false;
+    for(const o of objects){for(const ok of o){const [or,oc]=ok.split(',').map(Number);if(pts.some(([pr,pc])=>Math.max(Math.abs(pr-or),Math.abs(pc-oc))<=1)){tooClose=true;break;}}if(tooClose)break;}
+    if(tooClose)continue;
+    corners.push(cand);objects.push(ep);if(corners.length===4)break;
   }
-  // 드물게 랜덤 배치가 4개를 못 찾으면 검증된 기본 위치 사용.
-  if(corners.length<4){corners.splice(0,corners.length,[1,1],[1,5],[5,1],[5,5]);}
-  const masks=[3,6,12,9];
-  for(let i=masks.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[masks[i],masks[j]]=[masks[j],masks[i]];}
-  return {topStub,leftStub,corners:corners.map((p,i)=>[p[0],p[1],masks[i]])};
+  if(corners.length<4){
+    // 검증된 비접촉 기본 배치. 랜덤 실패 시에만 사용합니다.
+    corners.splice(0,corners.length,[1,2,3],[2,6,6],[5,1,9],[6,5,12]);
+  }
+  return {topStub,leftStub,corners};
 }
-const RICOCHET_QUADRANTS=Array.from({length:64},(_,i)=>makeRicochetQuadrant(0xA17C9E+i*104729));
+const RICOCHET_QUADRANTS=Array.from({length:96},(_,i)=>makeRicochetQuadrant(0xA17C9E+i*104729));
 
 function placeQuadrant(walls,targets,tile,or,oc,rot){
-  // canonical tile의 top/left가 완성 보드의 바깥 모서리를 향하도록 배치.
-  const stubDefs=[
-    [0,tile.topStub,2],       // 위 변에서 아래로 내려오는 세로 벽
-    [tile.leftStub,0,4]       // 왼쪽 변에서 오른쪽으로 들어오는 가로 벽
-  ];
+  // canonical top/left 외곽 벽을 회전시켜 각 사분면의 실제 바깥 가장자리에 놓습니다.
+  const stubDefs=[[0,tile.topStub,1],[tile.leftStub,0,8]];
   for(const [lr,lc,bit] of stubDefs){
     const [rr,cc]=rotateLocal(lr,lc,rot),g=(or+rr)*16+(oc+cc),m=rotateMask(bit,rot);
     for(const b of [1,2,4,8])if(m&b)addWallPair(walls,g,b);
@@ -215,14 +229,7 @@ function buildDailyRicochetBoard(dateKey){
   const pool=Array.from({length:RICOCHET_QUADRANTS.length},(_,i)=>i);
   for(let i=pool.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[pool[i],pool[j]]=[pool[j],pool[i]];}
   const order=pool.slice(0,4),walls=Array(256).fill(0),targets=[];
-  // 외곽 전체를 굵은 검정 벽으로 만들지 않습니다. 이동은 보드 경계 판정으로 멈춥니다.
-  // 각 위치에서 바깥 모서리를 향하는 회전은 고정: 좌상/우상/우하/좌하.
-  const placements=[
-    [0,0,0],
-    [0,8,1],
-    [8,8,2],
-    [8,0,3]
-  ];
+  const placements=[[0,0,0],[0,8,1],[8,8,2],[8,0,3]];
   placements.forEach(([or,oc,rot],q)=>placeQuadrant(walls,targets,RICOCHET_QUADRANTS[order[q]],or,oc,rot));
   return {walls,targets,layout:order,wallSpec:{single:8,corners:16}};
 }
@@ -313,13 +320,13 @@ function homeCard(game,icon,title,desc){return `<article class="game-card"><div 
 function bindHome(){document.querySelectorAll('[data-play]').forEach(b=>b.onclick=()=>location.hash=`#/${b.dataset.play}`);document.querySelectorAll('[data-more]').forEach(b=>b.onclick=async()=>{const g=b.dataset.more,card=b.closest('.game-card'),expanded=b.textContent==='접기',data=await loadLeaderboard(g,expanded?5:100);card.querySelector(`#lb-${g}`).innerHTML=leaderboardHtml(g,data,!expanded);bindHome();});}
 
 function renderSolo(){
-  shell(`<div class="page-head"><div><h1>🧠 1인플 · AI/솔로</h1><p>AI 연습 게임과 공개 솔로 구현을 한 곳에서 실행합니다.</p></div><div class="actions"><button class="ghost" id="backHome">← 홈</button></div></div>
+  shell(`<div class="page-head"><div><h1>🧠 1인플 · AI/솔로</h1><p>BoardMate 안의 게임은 브라우저 로컬 자동 저장을 사용합니다. 외부 공개 게임은 해당 사이트의 저장 기능을 따릅니다.</p></div><div class="actions"><button class="ghost" id="backHome">← 홈</button></div></div>
   <section class="library-grid">
-    <article class="library-card maskmen"><div class="library-icon">🥊</div><h2>마스크맨</h2><p>3~6인 규칙을 AI들과 연습합니다.</p><a class="primary link-btn" href="./solo-maskmen.html">AI와 대전</a></article>
-    <article class="library-card acquire"><div class="library-icon">🏙️</div><h2>어콰이어</h2><p>타일 배치, 호텔 체인, 주식과 합병을 AI들과 연습합니다.</p><a class="primary link-btn" href="./solo-acquire.html">AI와 대전</a></article>
-    <article class="library-card calico"><div class="library-icon">🧵</div><h2>캘리코</h2><p>공개된 MyAutoma 솔로 구현입니다.</p><a class="primary link-btn" href="https://myautoma.github.io/games/calico/index.html" target="_blank" rel="noreferrer">솔로 데모 열기 ↗</a><a class="text-link" href="./rules-calico.pdf" target="_blank">한국어 룰북</a></article>
-    <article class="library-card cascadia"><div class="library-icon">🌲</div><h2>캐스캐디아</h2><p>공개된 Cascadia 웹 구현으로 1인 플레이를 즐깁니다.</p><a class="primary link-btn" href="https://cascadiagame.github.io/" target="_blank" rel="noreferrer">솔로 게임 열기 ↗</a></article>
-    <article class="library-card thegame"><div class="library-icon">🃏</div><h2>더 게임</h2><p>업로드한 HTML로 1인 솔로 플레이. ±10 되돌리기 규칙을 지원합니다.</p><a class="primary link-btn" href="./solo-thegame.html">솔로 플레이</a><a class="text-link" href="./rules-the-game.pdf" target="_blank">한국어 룰북</a></article>
+    <article class="library-card maskmen"><div class="library-icon">🥊</div><h2>마스크맨</h2><p>3~6인 규칙을 AI들과 연습합니다.</p><span class="save-badge">💾 로컬 자동 저장</span><a class="primary link-btn" href="./solo-maskmen.html">AI와 대전</a></article>
+    <article class="library-card acquire"><div class="library-icon">🏙️</div><h2>어콰이어</h2><p>타일 배치, 호텔 체인, 주식과 합병을 AI들과 연습합니다.</p><span class="save-badge">💾 로컬 자동 저장</span><a class="primary link-btn" href="./solo-acquire.html">AI와 대전</a></article>
+    <article class="library-card calico"><div class="library-icon">🧵</div><h2>캘리코</h2><p>공개된 MyAutoma 구현을 BoardMate 상단바 안에서 엽니다.</p><span class="save-badge external">외부 게임 · BoardMate 저장 제외</span><a class="primary link-btn" href="./solo-calico.html">솔로 게임 열기</a></article>
+    <article class="library-card cascadia"><div class="library-icon">🌲</div><h2>캐스캐디아</h2><p>공개 Cascadia 웹 구현을 BoardMate 상단바 안에서 엽니다.</p><span class="save-badge external">외부 게임 · BoardMate 저장 제외</span><a class="primary link-btn" href="./solo-cascadia.html">솔로 게임 열기</a></article>
+    <article class="library-card thegame"><div class="library-icon">🃏</div><h2>더 게임</h2><p>업로드한 HTML로 1인 솔로 플레이. ±10 되돌리기 규칙을 지원합니다.</p><span class="save-badge">💾 로컬 자동 저장</span><a class="primary link-btn" href="./solo-thegame.html">솔로 플레이</a></article>
   </section>`);
   document.querySelector('#backHome').onclick=()=>location.hash='#/';
 }
@@ -327,24 +334,53 @@ function renderSolo(){
 async function loadRatingMap(game,userIds){
   if(!userIds.length)return{};const rows=await callRpc('boardmate_get_ratings',{p_token:memberToken(),p_game:game,p_user_ids:userIds});return Object.fromEntries((rows||[]).map(r=>[r.user_id,r]));
 }
-async function renderAuthPanel(){
-  shell(`<div class="page-head"><div><h1>🌐 다인플 · 온라인</h1><p>방 만들기와 참여는 로그인이 필요합니다.</p></div><div class="actions"><button class="ghost" id="backHome">← 홈</button></div></div><section class="auth-card"><div class="auth-tabs"><button class="active" data-auth-tab="login">로그인</button><button data-auth-tab="signup">회원가입</button></div><form id="authForm"><input id="authNick" maxlength="20" placeholder="닉네임" required><input id="authPass" type="password" minlength="4" maxlength="72" placeholder="비밀번호/PIN (4자 이상)" required><button class="primary" id="authSubmit">로그인</button><div id="authStatus" class="bonus-note"></div></form><p class="auth-note">v5도 이메일 인증을 사용하지 않습니다. 닉네임과 비밀번호는 BoardMate DB에서 직접 관리하며, 비밀번호 원문은 저장하지 않습니다.</p></section>`);
+
+async function renderLoginPage(){
+  if(!onlineConfigured()){shell(`<div class="page-head"><div><h1>🔐 로그인</h1><p>Supabase 연결 후 사용할 수 있습니다.</p></div></div><div class="connection-note">config.js 설정과 v6 supabase.sql 실행이 필요합니다.</div>`);return;}
+  const me=await authProfile();if(me){location.hash='#/mypage';return;}
+  shell(`<div class="page-head"><div><h1>🔐 BoardMate 로그인</h1><p>닉네임과 비밀번호/PIN만 사용합니다.</p></div><div class="actions"><button class="ghost" id="backHome">← 홈</button></div></div><section class="auth-card standalone-auth"><div class="auth-tabs"><button class="active" data-auth-tab="login">로그인</button><button data-auth-tab="signup">회원가입</button></div><form id="authForm"><input id="authNick" maxlength="20" placeholder="닉네임" required><input id="authPass" type="password" minlength="4" maxlength="72" placeholder="비밀번호/PIN (4자 이상)" required><button class="primary" id="authSubmit">로그인</button><div id="authStatus" class="bonus-note"></div></form><p class="auth-note">이메일 인증은 사용하지 않습니다. 비밀번호 원문은 저장하지 않고 해시만 저장합니다.</p></section>`);
   document.querySelector('#backHome').onclick=()=>location.hash='#/';let mode='login';
   document.querySelectorAll('[data-auth-tab]').forEach(b=>b.onclick=()=>{mode=b.dataset.authTab;document.querySelectorAll('[data-auth-tab]').forEach(x=>x.classList.toggle('active',x===b));document.querySelector('#authSubmit').textContent=mode==='login'?'로그인':'회원가입';});
-  document.querySelector('#authForm').onsubmit=async e=>{e.preventDefault();const n=document.querySelector('#authNick').value.trim(),pw=document.querySelector('#authPass').value,st=document.querySelector('#authStatus'),btn=document.querySelector('#authSubmit');if(!n||pw.length<4){st.textContent='닉네임과 4자 이상 비밀번호를 입력하세요.';return;}btn.disabled=true;st.textContent='처리 중…';try{const data=await callRpc(mode==='signup'?'boardmate_register':'boardmate_login',{p_nickname:n,p_password:pw});if(!data?.token)throw new Error('로그인 토큰을 받지 못했습니다.');saveMemberToken(data.token);st.textContent=mode==='signup'?'가입 완료!':'로그인 완료!';setTimeout(()=>renderMulti(),120);}catch(err){st.textContent=String(err.message||err).replace(/^.*?exception:\s*/i,'');}finally{btn.disabled=false;}};
+  document.querySelector('#authForm').onsubmit=async e=>{e.preventDefault();const n=document.querySelector('#authNick').value.trim(),pw=document.querySelector('#authPass').value,st=document.querySelector('#authStatus'),btn=document.querySelector('#authSubmit');if(!n||pw.length<4){st.textContent='닉네임과 4자 이상 비밀번호를 입력하세요.';return;}btn.disabled=true;st.textContent='처리 중…';try{const data=await callRpc(mode==='signup'?'boardmate_register':'boardmate_login',{p_nickname:n,p_password:pw});if(!data?.token)throw new Error('로그인 토큰을 받지 못했습니다.');saveMemberToken(data.token);location.hash=mode==='signup'?'#/mypage':'#/multi';}catch(err){st.textContent=String(err.message||err).replace(/^.*?exception:\s*/i,'');}finally{btn.disabled=false;}};
+}
+
+async function renderMyPage(){
+  if(!onlineConfigured()){shell(`<div class="page-head"><div><h1>👤 마이페이지</h1></div></div><div class="connection-note">Supabase 연결이 필요합니다.</div>`);return;}
+  const me=await authProfile();
+  if(!me){shell(`<div class="page-head"><div><h1>👤 마이페이지</h1><p>로그인 후 계정 관리와 비밀번호 변경을 사용할 수 있습니다.</p></div></div><section class="auth-card"><a class="primary link-btn" href="#/login">로그인 / 회원가입</a></section>`);return;}
+  shell(`<div class="page-head"><div><h1>👤 마이페이지</h1><p>계정 정보와 비밀번호를 관리합니다.</p></div><div class="actions"><button class="ghost" id="backHome">← 홈</button></div></div>
+  <section class="profile-card"><div class="profile-row"><span>닉네임</span><b>${esc(me.nickname)}</b></div><div class="profile-row"><span>가입일</span><b>${esc(String(me.created_at||'').slice(0,10))}</b></div>${me.is_admin?'<div class="admin-badge">🛡️ 관리자 계정</div>':''}</section>
+  <section class="account-tools open"><h2>비밀번호 변경</h2><form id="pwForm"><input id="pwCurrent" type="password" minlength="4" placeholder="현재 비밀번호" required><input id="pwNew" type="password" minlength="4" maxlength="72" placeholder="새 비밀번호 (4자 이상)" required><button class="secondary">비밀번호 변경</button><span id="pwStatus" class="bonus-note"></span></form><p>비밀번호를 잊어버렸다면 관리자에게 초기화를 요청하세요.</p></section>
+  ${me.is_admin?`<section class="admin-panel"><div class="section-title"><h2>회원 관리</h2><button class="ghost mini" id="refreshMembers">새로고침</button></div><p class="pento-tip">정지 시 모든 세션이 끊기고 정지 기간 동안 로그인할 수 없습니다. 퇴출은 계정을 삭제하고 같은 닉네임 재가입도 막습니다.</p><div id="adminMemberList"><div class="empty">회원 목록 불러오는 중…</div></div></section>`:''}
+  <div class="mypage-actions"><button class="danger" id="logoutBtn">로그아웃</button></div>`);
+  document.querySelector('#backHome').onclick=()=>location.hash='#/';
+  document.querySelector('#logoutBtn').onclick=async()=>{try{await callRpc('boardmate_logout',{p_token:memberToken()});}catch{}saveMemberToken('');location.hash='#/login';};
+  document.querySelector('#pwForm').onsubmit=async e=>{e.preventDefault();const st=document.querySelector('#pwStatus');try{await callRpc('boardmate_change_password',{p_token:memberToken(),p_current_password:document.querySelector('#pwCurrent').value,p_new_password:document.querySelector('#pwNew').value});st.textContent='변경 완료';e.target.reset();}catch(err){st.textContent=err.message;}};
+  if(me.is_admin){
+    const loadMembers=async()=>{const box=document.querySelector('#adminMemberList');if(!box)return;try{const rows=await callRpc('boardmate_admin_list_members',{p_token:memberToken()})||[];box.innerHTML=rows.map(r=>{const suspended=r.suspended_until&&new Date(r.suspended_until)>new Date();return `<div class="admin-member-row"><div><b>${esc(r.nickname)}</b>${r.is_admin?' <span class="admin-mini">관리자</span>':''}<small>가입 ${esc(String(r.created_at).slice(0,10))}${suspended?` · ⛔ ${esc(String(r.suspended_until).slice(0,16).replace('T',' '))}까지 정지`:''}</small></div><div class="admin-member-actions">${r.user_id===me.user_id?'':suspended?`<button class="secondary mini" data-unsuspend="${r.user_id}">정지 해제</button>`:`<button class="ghost mini" data-suspend="${r.user_id}">정지</button>`}${r.user_id===me.user_id?'':`<button class="danger mini" data-expel="${r.user_id}" data-name="${esc(r.nickname)}">퇴출</button>`}</div></div>`;}).join('')||'<div class="empty">회원이 없습니다.</div>';
+      box.querySelectorAll('[data-suspend]').forEach(b=>b.onclick=async()=>{const days=Number(prompt('정지할 일수 (예: 1, 7, 30)','7'));if(!days||days<1)return;const reason=prompt('정지 사유 (선택)','')||'';try{await callRpc('boardmate_admin_suspend_member',{p_token:memberToken(),p_user_id:b.dataset.suspend,p_days:days,p_reason:reason});await loadMembers();}catch(e){toast(e.message);}});
+      box.querySelectorAll('[data-unsuspend]').forEach(b=>b.onclick=async()=>{try{await callRpc('boardmate_admin_unsuspend_member',{p_token:memberToken(),p_user_id:b.dataset.unsuspend});await loadMembers();}catch(e){toast(e.message);}});
+      box.querySelectorAll('[data-expel]').forEach(b=>b.onclick=async()=>{if(!confirm(`${b.dataset.name} 회원을 영구 퇴출할까요? 같은 닉네임 재가입도 차단됩니다.`))return;const reason=prompt('퇴출 사유 (선택)','')||'';try{await callRpc('boardmate_admin_expel_member',{p_token:memberToken(),p_user_id:b.dataset.expel,p_reason:reason});await loadMembers();}catch(e){toast(e.message);}});
+      }catch(e){box.innerHTML=`<div class="empty">${esc(e.message||e)}</div>`;}
+    };document.querySelector('#refreshMembers').onclick=loadMembers;await loadMembers();
+  }
+}
+
+async function renderCreateRoom(){
+  if(!onlineConfigured())return renderMulti();const me=await authProfile();if(!me){location.hash='#/login';return;}
+  const games=['maskmen','acquire','calico','thegame','kraken'];let selected='maskmen';
+  shell(`<div class="page-head"><div><h1>➕ 새 방 만들기</h1><p>방 제목을 쓰고 게임 카드를 선택하세요. 게임이 늘어나도 목록이 길게 펼쳐지지 않습니다.</p></div><div class="actions"><button class="ghost" id="backMulti">← 방 목록</button></div></div><section class="room-maker"><label>방 제목</label><input id="roomTitle" maxlength="40" placeholder="예: 오늘 마스크맨 한 판" required><h2>게임 선택</h2><div id="roomGameGrid" class="library-grid compact-games">${games.map(g=>{const x=gameInfo(g);return `<button class="library-card game-choice ${g==='maskmen'?'selected':''}" data-room-game="${g}"><div class="library-icon">${x.icon}</div><h2>${x.name}</h2><p>${x.min}명부터 · 최대 ${x.max}명</p></button>`;}).join('')}</div><button class="primary create-room-submit" id="createRoomBtn">선택한 게임으로 방 만들기</button><div id="roomStatus" class="bonus-note"></div></section>`);
+  document.querySelector('#backMulti').onclick=()=>location.hash='#/multi';
+  document.querySelectorAll('[data-room-game]').forEach(b=>b.onclick=()=>{selected=b.dataset.roomGame;document.querySelectorAll('[data-room-game]').forEach(x=>x.classList.toggle('selected',x===b));});
+  document.querySelector('#createRoomBtn').onclick=async()=>{const title=document.querySelector('#roomTitle').value.trim(),st=document.querySelector('#roomStatus');if(!title){st.textContent='방 제목을 입력하세요.';return;}try{const id=await callRpc('create_boardmate_room',{p_token:memberToken(),p_title:title,p_game:selected});location.hash=`#/room/${id}`;}catch(e){st.textContent=e.message;}};
 }
 
 async function renderMulti(){
-  if(!onlineConfigured()){shell(`<div class="page-head"><div><h1>🌐 다인플 · 온라인</h1><p>Supabase 연결 후 사용할 수 있습니다.</p></div></div><div class="connection-note">config.js 설정과 v5 supabase.sql 실행이 필요합니다.</div>`);return;}
-  const me=await authProfile();if(!me){saveMemberToken('');await renderAuthPanel();return;}
-  shell(`<div class="page-head"><div><h1>🌐 다인플 · 온라인</h1><p>모든 온라인 게임은 행동마다 자동 저장됩니다. 나갔다 돌아와도 같은 자리에서 이어집니다.</p></div><div class="actions"><span class="login-chip">👤 ${esc(me.nickname)}</span><button class="ghost" id="logoutBtn">로그아웃</button></div></div>
+  if(!onlineConfigured()){shell(`<div class="page-head"><div><h1>🌐 다인플 · 온라인</h1><p>Supabase 연결 후 사용할 수 있습니다.</p></div></div><div class="connection-note">config.js 설정과 v6 supabase.sql 실행이 필요합니다.</div>`);return;}
+  const me=await authProfile();if(!me){saveMemberToken('');shell(`<div class="page-head"><div><h1>🌐 다인플 · 온라인</h1><p>방 만들기와 참여는 로그인이 필요합니다.</p></div></div><section class="auth-card"><a class="primary link-btn" href="#/login">로그인 / 회원가입</a></section>`);return;}
+  shell(`<div class="page-head"><div><h1>🌐 다인플 · 온라인</h1><p>게임 상태는 행동마다 자동 저장됩니다. 브라우저를 닫아도 같은 방에서 이어할 수 있습니다.</p></div><div class="actions"><span class="login-chip">👤 ${esc(me.nickname)}</span><a class="ghost link-btn" href="#/mypage">마이페이지</a><a class="primary link-btn" href="#/new-room">＋ 방 만들기</a></div></div>
   <section id="activeGamesWrap" class="active-games-wrap hidden"><div class="section-title"><h2>▶ 진행 중인 게임</h2><small>자동 저장 · 재접속</small></div><div id="activeGameList"></div></section>
-  <section class="room-create"><h2>방 만들기</h2><form id="roomForm"><input id="roomTitle" maxlength="40" placeholder="방 제목" required><select id="roomGame"><option value="maskmen">마스크맨</option><option value="acquire">어콰이어</option><option value="calico">캘리코</option><option value="thegame">더 게임</option><option value="kraken">노터치 크라켄</option></select><button class="primary">방 만들기</button></form><div id="roomStatus" class="bonus-note"></div></section>
-  <details class="account-tools"><summary>계정 관리 · 비밀번호 변경</summary><form id="pwForm"><input id="pwCurrent" type="password" minlength="4" placeholder="현재 비밀번호" required><input id="pwNew" type="password" minlength="4" maxlength="72" placeholder="새 비밀번호 (4자 이상)" required><button class="secondary">비밀번호 변경</button><span id="pwStatus" class="bonus-note"></span></form><p>비밀번호를 잊어버리면 운영자가 Supabase SQL Editor에서 새 비밀번호로 재설정할 수 있습니다.</p></details>
   <div class="section-title"><h2>열린 방</h2><button class="ghost mini" id="refreshRooms">새로고침</button></div><div id="roomList"><div class="empty">방을 불러오는 중…</div></div>`);
-  document.querySelector('#logoutBtn').onclick=async()=>{try{await callRpc('boardmate_logout',{p_token:memberToken()});}catch{}saveMemberToken('');renderMulti();};
-  document.querySelector('#pwForm').onsubmit=async e=>{e.preventDefault();const st=document.querySelector('#pwStatus');try{await callRpc('boardmate_change_password',{p_token:memberToken(),p_current_password:document.querySelector('#pwCurrent').value,p_new_password:document.querySelector('#pwNew').value});st.textContent='변경 완료';e.target.reset();}catch(err){st.textContent=err.message;}};
-  document.querySelector('#roomForm').onsubmit=async e=>{e.preventDefault();const st=document.querySelector('#roomStatus');try{const data=await callRpc('create_boardmate_room',{p_token:memberToken(),p_title:document.querySelector('#roomTitle').value.trim(),p_game:document.querySelector('#roomGame').value});location.hash=`#/room/${data}`;}catch(err){st.textContent=err.message;}};
   const roomCard=r=>{const gi=gameInfo(r.game),mine=Boolean(r.mine),full=Number(r.member_count)>=Number(r.max_players),playing=r.status==='playing';return `<article class="room-row ${playing&&mine?'resume-room':''}"><div><div class="room-title"><span class="game-pill ${r.game}">${gi.icon} ${gi.name}</span><b>${esc(r.title)}</b></div><small>${esc(r.host_nickname||'방장')} · ${r.member_count}명${r.online_count!=null?` · 접속 ${r.online_count}명`:''} · ${r.status==='open'?'대기 중':'게임 중'}</small></div><button class="${mine?'primary':'ghost'}" data-room-action="${r.id}" data-mine="${mine?'1':'0'}" data-status="${r.status}" ${!mine&&r.status==='open'&&full?'disabled':''}>${mine?(playing?'이어하기':'방으로'):r.status==='open'?(full?'가득 참':'참가'):'관전 불가'}</button></article>`;};
   const bindRoomButtons=root=>root.querySelectorAll('[data-room-action]').forEach(b=>b.onclick=async()=>{if(b.dataset.mine==='1'){location.hash=`#/room/${b.dataset.roomAction}`;return;}if(b.dataset.status!=='open'||b.disabled)return;try{await callRpc('join_boardmate_room',{p_token:memberToken(),p_room_id:b.dataset.roomAction});location.hash=`#/room/${b.dataset.roomAction}`;}catch(err){toast(err.message);}});
   const loadRooms=async()=>{const box=document.querySelector('#roomList'),activeBox=document.querySelector('#activeGameList'),wrap=document.querySelector('#activeGamesWrap');if(!box)return;try{const rooms=await callRpc('boardmate_list_rooms',{p_token:memberToken()})||[];const active=rooms.filter(r=>r.mine&&r.status==='playing'),open=rooms.filter(r=>r.status==='open');if(active.length){wrap.classList.remove('hidden');activeBox.innerHTML=active.map(roomCard).join('');bindRoomButtons(activeBox);}else wrap.classList.add('hidden');box.innerHTML=open.length?open.map(roomCard).join(''):'<div class="empty">현재 열린 방이 없습니다.</div>';bindRoomButtons(box);}catch(err){box.innerHTML=`<div class="empty">${esc(err.message)}</div>`;}};
@@ -363,7 +399,7 @@ async function renderRoom(roomId){
     shell(`<div class="page-head"><div><h1>${gi.icon} ${esc(room.title)}</h1><p>${gi.name} · 현재 ${members.length}명 · ${room.status==='open'?'대기 중':room.status==='playing'?'게임 중':'종료'}</p></div><div class="actions"><button class="ghost" id="backMulti">← 방 목록</button></div></div>
     <section class="lobby-card"><h2>참여 인원</h2><div class="member-list">${members.map(m=>{const t=tierInfo(m),online=Boolean(m.connected);return `<div class="member-row"><span class="seat-no">${Number(m.seat)+1}</span><span class="presence ${online?'online':'offline'}">${online?'● 접속':'○ 끊김'}</span><span class="tier ${t.cls}">${t.text}</span><b>${esc(m.nickname)}</b>${m.user_id===room.host_id?'<small>방장</small>':''}${room.status==='open'&&isHost&&m.user_id!==room.host_id?`<button class="kick-btn" data-kick="${m.user_id}">강퇴</button>`:''}</div>`;}).join('')}</div>
     <div class="lobby-actions">${room.status==='open'&&isHost?`<button class="primary" id="startRoom" ${members.length<min?'disabled':''}>${members.length<min?`${min}명부터 시작 가능`:'게임 시작'}</button>`:''}${room.status==='open'?'<button class="danger" id="leaveRoom">방 나가기</button>':''}${room.status==='playing'?`<a class="primary link-btn" href="./online-${room.game}.html?room=${encodeURIComponent(room.id)}">이어하기 / 게임 입장</a><button class="ghost" id="disconnectRoom">나가기 (게임 저장 유지)</button>`:''}</div>
-    <p class="pento-tip">게임 상태는 행동할 때마다 Supabase에 자동 저장됩니다. 브라우저를 닫거나 다른 페이지로 나가도 참가 자리는 남으며, 다인플의 ‘진행 중인 게임’에서 다시 들어올 수 있습니다.</p><p class="pento-tip">접속 표시는 약 20초 이상 신호가 없으면 ‘끊김’으로 바뀝니다. 방장 강퇴는 게임 시작 전 대기실에서 사용할 수 있습니다.</p></section>`);
+    <p class="pento-tip">게임 상태는 행동할 때마다 Supabase에 자동 저장됩니다. 브라우저를 닫거나 다른 페이지로 나가도 참가 자리는 남으며, 다인플의 ‘진행 중인 게임’에서 다시 들어올 수 있습니다.</p><p class="pento-tip">접속 표시는 약 20초 이상 신호가 없으면 ‘끊김’으로 바뀝니다. 방장은 대기실에서 참가자를 강퇴할 수 있습니다.</p></section>`);
     document.querySelector('#backMulti').onclick=()=>location.hash='#/multi';
     document.querySelector('#startRoom')?.addEventListener('click',async()=>{try{await callRpc('start_boardmate_room',{p_token:memberToken(),p_room_id:roomId});location.href=`./online-${room.game}.html?room=${encodeURIComponent(room.id)}`;}catch(e){toast(e.message);}});
     document.querySelector('#leaveRoom')?.addEventListener('click',async()=>{try{await callRpc('leave_boardmate_room',{p_token:memberToken(),p_room_id:roomId});location.hash='#/multi';}catch(e){toast(e.message);}});
@@ -445,7 +481,10 @@ async function router(){
   if(route==='pensterdam')return renderPensterdam();
   if(route==='yahtzee')return renderYahtzee();
   if(route==='solo')return renderSolo();
+  if(route==='login')return renderLoginPage();
+  if(route==='mypage')return renderMyPage();
   if(route==='multi')return renderMulti();
+  if(route==='new-room')return renderCreateRoom();
   if(route.startsWith('room/'))return renderRoom(route.split('/')[1]);
   return renderHome();
 }

@@ -1,5 +1,5 @@
--- BoardMate Arcade v4
--- 데일리 기록 + 닉네임/PIN 회원 + 온라인 방 + 비공개 ELO
+-- BoardMate Arcade v6
+-- 데일리 기록 + 닉네임/PIN 회원 + 관리자 정지/퇴출 + 온라인 방 + 비공개 ELO
 -- Supabase > SQL Editor > New query 에 이 파일 전체를 붙여넣고 Run 하세요.
 -- v3의 이메일 기반 Supabase Auth를 더 이상 사용하지 않습니다.
 
@@ -95,6 +95,18 @@ create table if not exists public.boardmate_profiles (
 -- v3에서 auth.users FK가 있었다면 제거합니다. 기존 닉네임 행은 유지됩니다.
 alter table public.boardmate_profiles drop constraint if exists boardmate_profiles_user_id_fkey;
 alter table public.boardmate_profiles add column if not exists password_hash text;
+alter table public.boardmate_profiles add column if not exists is_admin boolean not null default false;
+alter table public.boardmate_profiles add column if not exists suspended_until timestamptz;
+alter table public.boardmate_profiles add column if not exists suspension_reason text;
+
+create table if not exists public.boardmate_bans (
+  nickname_key text primary key,
+  nickname text not null,
+  reason text,
+  banned_at timestamptz not null default now()
+);
+alter table public.boardmate_bans enable row level security;
+revoke all on public.boardmate_bans from anon, authenticated;
 
 -- v3 Auth 트리거는 더 이상 쓰지 않습니다.
 drop trigger if exists on_boardmate_auth_user_created on auth.users;
@@ -125,8 +137,10 @@ begin
   if p_token is null or char_length(p_token) < 32 then return null; end if;
   select s.user_id into uid
   from public.boardmate_sessions s
+  join public.boardmate_profiles p on p.user_id=s.user_id
   where s.token_hash = digest(p_token,'sha256')
-    and s.expires_at > now();
+    and s.expires_at > now()
+    and (p.suspended_until is null or p.suspended_until <= now());
   return uid;
 end;
 $$;
@@ -163,6 +177,9 @@ begin
   if char_length(n) < 1 or char_length(n) > 20 then raise exception '닉네임은 1~20자로 입력하세요.'; end if;
   if char_length(coalesce(p_password,'')) < 4 then raise exception '비밀번호는 4자 이상 입력하세요.'; end if;
   if char_length(p_password) > 72 then raise exception '비밀번호가 너무 깁니다.'; end if;
+  if exists(select 1 from public.boardmate_bans where nickname_key=lower(n)) then
+    raise exception '운영자에 의해 퇴출된 닉네임입니다.';
+  end if;
 
   insert into public.boardmate_profiles(user_id,nickname,nickname_key,password_hash)
   values(uid,n,lower(n),crypt(p_password,gen_salt('bf',10)));
@@ -188,6 +205,9 @@ begin
   if not found or p.password_hash is null or crypt(coalesce(p_password,''),p.password_hash)<>p.password_hash then
     raise exception '닉네임 또는 비밀번호가 맞지 않습니다.';
   end if;
+  if p.suspended_until is not null and p.suspended_until > now() then
+    raise exception '정지된 계정입니다. 정지 종료: %', to_char(p.suspended_until at time zone 'Asia/Seoul','YYYY-MM-DD HH24:MI');
+  end if;
   tok := public.boardmate_issue_session(p.user_id);
   return jsonb_build_object('token',tok,'user_id',p.user_id,'nickname',p.nickname);
 end;
@@ -207,7 +227,7 @@ begin
   if uid is null then return null; end if;
   select * into p from public.boardmate_profiles where user_id=uid;
   if not found then return null; end if;
-  return jsonb_build_object('user_id',p.user_id,'nickname',p.nickname,'created_at',p.created_at);
+  return jsonb_build_object('user_id',p.user_id,'nickname',p.nickname,'created_at',p.created_at,'is_admin',p.is_admin,'suspended_until',p.suspended_until,'suspension_reason',p.suspension_reason);
 end;
 $$;
 grant execute on function public.boardmate_me(text) to anon, authenticated;
@@ -779,5 +799,110 @@ $$;
 grant execute on function public.submit_boardmate_coop_match(text,uuid,boolean) to anon, authenticated;
 
 -- 참고: v3에서 생성된 기존 회원은 password_hash가 비어 있을 수 있습니다.
--- 그 경우 SQL Editor에서 아래처럼 새 비밀번호를 지정하면 v5 로그인으로 전환됩니다.
+-- 그 경우 SQL Editor에서 아래처럼 새 비밀번호를 지정하면 v6 로그인으로 전환됩니다.
 -- select public.admin_reset_boardmate_password('닉네임','1234');
+
+-- ============================================================
+-- 2-B. 관리자 회원 관리
+-- ============================================================
+-- 최초 관리자 지정은 SQL Editor에서 직접 실행합니다.
+-- 예) select public.admin_set_boardmate_admin('내닉네임', true);
+create or replace function public.admin_set_boardmate_admin(p_nickname text,p_admin boolean default true)
+returns void
+language plpgsql security definer set search_path=public,extensions
+as $$
+begin
+  update public.boardmate_profiles set is_admin=coalesce(p_admin,true)
+   where nickname_key=lower(trim(p_nickname));
+  if not found then raise exception '해당 닉네임이 없습니다.'; end if;
+end;
+$$;
+revoke all on function public.admin_set_boardmate_admin(text,boolean) from public, anon, authenticated;
+
+create or replace function public.boardmate_require_admin(p_token text)
+returns uuid
+language plpgsql security definer stable set search_path=public,extensions
+as $$
+declare uid uuid; ok boolean;
+begin
+  uid:=public.boardmate_session_user(p_token);
+  if uid is null then raise exception '로그인이 필요합니다.'; end if;
+  select is_admin into ok from public.boardmate_profiles where user_id=uid;
+  if coalesce(ok,false) is not true then raise exception '관리자 권한이 필요합니다.'; end if;
+  return uid;
+end;
+$$;
+revoke all on function public.boardmate_require_admin(text) from public, anon, authenticated;
+
+create or replace function public.boardmate_admin_list_members(p_token text)
+returns jsonb
+language plpgsql security definer stable set search_path=public,extensions
+as $$
+declare admin_uid uuid; out jsonb;
+begin
+  admin_uid:=public.boardmate_require_admin(p_token);
+  select coalesce(jsonb_agg(jsonb_build_object(
+    'user_id',p.user_id,'nickname',p.nickname,'created_at',p.created_at,'is_admin',p.is_admin,
+    'suspended_until',p.suspended_until,'suspension_reason',p.suspension_reason
+  ) order by p.created_at desc),'[]'::jsonb) into out
+  from public.boardmate_profiles p;
+  return out;
+end;
+$$;
+grant execute on function public.boardmate_admin_list_members(text) to anon, authenticated;
+
+create or replace function public.boardmate_admin_suspend_member(p_token text,p_user_id uuid,p_days integer,p_reason text default null)
+returns void
+language plpgsql security definer set search_path=public,extensions
+as $$
+declare admin_uid uuid;
+begin
+  admin_uid:=public.boardmate_require_admin(p_token);
+  if p_user_id=admin_uid then raise exception '자기 계정은 정지할 수 없습니다.'; end if;
+  if coalesce(p_days,0)<1 or p_days>3650 then raise exception '정지 일수는 1~3650일입니다.'; end if;
+  update public.boardmate_profiles
+     set suspended_until=now()+make_interval(days=>p_days), suspension_reason=nullif(trim(coalesce(p_reason,'')),'')
+   where user_id=p_user_id;
+  if not found then raise exception '회원을 찾을 수 없습니다.'; end if;
+  delete from public.boardmate_sessions where user_id=p_user_id;
+end;
+$$;
+grant execute on function public.boardmate_admin_suspend_member(text,uuid,integer,text) to anon, authenticated;
+
+create or replace function public.boardmate_admin_unsuspend_member(p_token text,p_user_id uuid)
+returns void
+language plpgsql security definer set search_path=public,extensions
+as $$
+declare admin_uid uuid;
+begin
+  admin_uid:=public.boardmate_require_admin(p_token);
+  update public.boardmate_profiles set suspended_until=null,suspension_reason=null where user_id=p_user_id;
+  if not found then raise exception '회원을 찾을 수 없습니다.'; end if;
+end;
+$$;
+grant execute on function public.boardmate_admin_unsuspend_member(text,uuid) to anon, authenticated;
+
+create or replace function public.boardmate_admin_expel_member(p_token text,p_user_id uuid,p_reason text default null)
+returns void
+language plpgsql security definer set search_path=public,extensions
+as $$
+declare admin_uid uuid; n text; nk text;
+begin
+  admin_uid:=public.boardmate_require_admin(p_token);
+  if p_user_id=admin_uid then raise exception '자기 계정은 퇴출할 수 없습니다.'; end if;
+  select nickname,nickname_key into n,nk from public.boardmate_profiles where user_id=p_user_id;
+  if nk is null then raise exception '회원을 찾을 수 없습니다.'; end if;
+  insert into public.boardmate_bans(nickname_key,nickname,reason)
+  values(nk,n,nullif(trim(coalesce(p_reason,'')),''))
+  on conflict(nickname_key) do update set nickname=excluded.nickname,reason=excluded.reason,banned_at=now();
+  -- 진행/대기 중 방에서 플레이어를 제거하면 게임 상태 좌석이 어긋날 수 있어, 해당 회원이 참여 중인 활성 방은 안전하게 닫습니다.
+  delete from public.boardmate_rooms r where r.status in ('open','playing') and exists(select 1 from public.boardmate_room_members m where m.room_id=r.id and m.user_id=p_user_id);
+  -- 종료된 방의 대전 기록은 보존하기 위해, 퇴출 회원이 방장이었던 기록 방은 관리자에게 소유권만 넘깁니다.
+  update public.boardmate_rooms set host_id=admin_uid where host_id=p_user_id;
+  delete from public.boardmate_profiles where user_id=p_user_id;
+end;
+$$;
+grant execute on function public.boardmate_admin_expel_member(text,uuid,text) to anon, authenticated;
+
+-- 퇴출 해제는 SQL Editor에서 직접 실행합니다.
+-- 예) delete from public.boardmate_bans where nickname_key=lower('닉네임');

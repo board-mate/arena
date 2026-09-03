@@ -815,8 +815,16 @@ $('#declareEndBtn').onclick=async()=>{if(canEnd()&&await yesNo('게임 종료 �
 $('#resumeMergerBtn').onclick=resumeMergerDecision;
 
 syncSetupControls();
+// BoardMate v6: 서버를 쓰지 않는 브라우저 로컬 자동 저장.
+function boardmateAutoSaveAcquire(){
+  if(!game)return;
+  try{const clean=JSON.parse(JSON.stringify(game,(k,v)=>k==='audio'?null:v));localStorage.setItem('acquire_solo_save_v2',JSON.stringify({game:clean,aiDelay,auto:true,savedAt:new Date().toISOString()}));}catch(e){}
+}
+setInterval(boardmateAutoSaveAcquire,1800);
+window.addEventListener('beforeunload',boardmateAutoSaveAcquire);
+document.addEventListener('visibilitychange',()=>{if(document.hidden)boardmateAutoSaveAcquire()});
 })();
 </script>
-<a href="./index.html#/solo" style="position:fixed;left:10px;bottom:10px;z-index:9999;background:#111827;color:white;border:2px solid #000;border-radius:999px;padding:8px 12px;font:800 12px system-ui;text-decoration:none;box-shadow:0 4px 12px #0004">← BoardMate 1인플</a>
+<div style="position:fixed;left:10px;top:10px;z-index:9999;display:flex;gap:6px"><a href="./index.html#/" style="background:#111827;color:white;border:2px solid #000;border-radius:999px;padding:8px 12px;font:800 12px system-ui;text-decoration:none;box-shadow:0 4px 12px #0004">← 홈</a><a href="./index.html#/solo" style="background:white;color:#111827;border:2px solid #000;border-radius:999px;padding:8px 12px;font:800 12px system-ui;text-decoration:none;box-shadow:0 4px 12px #0003">1인플</a></div>
 </body>
 </html>

@@ -1956,6 +1956,30 @@
       elements.modalSetup.classList.remove('hidden');
     });
   </script>
-<a href="./index.html#/solo" style="position:fixed;left:10px;bottom:10px;z-index:9999;background:#111827;color:white;border:2px solid #000;border-radius:999px;padding:8px 12px;font:800 12px system-ui;text-decoration:none;box-shadow:0 4px 12px #0004">← BoardMate 1인플</a>
+<div style="position:fixed;left:10px;top:10px;z-index:9999;display:flex;gap:6px"><a href="./index.html#/" style="background:#111827;color:white;border:2px solid #000;border-radius:999px;padding:8px 12px;font:800 12px system-ui;text-decoration:none;box-shadow:0 4px 12px #0004">← 홈</a><a href="./index.html#/solo" style="background:white;color:#111827;border:2px solid #000;border-radius:999px;padding:8px 12px;font:800 12px system-ui;text-decoration:none;box-shadow:0 4px 12px #0003">1인플</a><button id="boardmate-mask-resume" style="display:none;background:#10b981;color:#052e16;border:2px solid #000;border-radius:999px;padding:7px 11px;font:900 12px system-ui;cursor:pointer">💾 이어하기</button></div>
+<script>
+// BoardMate v6: 마스크맨 1인플은 서버를 사용하지 않고 localStorage에 자동 저장합니다.
+const BOARDMATE_MASK_SAVE='boardmate:solo:maskmen:v1';
+function boardmateMaskSnapshot(){
+  if(!game)return null;
+  const plain=JSON.parse(JSON.stringify(game,(k,v)=>v instanceof Set?[...v]:v));
+  return {game:plain,selectedWrestler,selectedCount,handCardOrder,savedAt:new Date().toISOString()};
+}
+function boardmateMaskSave(){try{const d=boardmateMaskSnapshot();if(d)localStorage.setItem(BOARDMATE_MASK_SAVE,JSON.stringify(d));}catch(e){}}
+function boardmateMaskRestore(){
+  try{
+    const raw=localStorage.getItem(BOARDMATE_MASK_SAVE);if(!raw)return;
+    const d=JSON.parse(raw),g=Object.assign(Object.create(MaskmenEngine.prototype),d.game||{});
+    g.passedPlayers=new Set(d.game?.passedPlayers||[]);game=g;
+    selectedWrestler=d.selectedWrestler||null;selectedCount=d.selectedCount||1;handCardOrder=Array.isArray(d.handCardOrder)?d.handCardOrder:[];
+    if(aiTimeoutId)clearTimeout(aiTimeoutId);elements.modalSetup.classList.add('hidden');elements.modalSeasonEnd.classList.add('hidden');elements.modalGameOver.classList.add('hidden');
+    if(elements.headerSelectAiSpeed)elements.headerSelectAiSpeed.value=String(game.aiSpeed||700);
+    renderAll();checkTurn();
+  }catch(e){alert('저장된 마스크맨 게임을 불러오지 못했습니다.');}
+}
+const _maskResume=document.getElementById('boardmate-mask-resume');
+if(_maskResume&&localStorage.getItem(BOARDMATE_MASK_SAVE)){_maskResume.style.display='inline-block';_maskResume.onclick=boardmateMaskRestore;}
+setInterval(boardmateMaskSave,1800);window.addEventListener('beforeunload',boardmateMaskSave);document.addEventListener('visibilitychange',()=>{if(document.hidden)boardmateMaskSave()});
+</script>
 </body>
 </html>
