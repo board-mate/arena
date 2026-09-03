@@ -17,3 +17,19 @@
 .footer{margin-top:40px;border-top:1px solid #ddd4c8;padding-top:20px;color:#7b8493;font-size:13px;display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap}.footer-links{display:flex;gap:14px;flex-wrap:wrap}.footer a:hover{color:var(--brand)}
 @media(max-width:880px){.game-grid{grid-template-columns:1fr}.game-layout,.pento-wrap,.yahtzee-layout{grid-template-columns:1fr}.dice-area{position:static}.game-card p{min-height:auto}.hero{grid-template-columns:1fr}.hero-badge{display:none}}
 @media(max-width:540px){.topbar{padding:0 14px}.container{width:min(100% - 18px,1140px);padding-top:22px}.page-head{align-items:flex-start;flex-direction:column}.panel{padding:12px}.die{width:50px;height:50px;font-size:27px}.dice-row{gap:6px}.score-table th,.score-table td{padding:8px 5px;font-size:13px}.piece-bank{grid-template-columns:repeat(4,1fr)}.photo-grid{grid-template-columns:1fr}.hero{padding:23px}.hero h1{font-size:40px}}
+
+/* 2026-09 BoardMate interaction update */
+.stat-grid.single{grid-template-columns:1fr}
+.robot-picker-title{margin-top:14px;font-size:13px;font-weight:950;color:#334155;display:flex;justify-content:space-between;gap:8px;align-items:baseline}.robot-picker-title small{font-size:11px;color:#94a3b8;font-weight:800}
+.robot{padding:0;z-index:4;cursor:pointer}.robot:hover{filter:brightness(1.04);transform:scale(1.04)}.target{z-index:1;pointer-events:none}
+.robot-pick{position:relative;padding:0;box-shadow:inset 0 -4px 0 #0002,0 2px 5px #0001}.robot-pick-dot{position:absolute;inset:11px;border-radius:999px;border:2px solid #fff9;box-shadow:inset 0 0 0 2px #0001}.robot-pick.active{outline:3px solid #111827;outline-offset:2px}
+
+.piece-mark{inset:0;border-radius:2px;color:transparent;border:1px solid #0000000d;box-shadow:inset 0 -3px 0 #00000010;pointer-events:none}
+.piece-bank{align-items:stretch}.piece-btn{height:72px;padding:6px;display:grid;place-items:center;overflow:hidden}.piece-btn:hover{border-color:#aab4c2}.piece-btn.selected{outline:3px solid var(--brand);outline-offset:1px}.piece-btn.placed{opacity:.3;filter:grayscale(.15)}
+.piece-preview{height:126px}.mini-grid{display:grid;gap:2px;align-items:center;justify-items:center}.mini-cell{position:relative;width:var(--mini-size,18px);height:var(--mini-size,18px);border-radius:4px;background:transparent;box-shadow:none}.mini-cell.mini-empty{opacity:0;pointer-events:none}.mini-grid.compact{gap:1px}.mini-grid.compact .mini-cell{border-radius:3px}
+.mini-cell.piece-F{background:#e94855}.mini-cell.piece-I{background:#45add4}.mini-cell.piece-L{background:#f4be29}.mini-cell.piece-P{background:#d1906d}.mini-cell.piece-N{background:#4c5863}.mini-cell.piece-T{background:#e94855}.mini-cell.piece-U{background:#45add4}.mini-cell.piece-V{background:#f4be29}.mini-cell.piece-W{background:#d1906d}.mini-cell.piece-X{background:#4c5863}.mini-cell.piece-Y{background:#45add4}.mini-cell.piece-Z{background:#f4be29}
+.mini-cell.anchor-cell::after{content:"";position:absolute;width:7px;height:7px;border-radius:50%;background:white;border:2px solid #172033;left:50%;top:50%;transform:translate(-50%,-50%);box-shadow:0 1px 3px #0004}
+.anchor-help{display:flex;gap:8px;align-items:center;margin:-2px 0 10px;font-size:11px;line-height:1.45;color:#64748b}.anchor-sample{width:12px;height:12px;flex:0 0 auto;border-radius:50%;background:white;border:2px solid #172033;box-shadow:0 1px 3px #0003}
+.p-cell:not(.today-hole):hover{outline:3px solid #fff8;outline-offset:-3px;z-index:3}
+
+@media(max-width:540px){.robot-picker-title{align-items:flex-start;flex-direction:column}.piece-btn{height:66px}.piece-preview{height:112px}}
