@@ -1,4 +1,4 @@
--- BoardMate Arcade v6
+-- BoardMate Arcade v7
 -- 데일리 기록 + 닉네임/PIN 회원 + 관리자 정지/퇴출 + 온라인 방 + 비공개 ELO
 -- Supabase > SQL Editor > New query 에 이 파일 전체를 붙여넣고 Run 하세요.
 -- v3의 이메일 기반 Supabase Auth를 더 이상 사용하지 않습니다.
@@ -906,3 +906,160 @@ grant execute on function public.boardmate_admin_expel_member(text,uuid,text) to
 
 -- 퇴출 해제는 SQL Editor에서 직접 실행합니다.
 -- 예) delete from public.boardmate_bans where nickname_key=lower('닉네임');
+
+-- ============================================================
+-- v7 migration: 비동기 턴제 / 캐스캐디아 / 자동 방 제목
+-- ============================================================
+alter table public.boardmate_rooms add column if not exists play_mode text not null default 'realtime';
+alter table public.boardmate_rooms add column if not exists turn_user_id uuid;
+alter table public.boardmate_rooms add column if not exists turn_updated_at timestamptz;
+alter table public.boardmate_rooms drop constraint if exists boardmate_rooms_play_mode_check;
+alter table public.boardmate_rooms add constraint boardmate_rooms_play_mode_check check (play_mode in ('realtime','turn'));
+
+alter table public.boardmate_rooms drop constraint if exists boardmate_rooms_game_check;
+alter table public.boardmate_rooms add constraint boardmate_rooms_game_check check (game in ('maskmen','acquire','calico','cascadia','thegame','kraken'));
+alter table public.boardmate_ratings drop constraint if exists boardmate_ratings_game_check;
+alter table public.boardmate_ratings add constraint boardmate_ratings_game_check check (game in ('maskmen','acquire','calico','cascadia','thegame','kraken'));
+
+create or replace function public.boardmate_game_max(p_game text)
+returns integer language sql immutable as $$
+  select case
+    when p_game in ('calico','cascadia') then 4
+    when p_game='thegame' then 5
+    when p_game='kraken' then 8
+    else 6 end;
+$$;
+create or replace function public.boardmate_game_min(p_game text)
+returns integer language sql immutable as $$
+  select case
+    when p_game in ('calico','cascadia','thegame') then 2
+    else 3 end;
+$$;
+revoke all on function public.boardmate_game_max(text), public.boardmate_game_min(text) from public, anon, authenticated;
+
+create or replace function public.boardmate_game_ko(p_game text)
+returns text language sql immutable as $$
+  select case p_game
+    when 'maskmen' then '마스크맨'
+    when 'acquire' then '어콰이어'
+    when 'calico' then '캘리코'
+    when 'cascadia' then '캐스캐디아'
+    when 'thegame' then '더 게임'
+    when 'kraken' then '노터치 크라켄'
+    else '보드게임' end;
+$$;
+revoke all on function public.boardmate_game_ko(text) from public, anon, authenticated;
+
+create or replace function public.create_boardmate_room_v7(p_token text,p_title text,p_game text,p_play_mode text default 'turn')
+returns uuid
+language plpgsql security definer set search_path=public,extensions
+as $$
+declare uid uuid; rid uuid; mx integer; nm text; ttl text; pm text;
+begin
+  uid:=public.boardmate_session_user(p_token);
+  if uid is null then raise exception '로그인이 필요합니다.'; end if;
+  if p_game not in ('maskmen','acquire','calico','cascadia','thegame','kraken') then raise exception '지원하지 않는 게임입니다.'; end if;
+  pm:=case when p_play_mode='realtime' then 'realtime' else 'turn' end;
+  select nickname into nm from public.boardmate_profiles where user_id=uid;
+  ttl:=trim(coalesce(p_title,''));
+  if ttl='' then ttl:=left(coalesce(nm,'보드메이트')||'의 '||public.boardmate_game_ko(p_game)||' 한 판',40); end if;
+  if char_length(ttl)>40 then ttl:=left(ttl,40); end if;
+  mx:=public.boardmate_game_max(p_game);
+  insert into public.boardmate_rooms(title,game,max_players,host_id,play_mode)
+  values(ttl,p_game,mx,uid,pm) returning id into rid;
+  insert into public.boardmate_room_members(room_id,user_id,seat) values(rid,uid,0);
+  return rid;
+end;
+$$;
+grant execute on function public.create_boardmate_room_v7(text,text,text,text) to anon, authenticated;
+
+create or replace function public.boardmate_turn_seat(p_game text,p_state jsonb)
+returns integer
+language plpgsql immutable
+as $$
+declare seat integer; p jsonb; qi integer;
+begin
+  if p_state is null then return null; end if;
+  if coalesce((p_state->>'over')::boolean,false) or coalesce((p_state->>'gameOver')::boolean,false) then return null; end if;
+  if p_game='maskmen' then return nullif(p_state->>'currentTurn','')::integer; end if;
+  if p_game='acquire' then
+    if p_state->>'phase'='resolve' then
+      p:=p_state->'pending';
+      if p->>'type'='merger' then
+        qi:=coalesce(nullif(p->>'qIndex','')::integer,0);
+        seat:=nullif((p->'queue'->qi->>'seat'),'')::integer;
+        if seat is not null then return seat; end if;
+      elsif p->>'type' in ('founder','survivor') then
+        seat:=nullif(p->>'triggerSeat','')::integer;
+        if seat is not null then return seat; end if;
+      end if;
+    end if;
+    return nullif(p_state->>'current','')::integer;
+  end if;
+  if p_game in ('calico','cascadia','thegame','kraken') then return nullif(p_state->>'current','')::integer; end if;
+  return null;
+exception when others then return null;
+end;
+$$;
+revoke all on function public.boardmate_turn_seat(text,jsonb) from public, anon, authenticated;
+
+create or replace function public.put_boardmate_room_state(p_token text,p_room_id uuid,p_expected_revision bigint,p_state jsonb)
+returns bigint
+language plpgsql security definer set search_path=public,extensions
+as $$
+declare uid uuid; rev bigint; newrev bigint; gm text; seat_no integer; turn_uid uuid;
+begin
+  uid:=public.boardmate_session_user(p_token);
+  if uid is null then raise exception '로그인이 필요합니다.'; end if;
+  if not exists(select 1 from public.boardmate_room_members where room_id=p_room_id and user_id=uid) then raise exception '이 방의 참가자가 아닙니다.'; end if;
+  select game into gm from public.boardmate_rooms where id=p_room_id and status='playing';
+  if gm is null then raise exception '게임이 시작되지 않았습니다.'; end if;
+  select revision into rev from public.boardmate_room_state where room_id=p_room_id for update;
+  if not found then
+    if p_expected_revision<>0 then raise exception 'revision conflict'; end if;
+    insert into public.boardmate_room_state(room_id,revision,state) values(p_room_id,1,p_state);
+    newrev:=1;
+  else
+    if rev<>p_expected_revision then raise exception 'revision conflict'; end if;
+    newrev:=rev+1;
+    update public.boardmate_room_state set revision=newrev,state=p_state,updated_at=now() where room_id=p_room_id;
+  end if;
+  seat_no:=public.boardmate_turn_seat(gm,p_state);
+  if seat_no is not null then select user_id into turn_uid from public.boardmate_room_members where room_id=p_room_id and seat=seat_no; else turn_uid:=null; end if;
+  update public.boardmate_rooms set turn_user_id=turn_uid,turn_updated_at=now() where id=p_room_id;
+  return newrev;
+end;
+$$;
+grant execute on function public.put_boardmate_room_state(text,uuid,bigint,jsonb) to anon, authenticated;
+
+create or replace function public.boardmate_list_rooms(p_token text)
+returns jsonb
+language plpgsql security definer stable set search_path=public,extensions
+as $$
+declare uid uuid; out jsonb;
+begin
+  uid:=public.boardmate_session_user(p_token);
+  if uid is null then raise exception '로그인이 필요합니다.'; end if;
+  select coalesce(jsonb_agg(x.obj order by x.created_at desc),'[]'::jsonb) into out
+  from (
+    select r.created_at,
+      jsonb_build_object(
+        'id',r.id,'title',r.title,'game',r.game,'status',r.status,'host_id',r.host_id,
+        'play_mode',r.play_mode,'turn_user_id',r.turn_user_id,'turn_nickname',tp.nickname,'turn_updated_at',r.turn_updated_at,
+        'host_nickname',hp.nickname,'member_count',count(m.user_id),'max_players',r.max_players,
+        'online_count',count(m.user_id) filter(where m.last_seen_at > now()-interval '20 seconds'),
+        'min_players',public.boardmate_game_min(r.game),'mine',bool_or(m.user_id=uid)
+      ) obj
+    from public.boardmate_rooms r
+    join public.boardmate_profiles hp on hp.user_id=r.host_id
+    left join public.boardmate_profiles tp on tp.user_id=r.turn_user_id
+    left join public.boardmate_room_members m on m.room_id=r.id
+    where r.status in ('open','playing')
+    group by r.id,hp.nickname,tp.nickname
+    order by r.created_at desc
+    limit 80
+  ) x;
+  return out;
+end;
+$$;
+grant execute on function public.boardmate_list_rooms(text) to anon, authenticated;
