@@ -1,0 +1,822 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>어콰이어 SOLO — 나 vs 고지능 AI</title>
+<style>
+:root{
+  --ink:#0b1220;--paper:#fffdf5;--yellow:#f5d90a;--yellow2:#fff36d;--slate:#111827;--line:#0b1220;
+  --muted:#667085;--soft:#f3f4f6;--green:#10b981;--red:#ef4444;--blue:#3b82f6;--purple:#8b5cf6;
+}
+*{box-sizing:border-box}html,body{margin:0;min-height:100%;background:#f4df19;color:var(--ink);font-family:Pretendard,"Noto Sans KR",system-ui,-apple-system,"Segoe UI",sans-serif}
+body{background-image:radial-gradient(rgba(0,0,0,.09) 15%,transparent 16%);background-size:22px 22px;user-select:none;-webkit-user-select:none}
+button,select,input{font:inherit}button{cursor:pointer}.hidden{display:none!important}
+.appbar{position:sticky;top:0;z-index:30;background:#090f1b;color:#fff;border-bottom:4px solid #000;box-shadow:0 8px 22px rgba(0,0,0,.25)}
+.appbar-inner{max-width:1500px;margin:auto;padding:9px 12px;display:flex;align-items:center;gap:10px;justify-content:space-between}
+.brand{display:flex;align-items:center;gap:9px;min-width:190px}.brand-badge{background:var(--yellow);color:#111827;border:2px solid #000;border-radius:10px;padding:5px 9px;font-weight:1000;font-size:12px;white-space:nowrap}
+.brand h1{margin:0;font-size:22px;letter-spacing:-.04em}.brand small{font-size:10px;color:#94a3b8;background:#1f2937;border:1px solid #475569;padding:2px 6px;border-radius:6px;margin-left:5px}
+.header-scoreboard{display:flex;gap:5px;flex:1;justify-content:center;overflow-x:auto;padding:2px}.header-chip{border:1px solid #475569;background:#182235;border-radius:9px;padding:5px 8px;min-width:92px;font-size:10px;white-space:nowrap}.header-chip.active{outline:3px solid var(--yellow)}.header-chip b{font-size:11px;color:#fde047}
+.header-actions{display:flex;align-items:center;gap:5px;flex-wrap:wrap;justify-content:flex-end}.ctl{background:#1f2937;color:#fff;border:1px solid #475569;border-radius:9px;padding:6px 8px;font-size:11px;font-weight:800}.ctl:hover{background:#334155}.ctl.red{background:#e11d48;border:2px solid #000}.ctl.yellow{background:#facc15;color:#111827;border:2px solid #000}.ctl.green{background:#10b981;border:2px solid #000}.speedbox{display:flex;gap:5px;align-items:center;background:#111827;border:1px solid #475569;padding:4px 6px;border-radius:9px;font-size:10px;color:#facc15;font-weight:900}.speedbox select{background:#1f2937;color:#fde047;border:1px solid #475569;border-radius:6px;padding:2px 4px;font-size:10px}
+.main{max-width:1500px;margin:auto;padding:10px 12px 22px;display:grid;grid-template-columns:minmax(720px,1.55fr) minmax(360px,.8fr);gap:12px;align-items:start}.stack{display:flex;flex-direction:column;gap:12px}
+.card{background:rgba(255,255,255,.96);border:4px solid #000;border-radius:20px;box-shadow:0 8px 0 #000;padding:12px}.dark-card{background:#0a0f1b;color:#fff}.card-title-row{display:flex;justify-content:space-between;align-items:center;gap:8px;border-bottom:2px solid #e5e7eb;padding-bottom:8px;margin-bottom:8px}.dark-card .card-title-row{border-color:#283548}.card-title{font-size:17px;font-weight:1000;letter-spacing:-.04em}.tiny{font-size:10px;color:#667085}.dark-card .tiny{color:#94a3b8}.pill{font-size:10px;font-weight:900;border:1px solid #cbd5e1;padding:3px 7px;border-radius:999px;background:#f8fafc}.dark-card .pill{background:#1f2937;border-color:#475569;color:#fde047}
+.turnbar{display:flex;align-items:center;justify-content:space-between;gap:8px;background:#fff8c7;border:2px solid #facc15;border-radius:12px;padding:7px 9px;margin-bottom:9px}.turnbar strong{font-weight:1000}.turn-dot{display:inline-block;width:10px;height:10px;background:#f43f5e;border-radius:50%;margin-right:6px;box-shadow:0 0 0 4px rgba(244,63,94,.18)}
+.ai-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:7px;margin-bottom:9px}.ai-seat{border:2px solid #0f172a;background:#f8fafc;border-radius:12px;padding:8px;min-width:0}.ai-seat.active{box-shadow:0 0 0 4px rgba(245,158,11,.45);background:#fff7d6}.ai-name{font-size:11px;font-weight:1000;display:flex;justify-content:space-between;gap:5px}.ai-cash{font-size:15px;font-weight:1000;margin-top:3px}.ai-meta{font-size:9px;color:#64748b;margin-top:3px;line-height:1.35}
+.board-shell{background:linear-gradient(#fffdf2,#fff8d9);border:2px dashed #eab308;border-radius:14px;padding:8px;overflow:auto}.board{display:grid;grid-template-columns:28px repeat(12,minmax(45px,1fr));gap:4px;min-width:760px}.coord{display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:1000;color:#475569}.cell{aspect-ratio:1;border:2px solid #334155;border-radius:7px;background:#ecf0f4;display:flex;align-items:center;justify-content:center;position:relative;font-weight:1000;font-size:14px;box-shadow:inset 0 -2px 0 rgba(0,0,0,.08)}.cell.empty{background:#eef2f7;color:#64748b}.cell.inhand{outline:3px dashed #16a34a;outline-offset:-5px;cursor:pointer}.cell.inhand:hover{background:#dcfce7}.cell.blocked{outline:3px dashed #fb7185;outline-offset:-5px}.cell.standalone{background:#fff;color:#111827;border-color:#111827}.cell .key{position:absolute;right:3px;bottom:1px;font-size:8px;font-weight:900;opacity:.72}.chain-letter{font-size:18px;text-shadow:0 1px rgba(255,255,255,.35)}
+.legend{display:flex;gap:7px;flex-wrap:wrap;margin-top:8px}.legend-item{display:flex;align-items:center;gap:4px;font-size:9px;font-weight:800;color:#475569}.dot{width:10px;height:10px;border:1px solid #111827;border-radius:3px;display:inline-block}
+.player-panel{background:#090f1b;color:white}.human-row{display:grid;grid-template-columns:160px 1fr;gap:10px}.wallet{background:#111827;border:1px solid #334155;border-radius:12px;padding:9px}.wallet .cash{font-size:25px;font-weight:1000;color:#fde047}.wallet .sub{font-size:10px;color:#94a3b8;line-height:1.5}.hand-wrap{min-width:0}.hand{display:flex;flex-wrap:wrap;gap:7px;align-items:center;min-height:76px}.tile{min-width:58px;height:58px;border-radius:12px;border:2px solid #64748b;background:#1f2937;color:#fff;font-size:16px;font-weight:1000;box-shadow:0 4px 0 #020617;position:relative}.tile:hover:not(:disabled){background:#334155;transform:translateY(-1px)}.tile:disabled{opacity:.35;cursor:not-allowed}.tile.legal{border-color:#34d399}.tile-wrap{display:flex;flex-direction:column;align-items:center;gap:3px}.tile-note{font-size:8px;font-weight:900;color:#fbbf24;text-align:center;line-height:1.2;max-width:64px}.tile-note.bad{color:#fca5a5}.tile-discard{border:2px solid #7f1d1d;background:#ef4444;color:#fff;border-radius:8px;padding:2px 6px;font-size:9px;font-weight:1000;box-shadow:0 2px 0 #7f1d1d;cursor:pointer}.tile-discard:hover{background:#dc2626}.tile-discard:active{transform:translateY(1px);box-shadow:none}
+.action-hint{margin-top:7px;padding:7px 8px;background:#111827;border:1px solid #334155;border-radius:8px;color:#94a3b8;font-size:10px;text-align:center;font-weight:800}.phase-actions{display:flex;gap:6px;justify-content:flex-end;margin-top:8px;flex-wrap:wrap}.btn{border:2px solid #000;border-radius:11px;padding:8px 11px;font-weight:1000;background:#e5e7eb;color:#111827;box-shadow:0 3px 0 #000}.btn:hover:not(:disabled){filter:brightness(1.05);transform:translateY(-1px)}.btn:disabled{opacity:.35;cursor:not-allowed}.btn.green{background:#34d399}.btn.yellow{background:#facc15}.btn.red{background:#fb7185}.btn.purple{background:#c084fc;color:#1e1b4b}.btn.dark{background:#1f2937;color:white;border-color:#020617}.btn.small{padding:5px 8px;font-size:10px;border-radius:8px;box-shadow:0 2px 0 #000}
+.market{display:flex;flex-direction:column;gap:6px}.chain-row{display:grid;grid-template-columns:1.05fr .65fr .75fr .55fr auto;gap:5px;align-items:center;background:#f8fafc;border:2px solid #d1d5db;border-radius:10px;padding:7px}.chain-row.inactive{opacity:.58}.chain-name{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:1000;min-width:0}.chain-stat{font-size:9px;color:#64748b;text-align:right}.chain-stat b{display:block;color:#0f172a;font-size:11px}.stock-buy{background:#0f172a;color:white;border:2px solid #000;border-radius:8px;padding:5px 7px;font-size:10px;font-weight:1000}.stock-buy:disabled{opacity:.28;cursor:not-allowed}.buy-footer{display:flex;justify-content:space-between;gap:7px;align-items:center;border-top:2px solid #e5e7eb;margin-top:8px;padding-top:8px;font-size:10px;font-weight:900}
+.portfolio{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}.port-chip{border:2px solid #0f172a;border-radius:9px;background:white;padding:6px 4px;text-align:center}.port-chip .pname{font-size:8px;font-weight:1000;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.port-chip .pnum{font-size:16px;font-weight:1000}.port-chip .pval{font-size:8px;color:#64748b}
+.log{height:205px;overflow:auto;background:#0b1220;color:#cbd5e1;border:2px solid #000;border-radius:12px;padding:8px}.log p{font-size:10px;line-height:1.45;margin:0 0 5px}.log p.imp{color:#fde047;font-weight:900}
+.rules-mini{font-size:10px;line-height:1.55;color:#64748b}.rules-mini b{color:#111827}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.82);backdrop-filter:blur(4px);z-index:60;display:flex;align-items:center;justify-content:center;padding:14px}.modal{width:min(560px,100%);max-height:90vh;overflow:auto;background:#fff;border:4px solid #000;border-radius:24px;box-shadow:0 12px 0 #000;padding:18px}.modal.yellow{background:#fde047}.modal h2{margin:0 0 7px;font-size:24px;letter-spacing:-.04em}.modal p{font-size:11px;line-height:1.6;margin:5px 0;color:#475569}.modal.yellow p{color:#1f2937}.modal-section{background:#f8fafc;border:2px solid #d1d5db;border-radius:13px;padding:10px;margin-top:9px}.modal.yellow .modal-section{background:rgba(255,255,255,.85);border-color:#111827}.modal-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:12px}.modal-actions .btn{flex:1 1 120px}.resume-merger{position:fixed;right:16px;bottom:16px;z-index:58;border:3px solid #000;border-radius:14px;background:#fde047;color:#111827;padding:10px 14px;font-weight:1000;box-shadow:0 5px 0 #000,0 12px 30px rgba(0,0,0,.28);cursor:pointer}.resume-merger:hover{filter:brightness(1.04);transform:translateY(-1px)}.peek-note{font-size:10px;color:#64748b;margin-top:7px;font-weight:800}.choice-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:7px;margin-top:9px}.choice{border:3px solid #000;background:#f8fafc;border-radius:12px;padding:10px;text-align:left;font-weight:1000}.choice:hover{background:#fef3c7}.setup-ai{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:6px;margin-top:8px}.setup-ai div{border:2px solid #111827;border-radius:10px;padding:7px;background:white;font-size:9px}.setup-ai b{display:block;font-size:11px}.score-table{width:100%;border-collapse:collapse;margin-top:8px;font-size:11px}.score-table th,.score-table td{padding:7px;border-bottom:1px solid #cbd5e1;text-align:right}.score-table th:first-child,.score-table td:first-child{text-align:left}.rank1{background:#fef3c7}.step-grid{display:grid;grid-template-columns:1fr auto auto auto;gap:7px;align-items:center;margin-top:8px}.step-grid button{width:32px;height:32px;border:2px solid #000;border-radius:8px;font-weight:1000}.decision-summary{margin-top:9px;background:#eef2ff;border:1px solid #c7d2fe;border-radius:10px;padding:8px;font-size:10px;line-height:1.5}.footer-note{font-size:9px;color:#64748b;text-align:center;margin-top:8px}
+@media(max-width:1100px){.main{grid-template-columns:1fr}.header-scoreboard{display:none}.brand{min-width:0}.human-row{grid-template-columns:1fr}.wallet{display:flex;justify-content:space-between;align-items:center}.wallet .sub{max-width:55%}}
+@media(max-width:700px){.appbar-inner{align-items:flex-start}.brand h1{font-size:18px}.brand small{display:none}.speedbox span{display:none}.header-actions{max-width:48%}.main{padding:7px}.card{border-width:3px;border-radius:16px;box-shadow:0 6px 0 #000}.ai-row{grid-template-columns:1fr}.ai-seat{display:grid;grid-template-columns:1fr auto auto;gap:6px;align-items:center}.ai-cash{font-size:12px}.ai-meta{display:none}.portfolio{grid-template-columns:repeat(4,1fr)}.chain-row{grid-template-columns:1.15fr .65fr .7fr auto}.chain-row .bankcol{display:none}.choice-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header class="appbar">
+  <div class="appbar-inner">
+    <div class="brand"><span id="modeBadge" class="brand-badge">🏙️ SOLO 4P</span><h1>어콰이어 <small>ACQUIRE</small></h1></div>
+    <div id="headerScore" class="header-scoreboard"></div>
+    <div class="header-actions">
+      <div class="speedbox"><span>🧠 AI 난이도</span><select id="difficultySelect"><option value="easy">입문</option><option value="normal">보통</option><option value="hard" selected>어려움(개선)</option><option value="expert">전문가(최상위)</option></select></div>
+      <div class="speedbox"><span>⚡ AI 속도</span><select id="speedSelect"><option value="1100">느긋하게</option><option value="650" selected>보통</option><option value="300">빠르게</option><option value="80">초고속</option></select></div>
+      <button class="ctl" id="rulesBtn">📖 규칙</button><button class="ctl" id="soundBtn">🔊</button><button class="ctl" id="saveBtn">💾 저장</button><button class="ctl" id="loadBtn">📂 불러오기</button><button class="ctl green" id="downloadHtmlBtn">📥 HTML 다운</button><button class="ctl red" id="newBtn">🔄 새 게임</button>
+    </div>
+  </div>
+</header>
+
+<main class="main">
+  <div class="stack">
+    <section class="card">
+      <div class="turnbar"><div><span class="turn-dot"></span><b>현재 턴:</b> <strong id="turnName">-</strong> <span id="phaseText" class="tiny"></span></div><div style="display:flex;gap:5px;align-items:center;flex-wrap:wrap;justify-content:flex-end"><span id="rulePill" class="pill">클래식</span><div id="poolText" class="pill">남은 타일 -</div></div></div>
+      <div id="aiRow" class="ai-row"></div>
+      <div class="board-shell"><div id="board" class="board"></div></div>
+      <div id="legend" class="legend"></div>
+    </section>
+
+    <section class="card dark-card player-panel">
+      <div class="card-title-row"><div class="card-title">🧑‍💼 내 차례 컨트롤</div><div id="humanTurnPill" class="pill">대기 중</div></div>
+      <div class="human-row">
+        <div class="wallet"><div><div class="tiny">현금</div><div id="myCash" class="cash">$0</div></div><div id="myNet" class="sub">예상 자산 -</div></div>
+        <div class="hand-wrap">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+            <span class="tiny" style="font-weight:900">내 타일 (최대 6장)</span>
+          </div>
+          <div id="hand" class="hand"></div>
+          <div id="hint" class="action-hint">게임을 시작하세요.</div>
+          <div class="phase-actions">
+            <button id="declareEndBtn" class="btn red small" disabled>🏁 게임 종료 선언</button>
+            <button id="finishBuyBtn" class="btn green small hidden">주식 구매 종료 ➡</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <aside class="stack">
+    <section class="card">
+      <div class="card-title-row"><div class="card-title">📈 호텔 체인 주식시장</div><span id="buyCountPill" class="pill">이번 턴 0/3주</span></div>
+      <div id="market" class="market"></div>
+      <div id="buyFooter" class="buy-footer"><span>활성 체인만 구매 가능</span><span>은행 주식 각 25주</span></div>
+    </section>
+    <section class="card">
+      <div class="card-title-row"><div class="card-title">💼 내 포트폴리오</div><span class="tiny">보유 주식 / 현재가치</span></div>
+      <div id="portfolio" class="portfolio"></div>
+    </section>
+    <section class="card dark-card">
+      <div class="card-title-row"><div class="card-title">📢 게임 로그</div><span id="roundText" class="pill">턴 1</span></div>
+      <div id="log" class="log"></div>
+      <div class="footer-note">비공식 팬메이드 1인 연습 구현 · 단일 HTML 구동</div>
+    </section>
+  </aside>
+</main>
+
+<div id="setupOverlay" class="overlay">
+  <div class="modal yellow setup-modal">
+    <div style="text-align:center;font-size:44px">🏙️</div><h2 style="text-align:center">어콰이어 1인 솔로 모드</h2>
+    <p style="text-align:center;font-weight:800">못 놓는 영구 데드 타일 폐기 기능 및 전략형 AI(주주 방어·합병 역전)가 탑재되었습니다.</p>
+
+    <div class="modal-section">
+      <b>👥 플레이 인원</b>
+      <div class="player-counts" style="margin-top:7px">
+        <button class="player-count-btn" data-count="3">3인<br><span class="tiny">나+AI 2</span></button>
+        <button class="player-count-btn selected" data-count="4">4인<br><span class="tiny">나+AI 3</span></button>
+        <button class="player-count-btn" data-count="5">5인<br><span class="tiny">나+AI 4</span></button>
+        <button class="player-count-btn" data-count="6">6인<br><span class="tiny">나+AI 5</span></button>
+      </div>
+      <div id="setupAiPreview" class="setup-ai"></div>
+    </div>
+
+    <div class="preset-row" style="display:flex;gap:6px;margin-top:8px">
+      <button id="classicPresetBtn" class="btn dark" style="flex:1">⭐ 클래식 기본값</button>
+      <button id="v2016PresetBtn" class="btn yellow" style="flex:1">2016식 종료·보너스</button>
+    </div>
+
+    <div class="setup-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px">
+      <div class="setup-field"><label>🔒 안전/안정 체인 기준</label><select id="setupSafeSize" style="width:100%;margin-top:3px"><option value="11" selected>11타일 이상 — 클래식</option><option value="10">10타일 이상 — 2016</option></select></div>
+      <div class="setup-field"><label>🏁 대형 체인 종료 기준</label><select id="setupEndSize" style="width:100%;margin-top:3px"><option value="41" selected>41타일 이상 — 클래식</option><option value="38">38타일 이상 — 2016</option></select></div>
+      <div class="setup-field"><label>🚩 게임 종료 판정 방식</label><select id="setupEndMode" style="width:100%;margin-top:3px"><option value="either" selected>둘 중 하나 (안전 OR 대형)</option><option value="safeOnly">모든 활성 체인 안전</option><option value="sizeOnly">대형 체인 도달</option></select></div>
+      <div class="setup-field"><label>💰 주주 보너스 인원</label><select id="setupBonusPlayers" style="width:100%;margin-top:3px"><option value="2" selected>2명 — 클래식 (1위 10× / 2위 5×)</option><option value="3">3명 — 2016 (1위 10× / 2위 7.5× / 3위 5×)</option></select></div>
+      <div class="setup-field" style="grid-column:span 2"><label>🔄 합병 주식 처리 방식</label><select id="setupMergerMode" style="width:100%;margin-top:3px"><option value="freeMix" selected>자유 혼합 — 보유/매각/2:1 교환 직접 지정</option><option value="bulk">간편 일괄 — 전량 보유/전량 매각/최대 교환</option><option value="noTrade">교환 금지 — 보유/매각만</option></select></div>
+      <div class="setup-field"><label>🧠 AI 난이도</label><select id="setupDifficulty" style="width:100%;margin-top:3px"><option value="easy">🌱 입문</option><option value="normal">🙂 보통</option><option value="hard" selected>🔥 어려움 (지분 수성 및 합병 저격)</option><option value="expert">🧠 전문가 (풀 카운팅 및 최종 역전 설계)</option></select></div>
+      <div class="setup-field"><label>⚡ AI 진행 속도</label><select id="setupSpeed" style="width:100%;margin-top:3px"><option value="1100">🐢 느긋하게</option><option value="650" selected>⚡ 보통</option><option value="300">🚀 빠르게</option><option value="80">💨 초고속</option></select></div>
+    </div>
+    <div id="setupRuleSummary" class="current-rules" style="margin-top:8px;font-size:10px;font-weight:900;display:flex;flex-wrap:wrap;gap:5px"></div>
+    <button id="startBtn" class="btn red" style="width:100%;font-size:18px;margin-top:12px;padding:12px">게임 시작하기 🏢</button>
+  </div>
+</div>
+
+<div id="genericOverlay" class="overlay hidden"><div id="genericModal" class="modal"><h2 id="modalTitle"></h2><div id="modalBody"></div><div id="modalActions" class="modal-actions"></div></div></div>
+<button id="resumeMergerBtn" class="resume-merger hidden" type="button">↩ 합병 주식 처리로 돌아가기</button>
+
+<script>
+(()=>{
+'use strict';
+const COLS='ABCDEFGHIJKL'.split(''), ROWS=9, START_CASH=6000, BANK_SHARES=25, HAND_SIZE=6;
+const CHAINS=[
+{id:'sackson',name:'Sackson',ko:'색슨',tier:0,color:'#f59e0b',letter:'S'},
+{id:'tower',name:'Tower',ko:'타워',tier:0,color:'#60a5fa',letter:'T'},
+{id:'american',name:'American',ko:'아메리칸',tier:1,color:'#ef4444',letter:'A'},
+{id:'festival',name:'Festival',ko:'페스티벌',tier:1,color:'#a855f7',letter:'F'},
+{id:'worldwide',name:'Worldwide',ko:'월드와이드',tier:1,color:'#22c55e',letter:'W'},
+{id:'continental',name:'Continental',ko:'콘티넨탈',tier:2,color:'#06b6d4',letter:'C'},
+{id:'imperial',name:'Imperial',ko:'임페리얼',tier:2,color:'#ec4899',letter:'I'}];
+const C=Object.fromEntries(CHAINS.map(x=>[x.id,x]));
+const PROFILES=[
+{name:'나 (매니저)',badge:'🧑‍💼',human:true,style:'human'},
+{name:'AI 그로스',badge:'📈',human:false,style:'growth'},
+{name:'AI 밸류',badge:'💵',human:false,style:'value'},
+{name:'AI 샤크',badge:'🔥',human:false,style:'aggressive'},
+{name:'AI 터틀',badge:'🛡️',human:false,style:'conservative'},
+{name:'AI 폭스',badge:'🦊',human:false,style:'opportunist'}];
+const DEFAULT_SETTINGS={playerCount:4,safeSize:11,endSize:41,endMode:'either',bonusPlayers:2,mergerMode:'freeMix',aiDifficulty:'hard'};
+let setupSettings={...DEFAULT_SETTINGS};
+let game=null,busy=false,buyCount=0,aiDelay=650,mergerDecisionActive=false;
+const $=s=>document.querySelector(s), sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const money=n=>'$'+Math.round(n).toLocaleString('en-US');
+const key=t=>COLS[t.c]+(t.r+1); const parse=k=>({c:COLS.indexOf(k[0]),r:+k.slice(1)-1});
+const esc=s=>String(s).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+function allTiles(){let a=[];for(let r=0;r<ROWS;r++)for(let c=0;c<COLS.length;c++)a.push({r,c});return a}
+function neighbors(k){const {r,c}=parse(k),a=[];if(r>0)a.push(COLS[c]+r);if(r<ROWS-1)a.push(COLS[c]+(r+2));if(c>0)a.push(COLS[c-1]+(r+1));if(c<COLS.length-1)a.push(COLS[c+1]+(r+1));return a}
+function makePlayer(p){const shares={};CHAINS.forEach(c=>shares[c.id]=0);return {...p,cash:START_CASH,shares,hand:[],startTile:null}}
+function beep(kind='click'){if(!game?.sound)return;try{const A=window.AudioContext||window.webkitAudioContext;if(!A)return;game.audio=game.audio||new A();const ctx=game.audio;if(ctx.state==='suspended')ctx.resume();const o=ctx.createOscillator(),g=ctx.createGain();const map={click:[460,.08],buy:[700,.1],merge:[180,.28],found:[520,.24],win:[880,.4],discard:[260,.18]};const [f,d]=map[kind]||map.click;o.frequency.value=f;o.type=kind==='merge'?'sawtooth':kind==='discard'?'triangle':'sine';g.gain.setValueAtTime(.08,ctx.currentTime);g.gain.exponentialRampToValueAtTime(.0001,ctx.currentTime+d);o.connect(g);g.connect(ctx.destination);o.start();o.stop(ctx.currentTime+d)}catch(e){}}
+function log(msg,imp=false){if(!game)return;game.logs.unshift({msg,imp});game.logs=game.logs.slice(0,220);renderLog()}
+function sortHand(h){h.sort((a,b)=>a.r-b.r||a.c-b.c)}
+function size(id){return Object.values(game.board).filter(v=>v?.type==='chain'&&v.chain===id).length}
+function active(id){return !!game.chains[id].active} function safe(id){return size(id)>=(game?.settings?.safeSize||11)}
+function priceAtSize(id,s){let b=s<=2?200:s===3?300:s===4?400:s===5?500:s<=10?600:s<=20?700:s<=30?800:s<=40?900:1000;return b+C[id].tier*100}
+function price(id){return priceAtSize(id,size(id))}
+function majorityBonus(id){return price(id)*10} function minorityBonus(id){return game?.settings?.bonusPlayers===3?round100up(price(id)*7.5):price(id)*5} function thirdBonus(id){return price(id)*5}
+function activeChains(){return CHAINS.filter(c=>active(c.id))} function inactiveChains(){return CHAINS.filter(c=>!active(c.id))}
+function standaloneComponent(start){if(game.board[start]?.type!=='standalone')return[];const seen=new Set([start]),q=[start];while(q.length){const x=q.shift();for(const n of neighbors(x))if(!seen.has(n)&&game.board[n]?.type==='standalone'){seen.add(n);q.push(n)}}return[...seen]}
+function adjacentChains(tile){const s=new Set;for(const n of neighbors(key(tile))){const v=game.board[n];if(v?.type==='chain')s.add(v.chain)}return[...s]}
+function connectedStandaloneCount(tile){const k=key(tile),seen=new Set,q=[];for(const n of neighbors(k))if(game.board[n]?.type==='standalone'&&!seen.has(n)){seen.add(n);q.push(n)}while(q.length){const x=q.shift();for(const n of neighbors(x))if(game.board[n]?.type==='standalone'&&!seen.has(n)){seen.add(n);q.push(n)}}return seen.size+1}
+
+// 못 놓는 타일 판정: 안전 체인 2개 이상을 연결하는 타일 (영구 불가 = 데드 타일)
+function permanentlyBlocked(tile){if(game.board[key(tile)])return false;return adjacentChains(tile).filter(safe).length>=2}
+// 합법 타일 판정: 영구 불가이거나, 7개 체인이 모두 나와 있는데 8번째 체인을 설립하려는 경우 배치 불가
+function legal(tile){if(game.board[key(tile)])return false;const adj=adjacentChains(tile);if(adj.filter(safe).length>=2)return false;if(adj.length===0&&connectedStandaloneCount(tile)>=2&&inactiveChains().length===0)return false;return true}
+function legalTiles(i){return game.players[i].hand.filter(legal)}
+function tileBlockReason(tile){
+ if(game.board[key(tile)])return null;
+ const adj=adjacentChains(tile);
+ if(adj.filter(safe).length>=2)return 'safe2';
+ if(adj.length===0&&connectedStandaloneCount(tile)>=2&&inactiveChains().length===0)return 'noslot';
+ return null;
+}
+
+function netWorth(i){const p=game.players[i];let n=p.cash;for(const c of CHAINS)n+=p.shares[c.id]*(active(c.id)?price(c.id):0);return n}
+function canEnd(){const ac=activeChains();if(!ac.length)return false;const safeCond=ac.every(c=>safe(c.id)),sizeCond=ac.some(c=>size(c.id)>=(game?.settings?.endSize||41)),mode=game?.settings?.endMode||'either';return mode==='safeOnly'?safeCond:mode==='sizeOnly'?sizeCond:(safeCond||sizeCond)}
+function round100up(n){return Math.ceil(n/100)*100}
+function aiDifficulty(){return game?.settings?.aiDifficulty||setupSettings.aiDifficulty||'hard'}
+function difficultyLabel(v=aiDifficulty()){return v==='easy'?'입문':v==='normal'?'보통':v==='expert'?'전문가(최상위)':'어려움(개선)'}
+function difficultyPower(){const d=aiDifficulty();return d==='easy'?0:d==='normal'?1:d==='hard'?2:3}
+function aiNoise(scale=1){const p=difficultyPower();const amp=[12,4,0.4,0.05][p]*scale;return (Math.random()-.5)*amp}
+
+function estimateBonusForPlayer(i,id){
+ const holders=game.players.map((p,idx)=>({i:idx,n:p.shares[id]})).filter(x=>x.n>0).sort((a,b)=>b.n-a.n);
+ if(!holders.length||game.players[i].shares[id]<=0)return 0;
+ const groups=[];for(const h of holders){let g=groups.find(x=>x.n===h.n);if(!g){g={n:h.n,ids:[]};groups.push(g)}g.ids.push(h.i)}
+ const first=majorityBonus(id),second=minorityBonus(id);
+ if((game.settings?.bonusPlayers||2)===2){
+   if(groups[0].ids.length>1)return groups[0].ids.includes(i)?round100up((first+second)/groups[0].ids.length):0;
+   if(groups[0].ids[0]===i)return first+(!groups[1]?second:0);
+   if(groups[1]?.ids.includes(i))return round100up(second/groups[1].ids.length);
+   return 0;
+ }
+ const third=thirdBonus(id);
+ if(holders.length===1)return holders[0].i===i?first+third:0;
+ if(groups[0].ids.length>1){if(groups[0].ids.includes(i))return round100up((first+second)/groups[0].ids.length);if(groups[1]?.ids.includes(i))return round100up(third/groups[1].ids.length);return 0}
+ if(groups[0].ids[0]===i)return first;
+ if(!groups[1])return 0;
+ if(groups[1].ids.length>1)return groups[1].ids.includes(i)?round100up((second+third)/groups[1].ids.length):0;
+ if(groups[1].ids[0]===i)return second;
+ if(groups[2]?.ids.includes(i))return round100up(third/groups[2].ids.length);
+ return 0;
+}
+
+// 지분 경쟁 평가 함수 대폭 강화 (1위 확정선 / 2위 방어선 / 동률 돌파 가치 계산)
+function shareControlScore(i,id,extra=0){
+ const mine=game.players[i].shares[id]+extra;
+ const rivals=game.players.map((p,x)=>x===i?-1:p.shares[id]).sort((a,b)=>b-a);
+ const top=Math.max(0,rivals[0]||0),second=Math.max(0,rivals[1]||0);
+ const unowned=game.chains[id]?.stock||0;
+ let s=0;
+ if(mine>top){
+   const lead=mine-top;
+   if(lead>unowned)s+=24;
+   else s+=14+lead*2.5;
+ }else if(mine===top&&mine>0){
+   s+=9.5;
+ }else if(mine===top-1){
+   s+=7.5;
+ }else if(mine===top-2){
+   s+=4.5;
+ }
+ if(mine>0&&mine>second)s+=5.5;
+ else if(mine>0&&mine===second)s+=3.5;
+ return s;
+}
+
+function chainMergeThreat(id){
+ let threat=0;
+ for(const t of allTiles()){
+   if(game.board[key(t)])continue;
+   const adj=adjacentChains(t);
+   if(adj.includes(id)&&adj.some(x=>x!==id))threat++;
+ }
+ return threat;
+}
+
+function estimateFinalCash(i){
+ const p=game.players[i];let total=p.cash;
+ for(const c of activeChains())total+=p.shares[c.id]*price(c.id)+estimateBonusForPlayer(i,c.id);
+ return total;
+}
+
+function bestInactiveFounder(i){
+ const p=game.players[i],list=inactiveChains();if(!list.length)return null;
+ return [...list].map(c=>{
+   const initial=priceAtSize(c.id,2),held=p.shares[c.id];
+   let s=initial+(held*initial*1.2)+C[c.id].tier*160+(game.chains[c.id].stock>0?initial*.8:0);
+   if(p.style==='value')s+=held*140;
+   if(p.style==='growth')s+=C[c.id].tier*100;
+   return {id:c.id,s};
+ }).sort((a,b)=>b.s-a.s)[0];
+}
+
+// 합병 평가 고도화: 내가 1등인 체인은 현금화 목적으로 먹히게 유도, 남이 1등인 체인은 내가 먹어서 흡수
+function evaluateMergerForAi(i,adj,survivor){
+ const p=game.players[i];let s=0,combined=1;
+ for(const id of adj)combined+=size(id);
+ for(const dead of adj.filter(x=>x!==survivor)){
+   const owned=p.shares[dead],deadPx=price(dead);
+   const myBonus=estimateBonusForPlayer(i,dead);
+   const isMyMajority=p.shares[dead]>0&&p.shares[dead]>=Math.max(...game.players.map((pl,idx)=>idx===i?0:pl.shares[dead]));
+   s+=(myBonus/180)+(owned*deadPx/500);
+   if(isMyMajority)s+=16;
+   if(difficultyPower()>=2){
+     const rivalMaxShares=Math.max(...game.players.map((pl,idx)=>idx===i?0:pl.shares[dead]));
+     if(owned===0&&rivalMaxShares>=3)s-=12;
+     s+=shareControlScore(i,dead)*1.8;
+   }
+ }
+ const survOwned=p.shares[survivor],oldPx=price(survivor),newPx=priceAtSize(survivor,combined);
+ s+=survOwned*Math.max(0,newPx-oldPx)/100;
+ s+=shareControlScore(i,survivor)*2.4;
+ if(safe(survivor))s+=5;
+ return s;
+}
+
+// 안전 체인 2곳을 동시에 합치는 영구 배치 불가 타일: 손패에서 즉시 공개·교체할 수 있다.
+async function discardOneTile(t){
+ if(busy||game.current!==0||game.phase!=='place'||game.over)return;
+ if(tileBlockReason(t)!=='safe2')return;
+ const p=game.players[0],k=key(t);
+ p.hand=p.hand.filter(x=>key(x)!==k);
+ if(game.pool.length)p.hand.push(game.pool.pop());
+ sortHand(p.hand);
+ beep('click');
+ log(`나: ${k} 타일(안전 체인 2곳을 동시에 합치는 배치 불가 타일)을 공개하고 새 타일로 교체했습니다.`);
+ render();
+}
+// 손패 전체가 배치 불가능한 경우, 공식 규칙대로 손패를 전부 공개·폐기하고 6장을 새로 뽑는다.
+async function discardDeadHand(i){
+ const p=game.players[i],revealed=p.hand.map(key).join(', ');
+ log(`${p.name}: 손패 전체(${revealed})를 배치할 수 없어 공개하고 6장 전부 새 타일로 교체합니다.`,true);
+ beep('found');
+ p.hand=[];
+ while(p.hand.length<HAND_SIZE&&game.pool.length)p.hand.push(game.pool.pop());
+ sortHand(p.hand);
+ render();
+ if(i===0)await sleep(350);
+}
+// 매 턴이 끝날 때, 그 사이 다른 체인이 안전해져 영구 배치 불가가 된 타일을 자동으로 공개·폐기한다.
+function discardPermanentBlocked(i){
+ const p=game.players[i],blocked=p.hand.filter(permanentlyBlocked);
+ if(!blocked.length)return 0;
+ const bad=new Set(blocked.map(key));
+ p.hand=p.hand.filter(t=>!bad.has(key(t)));
+ log(`${p.name}: 안전 체인끼리 합병시키는 영구 배치 불가 타일 ${blocked.length}장을 공개·폐기했습니다.`);
+ return blocked.length;
+}
+
+function initGame(){
+ const settings={...setupSettings};const pool=shuffle(allTiles());const players=PROFILES.slice(0,settings.playerCount).map(makePlayer);const board={};
+ const starts=[];for(let i=0;i<players.length;i++){const t=pool.pop();starts.push(t);board[key(t)]={type:'standalone'};players[i].startTile=t}
+ const order=players.map((_,i)=>i).sort((a,b)=>players[a].startTile.c-players[b].startTile.c||players[a].startTile.r-players[b].startTile.r);
+ for(let n=0;n<HAND_SIZE;n++)for(let i=0;i<players.length;i++)players[i].hand.push(pool.pop());players.forEach(p=>sortHand(p.hand));
+ game={board,pool,players,settings,chains:Object.fromEntries(CHAINS.map(c=>[c.id,{active:false,stock:BANK_SHARES}])),current:order[0],turnNo:1,phase:'place',logs:[],over:false,sound:true,audio:null,startOrder:order};buyCount=0;busy=false;
+ log(`게임 시작! ${players.length}인 · AI ${difficultyLabel(settings.aiDifficulty)} · ${settings.safeSize}+ 안전 · ${settings.endSize}+ 종료 · 주주보너스 ${settings.bonusPlayers}명`,true);
+ log('시작 타일: '+players.map(p=>`${p.name} ${key(p.startTile)}`).join(' · '));log(`${players[order[0]].name}부터 시작합니다.`,true);render();beginTurn();
+}
+function render(){if(!game)return;renderHeader();renderAi();renderBoard();renderHuman();renderMarket();renderPortfolio();renderLog()}
+function phaseKo(){return game.phase==='place'?'타일 배치':game.phase==='buy'?'주식 구매':game.phase==='resolve'?'합병/설립 처리':'대기'}
+function renderHeader(){const p=game.players[game.current],st=game.settings;$('#turnName').textContent=p.name;$('#phaseText').textContent=' · '+phaseKo();$('#poolText').textContent=`남은 타일 ${game.pool.length}장`;$('#roundText').textContent=`턴 ${game.turnNo}`;$('#modeBadge').textContent=`🏙️ SOLO ${game.players.length}P`;$('#rulePill').textContent=`AI ${difficultyLabel(st.aiDifficulty)} · SAFE ${st.safeSize}+ · END ${st.endSize}+ · 보너스 ${st.bonusPlayers}명`;$('#headerScore').innerHTML=game.players.map((x,i)=>`<div class="header-chip ${i===game.current&&!game.over?'active':''}"><b>${x.badge} ${esc(x.name)}</b><br>${money(x.cash)} · 추정 ${money(netWorth(i))}</div>`).join('')}
+function renderAi(){$('#aiRow').innerHTML=game.players.slice(1).map((p,j)=>{const i=j+1;const hold=CHAINS.filter(c=>p.shares[c.id]>0).map(c=>c.letter+p.shares[c.id]).join(' · ')||'보유주식 없음';return `<div class="ai-seat ${i===game.current&&!game.over?'active':''}"><div class="ai-name"><span>${p.badge} ${esc(p.name)}</span><span>${p.hand.length} tiles</span></div><div class="ai-cash">${money(p.cash)}</div><div class="ai-meta">${hold}<br>전략: ${p.style==='growth'?'성장':p.style==='value'?'가치':p.style==='aggressive'?'공격':p.style==='conservative'?'안정':'기회'} · ${difficultyLabel()}</div></div>`}).join('')}
+function renderBoard(){const b=$('#board');b.innerHTML='<div class="coord"></div>'+COLS.map(x=>`<div class="coord">${x}</div>`).join('');const ht=game.current===0&&game.phase==='place'&&!busy&&!game.over, hk=new Set(game.players[0].hand.map(key));for(let r=0;r<ROWS;r++){b.insertAdjacentHTML('beforeend',`<div class="coord">${r+1}</div>`);for(let c=0;c<COLS.length;c++){const k=COLS[c]+(r+1),v=game.board[k],d=document.createElement('div');d.className='cell';if(!v){d.classList.add('empty');d.innerHTML=`<span class="key">${k}</span>`;if(ht&&hk.has(k)){const t={r,c};d.classList.add(legal(t)?'inhand':'blocked');if(legal(t))d.onclick=()=>humanPlace(t)}}else if(v.type==='standalone'){d.classList.add('standalone');d.innerHTML=`●<span class="key">${k}</span>`}else{const ch=C[v.chain];d.style.background=ch.color;d.style.color='#06111c';d.innerHTML=`<span class="chain-letter">${ch.letter}</span><span class="key">${k}</span>`}b.appendChild(d)}}$('#legend').innerHTML=`<span class="legend-item"><i class="dot" style="background:white"></i>독립 타일</span>`+CHAINS.map(c=>`<span class="legend-item"><i class="dot" style="background:${c.color}"></i>${c.name}</span>`).join('')}
+
+function renderHuman(){
+ const p=game.players[0];
+ $('#myCash').textContent=money(p.cash);
+ $('#myNet').innerHTML=`현재 주식가치 포함 추정 자산<br><b style="color:#e2e8f0">${money(netWorth(0))}</b>`;
+ const canPlace=game.current===0&&game.phase==='place'&&!busy&&!game.over;
+
+ $('#hand').innerHTML='';
+ p.hand.forEach(t=>{
+   const wrap=document.createElement('div');wrap.className='tile-wrap';
+   const d=document.createElement('button');
+   d.className='tile'+(legal(t)?' legal':'');
+   d.textContent=key(t);
+   d.disabled=!canPlace||!legal(t);
+   d.onclick=()=>humanPlace(t);
+   wrap.appendChild(d);
+   if(canPlace){
+     const reason=tileBlockReason(t);
+     if(reason==='safe2'){
+       const note=document.createElement('div');note.className='tile-note bad';note.textContent='🔒 안전기업 합병 불가';wrap.appendChild(note);
+       const db=document.createElement('button');db.className='tile-discard';db.type='button';db.textContent='🗑 버리기';db.onclick=()=>discardOneTile(t);wrap.appendChild(db);
+     }else if(reason==='noslot'){
+       const note=document.createElement('div');note.className='tile-note';note.textContent='⏳ 7개 체인 활성 중';wrap.appendChild(note);
+     }
+   }
+   $('#hand').appendChild(wrap);
+ });
+
+ let hint='AI가 진행 중입니다.';
+ if(game.over)hint='게임이 종료되었습니다.';
+ else if(game.current===0&&game.phase==='place')hint='초록 테두리 타일을 눌러 배치하세요. 🔒 표시가 있는 배치 불가 타일은 🗑 버리기로 즉시 교체할 수 있습니다.';
+ else if(game.current===0&&game.phase==='buy')hint=`활성 체인 주식을 최대 3주까지 구매하세요. 현재 ${buyCount}/3주.`;
+ else if(game.current===0&&game.phase==='resolve')hint='설립 또는 합병 결정을 처리 중입니다.';
+
+ $('#hint').textContent=hint;
+ $('#humanTurnPill').textContent=game.current===0&&!game.over?'내 차례 · '+phaseKo():'대기 중';
+ $('#buyCountPill').textContent=`이번 턴 ${buyCount}/3주`;
+ $('#finishBuyBtn').classList.toggle('hidden',!(game.current===0&&game.phase==='buy'&&!busy&&!game.over));
+ $('#declareEndBtn').disabled=game.over||game.current!==0||busy||!canEnd();
+}
+
+function renderMarket(){const canBuy=game.current===0&&game.phase==='buy'&&!busy&&!game.over;$('#market').innerHTML='';for(const c of CHAINS){const row=document.createElement('div');const a=active(c.id),pr=a?price(c.id):0;row.className='chain-row'+(a?'':' inactive');row.innerHTML=`<div class="chain-name"><i class="dot" style="background:${c.color}"></i><span>${c.name}<br><small>${c.ko}</small></span></div><div class="chain-stat"><span>규모</span><b>${a?size(c.id)+(safe(c.id)?' 🔒':''):'—'}</b></div><div class="chain-stat"><span>주가</span><b>${a?money(pr):'—'}</b></div><div class="chain-stat bankcol"><span>은행</span><b>${game.chains[c.id].stock}</b></div>`;const btn=document.createElement('button');btn.className='stock-buy';btn.textContent='+1주';btn.disabled=!canBuy||!a||buyCount>=3||game.chains[c.id].stock<=0||game.players[0].cash<pr;btn.onclick=()=>buyHuman(c.id);row.appendChild(btn);$('#market').appendChild(row)} }
+function renderPortfolio(){const p=game.players[0];$('#portfolio').innerHTML=CHAINS.map(c=>{const n=p.shares[c.id],val=active(c.id)?n*price(c.id):0;return `<div class="port-chip" style="border-color:${c.color}"><div class="pname">${c.name}</div><div class="pnum">${n}</div><div class="pval">${val?money(val):'비활성'}</div></div>`}).join('')}
+function renderLog(){if(!game)return;$('#log').innerHTML=game.logs.map(x=>`<p class="${x.imp?'imp':''}">${esc(x.msg)}</p>`).join('')}
+
+async function beginTurn(){
+ if(game.over)return;
+ buyCount=0;busy=false;game.phase='place';render();
+ const p=game.players[game.current];
+ let legalList=legalTiles(game.current);
+ if(!legalList.length){
+   // 공식 규칙: 손패 전체가 배치 불가능하면 손패를 공개·폐기하고 6장을 새로 뽑는다.
+   busy=true;render();
+   await discardDeadHand(game.current);
+   if(!p.human)await sleep(Math.min(aiDelay,350));
+   legalList=legalTiles(game.current);
+ }
+ if(!legalList.length){
+   log(`${p.name}: 교체한 손패로도 배치 가능한 타일이 없어 주식 구매 단계로 이동합니다.`);
+   game.phase='buy';busy=false;render();
+   if(p.human)return;
+   busy=true;render();await sleep(aiDelay);
+   aiBuy(game.current);
+   await sleep(Math.min(aiDelay,420));
+   if(canEnd()&&aiWantsEnd(game.current)){endGame(`${p.name}가 종료 조건을 확인하고 게임 종료를 선언했습니다.`);return}
+   await finishTurn();
+   return;
+ }
+ busy=false;render();
+ if(p.human)return;
+ busy=true;render();await sleep(aiDelay);
+ const t=chooseAiTile(game.current,legalList);
+ await placeTile(game.current,t);
+}
+
+function tileScore(i,t){
+ const p=game.players[i],adj=adjacentChains(t),power=difficultyPower();let s=aiNoise(1);
+ if(adj.length>=2){
+   const sizes=Object.fromEntries(adj.map(id=>[id,size(id)])),max=Math.max(...Object.values(sizes)),ties=adj.filter(id=>sizes[id]===max);
+   let bestMerge=-Infinity;
+   for(const survivor of ties){
+     let m=22+adj.reduce((n,id)=>n+size(id),0)*.5+p.shares[survivor]*1.5;
+     if(power>=1)m+=evaluateMergerForAi(i,adj,survivor);
+     if(power>=2){
+       for(const dead of adj.filter(x=>x!==survivor)){
+         const myBonus=estimateBonusForPlayer(i,dead);
+         let rivalBest=0;for(let x=0;x<game.players.length;x++){if(x===i)continue;rivalBest=Math.max(rivalBest,estimateBonusForPlayer(x,dead))}
+         if(rivalBest>myBonus)m-=(rivalBest-myBonus)/(power>=3?150:260); // 상대에게 큰 보너스를 안겨주는 합병은 덜 선호(전문가는 더 예민)
+       }
+     }
+     if(p.style==='aggressive')m+=8;
+     if(p.style==='opportunist')m+=6;
+     bestMerge=Math.max(bestMerge,m);
+   }
+   s+=bestMerge;
+ }else if(adj.length===1){
+   const id=adj[0],currentSize=size(id),newSize=currentSize+connectedStandaloneCount(t);
+   const oldPx=price(id),newPx=priceAtSize(id,newSize);
+   const isSafeNow=safe(id);
+   const willBeSafe=newSize>=(game?.settings?.safeSize||11);
+   
+   s+=8+currentSize*.3+p.shares[id]*1.2;
+   if(power>=1)s+=p.shares[id]*Math.max(0,newPx-oldPx)/120+shareControlScore(i,id)*1.1;
+   
+   if(power>=2){
+     const isMajority=p.shares[id]>=Math.max(...game.players.map((pl,idx)=>idx===i?0:pl.shares[id]));
+     if(!isSafeNow&&willBeSafe&&isMajority){
+       s+=20;
+     }
+     s+=chainMergeThreat(id)*.3;
+   }
+   if(p.style==='growth')s+=6;if(p.style==='conservative'&&willBeSafe)s+=5;
+ }else if(connectedStandaloneCount(t)>=2){
+   const comp=connectedStandaloneCount(t),best=bestInactiveFounder(i);s+=14+comp*2;
+   if(power>=1&&best)s+=best.s/200;
+   if(p.style==='value')s+=3;
+ }else{
+   s+=2;
+   if(power>=2){
+     const near=neighbors(key(t)).filter(n=>!game.board[n]).length;s+=near*.3;
+   }
+ }
+ 
+ if(power>=3&&canEnd()){
+   const mine=estimateFinalCash(i),best=Math.max(...game.players.map((_,x)=>x===i?0:estimateFinalCash(x)));
+   s+=(mine-best)/1400;
+ }
+ return s;
+}
+
+function chooseAiTile(i,list){
+ const scored=list.map(t=>({t,s:tileScore(i,t)})).sort((a,b)=>b.s-a.s);
+ const d=aiDifficulty();
+ if(d==='easy'&&scored.length>1&&Math.random()<.38)return scored[Math.min(scored.length-1,Math.floor(Math.random()*Math.min(4,scored.length)))].t;
+ if(d==='normal'&&scored.length>1&&Math.random()<.14)return scored[Math.min(1,scored.length-1)].t;
+ return scored[0].t;
+}
+
+async function humanPlace(t){if(busy||game.current!==0||game.phase!=='place'||!legal(t))return;beep('click');await placeTile(0,t)}
+async function placeTile(i,t){
+ busy=true;game.phase='resolve';const p=game.players[i],k=key(t);
+ p.hand=p.hand.filter(x=>key(x)!==k);game.board[k]={type:'standalone'};
+ log(`${p.name}: ${k} 타일 배치`);render();
+ await sleep(i===0?100:Math.min(aiDelay,450));
+ await resolvePlacement(i,t);
+ if(game.over)return;
+ game.phase='buy';busy=false;buyCount=0;render();
+ if(i===0)return;
+ busy=true;render();await sleep(aiDelay);
+ aiBuy(i);
+ await sleep(Math.min(aiDelay,420));
+ if(canEnd()&&aiWantsEnd(i)){endGame(`${p.name}가 종료 조건을 확인하고 게임 종료를 선언했습니다.`);return}
+ await finishTurn();
+}
+
+async function resolvePlacement(i,t){
+ const k=key(t),adj=adjacentChains(t);
+ if(adj.length===0){
+   const comp=standaloneComponent(k);
+   if(comp.length>=2){
+     const id=await chooseFounder(i);
+     if(id){
+       game.chains[id].active=true;
+       for(const x of comp)game.board[x]={type:'chain',chain:id};
+       log(`${game.players[i].name}: ${C[id].name} 체인 설립! (${comp.length}칸)`,true);
+       beep('found');
+       if(game.chains[id].stock>0){
+         game.chains[id].stock--;game.players[i].shares[id]++;
+         log(`${game.players[i].name}: 설립자 보너스 ${C[id].name} 1주 획득`);
+       }
+     }
+   }
+   render();return;
+ }
+ if(adj.length===1){
+   const id=adj[0];
+   for(const x of standaloneComponent(k))game.board[x]={type:'chain',chain:id};
+   log(`${C[id].name} 확장 → ${size(id)}칸`);render();return;
+ }
+ const sizes=Object.fromEntries(adj.map(id=>[id,size(id)])),max=Math.max(...Object.values(sizes)),ties=adj.filter(id=>sizes[id]===max);
+ const survivor=ties.length===1?ties[0]:await chooseSurvivor(i,ties);
+ const dead=adj.filter(id=>id!==survivor).sort((a,b)=>sizes[b]-sizes[a]);
+ log(`💥 합병! ${C[survivor].name}이(가) 존속 체인입니다.`,true);
+ beep('merge');
+ for(const id of dead){
+   payBonuses(id);
+   await resolveDeadShares(i,id,survivor);
+   for(const cell of Object.keys(game.board)){
+     const v=game.board[cell];if(v?.type==='chain'&&v.chain===id)game.board[cell]={type:'chain',chain:survivor};
+   }
+   game.chains[id].active=false;
+   log(`${C[id].name} → ${C[survivor].name} 흡수 완료`);render();
+ }
+ for(const x of standaloneComponent(k))game.board[x]={type:'chain',chain:survivor};
+ log(`${C[survivor].name} 최종 규모 ${size(survivor)}칸`,true);render();
+}
+
+function awardSplit(ids,total,label,id){if(!ids.length||total<=0)return;const each=round100up(total/ids.length);ids.forEach(i=>game.players[i].cash+=each);log(`${C[id].name} ${label}: ${ids.map(i=>game.players[i].name).join('/')} 각 ${money(each)}`,true)}
+function payBonuses(id){
+ const holders=game.players.map((p,i)=>({i,n:p.shares[id]})).filter(x=>x.n>0).sort((a,b)=>b.n-a.n);
+ if(!holders.length){log(`${C[id].name}: 주주가 없어 합병 보너스 없음`);return}
+ const groups=[];for(const h of holders){let g=groups.find(x=>x.n===h.n);if(!g){g={n:h.n,ids:[]};groups.push(g)}g.ids.push(h.i)}
+ const first=majorityBonus(id),second=minorityBonus(id);
+ if((game.settings?.bonusPlayers||2)===2){
+   if(groups[0].ids.length>1){awardSplit(groups[0].ids,first+second,'최대주주 동률 보너스',id);return}
+   game.players[groups[0].ids[0]].cash+=first;
+   if(!groups[1]){game.players[groups[0].ids[0]].cash+=second;log(`${C[id].name}: ${game.players[groups[0].ids[0]].name} 단독 주주 → ${money(first+second)} 지급`,true);return}
+   awardSplit(groups[1].ids,second,'2대주주 보너스',id);
+   log(`${C[id].name}: 최대주주 ${game.players[groups[0].ids[0]].name} ${money(first)} 지급`,true);return;
+ }
+ const third=thirdBonus(id);
+ if(holders.length===1){const i=holders[0].i;game.players[i].cash+=first+third;log(`${C[id].name}: ${game.players[i].name} 단독 주주 → 1위+3위 ${money(first+third)} 지급`,true);return}
+ if(groups[0].ids.length>1){awardSplit(groups[0].ids,first+second,'1위 동률(1위+2위)',id);if(groups[1])awardSplit(groups[1].ids,third,'다음 순위 3위 보너스',id);return}
+ const top=groups[0].ids[0];game.players[top].cash+=first;log(`${C[id].name}: 1위 ${game.players[top].name} ${money(first)} 지급`,true);
+ if(!groups[1])return;
+ if(groups[1].ids.length>1){awardSplit(groups[1].ids,second+third,'2위 동률(2위+3위)',id);return}
+ const secondId=groups[1].ids[0];game.players[secondId].cash+=second;log(`${C[id].name}: 2위 ${game.players[secondId].name} ${money(second)} 지급`,true);
+ if(groups[2])awardSplit(groups[2].ids,third,'3위 보너스',id);
+}
+
+async function chooseFounder(i){const a=inactiveChains();if(!a.length)return null;if(i!==0){const p=game.players[i];if(difficultyPower()>=2){const best=bestInactiveFounder(i);if(best)return best.id}return [...a].sort((x,y)=>(p.style==='value'?x.tier-y.tier:y.tier-x.tier)||aiNoise(.2))[0].id}return choiceModal('호텔 체인 설립','새 체인이 만들어집니다. 설립할 체인을 선택하세요. 은행에 주식이 있으면 설립자 보너스로 1주를 받습니다.',a.map(c=>({label:`${c.name} · ${c.ko}`,value:c.id,sub:`초기 주가 ${money(200+c.tier*100)}`})))}
+async function chooseSurvivor(i,ties){if(i!==0){const p=game.players[i];if(difficultyPower()>=2){return [...ties].map(id=>({id,s:evaluateMergerForAi(i,ties,id)+p.shares[id]*2+shareControlScore(i,id)*1.5})).sort((a,b)=>b.s-a.s)[0].id}return [...ties].sort((a,b)=>p.shares[b]-p.shares[a]||C[b].tier-C[a].tier||aiNoise(.2))[0]}return choiceModal('합병 — 존속 체인 선택','가장 큰 체인이 동률입니다. 이번 타일을 놓은 플레이어가 살아남을 체인을 선택합니다.',ties.map(id=>({label:C[id].name,value:id,sub:`규모 ${size(id)} · 내 주식 ${game.players[0].shares[id]}주`})))}
+
+async function resolveDeadShares(trigger,dead,survivor){for(let step=0;step<game.players.length;step++){const i=(trigger+step)%game.players.length;if(game.players[i].shares[dead]<=0)continue;if(i===0){await humanMergerDecision(dead,survivor)}else{aiMergerDecision(i,dead,survivor)}}}
+
+function aiMergerDecision(i,dead,survivor){
+ const p=game.players[i],owned=p.shares[dead],available=game.chains[survivor].stock,mode=game.settings?.mergerMode||'freeMix',power=difficultyPower();let trade=0,sell=0;
+ if(power>=2){
+   const maxTrade=mode==='noTrade'?0:Math.min(Math.floor(owned/2),available),survivorProjected=priceAtSize(survivor,size(survivor)+size(dead)+1),deadPx=price(dead);
+   let best={u:-Infinity,sell:0,trade:0};
+   const tradeList=mode==='bulk'?[0,maxTrade]:Array.from({length:maxTrade+1},(_,x)=>x);
+   for(const tr of tradeList){
+     const rem=owned-tr*2;
+     const sellList=mode==='bulk'?(tr>0?[0]:[0,owned]):Array.from({length:rem+1},(_,x)=>x);
+     for(const se of sellList){
+       if(se+tr*2>owned)continue;
+       const hold=owned-se-tr*2,newShares=p.shares[survivor]+tr;
+       let u=se*deadPx + (tr*survivorProjected*1.85) + shareControlScore(i,survivor,tr)*480;
+       const holdFactor=p.style==='conservative'?.52:p.style==='value'?.42:.28;
+       u+=hold*deadPx*holdFactor;
+       if(p.cash<2400)u+=se*deadPx*.6;
+       if(p.style==='aggressive')u+=tr*320+se*deadPx*.15;
+       if(p.style==='growth')u+=tr*380;
+       if(power>=3){
+         const rivals=Math.max(...game.players.filter((_,x)=>x!==i).map(x=>x.shares[survivor]));
+         if(newShares>rivals)u+=1100;
+         else if(newShares===rivals&&newShares>0)u+=750;
+         else if(newShares===rivals-1)u+=400;
+       }
+       u+=aiNoise(20);
+       if(u>best.u)best={u,sell:se,trade:tr};
+     }
+   }
+   sell=best.sell;trade=best.trade;
+ }else if(mode==='bulk'){
+   const maxTrade=Math.min(Math.floor(owned/2),available),tradeScore=(p.shares[survivor]+maxTrade)*2.2+(p.style==='growth'||p.style==='aggressive'?4:0),sellScore=owned*price(dead)/900+(p.cash<2500?5:0),holdScore=owned*1.3+(p.style==='conservative'?4:0);
+   if(maxTrade>0&&tradeScore>=sellScore&&tradeScore>=holdScore)trade=maxTrade;else if(sellScore>=holdScore)sell=owned;
+ }else{
+   if(mode!=='noTrade'){
+     if(p.style==='growth'||p.style==='aggressive'||p.style==='opportunist')trade=Math.min(Math.floor(owned/2),available);
+     else if(p.style==='value')trade=Math.min(Math.floor(owned/4),available);
+     else if(p.style==='conservative')trade=Math.min(Math.floor(owned/6),available);
+   }
+   const rem=owned-trade*2;
+   if(p.style==='aggressive')sell=rem;else if(p.style==='value'&&p.cash<3500)sell=Math.ceil(rem/2);else if(p.style==='growth'&&rem===1&&p.cash<2500)sell=1;else if(p.style==='opportunist'&&p.cash<3000)sell=Math.ceil(rem/2);else if(p.style==='conservative'&&p.cash<1800)sell=Math.ceil(rem/3);
+ }
+ applyMerger(i,dead,survivor,sell,trade);const hold=owned-sell-trade*2;log(`${p.name}: ${C[dead].name} ${sell}주 매각 · ${trade*2}주→${C[survivor].name} ${trade}주 교환 · ${hold}주 보유`);
+}
+
+function applyMerger(i,dead,survivor,sell,trade){const p=game.players[i],used=sell+trade*2;if(used>p.shares[dead])return false;if(trade>game.chains[survivor].stock)return false;p.shares[dead]-=used;p.cash+=sell*price(dead);game.chains[dead].stock+=used;p.shares[survivor]+=trade;game.chains[survivor].stock-=trade;return true}
+function setMergerDecisionActive(active){
+ mergerDecisionActive=active;
+ ['rulesBtn','saveBtn','loadBtn','newBtn','downloadHtmlBtn'].forEach(id=>{const el=$('#'+id);if(el)el.disabled=active});
+ if(!active)$('#resumeMergerBtn').classList.add('hidden');
+}
+function peekMergerDecision(){if(!mergerDecisionActive)return;$('#genericOverlay').classList.add('hidden');$('#resumeMergerBtn').classList.remove('hidden')}
+function resumeMergerDecision(){if(!mergerDecisionActive)return;$('#resumeMergerBtn').classList.add('hidden');$('#genericOverlay').classList.remove('hidden')}
+function closeMergerDecision(){$('#genericOverlay').classList.add('hidden');$('#resumeMergerBtn').classList.add('hidden');setMergerDecisionActive(false)}
+function addMergerPeekButton(){
+ const b=document.createElement('button');
+ b.className='btn dark';b.textContent='👀 게임판 보기';b.title='선택 내용을 유지한 채 팝업을 잠시 닫습니다.';b.onclick=peekMergerDecision;
+ $('#modalActions').appendChild(b);
+}
+
+function humanMergerDecision(dead,survivor){
+ const mode=game.settings?.mergerMode||'freeMix';
+ setMergerDecisionActive(true);
+ if(mode==='bulk')return new Promise(resolve=>{
+   const owned=game.players[0].shares[dead],deadPrice=price(dead),maxTrade=Math.min(Math.floor(owned/2),game.chains[survivor].stock),ov=$('#genericOverlay');
+   $('#modalTitle').textContent=`합병 주식 일괄 처리 — ${C[dead].name}`;
+   $('#modalBody').innerHTML=`<p><b>${C[dead].name}</b> ${owned}주를 한 가지 방식으로 처리합니다.</p><div class="modal-section">매각가 ${money(deadPrice)}/주 · ${C[survivor].name} 은행재고 ${game.chains[survivor].stock}주</div><div class="peek-note">게임판을 확인하고 싶다면 ‘게임판 보기’를 누르세요. 현재 주식 처리 상태는 그대로 유지됩니다.</div>`;
+   $('#modalActions').innerHTML='';
+   const opts=[{label:`전량 보유 (${owned}주)`,sell:0,trade:0},{label:`전량 매각 (+${money(owned*deadPrice)})`,sell:owned,trade:0}];
+   if(maxTrade>0)opts.push({label:`가능한 만큼 2:1 교환 (${maxTrade*2}주→${maxTrade}주, 나머지 보유)`,sell:0,trade:maxTrade});
+   opts.forEach(o=>{
+     const b=document.createElement('button');b.className='btn green';b.textContent=o.label;
+     b.onclick=()=>{applyMerger(0,dead,survivor,o.sell,o.trade);const hold=owned-o.sell-o.trade*2;log(`나: ${C[dead].name} ${o.sell}주 매각 · ${o.trade*2}주→${C[survivor].name} ${o.trade}주 교환 · ${hold}주 보유`,true);closeMergerDecision();render();resolve()};
+     $('#modalActions').appendChild(b);
+   });
+   addMergerPeekButton();
+   ov.classList.remove('hidden');
+ });
+ return new Promise(resolve=>{
+   const owned=game.players[0].shares[dead],deadPrice=price(dead);let sell=0,trade=0;const ov=$('#genericOverlay');
+   $('#modalTitle').textContent=`합병 주식 처리 — ${C[dead].name}`;
+   function redraw(){
+     const allowTrade=mode!=='noTrade',maxTrade=allowTrade?Math.min(Math.floor((owned-sell)/2),game.chains[survivor].stock):0;
+     if(trade>maxTrade)trade=maxTrade;
+     const hold=owned-sell-trade*2;
+     $('#modalBody').innerHTML=`<p><b>${C[dead].name}</b>이(가) <b>${C[survivor].name}</b>에 합병됩니다.</p><div class="modal-section"><b>내 보유: ${owned}주</b> · 매각가 ${money(deadPrice)}/주 · ${C[survivor].name} 은행재고 ${game.chains[survivor].stock}주<div class="step-grid"><span>💵 매각할 주식</span><button id="sellMinus">−</button><b>${sell}주</b><button id="sellPlus">＋</button>${allowTrade?`<span>🔄 2:1 교환 횟수</span><button id="tradeMinus">−</button><b>${trade}회</b><button id="tradePlus">＋</button>`:`<span>🚫 주식 교환</span><b style="grid-column:span 3">이번 설정에서는 교환 금지</b>`}</div><div class="decision-summary">매각 수입 <b>${money(sell*deadPrice)}</b><br>${allowTrade?`교환: ${C[dead].name} ${trade*2}주 → ${C[survivor].name} ${trade}주<br>`:''}그대로 보유: <b>${hold}주</b></div></div><div class="peek-note">‘게임판 보기’를 누르면 이 팝업만 잠시 닫힙니다. 현재 매각/교환 수량은 유지됩니다.</div>`;
+     $('#modalActions').innerHTML='<button id="confirmDecision" class="btn green">이대로 처리</button>';
+     $('#sellMinus').onclick=()=>{sell=Math.max(0,sell-1);redraw()};
+     $('#sellPlus').onclick=()=>{if(sell+trade*2<owned){sell++;redraw()}};
+     if(allowTrade){
+       $('#tradeMinus').onclick=()=>{trade=Math.max(0,trade-1);redraw()};
+       $('#tradePlus').onclick=()=>{if(trade<Math.min(Math.floor((owned-sell)/2),game.chains[survivor].stock)){trade++;redraw()}};
+     }
+     $('#confirmDecision').onclick=()=>{const hold2=owned-sell-trade*2;applyMerger(0,dead,survivor,sell,trade);log(`나: ${C[dead].name} ${sell}주 매각 · ${trade*2}주→${C[survivor].name} ${trade}주 교환 · ${hold2}주 보유`,true);closeMergerDecision();render();resolve()};
+     addMergerPeekButton();
+   }
+   redraw();ov.classList.remove('hidden');
+ });
+}
+
+function choiceModal(title,text,options){return new Promise(resolve=>{const ov=$('#genericOverlay');$('#modalTitle').textContent=title;$('#modalBody').innerHTML=`<p>${esc(text)}</p><div id="choices" class="choice-grid"></div>`;$('#modalActions').innerHTML='';const box=$('#choices');for(const o of options){const b=document.createElement('button');b.className='choice';b.innerHTML=`${esc(o.label)}${o.sub?`<div class="tiny" style="margin-top:3px">${esc(o.sub)}</div>`:''}`;b.onclick=()=>{ov.classList.add('hidden');resolve(o.value)};box.appendChild(b)}ov.classList.remove('hidden')})}
+function buyHuman(id){if(busy||game.current!==0||game.phase!=='buy'||buyCount>=3||!active(id))return;const p=game.players[0],pr=price(id);if(p.cash<pr||game.chains[id].stock<=0)return;p.cash-=pr;p.shares[id]++;game.chains[id].stock--;buyCount++;beep('buy');log(`나: ${C[id].name} 1주 매수 (${money(pr)})`);render()}
+
+function aiBuy(i){
+ const p=game.players[i],power=difficultyPower();let count=0;
+ const reserveByStyle={aggressive:550,growth:800,opportunist:750,conservative:1600,value:1100};
+ while(count<3){
+   const options=activeChains().filter(c=>game.chains[c.id].stock>0&&p.cash>=price(c.id));if(!options.length)break;
+   const ranked=options.map(c=>{
+     const id=c.id,pr=price(id),my=p.shares[id],rivals=game.players.filter((_,x)=>x!==i).map(x=>x.shares[id]),top=Math.max(...rivals),threat=power>=2?chainMergeThreat(id):0;
+     let s=my*1.2+size(id)*.15+(1000-pr)/220+shareControlScore(i,id)*2.4;
+     if(my<=top)s+=3.2;if(my===top)s+=3.8;if(my===top-1)s+=4.8;
+     if(power>=1)s+=estimateBonusForPlayer(i,id)/700;
+     if(power>=2){
+       s+=threat*.35;if(safe(id))s+=3.2;
+       s+=(BANK_SHARES-game.chains[id].stock)*.1;
+       const lead=my-top;
+       if(lead===0||lead===1)s+=4.5;
+     }
+     if(power>=3){
+       const before=shareControlScore(i,id),after=shareControlScore(i,id,1);s+=(after-before)*5.0;
+       const nextPx=priceAtSize(id,size(id)+1);s+=Math.max(0,nextPx-pr)/55;
+       if(canEnd())s+=my*pr/1200;
+     }
+     if(p.style==='growth')s+=size(id)*.2+C[id].tier*1.1;
+     if(p.style==='value')s+=(1000-pr)/140;
+     if(p.style==='aggressive')s+=shareControlScore(i,id)*.9+threat*.25;
+     if(p.style==='conservative')s+=(800-pr)/180+(safe(id)?1.8:0);
+     if(p.style==='opportunist')s+=(my<=top?3:0)+threat*.25;
+     s+=aiNoise(.5);
+     return {id,pr,s};
+   }).sort((a,b)=>b.s-a.s);
+   let choice=ranked[0];
+   if(aiDifficulty()==='easy'&&ranked.length>1&&Math.random()<.42)choice=ranked[Math.floor(Math.random()*Math.min(3,ranked.length))];
+   // 전문가는 현금을 아끼지 않고 지분 확보에 더 적극적으로 쓴다.
+   const reserve=(reserveByStyle[p.style]??1000)*(power>=3?.5:1);
+   const minScore=power===0?1.5:power===1?2.8:power===2?3.4:2.9;
+   if(choice.s<minScore)break;
+   if(p.cash-choice.pr<reserve && count>0 && !(power>=2&&shareControlScore(i,choice.id,1)>shareControlScore(i,choice.id)+2))break;
+   p.cash-=choice.pr;p.shares[choice.id]++;game.chains[choice.id].stock--;count++;log(`${p.name}: ${C[choice.id].name} 1주 매수 (${money(choice.pr)})`);
+ }
+ render();
+}
+
+function aiWantsEnd(i){
+ if(!canEnd())return false;const power=difficultyPower();
+ // 합병 보너스까지 반영한 예상 최종 자산 기준으로 일관되게 판단한다 (난이도 불문).
+ const mine=estimateFinalCash(i),others=game.players.map((_,x)=>x===i?-Infinity:estimateFinalCash(x)),best=Math.max(...others),margin=mine-best;
+ // 확실하게 앞서 있으면 난이도와 상관없이 반드시 게임 종료를 선언한다.
+ if(margin>=600)return true;
+ if(power>=2){
+   if(margin>=0)return true;
+   if(power>=3)return margin>-1400&&activeChains().every(c=>safe(c.id))&&Math.random()<.3;
+   return margin>-800&&Math.random()<.32;
+ }
+ if(margin>=0)return aiDifficulty()==='easy'?Math.random()<.88:true;
+ return activeChains().some(c=>size(c.id)>=(game.settings.endSize+4))&&Math.random()<(aiDifficulty()==='easy'?.62:.4);
+}
+
+async function finishHumanBuy(){if(busy||game.current!==0||game.phase!=='buy')return;beep('click');if(canEnd()){const ans=await yesNo('턴 종료','게임 종료 조건이 충족되어 있습니다. 지금 게임 자체를 종료하시겠습니까?','게임 종료','계속 플레이');if(ans){endGame('내가 게임 종료를 선언했습니다.');return}}await finishTurn()}
+
+async function finishTurn(){
+ if(game.over)return;
+ const p=game.players[game.current];
+ discardPermanentBlocked(game.current);
+ while(p.hand.length<HAND_SIZE&&game.pool.length)p.hand.push(game.pool.pop());
+ sortHand(p.hand);
+ game.current=(game.current+1)%game.players.length;
+ game.turnNo++;
+ busy=false;
+ await beginTurn();
+}
+
+function yesNo(title,text,yes='확인',no='취소'){return new Promise(resolve=>{const ov=$('#genericOverlay');$('#modalTitle').textContent=title;$('#modalBody').innerHTML=`<p>${esc(text)}</p>`;$('#modalActions').innerHTML='';const y=document.createElement('button'),n=document.createElement('button');y.className='btn green';n.className='btn dark';y.textContent=yes;n.textContent=no;y.onclick=()=>{ov.classList.add('hidden');resolve(true)};n.onclick=()=>{ov.classList.add('hidden');resolve(false)};$('#modalActions').append(y,n);ov.classList.remove('hidden')})}
+
+function endGame(reason){
+ if(game.over)return;game.over=true;busy=true;game.phase='done';log(reason,true);
+ for(const c of activeChains())payBonuses(c.id);
+ for(let i=0;i<game.players.length;i++){
+   for(const c of activeChains()){
+     const n=game.players[i].shares[c.id];
+     if(n){game.players[i].cash+=n*price(c.id);game.chains[c.id].stock+=n;game.players[i].shares[c.id]=0;}
+   }
+ }
+ render();beep('win');showFinal(reason);
+}
+
+function showFinal(reason){
+ const ranks=game.players.map((p,i)=>({i,name:p.name,cash:p.cash})).sort((a,b)=>b.cash-a.cash);
+ const ov=$('#genericOverlay');
+ $('#modalTitle').textContent='🏆 게임 종료 — 최종 자산 결과';
+ $('#modalBody').innerHTML=`<p>${esc(reason)}</p><table class="score-table"><tr><th>순위</th><th>플레이어</th><th>최종 현금</th></tr>${ranks.map((x,n)=>`<tr class="${n===0?'rank1':''}"><td>${n+1}위</td><td>${esc(x.name)}</td><td><b>${money(x.cash)}</b></td></tr>`).join('')}</table>`;
+ $('#modalActions').innerHTML='<button id="againBtn" class="btn red">새 게임 시작</button>';
+ $('#againBtn').onclick=()=>{ov.classList.add('hidden');$('#setupOverlay').classList.remove('hidden')};
+ ov.classList.remove('hidden');
+}
+
+function rulesModal(){
+ const ov=$('#genericOverlay'),st=game?.settings||setupSettings;
+ const endText=st.endMode==='safeOnly'?`모든 활성 체인이 ${st.safeSize}+ 안전 상태`:(st.endMode==='sizeOnly'?`한 체인이 ${st.endSize}+`:`모든 활성 체인이 ${st.safeSize}+ 안전 상태 또는 한 체인이 ${st.endSize}+`);
+ const bonusText=st.bonusPlayers===2?'1위 10× / 2위 5×':'1위 10× / 2위 7.5×(100단위 올림) / 3위 5×';
+ const mergerText=st.mergerMode==='freeMix'?'보유·매각·2:1 교환을 원하는 수량대로 혼합':st.mergerMode==='bulk'?'전량 보유·전량 매각·가능한 만큼 2:1 교환 중 하나를 선택':'보유·매각만 가능, 2:1 교환 금지';
+ 
+ $('#modalTitle').textContent='📖 게임 규칙 및 신규 기능 안내';
+ $('#modalBody').innerHTML=`<div class="rules-mini">
+ <div class="modal-section"><b>현재 설정</b><br>${st.playerCount}인 · AI ${difficultyLabel(st.aiDifficulty)} · 안전 기준 ${st.safeSize}+ · 대형 종료 ${st.endSize}+ · 주주 보너스 ${st.bonusPlayers}명</div>
+ <div class="modal-section"><b>1. 타일 배치 및 데드 타일 폐기</b><br>손패의 타일 1장을 놓습니다. 안전 체인 2개 이상을 연결하는 영구 배치 불가 타일은 빨간색으로 표시되며 언제든 <b>[데드 타일 버리고 새로 뽑기]</b> 버튼으로 폐기 후 타일 더미에서 즉시 보충할 수 있습니다.</div>
+ <div class="modal-section"><b>2. 합병 및 지분 방어</b><br>규모가 더 큰 체인이 작은 체인을 흡수하며, 보너스는 (${bonusText}) 규칙에 따라 지급됩니다. 합병 시 소멸 주식은 (${mergerText}) 방식으로 처리됩니다.</div>
+ <div class="modal-section"><b>3. 강화된 AI 알고리즘</b><br>어려움/전문가 AI는 1위 보너스를 확보하기 위한 최소 주식 수(Majority Lock)를 계산하며, 안전 체인을 굳히거나 자신이 1위인 체인의 합병을 유도하여 현금을 극대화합니다.</div>
+ </div>`;
+ $('#modalActions').innerHTML='<button id="closeRules" class="btn yellow">확인</button>';
+ $('#closeRules').onclick=()=>ov.classList.add('hidden');
+ ov.classList.remove('hidden');
+}
+
+function save(){if(!game)return;const clean=JSON.parse(JSON.stringify(game,(k,v)=>k==='audio'?null:v));localStorage.setItem('acquire_solo_save_v2',JSON.stringify({game:clean,aiDelay}));log('브라우저에 게임을 저장했습니다.',true)}
+function load(){const raw=localStorage.getItem('acquire_solo_save_v2')||localStorage.getItem('acquire_solo_save');if(!raw){alert('저장된 게임이 없습니다.');return}try{const d=JSON.parse(raw);game=d.game;game.audio=null;game.settings={...DEFAULT_SETTINGS,...(game.settings||{}),playerCount:game.players?.length||4};setupSettings={...game.settings};aiDelay=d.aiDelay||650;$('#speedSelect').value=String(aiDelay);syncSetupControls();busy=false;buyCount=0;$('#setupOverlay').classList.add('hidden');$('#genericOverlay').classList.add('hidden');log('저장된 게임을 불러왔습니다.',true);render();beginTurn()}catch(e){console.error(e);alert('저장 데이터를 불러오지 못했습니다.') }}
+
+function downloadHtmlFile(){
+ const htmlContent = '<!doctype html>\n' + document.documentElement.outerHTML;
+ const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
+ const url = URL.createObjectURL(blob);
+ const a = document.createElement('a');
+ a.href = url;
+ a.download = 'acquire_solo_game.html';
+ document.body.appendChild(a);
+ a.click();
+ document.body.removeChild(a);
+ URL.revokeObjectURL(url);
+ log('HTML 파일로 다운로드되었습니다.', true);
+}
+
+function readSetupControls(){setupSettings={playerCount:setupSettings.playerCount,safeSize:+$('#setupSafeSize').value,endSize:+$('#setupEndSize').value,endMode:$('#setupEndMode').value,bonusPlayers:+$('#setupBonusPlayers').value,mergerMode:$('#setupMergerMode').value,aiDifficulty:$('#setupDifficulty').value};return setupSettings}
+function syncSetupControls(){document.querySelectorAll('.player-count-btn').forEach(b=>b.classList.toggle('selected',+b.dataset.count===setupSettings.playerCount));$('#setupSafeSize').value=String(setupSettings.safeSize);$('#setupEndSize').value=String(setupSettings.endSize);$('#setupEndMode').value=setupSettings.endMode;$('#setupBonusPlayers').value=String(setupSettings.bonusPlayers);$('#setupMergerMode').value=setupSettings.mergerMode;$('#setupDifficulty').value=setupSettings.aiDifficulty||'hard';$('#difficultySelect').value=setupSettings.aiDifficulty||'hard';$('#setupSpeed').value=String(aiDelay);$('#speedSelect').value=String(aiDelay);renderSetupPreview()}
+function renderSetupPreview(){const ai=PROFILES.slice(1,setupSettings.playerCount);$('#setupAiPreview').innerHTML=ai.map(p=>`<div>${p.badge}<b>${esc(p.name)}</b>${p.style==='growth'?'성장·교환':p.style==='value'?'현금·저평가':p.style==='aggressive'?'합병·공격':p.style==='conservative'?'현금 방어':'기회 포착'}</div>`).join('');const s=setupSettings,mode=s.endMode==='either'?'OR':s.endMode==='safeOnly'?'SAFE만':'SIZE만';$('#setupRuleSummary').innerHTML=`<span class="pill">${s.playerCount}인</span><span class="pill">AI ${difficultyLabel(s.aiDifficulty)}</span><span class="pill">SAFE ${s.safeSize}+</span><span class="pill">END ${s.endSize}+ (${mode})</span><span class="pill">보너스 ${s.bonusPlayers}명</span><span class="pill">${s.mergerMode==='freeMix'?'자유 혼합':s.mergerMode==='bulk'?'일괄처리':'교환금지'}</span>`}
+function updateSetupFromControls(){readSetupControls();renderSetupPreview()}
+
+document.querySelectorAll('.player-count-btn').forEach(b=>b.onclick=()=>{setupSettings.playerCount=+b.dataset.count;syncSetupControls()});
+['setupSafeSize','setupEndSize','setupEndMode','setupBonusPlayers','setupMergerMode','setupDifficulty'].forEach(id=>$('#'+id).onchange=updateSetupFromControls);
+$('#classicPresetBtn').onclick=()=>{setupSettings={...DEFAULT_SETTINGS,playerCount:setupSettings.playerCount,aiDifficulty:setupSettings.aiDifficulty||'hard'};syncSetupControls()};
+$('#v2016PresetBtn').onclick=()=>{setupSettings={...setupSettings,safeSize:10,endSize:38,endMode:'either',bonusPlayers:3,mergerMode:'freeMix'};syncSetupControls()};
+$('#startBtn').onclick=()=>{readSetupControls();aiDelay=+$('#setupSpeed').value;$('#speedSelect').value=String(aiDelay);$('#setupOverlay').classList.add('hidden');initGame()};
+$('#newBtn').onclick=()=>{if(game?.settings)setupSettings={...game.settings};syncSetupControls();$('#setupOverlay').classList.remove('hidden')};
+$('#rulesBtn').onclick=rulesModal;$('#soundBtn').onclick=()=>{if(!game)return;game.sound=!game.sound;$('#soundBtn').textContent=game.sound?'🔊':'🔇'};$('#saveBtn').onclick=save;$('#loadBtn').onclick=load;$('#downloadHtmlBtn').onclick=downloadHtmlFile;
+$('#difficultySelect').onchange=e=>{setupSettings.aiDifficulty=e.target.value;if(game){game.settings.aiDifficulty=e.target.value;log(`AI 난이도를 ${difficultyLabel(e.target.value)}(으)로 변경했습니다.`,true);render()}$('#setupDifficulty').value=e.target.value;renderSetupPreview()};
+$('#setupDifficulty').onchange=e=>{setupSettings.aiDifficulty=e.target.value;$('#difficultySelect').value=e.target.value;renderSetupPreview()};
+$('#speedSelect').onchange=e=>{aiDelay=+e.target.value;$('#setupSpeed').value=e.target.value};$('#setupSpeed').onchange=e=>{aiDelay=+e.target.value;$('#speedSelect').value=e.target.value};
+$('#finishBuyBtn').onclick=finishHumanBuy;
+$('#declareEndBtn').onclick=async()=>{if(canEnd()&&await yesNo('게임 종료 선언','지금 게임을 종료하고 모든 활성 체인의 보너스와 주식을 정산할까요?','종료','취소'))endGame('내가 게임 종료를 선언했습니다.')};
+$('#resumeMergerBtn').onclick=resumeMergerDecision;
+
+syncSetupControls();
+})();
+</script>
+<a href="./index.html#/solo" style="position:fixed;left:10px;bottom:10px;z-index:9999;background:#111827;color:white;border:2px solid #000;border-radius:999px;padding:8px 12px;font:800 12px system-ui;text-decoration:none;box-shadow:0 4px 12px #0004">← BoardMate 1인플</a>
+</body>
+</html>

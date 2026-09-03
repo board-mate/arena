@@ -1,0 +1,1961 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>마스크맨 (Maskmen) - 나 vs 다인 AI 수정판</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Jua&family=Pretendard:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  
+  <style>
+    body {
+      font-family: 'Pretendard', sans-serif;
+      background-color: #F6ED1E;
+      background-image: radial-gradient(#E8DE05 16%, transparent 17%);
+      background-size: 22px 22px;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    .font-jua {
+      font-family: 'Jua', 'Pretendard', sans-serif;
+    }
+    .card-shadow {
+      box-shadow: 0 8px 16px -2px rgba(0, 0, 0, 0.25), 0 4px 6px -1px rgba(0, 0, 0, 0.15);
+    }
+    .ring-active-glow {
+      box-shadow: 0 0 0 4px #F59E0B, 0 10px 25px -5px rgba(245, 158, 11, 0.4);
+    }
+    .dragging-card {
+      opacity: 0.4;
+      transform: scale(0.95);
+    }
+    .drag-over-card {
+      border-style: dashed !important;
+      border-color: #FACC15 !important;
+      transform: scale(1.05);
+    }
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(0,0,0,0.06);
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(0,0,0,0.3);
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body class="min-h-screen text-slate-900 flex flex-col justify-between overflow-x-hidden">
+
+  <!-- TOP APP BAR -->
+  <header class="bg-slate-950 text-white px-3 md:px-5 py-2.5 shadow-xl border-b-4 border-black z-30 sticky top-0">
+    <div class="max-w-7xl mx-auto flex items-center justify-between gap-2">
+      <!-- Title & Season Badge -->
+      <div class="flex items-center gap-2 md:gap-3">
+        <div class="flex items-center gap-1.5 bg-yellow-400 text-slate-950 px-2.5 py-1 rounded-lg font-black text-xs md:text-sm tracking-tight border-2 border-black shadow-sm">
+          <span>🏆</span>
+          <span id="season-display">시즌 1 / 4</span>
+        </div>
+        <h1 class="font-jua text-xl md:text-2xl text-yellow-300 tracking-wide drop-shadow flex items-center gap-1.5">
+          <span>마스크맨</span>
+          <span class="text-[10px] md:text-xs font-normal text-slate-400 bg-slate-800 px-2 py-0.5 rounded-md hidden sm:inline-block border border-slate-700">MASKMEN</span>
+        </h1>
+      </div>
+
+      <!-- Live Player Score Badges -->
+      <div id="header-scoreboard" class="flex items-center gap-1.5 overflow-x-auto py-0.5"></div>
+
+      <!-- Action Buttons & Live AI Speed Controller -->
+      <div class="flex items-center gap-1.5 shrink-0">
+        <!-- Live AI Speed selector in Header -->
+        <div class="flex items-center gap-1 bg-slate-900 px-2 py-1 rounded-lg border border-slate-700 text-xs text-slate-300">
+          <span class="text-[11px] text-yellow-400 font-bold">⚡ AI 속도:</span>
+          <select id="header-select-ai-speed" class="bg-slate-800 text-yellow-300 text-xs font-bold rounded px-1.5 py-0.5 border border-slate-600 focus:outline-none cursor-pointer">
+            <option value="1000" selected>느긋하게 (1.0초)</option>
+            <option value="600">보통 (0.6초)</option>
+            <option value="300">빠르게 (0.3초)</option>
+          </select>
+        </div>
+
+        <button id="btn-rules" class="bg-slate-800 hover:bg-slate-700 active:scale-95 text-xs font-bold px-2.5 py-1.5 rounded-lg border border-slate-600 transition flex items-center gap-1 text-slate-200">
+          <span>📖</span> <span class="hidden md:inline">규칙설명</span>
+        </button>
+        <button id="btn-sound" class="bg-slate-800 hover:bg-slate-700 active:scale-95 text-xs font-bold p-1.5 rounded-lg border border-slate-600 transition" title="소리 토글">
+          🔊
+        </button>
+        <button id="btn-new-game" class="bg-rose-600 hover:bg-rose-500 active:scale-95 text-white text-xs font-extrabold px-3 py-1.5 rounded-lg border-2 border-black transition flex items-center gap-1 shadow-sm">
+          <span>🔄</span> <span class="hidden sm:inline">새 게임</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN PLAY AREA -->
+  <main class="flex-1 max-w-7xl mx-auto w-full p-2 md:p-4 grid grid-cols-1 lg:grid-cols-12 gap-3 items-start">
+    
+    <!-- LEFT & CENTER: Wrestling Arena & Player Hand (7 cols on lg) -->
+    <div class="lg:col-span-7 flex flex-col gap-3">
+      
+      <!-- 1. The Ring Arena -->
+      <div class="relative bg-white/95 backdrop-blur rounded-2xl border-4 border-black p-3 md:p-4 shadow-[0_8px_0_0_#000] flex flex-col justify-between min-h-[380px] md:min-h-[420px]">
+        
+        <!-- Turn Indicator Bar -->
+        <div class="flex items-center justify-between border-b-2 border-slate-200 pb-2 mb-2 gap-2">
+          <div class="flex items-center gap-2">
+            <span class="inline-block w-3 h-3 rounded-full bg-rose-500 animate-ping shrink-0"></span>
+            <span class="text-xs md:text-sm font-extrabold text-slate-700 shrink-0">현재 턴:</span>
+            <span id="current-turn-badge" class="font-jua text-sm md:text-base px-3 py-0.5 rounded-full border-2 border-black shadow-xs">
+              나 (매니저)
+            </span>
+          </div>
+          <div id="trick-info-text" class="text-xs md:text-sm font-bold text-slate-600 bg-slate-100 px-2.5 py-1 rounded-md truncate max-w-[240px] md:max-w-none">
+            시작 플레이어가 카드를 낼 차례입니다.
+          </div>
+        </div>
+
+        <!-- Dynamic AI Opponent Seats -->
+        <div id="ai-opponents-container" class="w-full flex flex-wrap justify-around items-center gap-2 mb-2 px-1 z-10"></div>
+
+        <!-- Center Ring Arena -->
+        <div class="relative flex-1 flex flex-col items-center justify-center py-3 px-2 bg-gradient-to-b from-amber-50/80 to-orange-50/80 rounded-xl border-2 border-dashed border-amber-300 overflow-hidden my-1">
+          
+          <div class="text-[11px] font-black tracking-wider text-amber-900 uppercase mb-1 bg-amber-200 px-2.5 py-0.5 rounded-md border border-amber-300 shadow-xs">
+            링 위 대결 중 (현재 필드 카드)
+          </div>
+          
+          <div id="trick-cards-display" class="min-h-[135px] flex items-center justify-center gap-2 p-2 transition-all"></div>
+
+          <div id="trick-status-badge" class="mt-2 text-xs font-black px-3 py-1 rounded-full bg-slate-900 text-yellow-300 border border-black shadow hidden"></div>
+
+          <!-- Commentary Announcement -->
+          <div id="commentary-box" class="w-full text-center px-3 py-1 text-xs md:text-sm font-extrabold text-slate-900 bg-yellow-200/90 border-t border-b border-yellow-400 mt-2 z-10 flex items-center justify-center gap-1.5">
+            <span>📢</span>
+            <span id="commentary-text">새로운 라운드가 시작되었습니다!</span>
+          </div>
+        </div>
+
+        <!-- Bottom Ring Tracker -->
+        <div class="mt-1 flex items-center justify-between text-xs font-bold text-slate-600 pt-1.5 border-t border-slate-100">
+          <div class="flex items-center gap-1.5">
+            <span>이번 라운드 패스:</span>
+            <span id="pass-count-tracker" class="text-slate-900 bg-slate-200 px-2 py-0.5 rounded font-black">0회</span>
+          </div>
+          <div id="trick-winner-preview" class="text-slate-600">
+            현재 링 장악: <span class="font-black text-slate-900">-</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. Player Hand & Control Deck -->
+      <div class="bg-slate-950 text-white rounded-2xl border-4 border-black p-3 md:p-4 shadow-[0_8px_0_0_#000] relative">
+        
+        <!-- Hand Header with Sorters -->
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-2 pb-2 border-b border-slate-800">
+          <div class="flex items-center gap-2">
+            <span class="text-xl">🧑‍💼</span>
+            <h2 class="font-jua text-base md:text-lg text-yellow-400">내 손패 (나의 레슬러들)</h2>
+            <span id="player-card-count-badge" class="bg-slate-800 text-[11px] px-2 py-0.5 rounded-full border border-slate-700 font-extrabold text-yellow-300">
+              남은 카드: 0장
+            </span>
+          </div>
+
+          <!-- Hand Sorter Options -->
+          <div class="flex items-center gap-1 bg-slate-900 p-1 rounded-xl border border-slate-800">
+            <span class="text-[10px] font-bold text-slate-400 px-1">정렬:</span>
+            <button id="btn-sort-rank" class="px-2 py-1 text-[11px] font-bold rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition">
+              서열순 🥋
+            </button>
+            <button id="btn-sort-count" class="px-2 py-1 text-[11px] font-bold rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition">
+              장수순 📊
+            </button>
+            <button id="btn-sort-color" class="px-2 py-1 text-[11px] font-bold rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition">
+              색상순 🎨
+            </button>
+          </div>
+        </div>
+
+        <!-- Hand Cards Area with Reordering & Drag/Drop -->
+        <div id="player-hand-container" class="flex flex-wrap items-center justify-center gap-2 md:gap-3 py-2 min-h-[140px]"></div>
+
+        <!-- Play Controls -->
+        <div class="mt-2 pt-2 border-t border-slate-800 flex flex-wrap items-center justify-between gap-2">
+          
+          <!-- Count Selector Buttons -->
+          <div class="flex items-center gap-1.5 bg-slate-900 p-1.5 rounded-xl border border-slate-800">
+            <span class="text-xs font-black text-slate-300 px-1.5">출전 장수:</span>
+            <button id="btn-count-1" class="px-3 py-1.5 rounded-lg text-xs font-black transition border-2 border-transparent bg-slate-800 text-slate-200 hover:bg-slate-700 active:scale-95">1장</button>
+            <button id="btn-count-2" class="px-3 py-1.5 rounded-lg text-xs font-black transition border-2 border-transparent bg-slate-800 text-slate-200 hover:bg-slate-700 active:scale-95">2장</button>
+            <button id="btn-count-3" class="px-3 py-1.5 rounded-lg text-xs font-black transition border-2 border-transparent bg-slate-800 text-slate-200 hover:bg-slate-700 active:scale-95">3장</button>
+          </div>
+
+          <!-- Submit / Pass Action -->
+          <div class="flex items-center gap-2">
+            <button id="btn-pass" class="bg-slate-800 hover:bg-slate-700 active:scale-95 text-white font-black text-xs md:text-sm px-4 py-2.5 rounded-xl border-2 border-black transition flex items-center gap-1 shadow">
+              <span>✋</span> <span>포기 (패스)</span>
+            </button>
+            <button id="btn-play-card" class="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs md:text-sm px-5 py-2.5 rounded-xl border-2 border-black transition active:scale-95 disabled:opacity-30 disabled:pointer-events-none shadow-[0_4px_0_0_#065f46]" disabled>
+              <span>🤼 카드 내기</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Live Validation Hint -->
+        <div id="play-validation-hint" class="mt-2 text-center text-xs font-bold text-slate-400 bg-slate-900/80 py-1.5 px-3 rounded-lg border border-slate-800">
+          손패의 카드를 클릭하여 낼 장수를 선택하세요.
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: Hierarchy Column Board & Season History -->
+    <div class="lg:col-span-5 flex flex-col gap-3">
+      
+      <!-- 1. Strength Marker Board -->
+      <div class="bg-white/95 backdrop-blur rounded-2xl border-4 border-black p-3.5 md:p-4 shadow-[0_8px_0_0_#000]">
+        <div class="flex items-center justify-between border-b-2 border-slate-200 pb-2 mb-2">
+          <div class="flex items-center gap-1.5">
+            <span class="text-xl">🥋</span>
+            <h2 class="font-jua text-lg text-slate-900">레슬러 서열표 (강함 마커)</h2>
+          </div>
+          <span class="text-[11px] font-black text-amber-900 bg-amber-200 px-2.5 py-0.5 rounded-full border border-amber-400">
+            위쪽이 더 강함 ⬆️
+          </span>
+        </div>
+
+        <div class="text-[11px] text-slate-600 mb-2 leading-tight bg-slate-100 p-2 rounded-lg border border-slate-200">
+          • <b>같은 세로줄</b>: 위쪽 레슬러가 아래쪽보다 확실히 강함<br>
+          • <b>서로 다른 줄의 같은 깊이</b>: 아직 우열을 모름 (분기된 레슬러끼리는 자동으로 강약을 추론하지 않음)
+        </div>
+
+        <!-- Column Visualization Board (Multiple Vertical Chains) -->
+        <div id="hierarchy-columns-container" class="bg-gradient-to-b from-slate-100 to-amber-50/60 border-2 border-slate-300 rounded-xl p-3 min-h-[220px] flex items-start justify-center gap-3 overflow-x-auto">
+          <!-- Dynamic Vertical Columns -->
+        </div>
+
+        <!-- Un-debuted / Standalone Wrestlers Pool -->
+        <div class="mt-3 pt-2.5 border-t border-slate-200">
+          <div class="text-[11px] font-black text-slate-700 mb-1.5 flex items-center justify-between">
+            <span>아직 서열에 연결되지 않은 레슬러:</span>
+          </div>
+          <div id="undebuted-roster-pool" class="flex flex-wrap gap-1.5 items-center">
+            <!-- Un-linked wrestlers -->
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. Season Token Scoreboard -->
+      <div class="bg-slate-950 text-white rounded-2xl border-4 border-black p-3.5 md:p-4 shadow-[0_8px_0_0_#000]">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-2 mb-2">
+          <div class="flex items-center gap-1.5">
+            <span class="text-base">🏅</span>
+            <h3 class="font-jua text-base text-yellow-300">시즌별 순위 및 토큰 점수</h3>
+          </div>
+          <div class="text-[11px] font-bold text-slate-400">
+            1등: <b class="text-yellow-400">+2</b> / 2등: <b class="text-emerald-400">+1</b> / 꼴등: <b class="text-rose-400">-1</b>
+          </div>
+        </div>
+
+        <div id="season-history-table" class="space-y-1.5 text-xs"></div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- MODAL: Game Setup -->
+  <div id="modal-setup" class="fixed inset-0 bg-black/85 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-yellow-300 border-4 border-black rounded-3xl p-5 md:p-7 max-w-md w-full shadow-[0_12px_0_0_#000] text-slate-950">
+      <div class="text-center mb-4">
+        <div class="inline-block bg-black text-yellow-400 font-jua text-2xl px-4 py-1 rounded-xl mb-1 shadow">
+          마스크맨 (MASKMEN)
+        </div>
+        <h2 class="font-jua text-xl text-slate-900 mt-2">1인 연습 모드 설정</h2>
+        <p class="text-xs text-slate-800 font-bold mt-1">
+          개성 넘치는 AI들과 함께 4시즌 공식 룰로 마스크맨을 연습해보세요!
+        </p>
+      </div>
+
+      <div class="bg-white/95 border-2 border-black rounded-2xl p-4 mb-4">
+        <label class="block text-sm font-black text-slate-900 mb-2">플레이 인원수 선택 (3 ~ 6인):</label>
+        <div class="grid grid-cols-4 gap-2">
+          <button data-players="3" class="btn-player-select py-3 rounded-xl border-2 border-black font-jua text-base md:text-lg bg-yellow-100 hover:bg-yellow-200 transition text-center shadow">
+            3인용<br><span class="text-[10px] font-sans font-bold text-slate-600">각 15장</span>
+          </button>
+          <button data-players="4" class="btn-player-select py-3 rounded-xl border-2 border-black font-jua text-base md:text-lg bg-yellow-400 transition text-center shadow ring-4 ring-black">
+            4인용<br><span class="text-[10px] font-sans font-bold text-slate-900">각 15장</span>
+          </button>
+          <button data-players="5" class="btn-player-select py-3 rounded-xl border-2 border-black font-jua text-base md:text-lg bg-yellow-100 hover:bg-yellow-200 transition text-center shadow">
+            5인용<br><span class="text-[10px] font-sans font-bold text-slate-600">각 12장</span>
+          </button>
+          <button data-players="6" class="btn-player-select py-3 rounded-xl border-2 border-black font-jua text-base md:text-lg bg-yellow-100 hover:bg-yellow-200 transition text-center shadow">
+            6인용<br><span class="text-[10px] font-sans font-bold text-slate-600">각 10장</span>
+          </button>
+        </div>
+
+        <div class="mt-4 pt-3 border-t border-slate-200 flex items-center justify-between">
+          <span class="text-xs font-black text-slate-800">AI 진행 속도:</span>
+          <select id="select-ai-speed" class="bg-slate-100 border-2 border-black rounded-lg px-2.5 py-1 text-xs font-black text-slate-800">
+            <option value="1000" selected>🐢 느긋하게 (1.0초)</option>
+            <option value="600">⚡ 보통 (0.6초)</option>
+            <option value="300">🚀 빠르게 (0.3초)</option>
+          </select>
+        </div>
+      </div>
+
+      <button id="btn-start-game" class="w-full bg-red-600 hover:bg-red-500 active:scale-95 text-white font-jua text-xl py-3.5 rounded-2xl border-4 border-black shadow-[0_6px_0_0_#000] transition">
+        링 위로 출전하기 (게임 시작) 🥊
+      </button>
+    </div>
+  </div>
+
+  <!-- MODAL: Rules Guide -->
+  <div id="modal-rules" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white border-4 border-black rounded-3xl p-5 max-w-lg w-full max-h-[85vh] flex flex-col shadow-[0_12px_0_0_#000]">
+      <div class="flex items-center justify-between border-b-2 border-black pb-2 mb-3">
+        <h2 class="font-jua text-2xl text-slate-900 flex items-center gap-2">
+          <span>📖</span> 마스크맨 공식 규칙
+        </h2>
+        <button id="btn-close-rules" class="bg-slate-200 hover:bg-slate-300 font-black text-slate-800 w-8 h-8 rounded-full border-2 border-black flex items-center justify-center">
+          ✕
+        </button>
+      </div>
+
+      <div class="overflow-y-auto space-y-3 text-xs md:text-sm text-slate-700 pr-1 leading-relaxed">
+        <div class="bg-amber-50 p-3 rounded-xl border border-amber-200">
+          <h4 class="font-extrabold text-amber-900 text-sm mb-1">🎯 게임 개요</h4>
+          <p>6명의 복면 신인 레슬러의 서열을 결정해가며 내 손패의 카드를 가장 먼저 소진하는 클라이밍 카드 게임입니다 (총 4시즌 진행).</p>
+        </div>
+
+        <div class="bg-yellow-50 p-3 rounded-xl border border-yellow-200">
+          <h4 class="font-extrabold text-yellow-900 text-sm mb-1">1. 시작 플레이어 행동</h4>
+          <ul class="list-disc list-inside space-y-1">
+            <li><b>서열 미확립 레슬러 (미데뷔)</b>: 반드시 <b>1장만</b> 출전 가능.</li>
+            <li><b>서열 확립 레슬러</b>: <b>1~3장</b> 자유롭게 출전 가능.</li>
+          </ul>
+        </div>
+
+        <div class="bg-emerald-50 p-3 rounded-xl border border-emerald-200">
+          <h4 class="font-extrabold text-emerald-900 text-sm mb-1">2. 나머지 플레이어 행동 (택 1)</h4>
+          <ul class="list-disc list-inside space-y-1.5">
+            <li>
+              <b>+1장 내기 (새로운 강함 확립)</b>: 아직 우열 관계를 모르는 레슬러를 낼 때, 이전 카드보다 <b>정확히 1장 더 많이</b>(최대 3장) 내면 <b>새로 낸 레슬러가 이전 레슬러보다 더 강한 것으로 확정</b>됩니다. 예를 들어 2장 B 다음에 3장 D를 냈다면 <b>D &gt; B</b>가 됩니다. 기존 관계는 유지하며, 다른 레슬러와의 우열을 함부로 추론하지 않습니다.
+            </li>
+            <li>
+              <b>같은 장수 내기 (=)</b>: 이미 서열표 상에서 이전 레슬러보다 <b>확실히 더 강한 레슬러</b>인 경우 <b>동일한 장수</b>로 낼 수 있습니다.
+            </li>
+            <li>
+              <b>포기 (패스)</b>: 카드를 아끼거나 낼 카드가 없을 때 패스합니다. (1명을 제외하고 모두 패스하면 마지막으로 카드를 낸 사람이 다음 라운드 선이 됨)
+            </li>
+          </ul>
+        </div>
+
+        <div class="bg-rose-50 p-3 rounded-xl border border-rose-200">
+          <h4 class="font-extrabold text-rose-900 text-sm mb-1">3. 점수 토큰 & 시즌 진행</h4>
+          <p>손패를 먼저 털어낸 순서대로 토큰을 받습니다.</p>
+          <div class="flex gap-2 font-bold text-center mt-1">
+            <div class="flex-1 bg-yellow-200 text-yellow-900 py-1 rounded border border-yellow-400">1등: +2점</div>
+            <div class="flex-1 bg-emerald-200 text-emerald-900 py-1 rounded border border-emerald-400">2등: +1점</div>
+            <div class="flex-1 bg-slate-200 text-slate-800 py-1 rounded border border-slate-300">중간: 0점</div>
+            <div class="flex-1 bg-rose-200 text-rose-900 py-1 rounded border border-rose-400">꼴등: -1점</div>
+          </div>
+          <p class="mt-1.5 text-[11px] text-slate-500 font-bold">* 꼴등 플레이어가 다음 시즌의 시작 플레이어가 됩니다!</p>
+        </div>
+      </div>
+
+      <button id="btn-close-rules-bottom" class="mt-3 w-full bg-slate-900 text-white font-bold py-2.5 rounded-xl border-2 border-black hover:bg-slate-800 transition">
+        확인했습니다
+      </button>
+    </div>
+  </div>
+
+  <!-- MODAL: Season End -->
+  <div id="modal-season-end" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white border-4 border-black rounded-3xl p-6 max-w-md w-full shadow-[0_12px_0_0_#000] text-center">
+      <span class="text-5xl">🔔</span>
+      <h2 id="season-end-title" class="font-jua text-2xl text-slate-900 mt-2">시즌 1 종료!</h2>
+      <p id="season-end-subtitle" class="text-xs text-slate-600 font-bold mb-4">점수 토큰이 정산되었습니다.</p>
+
+      <div id="season-end-ranks" class="space-y-2 mb-5 text-left bg-slate-50 p-3 rounded-2xl border-2 border-slate-200"></div>
+
+      <button id="btn-next-season" class="w-full bg-yellow-400 hover:bg-yellow-300 active:scale-95 text-slate-950 font-jua text-xl py-3.5 rounded-2xl border-4 border-black shadow-[0_4px_0_0_#000] transition">
+        다음 시즌 시작하기 ➡️
+      </button>
+    </div>
+  </div>
+
+  <!-- MODAL: Final Game Over -->
+  <div id="modal-game-over" class="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-yellow-300 border-4 border-black rounded-3xl p-6 max-w-md w-full shadow-[0_12px_0_0_#000] text-center text-slate-950">
+      <div class="text-5xl mb-1">👑</div>
+      <h2 class="font-jua text-3xl text-slate-950">4시즌 대장정 종료!</h2>
+      <p class="text-xs font-black text-slate-800 mb-4">최종 우승 챔피언 매니저는?</p>
+
+      <div id="final-podium-container" class="space-y-2 mb-5 text-left bg-white/95 p-4 rounded-2xl border-2 border-black"></div>
+
+      <button id="btn-restart-game" class="w-full bg-red-600 hover:bg-red-500 active:scale-95 text-white font-jua text-xl py-3.5 rounded-2xl border-4 border-black shadow-[0_6px_0_0_#000] transition">
+        새로운 게임 시작하기 🔄
+      </button>
+    </div>
+  </div>
+
+  <!-- SOUND FX (Web Audio API) -->
+  <script>
+    const SoundFX = {
+      ctx: null,
+      enabled: true,
+      init() {
+        try {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          if (AudioContext && !this.ctx) {
+            this.ctx = new AudioContext();
+          }
+        } catch(e) {}
+      },
+      playTone(freq, type, duration, gainVal = 0.15) {
+        if (!this.enabled) return;
+        this.init();
+        if (!this.ctx) return;
+        try {
+          if (this.ctx.state === 'suspended') {
+            this.ctx.resume();
+          }
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = type;
+          osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+          gain.gain.setValueAtTime(gainVal, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.0001, this.ctx.currentTime + duration);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(this.ctx.currentTime + duration);
+        } catch(e) {}
+      },
+      playCard() {
+        this.playTone(480, 'triangle', 0.12, 0.18);
+        setTimeout(() => this.playTone(640, 'triangle', 0.15, 0.12), 60);
+      },
+      playStrengthUp() {
+        this.playTone(523.25, 'sine', 0.1, 0.2);
+        setTimeout(() => this.playTone(659.25, 'sine', 0.1, 0.2), 100);
+        setTimeout(() => this.playTone(783.99, 'sine', 0.25, 0.25), 200);
+      },
+      playPass() {
+        this.playTone(220, 'sine', 0.18, 0.1);
+      },
+      playBell() {
+        this.playTone(880, 'sine', 0.8, 0.3);
+        setTimeout(() => this.playTone(880, 'sine', 0.7, 0.2), 250);
+      },
+      playWin() {
+        [523, 659, 784, 1046].forEach((f, idx) => {
+          setTimeout(() => this.playTone(f, 'square', 0.25, 0.15), idx * 120);
+        });
+      }
+    };
+
+    const WRESTLERS = {
+      ORANGE: {
+        id: 'ORANGE',
+        name: '타이거',
+        color: '#FF6B00',
+        getSvg: () => `
+          <svg viewBox="0 0 100 100" class="w-full h-full drop-shadow">
+            <rect x="15" y="10" width="70" height="80" rx="35" fill="#FF6B00" stroke="#000" stroke-width="4"/>
+            <path d="M50 15 L50 35 M42 22 L58 22" stroke="#000" stroke-width="4" stroke-linecap="round"/>
+            <path d="M22 45 L32 45 M78 45 L68 45" stroke="#000" stroke-width="4" stroke-linecap="round"/>
+            <circle cx="34" cy="52" r="11" fill="#000"/>
+            <circle cx="66" cy="52" r="11" fill="#000"/>
+            <circle cx="34" cy="52" r="5" fill="#FFD54F"/>
+            <circle cx="66" cy="52" r="5" fill="#FFD54F"/>
+            <path d="M40 76 Q50 82 60 76" stroke="#000" stroke-width="4" fill="none" stroke-linecap="round"/>
+          </svg>
+        `
+      },
+      PURPLE: {
+        id: 'PURPLE',
+        name: '바이올렛',
+        color: '#8E24AA',
+        getSvg: () => `
+          <svg viewBox="0 0 100 100" class="w-full h-full drop-shadow">
+            <path d="M20 90 L20 30 Q50 8 80 30 L80 90 Z" fill="#8E24AA" stroke="#000" stroke-width="4"/>
+            <polygon points="50,15 40,32 60,32" fill="#76FF03" stroke="#000" stroke-width="3"/>
+            <polygon points="26,45 42,42 38,62 24,58" fill="#76FF03" stroke="#000" stroke-width="3"/>
+            <polygon points="74,45 58,42 62,62 76,58" fill="#76FF03" stroke="#000" stroke-width="3"/>
+            <circle cx="33" cy="52" r="4" fill="#000"/>
+            <circle cx="67" cy="52" r="4" fill="#000"/>
+            <rect x="42" y="74" width="16" height="6" rx="3" fill="#000"/>
+          </svg>
+        `
+      },
+      SILVER: {
+        id: 'SILVER',
+        name: '실버',
+        color: '#607D8B',
+        getSvg: () => `
+          <svg viewBox="0 0 100 100" class="w-full h-full drop-shadow">
+            <ellipse cx="50" cy="50" rx="36" ry="42" fill="#78909C" stroke="#000" stroke-width="4"/>
+            <path d="M28 46 Q40 40 44 54 Q34 60 28 46 Z" fill="#000"/>
+            <path d="M72 46 Q60 40 56 54 Q66 60 72 46 Z" fill="#000"/>
+            <circle cx="50" cy="28" r="8" fill="#ECEFF1" stroke="#000" stroke-width="3"/>
+            <line x1="50" y1="36" x2="50" y2="48" stroke="#000" stroke-width="4"/>
+            <line x1="40" y1="76" x2="60" y2="76" stroke="#000" stroke-width="4" stroke-linecap="round"/>
+          </svg>
+        `
+      },
+      PINK: {
+        id: 'PINK',
+        name: '루비',
+        color: '#E91E63',
+        getSvg: () => `
+          <svg viewBox="0 0 100 100" class="w-full h-full drop-shadow">
+            <circle cx="30" cy="24" r="14" fill="#FF4081" stroke="#000" stroke-width="3.5"/>
+            <circle cx="70" cy="24" r="14" fill="#FF4081" stroke="#000" stroke-width="3.5"/>
+            <rect x="20" y="24" width="60" height="68" rx="30" fill="#E91E63" stroke="#000" stroke-width="4"/>
+            <ellipse cx="36" cy="55" rx="10" ry="14" fill="#FFFFFF" stroke="#000" stroke-width="3.5"/>
+            <ellipse cx="64" cy="55" rx="10" ry="14" fill="#FFFFFF" stroke="#000" stroke-width="3.5"/>
+            <circle cx="36" cy="55" r="5" fill="#000"/>
+            <circle cx="64" cy="55" r="5" fill="#000"/>
+            <path d="M44 78 Q50 84 56 78" stroke="#000" stroke-width="4" fill="none" stroke-linecap="round"/>
+          </svg>
+        `
+      },
+      GREEN: {
+        id: 'GREEN',
+        name: '골리앗',
+        color: '#2E7D32',
+        getSvg: () => `
+          <svg viewBox="0 0 100 100" class="w-full h-full drop-shadow">
+            <path d="M22 30 Q12 10 32 18 Z" fill="#FFD600" stroke="#000" stroke-width="3"/>
+            <path d="M78 30 Q88 10 68 18 Z" fill="#FFD600" stroke="#000" stroke-width="3"/>
+            <path d="M24 22 L76 22 L70 86 Q50 96 30 86 Z" fill="#2E7D32" stroke="#000" stroke-width="4"/>
+            <path d="M30 40 Q50 48 70 40" stroke="#FFD600" stroke-width="5" fill="none"/>
+            <rect x="30" y="50" width="14" height="8" rx="2" fill="#000"/>
+            <rect x="56" y="50" width="14" height="8" rx="2" fill="#000"/>
+            <line x1="38" y1="74" x2="62" y2="74" stroke="#000" stroke-width="4" stroke-linecap="round"/>
+          </svg>
+        `
+      },
+      BLUE: {
+        id: 'BLUE',
+        name: '엘 디아블로',
+        color: '#0288D1',
+        getSvg: () => `
+          <svg viewBox="0 0 100 100" class="w-full h-full drop-shadow">
+            <rect x="18" y="16" width="64" height="74" rx="26" fill="#0288D1" stroke="#000" stroke-width="4"/>
+            <polygon points="26,16 20,4 34,12" fill="#FFFFFF" stroke="#000" stroke-width="3"/>
+            <polygon points="74,16 80,4 66,12" fill="#FFFFFF" stroke="#000" stroke-width="3"/>
+            <path d="M26 44 L44 48 L44 58 L26 52 Z" fill="#FFFFFF" stroke="#000" stroke-width="3"/>
+            <path d="M74 44 L56 48 L56 58 L74 52 Z" fill="#FFFFFF" stroke="#000" stroke-width="3"/>
+            <circle cx="36" cy="52" r="4" fill="#000"/>
+            <circle cx="64" cy="52" r="4" fill="#000"/>
+            <rect x="38" y="72" width="24" height="8" rx="4" fill="#000"/>
+          </svg>
+        `
+      }
+    };
+
+    const WRESTLER_KEYS = Object.keys(WRESTLERS);
+
+    const PLAYER_PROFILES = [
+      { name: '나 (매니저)', bg: 'bg-amber-400', border: 'border-amber-600', text: 'text-slate-950', badge: '🧑‍💼' },
+      { name: 'AI 타이슨', bg: 'bg-rose-500', border: 'border-rose-700', text: 'text-white', badge: '🥊' },
+      { name: 'AI 언더테이커', bg: 'bg-purple-600', border: 'border-purple-800', text: 'text-white', badge: '⚡' },
+      { name: 'AI 레이 미스테리오', bg: 'bg-cyan-500', border: 'border-cyan-700', text: 'text-slate-950', badge: '🦅' },
+      { name: 'AI 존 시나', bg: 'bg-emerald-500', border: 'border-emerald-700', text: 'text-slate-950', badge: '💪' },
+      { name: 'AI 더 락', bg: 'bg-orange-500', border: 'border-orange-700', text: 'text-white', badge: '🔥' }
+    ];
+  </script>
+
+  <!-- GAME ENGINE LOGIC -->
+  <script>
+    class MaskmenEngine {
+      constructor(playerCount = 4, aiSpeed = 700) {
+        this.playerCount = playerCount;
+        this.aiSpeed = aiSpeed;
+        this.currentSeason = 1;
+        this.maxSeasons = 4;
+        
+        this.scores = Array(playerCount).fill(0);
+        this.seasonHistory = [];
+        this.initSeason(0);
+      }
+
+      initSeason(startingPlayerIdx = 0) {
+        const fullDeck = [];
+        WRESTLER_KEYS.forEach(k => {
+          for (let i = 0; i < 10; i++) fullDeck.push(k);
+        });
+        this.shuffle(fullDeck);
+
+        let cardsPerPlayer = 15;
+        if (this.playerCount === 5) cardsPerPlayer = 12;
+        if (this.playerCount === 6) cardsPerPlayer = 10;
+
+        this.hands = [];
+        for (let p = 0; p < this.playerCount; p++) {
+          this.hands.push(fullDeck.slice(p * cardsPerPlayer, (p + 1) * cardsPerPlayer));
+        }
+
+        // Strength Graph
+        this.strengthGraph = {};
+        this.debuted = {};
+        WRESTLER_KEYS.forEach(a => {
+          this.strengthGraph[a] = {};
+          this.debuted[a] = false;
+          WRESTLER_KEYS.forEach(b => {
+            this.strengthGraph[a][b] = false;
+          });
+        });
+
+        this.currentTurn = startingPlayerIdx;
+        this.trickLeader = startingPlayerIdx;
+        this.currentPlay = null;
+        this.lastPlayPlayer = null;
+        // 이번 트릭(라운드)에서 한 번이라도 패스한 플레이어는 트릭 종료까지 재참가할 수 없습니다.
+        this.passedPlayers = new Set();
+        this.consecutivePasses = 0;
+        
+        this.finishedOrder = [];
+        this.seasonOver = false;
+      }
+
+      shuffle(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [array[i], array[j]] = [array[j], array[i]];
+        }
+      }
+
+      isStronger(wrestlerA, wrestlerB) {
+        if (!wrestlerA || !wrestlerB || wrestlerA === wrestlerB) return false;
+        return !!this.strengthGraph[wrestlerA][wrestlerB];
+      }
+
+      addStrengthRelation(strongerW, weakerW) {
+        if (strongerW === weakerW) return;
+        this.debuted[strongerW] = true;
+        this.debuted[weakerW] = true;
+        this.strengthGraph[strongerW][weakerW] = true;
+
+        // Warshall Algorithm for transitive closure
+        WRESTLER_KEYS.forEach(k => {
+          WRESTLER_KEYS.forEach(i => {
+            WRESTLER_KEYS.forEach(j => {
+              if (this.strengthGraph[i][k] && this.strengthGraph[k][j]) {
+                this.strengthGraph[i][j] = true;
+              }
+            });
+          });
+        });
+      }
+
+      getColumnChains() {
+        // strengthGraph는 도달 가능 관계(강함의 전이 관계)를 보관합니다.
+        // 화면의 "줄"은 부분순서를 한 기둥으로 강제로 합치면 안 됩니다.
+        // 예: A > B > C 상태에서 B > D가 추가되면
+        //     [A, B, C], [A, B, D] 두 줄로 보여 C와 D가 같은 깊이에 오도록 합니다.
+        const relatedKeys = WRESTLER_KEYS.filter(w =>
+          this.debuted[w] && WRESTLER_KEYS.some(other =>
+            other !== w && (this.isStronger(w, other) || this.isStronger(other, w))
+          )
+        );
+        if (relatedKeys.length === 0) return [];
+
+        // 전이 폐쇄 그래프에서 cover relation(중간 레슬러가 없는 직접 관계)을 복원합니다.
+        const children = {};
+        const incoming = {};
+        relatedKeys.forEach(w => {
+          children[w] = [];
+          incoming[w] = 0;
+        });
+
+        for (const stronger of relatedKeys) {
+          for (const weaker of relatedKeys) {
+            if (stronger === weaker || !this.isStronger(stronger, weaker)) continue;
+
+            const hasMiddle = relatedKeys.some(mid =>
+              mid !== stronger && mid !== weaker &&
+              this.isStronger(stronger, mid) &&
+              this.isStronger(mid, weaker)
+            );
+
+            if (!hasMiddle) {
+              children[stronger].push(weaker);
+              incoming[weaker]++;
+            }
+          }
+        }
+
+        const keyOrder = w => WRESTLER_KEYS.indexOf(w);
+        Object.values(children).forEach(arr => arr.sort((a, b) => keyOrder(a) - keyOrder(b)));
+
+        const roots = relatedKeys
+          .filter(w => incoming[w] === 0)
+          .sort((a, b) => keyOrder(a) - keyOrder(b));
+
+        const lines = [];
+        const walk = (node, path, seen) => {
+          // 안전장치: 잘못된 데이터로 순환이 생겨도 렌더러가 멈추지 않게 합니다.
+          if (seen.has(node)) return;
+          const nextSeen = new Set(seen);
+          nextSeen.add(node);
+          const nextPath = [...path, node];
+          const nextChildren = children[node] || [];
+
+          if (nextChildren.length === 0) {
+            lines.push(nextPath);
+            return;
+          }
+
+          nextChildren.forEach(child => walk(child, nextPath, nextSeen));
+        };
+
+        roots.forEach(root => walk(root, [], new Set()));
+
+        // 혹시 루트 계산에서 누락된 관계가 있으면 최소 한 줄은 표시합니다.
+        if (lines.length === 0) {
+          relatedKeys.forEach(w => lines.push([w]));
+        }
+
+        return lines;
+      }
+
+      // 현재까지 확립된 부분 서열을 1~6위 범위로 분석합니다.
+      // minRank: 확실히 나보다 강한 레슬러 수 + 1
+      // maxRank: 전체 수 - 확실히 나보다 약한 레슬러 수
+      getRankAnalysis() {
+        const total = WRESTLER_KEYS.length;
+        const analysis = {};
+
+        WRESTLER_KEYS.forEach(w => {
+          const strongerThanCount = WRESTLER_KEYS.filter(other =>
+            other !== w && this.isStronger(w, other)
+          ).length;
+          const weakerThanCount = WRESTLER_KEYS.filter(other =>
+            other !== w && this.isStronger(other, w)
+          ).length;
+
+          const minRank = weakerThanCount + 1;
+          const maxRank = total - strongerThanCount;
+          const debuted = !!this.debuted[w];
+          const isExact = debuted && minRank === maxRank;
+
+          analysis[w] = {
+            debuted,
+            minRank,
+            maxRank,
+            isExact,
+            rankText: !debuted
+              ? '미데뷔 / 서열 미정'
+              : isExact
+                ? `${minRank}위 확정`
+                : `${minRank}~${maxRank}위 가능`
+          };
+        });
+
+        return analysis;
+      }
+
+      getActivePlayerCount() {
+        return this.hands.filter((h) => h.length > 0).length;
+      }
+
+      isPlayerActive(playerIdx) {
+        return this.hands[playerIdx] && this.hands[playerIdx].length > 0;
+      }
+
+      hasPassedThisTrick(playerIdx) {
+        return !!this.currentPlay && this.passedPlayers.has(playerIdx);
+      }
+
+      haveAllOtherActivePlayersPassed() {
+        if (!this.currentPlay || this.lastPlayPlayer === null) return false;
+        for (let p = 0; p < this.playerCount; p++) {
+          if (!this.isPlayerActive(p) || p === this.lastPlayPlayer) continue;
+          if (!this.passedPlayers.has(p)) return false;
+        }
+        return true;
+      }
+
+      isValidPlay(playerIdx, wrestler, count) {
+        if (this.currentTurn !== playerIdx) return { valid: false, reason: '자신의 턴이 아닙니다.' };
+        if (!this.isPlayerActive(playerIdx)) return { valid: false, reason: '이미 모든 카드를 털었습니다.' };
+        if (this.hasPassedThisTrick(playerIdx)) {
+          return { valid: false, reason: '이번 라운드에서 이미 패스했으므로 다음 라운드까지 카드를 낼 수 없습니다.' };
+        }
+        
+        const heldCount = this.hands[playerIdx].filter(w => w === wrestler).length;
+        if (heldCount < count) {
+          return { valid: false, reason: `카드가 부족합니다. (보유: ${heldCount}장 / 요청: ${count}장)` };
+        }
+        if (count < 1 || count > 3) {
+          return { valid: false, reason: '카드는 1~3장까지만 낼 수 있습니다.' };
+        }
+
+        // Leading trick
+        if (!this.currentPlay) {
+          if (!this.debuted[wrestler]) {
+            if (count === 1) return { valid: true, type: 'DEBUT_LEAD' };
+            return { valid: false, reason: '미데뷔 레슬러는 1장만 선으로 낼 수 있습니다.' };
+          } else {
+            return { valid: true, type: 'DEBUTED_LEAD' };
+          }
+        }
+
+        const prevWrestler = this.currentPlay.wrestler;
+        const prevCount = this.currentPlay.count;
+
+        if (wrestler === prevWrestler) {
+          return { valid: false, reason: '현재 링 위의 레슬러와 같은 레슬러는 낼 수 없습니다.' };
+        }
+
+        // Equal count: MUST be proved stronger
+        if (count === prevCount) {
+          if (this.isStronger(wrestler, prevWrestler)) {
+            return { valid: true, type: 'EQUAL_COUNT_WIN' };
+          } else if (this.isStronger(prevWrestler, wrestler)) {
+            return { valid: false, reason: `[${WRESTLERS[wrestler].name}]은(는) [${WRESTLERS[prevWrestler].name}]보다 약한 서열로 이미 확정되어 낼 수 없습니다.` };
+          } else {
+            return { valid: false, reason: `우열 관계가 아직 없으므로 같은 장수가 아닌 [+1장(${prevCount + 1}장)]으로 내야 새로운 서열 줄이 확립됩니다.` };
+          }
+        }
+
+        // +1 count: previous cannot be stronger than this
+        if (count === prevCount + 1) {
+          if (count > 3) {
+            return { valid: false, reason: '최대 3장까지만 낼 수 있습니다.' };
+          }
+          if (this.isStronger(prevWrestler, wrestler)) {
+            return { valid: false, reason: `[${WRESTLERS[prevWrestler].name}]이(가) 이미 더 강한 서열로 확정되어 있습니다. (마스크맨에는 서열 역전이 없습니다)` };
+          }
+          if (this.isStronger(wrestler, prevWrestler)) {
+            return { valid: false, reason: `이미 [${WRESTLERS[wrestler].name}]이(가) 더 강하므로 +1장이 아닌 같은 [${prevCount}장]으로 내야 합니다.` };
+          }
+          return { valid: true, type: 'PLUS_ONE_STRENGTH_UP' };
+        }
+
+        return { valid: false, reason: `이전 카드(${prevCount}장)와 같은 장수(강함 확립 시) 또는 1장 더 많이(+1) 내야 합니다.` };
+      }
+
+      playCards(playerIdx, wrestler, count) {
+        const validation = this.isValidPlay(playerIdx, wrestler, count);
+        if (!validation.valid) return false;
+
+        let removed = 0;
+        this.hands[playerIdx] = this.hands[playerIdx].filter(w => {
+          if (w === wrestler && removed < count) {
+            removed++;
+            return false;
+          }
+          return true;
+        });
+
+        let newStrengthEstablished = false;
+        let newRelation = null;
+        if (this.currentPlay && count === this.currentPlay.count + 1) {
+          // 공식 규칙: 우열이 미정인 레슬러를 이전 플레이보다 정확히 +1장 내면
+          // 새로 낸 레슬러가 이전 레슬러보다 강한 것으로 확정됩니다.
+          // 예: B 2장 -> D 3장이면 D > B.
+          const strongerWrestler = wrestler;
+          const weakerWrestler = this.currentPlay.wrestler;
+          this.addStrengthRelation(strongerWrestler, weakerWrestler);
+          newStrengthEstablished = true;
+          newRelation = { stronger: strongerWrestler, weaker: weakerWrestler };
+        } else if (!this.debuted[wrestler]) {
+          this.debuted[wrestler] = true;
+        }
+
+        this.currentPlay = {
+          player: playerIdx,
+          wrestler: wrestler,
+          count: count
+        };
+        this.lastPlayPlayer = playerIdx;
+        // 누군가 새 카드를 내도 이미 패스한 사람은 이 트릭에 복귀하지 않습니다.
+        this.consecutivePasses = this.passedPlayers.size;
+
+        if (this.hands[playerIdx].length === 0 && !this.finishedOrder.includes(playerIdx)) {
+          this.finishedOrder.push(playerIdx);
+        }
+
+        if (this.getActivePlayerCount() <= 1) {
+          this.endSeason();
+          return { success: true, newStrengthEstablished, newRelation, seasonEnded: true };
+        }
+
+        if (this.haveAllOtherActivePlayersPassed()) {
+          this.resolveTrickEnd();
+          return { success: true, newStrengthEstablished, newRelation, seasonEnded: false, trickEnded: true };
+        }
+
+        this.advanceTurn();
+        return { success: true, newStrengthEstablished, newRelation, seasonEnded: false };
+      }
+
+      passTurn(playerIdx) {
+        if (this.currentTurn !== playerIdx) return false;
+
+        // 링에 카드가 올라온 뒤 패스하면 이번 트릭이 끝날 때까지 재참가 불가.
+        if (this.currentPlay) {
+          this.passedPlayers.add(playerIdx);
+          this.consecutivePasses = this.passedPlayers.size;
+        } else {
+          // 빈 링에서의 패스는 기존 동작을 유지하되, 다음 트릭까지 잠그지는 않습니다.
+          this.consecutivePasses++;
+        }
+
+        const activeCount = this.getActivePlayerCount();
+        if (activeCount <= 1) {
+          this.endSeason();
+          return true;
+        }
+
+        if (this.haveAllOtherActivePlayersPassed()) {
+          this.resolveTrickEnd();
+        } else {
+          this.advanceTurn();
+        }
+        return true;
+      }
+
+      advanceTurn() {
+        let next = (this.currentTurn + 1) % this.playerCount;
+        let loops = 0;
+
+        // 이미 패스한 플레이어는 이번 트릭에서는 자동 패스 처리(턴 자체를 건너뜀)합니다.
+        while (loops < this.playerCount * 2) {
+          const inactive = !this.isPlayerActive(next);
+          const lockedByPass = !!this.currentPlay && this.passedPlayers.has(next);
+          if (!inactive && !lockedByPass) break;
+          next = (next + 1) % this.playerCount;
+          loops++;
+        }
+
+        this.currentTurn = next;
+      }
+
+      resolveTrickEnd() {
+        const winner = this.lastPlayPlayer;
+        this.currentPlay = null;
+        this.passedPlayers.clear();
+        this.consecutivePasses = 0;
+
+        if (this.getActivePlayerCount() <= 1) {
+          this.endSeason();
+          return;
+        }
+
+        if (winner !== null && this.isPlayerActive(winner)) {
+          this.currentTurn = winner;
+          this.trickLeader = winner;
+        } else {
+          let next = ((winner !== null ? winner : this.currentTurn) + 1) % this.playerCount;
+          let loops = 0;
+          while (!this.isPlayerActive(next) && loops < this.playerCount * 2) {
+            next = (next + 1) % this.playerCount;
+            loops++;
+          }
+          this.currentTurn = next;
+          this.trickLeader = next;
+        }
+      }
+
+      endSeason() {
+        if (this.seasonOver) return;
+        this.seasonOver = true;
+        for (let p = 0; p < this.playerCount; p++) {
+          if (!this.finishedOrder.includes(p)) {
+            this.finishedOrder.push(p);
+          }
+        }
+
+        const seasonPoints = Array(this.playerCount).fill(0);
+        if (this.finishedOrder.length > 0) seasonPoints[this.finishedOrder[0]] = 2;
+        if (this.finishedOrder.length > 1) seasonPoints[this.finishedOrder[1]] = 1;
+        if (this.finishedOrder.length > 2) {
+          const lastIdx = this.finishedOrder[this.finishedOrder.length - 1];
+          seasonPoints[lastIdx] = -1;
+        }
+
+        for (let p = 0; p < this.playerCount; p++) {
+          this.scores[p] += seasonPoints[p];
+        }
+
+        this.seasonHistory.push({
+          season: this.currentSeason,
+          order: [...this.finishedOrder],
+          points: [...seasonPoints]
+        });
+      }
+
+      getAiMove(aiIdx) {
+        if (!this.isPlayerActive(aiIdx)) return { action: 'PASS' };
+
+        const handCounts = {};
+        this.hands[aiIdx].forEach(w => {
+          handCounts[w] = (handCounts[w] || 0) + 1;
+        });
+        const uniqueWrestlers = Object.keys(handCounts);
+
+        // 1. Gather all strictly legal plays using isValidPlay verification
+        const legalPlays = [];
+        for (const w of uniqueWrestlers) {
+          const maxPossible = Math.min(handCounts[w], 3);
+          for (let c = 1; c <= maxPossible; c++) {
+            const validation = this.isValidPlay(aiIdx, w, c);
+            if (validation.valid) {
+              legalPlays.push({ wrestler: w, count: c, type: validation.type });
+            }
+          }
+        }
+
+        // If no legal plays are possible, AI must pass
+        if (legalPlays.length === 0) {
+          return { action: 'PASS' };
+        }
+
+        // 2. Intelligent choice among legal options
+        if (!this.currentPlay) {
+          // Leading trick: Prioritize playing larger sets or debuted wrestlers to lead effectively
+          legalPlays.sort((a, b) => {
+            if (b.count !== a.count) return b.count - a.count;
+            const aDeb = this.debuted[a.wrestler] ? 1 : 0;
+            const bDeb = this.debuted[b.wrestler] ? 1 : 0;
+            return bDeb - aDeb;
+          });
+          return { action: 'PLAY', wrestler: legalPlays[0].wrestler, count: legalPlays[0].count };
+        }
+
+        // Responding to current field:
+        // Priority 1: Equal count win (cheaper card cost)
+        // Priority 2: Plus one strength up (establish superiority)
+        legalPlays.sort((a, b) => {
+          if (a.count !== b.count) return a.count - b.count;
+          return handCounts[b.wrestler] - handCounts[a.wrestler];
+        });
+
+        return { action: 'PLAY', wrestler: legalPlays[0].wrestler, count: legalPlays[0].count };
+      }
+    }
+  </script>
+
+  <!-- UI CONTROLLER & EVENT LISTENERS -->
+  <script>
+    let game = null;
+    let selectedWrestler = null;
+    let selectedCount = 1;
+    let aiTimeoutId = null;
+    let draggedIndex = null;
+    let handCardOrder = [];
+
+    const elements = {
+      seasonDisplay: document.getElementById('season-display'),
+      headerScoreboard: document.getElementById('header-scoreboard'),
+      headerSelectAiSpeed: document.getElementById('header-select-ai-speed'),
+      currentTurnBadge: document.getElementById('current-turn-badge'),
+      trickInfoText: document.getElementById('trick-info-text'),
+      aiOpponentsContainer: document.getElementById('ai-opponents-container'),
+      trickCardsDisplay: document.getElementById('trick-cards-display'),
+      trickStatusBadge: document.getElementById('trick-status-badge'),
+      commentaryText: document.getElementById('commentary-text'),
+      passCountTracker: document.getElementById('pass-count-tracker'),
+      trickWinnerPreview: document.getElementById('trick-winner-preview'),
+      playerCardCountBadge: document.getElementById('player-card-count-badge'),
+      playerHandContainer: document.getElementById('player-hand-container'),
+      btnSortRank: document.getElementById('btn-sort-rank'),
+      btnSortCount: document.getElementById('btn-sort-count'),
+      btnSortColor: document.getElementById('btn-sort-color'),
+      btnCount1: document.getElementById('btn-count-1'),
+      btnCount2: document.getElementById('btn-count-2'),
+      btnCount3: document.getElementById('btn-count-3'),
+      btnPass: document.getElementById('btn-pass'),
+      btnPlayCard: document.getElementById('btn-play-card'),
+      playValidationHint: document.getElementById('play-validation-hint'),
+      hierarchyColumnsContainer: document.getElementById('hierarchy-columns-container'),
+      undebutedRosterPool: document.getElementById('undebuted-roster-pool'),
+      seasonHistoryTable: document.getElementById('season-history-table'),
+      modalSetup: document.getElementById('modal-setup'),
+      modalRules: document.getElementById('modal-rules'),
+      modalSeasonEnd: document.getElementById('modal-season-end'),
+      seasonEndTitle: document.getElementById('season-end-title'),
+      seasonEndSubtitle: document.getElementById('season-end-subtitle'),
+      seasonEndRanks: document.getElementById('season-end-ranks'),
+      modalGameOver: document.getElementById('modal-game-over'),
+      finalPodiumContainer: document.getElementById('final-podium-container'),
+      btnRules: document.getElementById('btn-rules'),
+      btnCloseRules: document.getElementById('btn-close-rules'),
+      btnCloseRulesBottom: document.getElementById('btn-close-rules-bottom'),
+      btnSound: document.getElementById('btn-sound'),
+      btnNewGame: document.getElementById('btn-new-game'),
+      btnStartGame: document.getElementById('btn-start-game'),
+      btnNextSeason: document.getElementById('btn-next-season'),
+      btnRestartGame: document.getElementById('btn-restart-game'),
+      selectAiSpeed: document.getElementById('select-ai-speed'),
+    };
+
+    function getPlayerProfile(idx) {
+      return PLAYER_PROFILES[idx] || { name: `AI ${idx}`, bg: 'bg-slate-700', border: 'border-slate-900', text: 'text-white', badge: '🤖' };
+    }
+
+    let selectedPlayerCount = 4;
+    document.querySelectorAll('.btn-player-select').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        document.querySelectorAll('.btn-player-select').forEach(b => {
+          b.classList.remove('bg-yellow-400', 'ring-4', 'ring-black');
+          b.classList.add('bg-yellow-100');
+        });
+        const target = e.currentTarget;
+        target.classList.remove('bg-yellow-100');
+        target.classList.add('bg-yellow-400', 'ring-4', 'ring-black');
+        selectedPlayerCount = parseInt(target.dataset.players, 10);
+      });
+    });
+
+    elements.btnStartGame.addEventListener('click', () => {
+      if (aiTimeoutId) clearTimeout(aiTimeoutId);
+      SoundFX.init();
+      SoundFX.playBell();
+      const speed = parseInt(elements.selectAiSpeed.value, 10);
+      game = new MaskmenEngine(selectedPlayerCount, speed);
+      if (elements.headerSelectAiSpeed) {
+        elements.headerSelectAiSpeed.value = speed.toString();
+      }
+      elements.modalSetup.classList.add('hidden');
+      selectedWrestler = null;
+      selectedCount = 1;
+      initHandOrder();
+      renderAll();
+      setCommentary('🥊 시즌 1 개막! 당신의 카드를 조합하여 승리하세요!');
+      checkTurn();
+    });
+
+    if (elements.headerSelectAiSpeed) {
+      elements.headerSelectAiSpeed.addEventListener('change', (e) => {
+        const newSpeed = parseInt(e.target.value, 10);
+        if (game) game.aiSpeed = newSpeed;
+        if (elements.selectAiSpeed) elements.selectAiSpeed.value = newSpeed.toString();
+      });
+    }
+
+    elements.btnNewGame.addEventListener('click', () => {
+      if (aiTimeoutId) clearTimeout(aiTimeoutId);
+      elements.modalSetup.classList.remove('hidden');
+    });
+
+    elements.btnSound.addEventListener('click', () => {
+      SoundFX.enabled = !SoundFX.enabled;
+      elements.btnSound.textContent = SoundFX.enabled ? '🔊' : '🔇';
+      elements.btnSound.classList.toggle('opacity-50', !SoundFX.enabled);
+    });
+
+    elements.btnRules.addEventListener('click', () => elements.modalRules.classList.remove('hidden'));
+    elements.btnCloseRules.addEventListener('click', () => elements.modalRules.classList.add('hidden'));
+    elements.btnCloseRulesBottom.addEventListener('click', () => elements.modalRules.classList.add('hidden'));
+
+    function initHandOrder() {
+      if (!game) return;
+      const uniqueKeys = Array.from(new Set(game.hands[0]));
+      handCardOrder = uniqueKeys;
+      sortHandByRank();
+    }
+
+    function sortHandByRank() {
+      if (!game) return;
+      handCardOrder.sort((a, b) => {
+        const aDebuted = game.debuted[a] ? 1 : 0;
+        const bDebuted = game.debuted[b] ? 1 : 0;
+        if (aDebuted !== bDebuted) return bDebuted - aDebuted;
+        if (game.isStronger(a, b)) return -1;
+        if (game.isStronger(b, a)) return 1;
+        return 0;
+      });
+      renderPlayerHand();
+    }
+
+    function sortHandByCount() {
+      if (!game) return;
+      const counts = {};
+      game.hands[0].forEach(w => counts[w] = (counts[w] || 0) + 1);
+      handCardOrder.sort((a, b) => (counts[b] || 0) - (counts[a] || 0));
+      renderPlayerHand();
+    }
+
+    function sortHandByColor() {
+      if (!game) return;
+      handCardOrder.sort((a, b) => WRESTLER_KEYS.indexOf(a) - WRESTLER_KEYS.indexOf(b));
+      renderPlayerHand();
+    }
+
+    elements.btnSortRank.addEventListener('click', sortHandByRank);
+    elements.btnSortCount.addEventListener('click', sortHandByCount);
+    elements.btnSortColor.addEventListener('click', sortHandByColor);
+
+    [1, 2, 3].forEach(cnt => {
+      elements[`btnCount${cnt}`].addEventListener('click', () => {
+        selectedCount = cnt;
+        updateCountButtons();
+        validateSelection();
+      });
+    });
+
+    function updateCountButtons() {
+      [1, 2, 3].forEach(cnt => {
+        const btn = elements[`btnCount${cnt}`];
+        if (selectedCount === cnt) {
+          btn.className = 'px-3 py-1.5 rounded-lg text-xs font-black transition border-2 border-black bg-yellow-400 text-slate-950 shadow scale-105';
+        } else {
+          btn.className = 'px-3 py-1.5 rounded-lg text-xs font-black transition border-2 border-transparent bg-slate-800 text-slate-200 hover:bg-slate-700';
+        }
+      });
+    }
+
+    function setCommentary(msg) {
+      elements.commentaryText.textContent = msg;
+    }
+
+    function renderAll() {
+      if (!game) return;
+
+      elements.seasonDisplay.textContent = `시즌 ${game.currentSeason} / ${game.maxSeasons}`;
+      renderScoreboard();
+
+      const profile = getPlayerProfile(game.currentTurn);
+      elements.currentTurnBadge.textContent = profile.name;
+      elements.currentTurnBadge.className = `font-jua text-sm md:text-base px-3 py-0.5 rounded-full border-2 border-black shadow-xs ${profile.bg} ${profile.text} ${game.currentTurn === 0 ? 'animate-pulse' : ''}`;
+
+      renderAiOpponents();
+      renderTrickCards();
+      renderPlayerHand();
+      renderHierarchyBoard();
+      renderSeasonHistory();
+
+      elements.passCountTracker.textContent = `${game.consecutivePasses}회`;
+      elements.trickWinnerPreview.innerHTML = game.lastPlayPlayer !== null
+        ? `현재 링 장악: <b class="text-amber-800 font-black">${getPlayerProfile(game.lastPlayPlayer).name}</b>`
+        : `현재 링 장악: <span class="text-slate-400">-</span>`;
+
+      validateSelection();
+    }
+
+    function renderScoreboard() {
+      elements.headerScoreboard.innerHTML = '';
+      for (let p = 0; p < game.playerCount; p++) {
+        const profile = getPlayerProfile(p);
+        const isMe = (p === 0);
+        const cardCount = game.hands[p].length;
+        const div = document.createElement('div');
+        div.className = `flex items-center gap-1.5 px-2 py-0.5 rounded-lg border text-xs font-bold ${
+          isMe ? 'bg-yellow-400/25 border-yellow-400 text-yellow-300 ring-1 ring-yellow-400' : 'bg-slate-900 border-slate-700 text-slate-300'
+        }`;
+        div.innerHTML = `
+          <span>${profile.badge} ${profile.name.split(' ')[0]}</span>
+          <span class="text-[10px] bg-black/60 px-1.5 py-0.5 rounded text-yellow-400 font-extrabold">${game.scores[p]}점</span>
+          <span class="text-[10px] text-slate-400">(${cardCount}장)</span>
+        `;
+        elements.headerScoreboard.appendChild(div);
+      }
+    }
+
+    function renderAiOpponents() {
+      elements.aiOpponentsContainer.innerHTML = '';
+      for (let p = 1; p < game.playerCount; p++) {
+        const profile = getPlayerProfile(p);
+        const isCurrent = (game.currentTurn === p);
+        const cardsLeft = game.hands[p].length;
+        const isFinished = game.finishedOrder.includes(p);
+        const finishRank = game.finishedOrder.indexOf(p) + 1;
+
+        const card = document.createElement('div');
+        card.className = `flex items-center gap-2 p-2 rounded-xl border-2 transition-all ${
+          isCurrent 
+            ? `${profile.bg} ${profile.border} ${profile.text} ring-active-glow scale-105 shadow-lg` 
+            : 'bg-white border-slate-300 text-slate-900 shadow-sm opacity-90'
+        } ${isFinished ? 'bg-slate-100 border-dashed opacity-60 text-slate-400' : ''}`;
+
+        card.innerHTML = `
+          <div class="relative">
+            <div class="w-9 h-9 rounded-full ${profile.bg} flex items-center justify-center text-base ${profile.text} border-2 border-black shadow">
+              ${profile.badge}
+            </div>
+            ${isFinished ? `<span class="absolute -top-1.5 -right-1.5 bg-yellow-400 text-slate-950 font-black text-[10px] px-1.5 rounded-full border border-black shadow">${finishRank}위</span>` : ''}
+          </div>
+          <div class="text-left leading-tight">
+            <div class="font-black text-xs flex items-center gap-1">
+              <span>${profile.name}</span>
+              ${isCurrent ? `<span class="inline-block w-2 h-2 rounded-full bg-white animate-ping"></span>` : ''}
+            </div>
+            <div class="text-[11px] font-bold">
+              ${isFinished ? '<span class="text-emerald-700 font-black">손패 소진 완료!</span>' : `남은 카드: <b>${cardsLeft}장</b>`}
+            </div>
+          </div>
+        `;
+        elements.aiOpponentsContainer.appendChild(card);
+      }
+    }
+
+    function renderTrickCards() {
+      elements.trickCardsDisplay.innerHTML = '';
+      if (!game.currentPlay) {
+        elements.trickStatusBadge.classList.add('hidden');
+        elements.trickCardsDisplay.innerHTML = `
+          <div class="text-slate-400 font-bold text-xs md:text-sm bg-white/70 border-2 border-dashed border-slate-300 rounded-2xl px-8 py-5 flex flex-col items-center gap-1.5">
+            <span class="text-3xl opacity-60">🤼</span>
+            <span>링이 비어 있습니다. [${getPlayerProfile(game.currentTurn).name}]의 선 플레이!</span>
+          </div>
+        `;
+        return;
+      }
+
+      const wrestler = WRESTLERS[game.currentPlay.wrestler];
+      const count = game.currentPlay.count;
+      const playerProfile = getPlayerProfile(game.currentPlay.player);
+
+      elements.trickStatusBadge.classList.remove('hidden');
+      elements.trickStatusBadge.innerHTML = `
+        <span class="${playerProfile.bg} ${playerProfile.text} px-2 py-0.5 rounded-full text-[10px] mr-1 border border-black">${playerProfile.name}</span>
+        <span>출전 (${count}장)</span>
+      `;
+
+      for (let i = 0; i < count; i++) {
+        const cardEl = document.createElement('div');
+        cardEl.className = 'w-16 h-24 md:w-20 md:h-28 rounded-xl border-3 border-black flex flex-col items-center justify-between p-1.5 card-shadow transition-all transform hover:-translate-y-1';
+        cardEl.style.backgroundColor = wrestler.color;
+        cardEl.innerHTML = `
+          <div class="text-[10px] font-black px-1.5 py-0.2 rounded bg-black/40 text-white w-full text-center truncate">
+            ${wrestler.name}
+          </div>
+          <div class="w-10 h-10 md:w-12 md:h-12 my-auto">
+            ${wrestler.getSvg()}
+          </div>
+          <div class="text-[9px] font-black text-white/90">
+            ${i + 1}/${count}
+          </div>
+        `;
+        elements.trickCardsDisplay.appendChild(cardEl);
+      }
+    }
+
+    function renderPlayerHand() {
+      elements.playerHandContainer.innerHTML = '';
+      const myHand = game.hands[0];
+      elements.playerCardCountBadge.textContent = `남은 카드: ${myHand.length}장`;
+
+      if (myHand.length === 0) {
+        elements.playerHandContainer.innerHTML = `
+          <div class="text-yellow-400 font-jua text-lg py-5 flex flex-col items-center gap-1">
+            <span>🎉 손패를 모두 털었습니다!</span>
+            <span class="text-xs text-slate-300 font-sans">다른 AI들의 경기를 지켜보고 있습니다...</span>
+          </div>
+        `;
+        return;
+      }
+
+      const counts = {};
+      myHand.forEach(w => counts[w] = (counts[w] || 0) + 1);
+
+      const presentKeys = Object.keys(counts);
+      handCardOrder = handCardOrder.filter(k => presentKeys.includes(k));
+      presentKeys.forEach(k => {
+        if (!handCardOrder.includes(k)) handCardOrder.push(k);
+      });
+
+      if (selectedWrestler && !counts[selectedWrestler]) {
+        selectedWrestler = null;
+      }
+
+      const isMyTurn = (game.currentTurn === 0);
+
+      handCardOrder.forEach((wKey, index) => {
+        const wrestler = WRESTLERS[wKey];
+        const count = counts[wKey] || 0;
+        if (count === 0) return;
+
+        const isSelected = (selectedWrestler === wKey);
+        const hasDebuted = game.debuted[wKey];
+
+        let canPlayAny = false;
+        if (isMyTurn) {
+          for (let c = 1; c <= Math.min(count, 3); c++) {
+            if (game.isValidPlay(0, wKey, c).valid) {
+              canPlayAny = true;
+              break;
+            }
+          }
+        }
+
+        const cardWrapper = document.createElement('div');
+        cardWrapper.className = 'flex flex-col items-center gap-1';
+        cardWrapper.draggable = true;
+
+        cardWrapper.addEventListener('dragstart', () => {
+          draggedIndex = index;
+          cardWrapper.classList.add('dragging-card');
+        });
+        cardWrapper.addEventListener('dragend', () => {
+          cardWrapper.classList.remove('dragging-card');
+        });
+        cardWrapper.addEventListener('dragover', (e) => {
+          e.preventDefault();
+          cardWrapper.classList.add('drag-over-card');
+        });
+        cardWrapper.addEventListener('dragleave', () => {
+          cardWrapper.classList.remove('drag-over-card');
+        });
+        cardWrapper.addEventListener('drop', (e) => {
+          e.preventDefault();
+          cardWrapper.classList.remove('drag-over-card');
+          if (draggedIndex !== null && draggedIndex !== index) {
+            const moved = handCardOrder.splice(draggedIndex, 1)[0];
+            handCardOrder.splice(index, 0, moved);
+            renderPlayerHand();
+          }
+        });
+
+        const cardBtn = document.createElement('button');
+        cardBtn.className = `relative flex flex-col items-center justify-between p-2 rounded-2xl border-3 transition-all transform active:scale-95 ${
+          isSelected 
+            ? 'ring-4 ring-yellow-400 -translate-y-2 shadow-2xl scale-105 border-white' 
+            : canPlayAny 
+              ? 'border-emerald-400 shadow-[0_0_12px_rgba(52,211,153,0.6)] hover:-translate-y-1' 
+              : 'hover:-translate-y-1 shadow-md border-black opacity-85'
+        }`;
+        cardBtn.style.backgroundColor = wrestler.color;
+        cardBtn.style.width = '80px';
+        cardBtn.style.height = '118px';
+
+        cardBtn.innerHTML = `
+          <div class="absolute -top-2 -right-2 bg-yellow-400 text-slate-950 font-black text-xs w-6 h-6 rounded-full border-2 border-black flex items-center justify-center shadow">
+            ${count}
+          </div>
+          ${canPlayAny ? `<span class="absolute -top-2 -left-2 bg-emerald-500 text-slate-950 font-black text-[9px] px-1.5 py-0.5 rounded-full border border-black shadow">출전가능</span>` : ''}
+          <div class="text-[9px] font-extrabold px-1 rounded ${hasDebuted ? 'bg-emerald-950/80 text-emerald-300' : 'bg-black/60 text-yellow-300'}">
+            ${hasDebuted ? '서열확립' : '미데뷔'}
+          </div>
+          <div class="w-10 h-10 my-auto">
+            ${wrestler.getSvg()}
+          </div>
+          <div class="text-[11px] font-black text-white tracking-tighter bg-black/50 px-1 py-0.5 rounded w-full text-center truncate">
+            ${wrestler.name}
+          </div>
+        `;
+
+        cardBtn.addEventListener('click', () => {
+          if (game.currentTurn !== 0) return;
+          selectedWrestler = wKey;
+          
+          if (game.currentPlay) {
+            const reqSame = game.currentPlay.count;
+            const reqPlusOne = game.currentPlay.count + 1;
+            
+            if (count >= reqSame && game.isValidPlay(0, wKey, reqSame).valid) {
+              selectedCount = reqSame;
+            } else if (reqPlusOne <= 3 && count >= reqPlusOne && game.isValidPlay(0, wKey, reqPlusOne).valid) {
+              selectedCount = reqPlusOne;
+            } else {
+              selectedCount = Math.min(count, 1);
+            }
+          } else {
+            if (!hasDebuted) {
+              selectedCount = 1;
+            } else {
+              if (selectedCount > count) selectedCount = count;
+              if (selectedCount === 0) selectedCount = 1;
+            }
+          }
+
+          renderAll();
+        });
+
+        const navRow = document.createElement('div');
+        navRow.className = 'flex items-center gap-1 mt-0.5';
+        navRow.innerHTML = `
+          <button class="bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] px-1.5 py-0.5 rounded border border-slate-700 transition" title="왼쪽 이동">◀</button>
+          <button class="bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] px-1.5 py-0.5 rounded border border-slate-700 transition" title="오른쪽 이동">▶</button>
+        `;
+
+        navRow.children[0].addEventListener('click', (e) => {
+          e.stopPropagation();
+          if (index > 0) {
+            [handCardOrder[index - 1], handCardOrder[index]] = [handCardOrder[index], handCardOrder[index - 1]];
+            renderPlayerHand();
+          }
+        });
+
+        navRow.children[1].addEventListener('click', (e) => {
+          e.stopPropagation();
+          if (index < handCardOrder.length - 1) {
+            [handCardOrder[index + 1], handCardOrder[index]] = [handCardOrder[index], handCardOrder[index + 1]];
+            renderPlayerHand();
+          }
+        });
+
+        cardWrapper.appendChild(cardBtn);
+        cardWrapper.appendChild(navRow);
+        elements.playerHandContainer.appendChild(cardWrapper);
+      });
+    }
+
+    function renderHierarchyBoard() {
+      const rankAnalysis = game.getRankAnalysis();
+      const columns = game.getColumnChains();
+      
+      elements.hierarchyColumnsContainer.innerHTML = '';
+
+      if (columns.length === 0) {
+        elements.hierarchyColumnsContainer.innerHTML = `
+          <div class="flex-1 flex flex-col items-center justify-center text-center p-6 text-slate-400 font-bold text-xs gap-2">
+            <span class="text-4xl opacity-50">🥋</span>
+            <span>아직 서열이 확립된 레슬러가 없습니다.<br>+1장 내기로 서열 줄을 만들어가세요!</span>
+          </div>
+        `;
+      } else {
+        columns.forEach((col, colIdx) => {
+          const colEl = document.createElement('div');
+          colEl.className = 'flex flex-col items-center gap-1.5 bg-white/95 p-2.5 rounded-2xl border-2 border-slate-300 shadow-sm min-w-[105px] max-w-[130px] flex-shrink-0';
+
+          colEl.innerHTML = `
+            <div class="text-[10px] font-black text-amber-900 bg-amber-100 border border-amber-300 px-2 py-0.5 rounded-full mb-0.5">
+              줄 ${colIdx + 1}
+            </div>
+          `;
+
+          col.forEach((wKey, idxInCol) => {
+            const w = WRESTLERS[wKey];
+            const info = rankAnalysis[wKey];
+
+            if (idxInCol > 0) {
+              const arrowEl = document.createElement('div');
+              arrowEl.className = 'text-xs font-black text-slate-400 py-0.5';
+              arrowEl.innerHTML = '⬇️ <span class="text-[9px] text-slate-500 font-bold">약함</span>';
+              colEl.appendChild(arrowEl);
+            }
+
+            const item = document.createElement('div');
+            item.className = 'w-full flex flex-col items-center p-1.5 rounded-xl border-2 border-black text-white text-center shadow-sm relative';
+            item.style.backgroundColor = w.color;
+
+            item.innerHTML = `
+              <div class="w-7 h-7 mb-0.5">${w.getSvg()}</div>
+              <div class="text-xs font-black truncate w-full">${w.name}</div>
+              <div class="text-[9px] font-black px-1.5 py-0.2 rounded-full mt-1 ${
+                info.isExact 
+                  ? 'bg-yellow-300 text-slate-950 ring-1 ring-black' 
+                  : 'bg-black/60 text-white'
+              }">
+                ${info.isExact ? `🏆 ${info.minRank}순위 확정` : `${info.minRank}~${info.maxRank}위`}
+              </div>
+            `;
+            colEl.appendChild(item);
+          });
+
+          elements.hierarchyColumnsContainer.appendChild(colEl);
+        });
+      }
+
+      // 아직 어떤 레슬러와도 서열 관계가 연결되지 않은 레슬러 표시
+      elements.undebutedRosterPool.innerHTML = '';
+      const unlinkedKeys = WRESTLER_KEYS.filter(wKey => {
+        return !WRESTLER_KEYS.some(other =>
+          other !== wKey && (game.isStronger(wKey, other) || game.isStronger(other, wKey))
+        );
+      });
+
+      if (unlinkedKeys.length === 0) {
+        elements.undebutedRosterPool.innerHTML = `
+          <span class="text-[10px] font-black text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-1 rounded-lg">
+            모든 레슬러가 서열 관계에 연결되었습니다.
+          </span>
+        `;
+      } else {
+        unlinkedKeys.forEach(wKey => {
+          const w = WRESTLERS[wKey];
+          const info = rankAnalysis[wKey];
+          const chip = document.createElement('div');
+          chip.className = `flex items-center gap-1.5 px-2 py-1 rounded-lg border text-[10px] font-black ${
+            info.debuted
+              ? 'bg-blue-50 border-blue-200 text-blue-800'
+              : 'bg-slate-100 border-slate-200 text-slate-500'
+          }`;
+          chip.innerHTML = `
+            <div class="w-5 h-5 shrink-0">${w.getSvg()}</div>
+            <span>${w.name}</span>
+            <span class="opacity-70">${info.debuted ? '단독' : '미데뷔'}</span>
+          `;
+          elements.undebutedRosterPool.appendChild(chip);
+        });
+      }
+    }
+
+    function renderSeasonHistory() {
+      elements.seasonHistoryTable.innerHTML = '';
+      if (game.seasonHistory.length === 0) {
+        elements.seasonHistoryTable.innerHTML = `
+          <div class="text-slate-500 text-center py-2 text-xs font-bold">
+            현재 1시즌이 진행 중입니다.
+          </div>
+        `;
+        return;
+      }
+
+      game.seasonHistory.forEach((hist) => {
+        const row = document.createElement('div');
+        row.className = 'flex items-center justify-between bg-slate-900 p-2 rounded-xl border border-slate-800';
+        row.innerHTML = `
+          <span class="font-black text-yellow-400">시즌 ${hist.season}</span>
+          <div class="flex items-center gap-2 font-bold">
+            <span class="text-emerald-400">1등: ${getPlayerProfile(hist.order[0]).name.split(' ')[0]} (+2)</span>
+            <span class="text-slate-500">|</span>
+            <span class="text-rose-400">꼴등: ${getPlayerProfile(hist.order[hist.order.length - 1]).name.split(' ')[0]} (-1)</span>
+          </div>
+        `;
+        elements.seasonHistoryTable.appendChild(row);
+      });
+    }
+
+    function validateSelection() {
+      const isPlayerTurn = (game.currentTurn === 0);
+      elements.btnPass.disabled = !isPlayerTurn;
+
+      elements.btnCount1.disabled = !isPlayerTurn;
+      elements.btnCount2.disabled = !isPlayerTurn;
+      elements.btnCount3.disabled = !isPlayerTurn;
+
+      if (!isPlayerTurn) {
+        elements.btnPlayCard.disabled = true;
+        elements.playValidationHint.textContent = `${getPlayerProfile(game.currentTurn).name} 생각 중...`;
+        elements.playValidationHint.className = 'mt-2 text-center text-xs font-bold text-slate-400 bg-slate-900/80 py-1.5 px-3 rounded-lg border border-slate-800';
+        updateCountButtons();
+        return;
+      }
+
+      if (!selectedWrestler) {
+        elements.btnPlayCard.disabled = true;
+        elements.playValidationHint.textContent = '손패의 카드를 클릭하여 낼 레슬러를 선택하세요.';
+        elements.playValidationHint.className = 'mt-2 text-center text-xs font-bold text-yellow-400 bg-slate-900/90 py-1.5 px-3 rounded-lg border border-yellow-500/30';
+        updateCountButtons();
+        return;
+      }
+
+      const heldCount = game.hands[0].filter(w => w === selectedWrestler).length;
+      elements.btnCount1.disabled = (heldCount < 1);
+      elements.btnCount2.disabled = (heldCount < 2);
+      elements.btnCount3.disabled = (heldCount < 3);
+
+      updateCountButtons();
+
+      const validation = game.isValidPlay(0, selectedWrestler, selectedCount);
+      const wrestler = WRESTLERS[selectedWrestler];
+
+      if (validation.valid) {
+        elements.btnPlayCard.disabled = false;
+        let hintMsg = '✅ 유효한 플레이입니다!';
+        if (validation.type === 'PLUS_ONE_STRENGTH_UP') {
+          hintMsg = `⚡ +1장 규칙! [${wrestler.name}] > [${WRESTLERS[game.currentPlay.wrestler].name}] 으로 강함이 확정됩니다. 새 레슬러가 위쪽 서열로 올라갑니다!`;
+        } else if (validation.type === 'EQUAL_COUNT_WIN') {
+          hintMsg = `🥋 이미 서열표 상에서 더 강하므로 같은 ${selectedCount}장으로 제압합니다!`;
+        } else if (validation.type === 'DEBUT_LEAD') {
+          hintMsg = `🌱 새로운 레슬러의 첫 데뷔! (1장 선 플레이)`;
+        } else if (validation.type === 'DEBUTED_LEAD') {
+          hintMsg = `👑 [${wrestler.name}] ${selectedCount}장으로 링을 장악합니다!`;
+        }
+        elements.playValidationHint.textContent = hintMsg;
+        elements.playValidationHint.className = 'mt-2 text-center text-xs font-bold text-emerald-300 bg-emerald-950/80 py-1.5 px-3 rounded-lg border border-emerald-600/50 animate-pulse';
+      } else {
+        elements.btnPlayCard.disabled = true;
+        elements.playValidationHint.textContent = `❌ 불가능: ${validation.reason}`;
+        elements.playValidationHint.className = 'mt-2 text-center text-xs font-bold text-rose-300 bg-rose-950/80 py-1.5 px-3 rounded-lg border border-rose-600/50';
+      }
+    }
+
+    elements.btnPlayCard.addEventListener('click', () => {
+      if (game.currentTurn !== 0 || !selectedWrestler) return;
+      
+      const result = game.playCards(0, selectedWrestler, selectedCount);
+      if (result && result.success) {
+        if (result.newStrengthEstablished) {
+          SoundFX.playStrengthUp();
+          const rel = result.newRelation;
+          setCommentary(rel
+            ? `💥 [나] +1장 승부! 강함 마커: [${WRESTLERS[rel.stronger].name}] > [${WRESTLERS[rel.weaker].name}] 새 줄 확립!`
+            : `💥 [나] 새로운 서열 줄 확립!`);
+        } else {
+          SoundFX.playCard();
+          setCommentary(`🤼 [나] [${WRESTLERS[selectedWrestler].name}] ${selectedCount}장 출전!`);
+        }
+
+        selectedWrestler = null;
+        renderAll();
+
+        if (result.seasonEnded) {
+          handleSeasonEnd();
+        } else {
+          checkTurn();
+        }
+      }
+    });
+
+    elements.btnPass.addEventListener('click', () => {
+      if (game.currentTurn !== 0) return;
+      SoundFX.playPass();
+      setCommentary('✋ [나] 패스를 선언했습니다.');
+      game.passTurn(0);
+      selectedWrestler = null;
+      renderAll();
+      checkTurn();
+    });
+
+    function checkTurn() {
+      if (!game) return;
+
+      if (aiTimeoutId) {
+        clearTimeout(aiTimeoutId);
+        aiTimeoutId = null;
+      }
+
+      // If season ended or only 1 active player remains, immediately settle season
+      if (game.seasonOver || game.getActivePlayerCount() <= 1) {
+        if (!game.seasonOver) {
+          game.endSeason();
+        }
+        renderAll();
+        handleSeasonEnd();
+        return;
+      }
+
+      if (game.currentTurn === 0) {
+        elements.trickInfoText.textContent = game.currentPlay 
+          ? '당신의 턴입니다. 더 강한 카드를 내거나 패스하세요.' 
+          : '당신이 시작 플레이어입니다. 링 위에 카드를 내세요.';
+        renderAll();
+        return;
+      }
+
+      const currentTurnPlayer = game.currentTurn;
+      elements.trickInfoText.textContent = `${getPlayerProfile(currentTurnPlayer).name} 수싸움 생각 중...`;
+      renderAll();
+
+      aiTimeoutId = setTimeout(() => {
+        if (!game || game.seasonOver || game.getActivePlayerCount() <= 1) {
+          if (game && !game.seasonOver && game.getActivePlayerCount() <= 1) {
+            game.endSeason();
+            renderAll();
+            handleSeasonEnd();
+          }
+          return;
+        }
+
+        // Always use the real-time active currentTurn
+        const activeAiIdx = game.currentTurn;
+        if (activeAiIdx === 0) {
+          checkTurn();
+          return;
+        }
+
+        try {
+          const aiMove = game.getAiMove(activeAiIdx);
+
+          if (aiMove && aiMove.action === 'PLAY') {
+            const result = game.playCards(activeAiIdx, aiMove.wrestler, aiMove.count);
+            if (result && result.success) {
+              if (result.newStrengthEstablished) {
+                SoundFX.playStrengthUp();
+                const rel = result.newRelation;
+                setCommentary(rel
+                  ? `⚡ [${getPlayerProfile(activeAiIdx).name}] +1장 승부! 강함 마커: [${WRESTLERS[rel.stronger].name}] > [${WRESTLERS[rel.weaker].name}] 새 줄 확립!`
+                  : `⚡ [${getPlayerProfile(activeAiIdx).name}] 새로운 서열 줄 확립!`);
+              } else {
+                SoundFX.playCard();
+                setCommentary(`🤼 [${getPlayerProfile(activeAiIdx).name}] [${WRESTLERS[aiMove.wrestler].name}] ${aiMove.count}장 출전!`);
+              }
+            } else {
+              SoundFX.playPass();
+              setCommentary(`✋ [${getPlayerProfile(activeAiIdx).name}] 패스를 선언했습니다.`);
+              game.passTurn(activeAiIdx);
+            }
+          } else {
+            SoundFX.playPass();
+            setCommentary(`✋ [${getPlayerProfile(activeAiIdx).name}] 패스를 선언했습니다.`);
+            game.passTurn(activeAiIdx);
+          }
+
+          renderAll();
+
+          if (game.seasonOver || game.getActivePlayerCount() <= 1) {
+            if (!game.seasonOver) game.endSeason();
+            renderAll();
+            handleSeasonEnd();
+            return;
+          }
+        } catch (err) {
+          console.error("AI execution error:", err);
+          game.passTurn(activeAiIdx);
+          renderAll();
+        }
+
+        checkTurn();
+      }, game.aiSpeed);
+    }
+
+    function handleSeasonEnd() {
+      if (aiTimeoutId) {
+        clearTimeout(aiTimeoutId);
+        aiTimeoutId = null;
+      }
+      SoundFX.playBell();
+      const hist = game.seasonHistory[game.seasonHistory.length - 1];
+      if (!hist) return;
+
+      const titleEl = elements.seasonEndTitle || document.getElementById('season-end-title');
+      const subtitleEl = elements.seasonEndSubtitle || document.getElementById('season-end-subtitle');
+      const ranksContainer = elements.seasonEndRanks || document.getElementById('season-end-ranks');
+
+      if (titleEl) titleEl.textContent = `시즌 ${game.currentSeason} 종료!`;
+      if (subtitleEl) subtitleEl.textContent = `모든 매니저들의 손패 승부가 끝났습니다.`;
+
+      if (ranksContainer) {
+        ranksContainer.innerHTML = '';
+        hist.order.forEach((pIdx, rankIdx) => {
+          const pts = hist.points[pIdx];
+          const isMe = (pIdx === 0);
+          const profile = getPlayerProfile(pIdx);
+          const rankLabels = ['🥇 1등 (+2점)', '🥈 2등 (+1점)', '🥉 3등 (0점)', '4등 (0점)', '5등 (0점)', '⚠️ 꼴등 (-1점)'];
+          const label = rankIdx === hist.order.length - 1 ? '⚠️ 꼴등 (-1점)' : (rankLabels[rankIdx] || `${rankIdx + 1}등 (0점)`);
+
+          const row = document.createElement('div');
+          row.className = `flex items-center justify-between p-2.5 rounded-xl border-2 text-xs font-black ${
+            isMe ? 'bg-yellow-100 border-yellow-500 text-slate-950 ring-2 ring-yellow-400' : 'bg-white border-slate-200 text-slate-800'
+          }`;
+          row.innerHTML = `
+            <div class="flex items-center gap-2">
+              <span class="w-5 text-center font-bold text-slate-500">${rankIdx + 1}위</span>
+              <span class="${profile.bg} ${profile.text} px-2 py-0.5 rounded-md border border-black">${profile.badge} ${profile.name}</span>
+              ${isMe ? '<span class="bg-yellow-400 text-black px-1.5 py-0.2 rounded text-[10px]">나</span>' : ''}
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="text-slate-500 font-bold">${label}</span>
+              <span class="font-black ${pts > 0 ? 'text-emerald-600' : pts < 0 ? 'text-rose-600' : 'text-slate-600'}">
+                누적 ${game.scores[pIdx]}점
+              </span>
+            </div>
+          `;
+          ranksContainer.appendChild(row);
+        });
+      }
+
+      elements.modalSeasonEnd.classList.remove('hidden');
+    }
+
+    elements.btnNextSeason.addEventListener('click', () => {
+      elements.modalSeasonEnd.classList.add('hidden');
+      if (game.currentSeason >= game.maxSeasons) {
+        handleGameOver();
+      } else {
+        const lastPlacePlayer = game.finishedOrder[game.finishedOrder.length - 1] ?? 0;
+        game.currentSeason++;
+        game.initSeason(lastPlacePlayer);
+        selectedWrestler = null;
+        selectedCount = 1;
+        initHandOrder();
+        renderAll();
+        setCommentary(`🔔 시즌 ${game.currentSeason} 시작! [${getPlayerProfile(lastPlacePlayer).name}]부터 시작합니다.`);
+        checkTurn();
+      }
+    });
+
+    function handleGameOver() {
+      SoundFX.playWin();
+
+      // 최종 동점자 처리 규정
+      // 1) 총점 높은 순
+      // 2) 총점 동점이면 +2점 칩(시즌 우승) 개수가 많은 순
+      // 3) +2점 칩 개수도 같으면 마지막 시즌 우승자를 우선
+      const lastSeason = game.seasonHistory[game.seasonHistory.length - 1] || null;
+      const lastSeasonWinner = lastSeason?.order?.[0] ?? null;
+
+      const countChampionChips = (playerIdx) => {
+        return game.seasonHistory.reduce((count, hist) => {
+          return count + (hist.points?.[playerIdx] === 2 ? 1 : 0);
+        }, 0);
+      };
+
+      const finalRanks = [];
+      for (let p = 0; p < game.playerCount; p++) {
+        finalRanks.push({
+          player: p,
+          score: game.scores[p],
+          championChips: countChampionChips(p),
+          wonLastSeason: p === lastSeasonWinner
+        });
+      }
+
+      finalRanks.sort((a, b) => {
+        // 1. 총점
+        if (b.score !== a.score) return b.score - a.score;
+
+        // 2. +2점 칩(챔피언 벨트) 개수
+        if (b.championChips !== a.championChips) {
+          return b.championChips - a.championChips;
+        }
+
+        // 3. 마지막 시즌 우승자
+        if (a.wonLastSeason !== b.wonLastSeason) {
+          return a.wonLastSeason ? -1 : 1;
+        }
+
+        // 위 규정으로도 완전히 같으면 기존 좌석 순서를 유지
+        return a.player - b.player;
+      });
+
+      const podium = document.getElementById('final-podium-container');
+      podium.innerHTML = '';
+
+      // 최종 판정 기준 안내
+      const ruleBox = document.createElement('div');
+      ruleBox.className = 'mb-3 rounded-xl border-2 border-amber-300 bg-amber-50 p-2.5 text-[11px] font-bold text-amber-950 leading-relaxed';
+      ruleBox.innerHTML = `
+        <div class="font-black mb-1">🏆 최종 동점자 판정</div>
+        <div>총점 → +2점 칩 개수 → 마지막 시즌 우승자 순으로 판정합니다.</div>
+      `;
+      podium.appendChild(ruleBox);
+
+      finalRanks.forEach((item, idx) => {
+        const isMe = (item.player === 0);
+        const profile = getPlayerProfile(item.player);
+        const medals = ['🥇 1위 (챔피언)', '🥈 2위', '🥉 3위'];
+        const medal = medals[idx] || `${idx + 1}위`;
+
+        const card = document.createElement('div');
+        card.className = `flex items-center justify-between gap-3 p-3 rounded-2xl border-2 text-sm font-black ${
+          idx === 0
+            ? 'bg-yellow-100 border-yellow-500 shadow-md ring-2 ring-yellow-400 text-slate-950'
+            : isMe ? 'bg-amber-50 border-amber-300' : 'bg-slate-50 border-slate-200 text-slate-800'
+        }`;
+        card.innerHTML = `
+          <div class="flex items-center gap-2 min-w-0">
+            <span class="font-jua text-base text-amber-900 shrink-0">${medal}</span>
+            <span class="${profile.bg} ${profile.text} px-2 py-0.5 rounded-md border border-black truncate">${profile.badge} ${profile.name}</span>
+            ${isMe ? '<span class="bg-yellow-400 text-black px-1.5 py-0.5 rounded text-xs shrink-0">나</span>' : ''}
+          </div>
+          <div class="text-right shrink-0">
+            <div class="font-jua text-lg text-slate-950">${item.score}점</div>
+            <div class="text-[10px] font-black text-amber-800">🏆 +2칩 ${item.championChips}개${item.wonLastSeason ? ' · 마지막 시즌 우승' : ''}</div>
+          </div>
+        `;
+        podium.appendChild(card);
+      });
+
+      elements.modalGameOver.classList.remove('hidden');
+    }
+
+    elements.btnRestartGame.addEventListener('click', () => {
+      elements.modalGameOver.classList.add('hidden');
+      elements.modalSetup.classList.remove('hidden');
+    });
+  </script>
+<a href="./index.html#/solo" style="position:fixed;left:10px;bottom:10px;z-index:9999;background:#111827;color:white;border:2px solid #000;border-radius:999px;padding:8px 12px;font:800 12px system-ui;text-decoration:none;box-shadow:0 4px 12px #0004">← BoardMate 1인플</a>
+</body>
+</html>
