@@ -1,0 +1,860 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>노터치 크라켄 (No Touch Kraken)</title>
+<style>
+  :root {
+    --bg-dark: #0b1523;
+    --panel-bg: #152238;
+    --panel-border: #1f3557;
+    --accent-blue: #00b4d8;
+    --accent-gold: #f4a261;
+    --accent-red: #e63946;
+    --accent-green: #2a9d8f;
+    --card-back: #1d2d44;
+    --text-main: #f1faee;
+    --text-muted: #8d99ae;
+  }
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Pretendard", Roboto, sans-serif;
+    background-color: var(--bg-dark);
+    color: var(--text-main);
+    padding: 16px;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    user-select: none;
+  }
+
+  header {
+    text-align: center;
+    margin-bottom: 16px;
+  }
+  header h1 {
+    font-size: 1.8rem;
+    color: #48cae4;
+    text-shadow: 0 0 12px rgba(72, 202, 228, 0.4);
+    letter-spacing: 1px;
+  }
+  header p {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    margin-top: 4px;
+  }
+
+  /* Setup Screen */
+  .setup-card {
+    background: var(--panel-bg);
+    border: 1px solid var(--panel-border);
+    border-radius: 12px;
+    padding: 24px;
+    width: 100%;
+    max-width: 480px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+  }
+  .form-group {
+    margin-bottom: 18px;
+  }
+  .form-group label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: var(--accent-blue);
+    font-size: 0.95rem;
+  }
+  .form-group select, .form-group input[type="text"] {
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 8px;
+    border: 1px solid var(--panel-border);
+    background: #0d1726;
+    color: var(--text-main);
+    font-size: 1rem;
+    outline: none;
+  }
+  .form-group select:focus, .form-group input[type="text"]:focus {
+    border-color: var(--accent-blue);
+  }
+  .checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    font-size: 0.95rem;
+    color: #cbd5e1;
+  }
+  .checkbox-label input {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+    accent-color: var(--accent-blue);
+  }
+  .btn-primary {
+    width: 100%;
+    background: linear-gradient(135deg, #0077b6, #00b4d8);
+    color: white;
+    font-size: 1.05rem;
+    font-weight: bold;
+    border: none;
+    border-radius: 8px;
+    padding: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 12px rgba(0, 180, 216, 0.3);
+  }
+  .btn-primary:hover {
+    filter: brightness(1.1);
+    transform: translateY(-1px);
+  }
+
+  /* Game Main Container */
+  #game-area {
+    width: 100%;
+    max-width: 900px;
+    display: none;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  /* Status Bar */
+  .status-panel {
+    background: var(--panel-bg);
+    border: 1px solid var(--panel-border);
+    border-radius: 10px;
+    padding: 12px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .status-item {
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .badge {
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-weight: bold;
+    font-size: 0.85rem;
+  }
+  .badge-round { background: #3d5a80; color: #fff; }
+  .badge-action { background: #e07a5f; color: #fff; }
+  .badge-chest { background: #d4a373; color: #111; }
+  .badge-kraken { background: #d00000; color: #fff; }
+
+  .turn-banner {
+    background: linear-gradient(90deg, #1b3a4b, #212529);
+    border: 1px solid #2a6f97;
+    border-radius: 8px;
+    padding: 10px 16px;
+    text-align: center;
+    font-size: 1rem;
+    font-weight: bold;
+    color: #e2eafc;
+  }
+  .turn-banner span {
+    color: #f4a261;
+    font-size: 1.15rem;
+  }
+
+  /* Table / Player Grid */
+  .players-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 14px;
+  }
+  .player-box {
+    background: var(--panel-bg);
+    border: 2px solid var(--panel-border);
+    border-radius: 10px;
+    padding: 12px;
+    position: relative;
+    transition: all 0.2s ease;
+  }
+  .player-box.has-marker {
+    border-color: #ffd166;
+    box-shadow: 0 0 12px rgba(255, 209, 102, 0.35);
+  }
+  .player-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+  .player-name {
+    font-weight: bold;
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .marker-icon {
+    color: #ffd166;
+    font-size: 0.9rem;
+    background: rgba(255, 209, 102, 0.2);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: 700;
+  }
+
+  /* Secret Inspection Controls */
+  .secret-controls {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 8px;
+  }
+  .btn-sm {
+    background: #2b3a4e;
+    color: #e0e6ed;
+    border: 1px solid #3e536e;
+    border-radius: 4px;
+    padding: 4px 8px;
+    font-size: 0.75rem;
+    cursor: pointer;
+  }
+  .btn-sm:hover { background: #3e536e; }
+
+  /* Cards in Hand */
+  .cards-row {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    min-height: 70px;
+  }
+  .game-card {
+    width: 46px;
+    height: 66px;
+    border-radius: 6px;
+    background: var(--card-back);
+    border: 1.5px solid #334e68;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    cursor: pointer;
+    transition: transform 0.15s ease, border-color 0.15s ease;
+    position: relative;
+  }
+  .game-card:hover:not(.disabled):not(.revealed) {
+    transform: translateY(-4px);
+    border-color: #ffd166;
+  }
+  .game-card.disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+  .game-card.revealed {
+    cursor: default;
+    border-width: 2px;
+  }
+  .game-card.revealed.empty {
+    background: #343a40;
+    border-color: #6c757d;
+  }
+  .game-card.revealed.treasure {
+    background: #78350f;
+    border-color: #fbbf24;
+  }
+  .game-card.revealed.curse {
+    background: #4a044e;
+    border-color: #d946ef;
+  }
+  .game-card.revealed.kraken {
+    background: #450a0a;
+    border-color: #ef4444;
+  }
+  .card-label {
+    font-size: 0.65rem;
+    font-weight: bold;
+    margin-top: 2px;
+    text-align: center;
+  }
+
+  /* Center Board / Revealed Area */
+  .center-board {
+    background: #111a28;
+    border: 1px dashed var(--panel-border);
+    border-radius: 10px;
+    padding: 12px 16px;
+  }
+  .center-board h3 {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+    display: flex;
+    justify-content: space-between;
+  }
+  .revealed-cards-list {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  /* Modal for Role / Secret Hand Inspection */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(0,0,0,0.75);
+    backdrop-filter: blur(4px);
+    z-index: 999;
+    justify-content: center;
+    align-items: center;
+    padding: 16px;
+  }
+  .modal-overlay.open {
+    display: flex;
+  }
+  .modal-box {
+    background: #19273c;
+    border: 1px solid #2d4566;
+    border-radius: 12px;
+    padding: 20px;
+    width: 100%;
+    max-width: 420px;
+    text-align: center;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+  }
+  .modal-box h2 {
+    font-size: 1.3rem;
+    margin-bottom: 12px;
+    color: #48cae4;
+  }
+  .modal-content {
+    font-size: 0.95rem;
+    line-height: 1.5;
+    margin-bottom: 18px;
+    color: #e2eafc;
+  }
+  .secret-role-badge {
+    display: inline-block;
+    padding: 6px 14px;
+    font-size: 1.1rem;
+    font-weight: bold;
+    border-radius: 6px;
+    margin: 10px 0;
+  }
+  .role-explorer {
+    background: rgba(42, 157, 143, 0.25);
+    color: #2a9d8f;
+    border: 1px solid #2a9d8f;
+  }
+  .role-skeleton {
+    background: rgba(230, 57, 70, 0.25);
+    color: #e63946;
+    border: 1px solid #e63946;
+  }
+  .role-goal {
+    font-size: 0.85rem;
+    color: #a8dadc;
+    margin-top: 4px;
+  }
+  .hand-breakdown {
+    background: #0f1a2a;
+    border-radius: 8px;
+    padding: 12px;
+    margin-top: 10px;
+    text-align: left;
+    font-size: 0.9rem;
+  }
+  .hand-breakdown li {
+    list-style: none;
+    padding: 4px 0;
+    display: flex;
+    justify-content: space-between;
+  }
+
+  /* Game Over Modal Styling */
+  .game-over-banner {
+    font-size: 1.6rem;
+    font-weight: bold;
+    margin-bottom: 10px;
+  }
+  .game-over-win-explorers { color: #2a9d8f; }
+  .game-over-win-skeletons { color: #e63946; }
+</style>
+</head>
+<body>
+<a href="./index.html#/multi" style="position:fixed;top:10px;left:10px;z-index:9999;background:#07101c;color:#fff;text-decoration:none;padding:8px 10px;border-radius:9px;font-weight:900;font-size:12px">← BoardMate 다인플</a>
+
+<header>
+  <h1>🐙 노터치 크라켄 (No Touch Kraken)</h1>
+  <p>정체를 숨긴 채 보물을 찾거나 크라켄을 깨워라!</p>
+</header>
+
+<!-- SETUP SCREEN -->
+<div class="setup-card" id="setup-screen">
+  <div class="form-group">
+    <label for="player-count">플레이어 수 (3 ~ 8인)</label>
+    <select id="player-count">
+      <option value="3">3명 (탐험대 3 vs 스켈레톤 2 - 5장 중 3장 배분)</option>
+      <option value="4" selected>4명 (탐험대 3, 스켈레톤 2 중 4명)</option>
+      <option value="5">5명 (탐험대 4, 스켈레톤 2 중 5명)</option>
+      <option value="6">6명 (탐험대 4, 스켈레톤 2)</option>
+      <option value="7">7명 (탐험대 5, 스켈레톤 3 중 7명)</option>
+      <option value="8">8명 (탐험대 6, 스켈레톤 3 중 8명)</option>
+    </select>
+  </div>
+
+  <div class="form-group">
+    <label class="checkbox-label">
+      <input type="checkbox" id="captain-curse-opt">
+      <span>🏴‍☠️ [확장] 탐욕스러운 선장의 저주 카드 포함</span>
+    </label>
+    <small style="color:var(--text-muted); display:block; margin-top:4px; font-size:0.8rem;">
+      * 보물 상자가 1개도 공개되지 않은 상태에서 저주 카드가 공개되면 스켈레톤 즉시 승리!
+    </small>
+  </div>
+
+  <button class="btn-primary" onclick="initGame()">탐험 시작하기</button>
+</div>
+
+<!-- GAME MAIN AREA -->
+<div id="game-area">
+  <!-- Status Panel -->
+  <div class="status-panel">
+    <div class="status-item">
+      <span>라운드:</span>
+      <span class="badge badge-round" id="round-badge">1 / 4</span>
+    </div>
+    <div class="status-item">
+      <span>남은 탐색 횟수:</span>
+      <span class="badge badge-action" id="actions-badge">4회 남음</span>
+    </div>
+    <div class="status-item">
+      <span>찾은 보물:</span>
+      <span class="badge badge-chest" id="treasures-badge">0 / 4</span>
+    </div>
+    <div class="status-item">
+      <span>크라켄:</span>
+      <span class="badge badge-kraken" id="kraken-badge">미발견 🐙</span>
+    </div>
+  </div>
+
+  <!-- Turn Banner -->
+  <div class="turn-banner" id="turn-banner">
+    현재 액션 마커 소유자: <span id="current-actor-name">P1</span> (다른 플레이어의 카드를 탐색하세요)
+  </div>
+
+  <!-- Players Field -->
+  <div class="players-grid" id="players-grid"></div>
+
+  <!-- Center Revealed Board -->
+  <div class="center-board">
+    <h3>
+      <span>중앙에 공개된 카드 더미</span>
+      <span id="revealed-count-text">총 0장 공개됨</span>
+    </h3>
+    <div class="revealed-cards-list" id="center-revealed-list"></div>
+  </div>
+
+  <div style="text-align:center; margin-top: 10px;">
+    <button class="btn-sm" style="padding: 8px 16px; background:#4a5568;" onclick="confirmReset()">새 게임 설정으로 돌아가기</button>
+  </div>
+</div>
+
+<!-- SECRET MODAL -->
+<div class="modal-overlay" id="secret-modal">
+  <div class="modal-box">
+    <h2 id="modal-title">비밀 확인</h2>
+    <div class="modal-content" id="modal-content"></div>
+    <button class="btn-primary" onclick="closeModal()">확인 완료 및 닫기</button>
+  </div>
+</div>
+
+<script>
+/**
+ * NO TOUCH KRAKEN DELUXE RULE ENGINE
+ */
+
+// Role Deck configurations [cite: 2]
+const ROLE_CONFIG = {
+  3: { explorers: 3, skeletons: 2, totalPool: 5 }, // 3인 공식 규칙: 탐험대 3, 스켈레톤 2 섞어서 3장 나눠줌 [cite: 2]
+  4: { explorers: 3, skeletons: 2, totalPool: 5 }, // 4인: 5장 중 4장
+  5: { explorers: 4, skeletons: 2, totalPool: 6 }, // 5인: 6장 중 5장
+  6: { explorers: 4, skeletons: 2, totalPool: 6 }, // 6인: 6장 중 6장
+  7: { explorers: 5, skeletons: 3, totalPool: 8 }, // 7인: 8장 중 7장
+  8: { explorers: 6, skeletons: 3, totalPool: 9 }  // 8인: 9장 중 8장
+};
+
+// Exploration Deck configurations [cite: 2]
+const EXPLORE_CONFIG = {
+  3: { empty: 11, treasure: 3, kraken: 1 }, // 3인 특별 규칙 [cite: 2]
+  4: { empty: 15, treasure: 4, kraken: 1 },
+  5: { empty: 19, treasure: 5, kraken: 1 },
+  6: { empty: 23, treasure: 6, kraken: 1 },
+  7: { empty: 27, treasure: 7, kraken: 1 },
+  8: { empty: 31, treasure: 8, kraken: 1 }
+};
+
+let G = {
+  active: false,
+  playerCount: 4,
+  curseExp: false,
+  round: 1,
+  actionsLeftInRound: 4,
+  currentActor: 0,
+  players: [], 
+  revealedPiles: {
+    empty: 0,
+    treasure: 0,
+    curse: 0,
+    kraken: 0
+  },
+  revealedHistory: [],
+  targetTreasures: 4
+};
+
+function shuffle(array) {
+  for (let i = array.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [array[i], array[j]] = [array[j], array[i]];
+  }
+  return array;
+}
+
+function initGame() {
+  const pCount = parseInt(document.getElementById('player-count').value);
+  const useCurse = document.getElementById('captain-curse-opt').checked;
+
+  G.playerCount = pCount;
+  G.curseExp = useCurse;
+  G.round = 1;
+  G.actionsLeftInRound = pCount;
+  G.currentActor = 0; // P1 선플레이어 시작 [cite: 2]
+  G.revealedPiles = { empty: 0, treasure: 0, curse: 0, kraken: 0 };
+  G.revealedHistory = [];
+  G.targetTreasures = pCount; // 보물 상자의 수는 플레이어 수와 같음 [cite: 2]
+  G.active = true;
+
+  // 1. Assign Roles [cite: 2]
+  const roleCfg = ROLE_CONFIG[pCount];
+  let roleDeck = [];
+  for (let i = 0; i < roleCfg.explorers; i++) roleDeck.push('탐험대');
+  for (let i = 0; i < roleCfg.skeletons; i++) roleDeck.push('스켈레톤');
+  shuffle(roleDeck);
+
+  // 2. Build Exploration Deck [cite: 2]
+  const expCfg = EXPLORE_CONFIG[pCount];
+  let exploreDeck = [];
+  
+  // Empty & Kraken [cite: 2]
+  for (let i = 0; i < expCfg.empty; i++) exploreDeck.push({ type: 'empty', name: '빈 상자', icon: '📦' });
+  exploreDeck.push({ type: 'kraken', name: '크라켄', icon: '🐙' });
+
+  // Treasure & Captain's Curse Expansion Setup [cite: 2]
+  if (useCurse) {
+    // 저주 확장 준비 규칙: [cite: 2]
+    // 보물 상자 2장 + 저주 카드 1장 기본 풀 + (남은 보물 상자들과 저주 카드 2장 합쳐서 플레이어 수 채울 때까지 무작위 추가) [cite: 2]
+    let treasureCountLeft = expCfg.treasure - 2;
+    let curseCountLeft = 2; // 총 3장 중 1장은 이미 확보, 2장 남음 [cite: 2]
+    let randomPool = [];
+    for (let i = 0; i < treasureCountLeft; i++) randomPool.push('treasure');
+    for (let i = 0; i < curseCountLeft; i++) randomPool.push('curse');
+    shuffle(randomPool);
+
+    let treasurePile = ['treasure', 'treasure', 'curse'];
+    while (treasurePile.length < pCount && randomPool.length > 0) {
+      treasurePile.push(randomPool.pop());
+    }
+
+    treasurePile.forEach(item => {
+      if (item === 'treasure') exploreDeck.push({ type: 'treasure', name: '보물 상자', icon: '💎' });
+      else exploreDeck.push({ type: 'curse', name: '선장의 저주', icon: '🏴‍☠️' });
+    });
+  } else {
+    for (let i = 0; i < expCfg.treasure; i++) exploreDeck.push({ type: 'treasure', name: '보물 상자', icon: '💎' });
+  }
+
+  shuffle(exploreDeck);
+
+  // 3. Setup Players & Distribute Cards (5 cards each at start) [cite: 2]
+  G.players = [];
+  const cardsPerPlayer = 5;
+  for (let i = 0; i < pCount; i++) {
+    const role = roleDeck.pop();
+    const dealtCards = exploreDeck.splice(0, cardsPerPlayer);
+    
+    // 플레이어가 받은 카드의 구성 파악 (단, 뒷면으로 섞어서 배치) [cite: 2]
+    G.players.push({
+      id: i,
+      name: `플레이어 ${i + 1}`,
+      role: role,
+      hand: shuffle(dealtCards), // 뒷면으로 놓을 카드들 [cite: 2]
+      secretKnowledge: countComposition(dealtCards) // 플레이어가 혼자 확인한 카드 구성 정보 [cite: 2]
+    });
+  }
+
+  // Switch Views
+  document.getElementById('setup-screen').style.display = 'none';
+  document.getElementById('game-area').style.display = 'flex';
+
+  renderUI();
+}
+
+function countComposition(cards) {
+  let res = { empty: 0, treasure: 0, curse: 0, kraken: 0 };
+  cards.forEach(c => {
+    if (res[c.type] !== undefined) res[c.type]++;
+  });
+  return res;
+}
+
+function renderUI() {
+  // Update Top Stats [cite: 2]
+  document.getElementById('round-badge').innerText = `${G.round} / 4`;
+  document.getElementById('actions-badge').innerText = `${G.actionsLeftInRound}회 남음`;
+  
+  const foundTreasures = G.revealedPiles.treasure + G.revealedPiles.curse;
+  document.getElementById('treasures-badge').innerText = `${foundTreasures} / ${G.targetTreasures}`;
+
+  const krakenBadge = document.getElementById('kraken-badge');
+  if (G.revealedPiles.kraken > 0) {
+    krakenBadge.innerText = '깨어남! 🐙';
+    krakenBadge.style.background = '#e63946';
+  } else {
+    krakenBadge.innerText = '미발견 🌊';
+    krakenBadge.style.background = '#1d3557';
+  }
+
+  // Current Actor Indicator [cite: 2]
+  const currentActorName = G.players[G.currentActor].name;
+  document.getElementById('current-actor-name').innerText = currentActorName;
+
+  // Render Players & Hands [cite: 2]
+  const grid = document.getElementById('players-grid');
+  grid.innerHTML = '';
+
+  G.players.forEach((player, pIdx) => {
+    const pBox = document.createElement('div');
+    pBox.className = `player-box ${G.currentActor === pIdx ? 'has-marker' : ''}`;
+
+    const isCurrentActor = (G.currentActor === pIdx);
+    
+    pBox.innerHTML = `
+      <div class="player-header">
+        <div class="player-name">
+          <span>${player.name}</span>
+          ${isCurrentActor ? '<span class="marker-icon">🗝️ 액션 마커</span>' : ''}
+        </div>
+        <div class="secret-controls">
+          <button class="btn-sm" onclick="showPlayerSecret(${pIdx})">내 정보 보기</button>
+        </div>
+      </div>
+      <div class="cards-row" id="cards-row-${pIdx}"></div>
+    `;
+
+    grid.appendChild(pBox);
+
+    const cardsRow = pBox.querySelector(`#cards-row-${pIdx}`);
+    player.hand.forEach((card, cIdx) => {
+      const cardEl = document.createElement('div');
+      
+      // 액션 마커 소유자는 '자신의 카드'를 열 수 없고 다른 사람 카드만 탐색 가능 [cite: 2]
+      const canExplore = (G.active && !isCurrentActor);
+      cardEl.className = `game-card ${canExplore ? '' : 'disabled'}`;
+      cardEl.innerHTML = `<span style="font-size:1.3rem;">❓</span>`;
+      cardEl.title = canExplore ? `${player.name}의 이 카드를 탐색합니다` : (isCurrentActor ? '자신의 카드는 열 수 없습니다' : '');
+
+      if (canExplore) {
+        cardEl.onclick = () => performAction(pIdx, cIdx);
+      }
+
+      cardsRow.appendChild(cardEl);
+    });
+  });
+
+  // Render Revealed Center Board [cite: 2]
+  const centerList = document.getElementById('center-revealed-list');
+  centerList.innerHTML = '';
+  document.getElementById('revealed-count-text').innerText = `총 ${G.revealedHistory.length}장 공개됨`;
+
+  G.revealedHistory.forEach(card => {
+    const cEl = document.createElement('div');
+    cEl.className = `game-card revealed ${card.type}`;
+    cEl.innerHTML = `
+      <span>${card.icon}</span>
+      <span class="card-label">${card.name}</span>
+    `;
+    centerList.appendChild(cEl);
+  });
+}
+
+function performAction(targetPlayerIdx, cardIdx) {
+  if (!G.active) return;
+  if (targetPlayerIdx === G.currentActor) {
+    alert("자신의 카드는 탐색할 수 없습니다! 다른 플레이어의 카드를 선택하세요.");
+    return;
+  }
+
+  // 액션 수행: 카드 공개 [cite: 2]
+  const targetPlayer = G.players[targetPlayerIdx];
+  const revealedCard = targetPlayer.hand.splice(cardIdx, 1)[0];
+
+  // 카드 기록 및 카운트 증가 [cite: 2]
+  G.revealedHistory.push(revealedCard);
+  G.revealedPiles[revealedCard.type]++;
+  G.actionsLeftInRound--;
+
+  // 게임 종료 조건 확인 [cite: 2]
+  // 1. 크라켄 공개 시 -> 스켈레톤 즉시 승리 [cite: 2]
+  if (revealedCard.type === 'kraken') {
+    renderUI();
+    endGame('skeletons', '크라켄이 잠에서 깨어났습니다! 스켈레톤 팀 승리!');
+    return;
+  }
+
+  // 2. [선장의 저주 확장] 보물 상자가 0개인 상태에서 저주 카드가 공개된 경우 -> 스켈레톤 즉시 승리 [cite: 2]
+  if (G.curseExp && revealedCard.type === 'curse' && G.revealedPiles.treasure === 0) {
+    renderUI();
+    endGame('skeletons', '보물 상자가 1개도 없는 상태에서 선장의 저주를 건드렸습니다! 저주가 발동하여 스켈레톤 팀 즉시 승리!');
+    return;
+  }
+
+  // 3. 모든 보물 상자(저주 포함) 공개 시 -> 탐험대 즉시 승리 [cite: 2]
+  const totalTreasureFound = G.revealedPiles.treasure + G.revealedPiles.curse;
+  if (totalTreasureFound >= G.targetTreasures) {
+    renderUI();
+    endGame('explorers', '모든 보물 상자를 찾았습니다! 탐험대 팀 승리!');
+    return;
+  }
+
+  // 다음 턴 플레이어: 방금 카드가 공개된 플레이어가 액션 마커를 받음 [cite: 2]
+  G.currentActor = targetPlayerIdx;
+
+  // 라운드 종료 조건 확인 [cite: 2]
+  if (G.actionsLeftInRound <= 0) {
+    if (G.round >= 4) {
+      // 4라운드 종료 시까지 보물을 다 못 찾음 -> 스켈레톤 승리 [cite: 2]
+      renderUI();
+      endGame('skeletons', '4라운드가 종료될 때까지 보물을 모두 찾지 못했습니다! 스켈레톤 팀 승리!');
+      return;
+    } else {
+      // 다음 라운드 진행: 남은 카드 회수 후 재배분 [cite: 2]
+      nextRound();
+      return;
+    }
+  }
+
+  renderUI();
+}
+
+function nextRound() {
+  G.round++;
+  G.actionsLeftInRound = G.playerCount;
+
+  // 남아있는 모든 탐험 카드를 모아서 섞음 [cite: 2]
+  let remainingCards = [];
+  G.players.forEach(p => {
+    remainingCards.push(...p.hand);
+    p.hand = [];
+  });
+  shuffle(remainingCards);
+
+  // 남은 카드를 각 플레이어에게 다시 공평하게 배분 (라운드마다 1장씩 줄어듦) [cite: 2]
+  const cardsEach = remainingCards.length / G.playerCount;
+  G.players.forEach(p => {
+    const newHand = remainingCards.splice(0, cardsEach);
+    p.hand = shuffle(newHand);
+    p.secretKnowledge = countComposition(newHand); // 새 라운드에 확인한 패 구성 [cite: 2]
+  });
+
+  alert(`🔔 ${G.round - 1}라운드가 끝났습니다!
+남은 카드들을 모두 모아 다시 골고루 나누었습니다.
+각 플레이어는 자신의 새 카드 구성을 확인하세요!`);
+  renderUI();
+}
+
+function showPlayerSecret(playerIdx) {
+  const p = G.players[playerIdx];
+  const modal = document.getElementById('secret-modal');
+  const title = document.getElementById('modal-title');
+  const content = document.getElementById('modal-content');
+
+  title.innerText = `🔒 ${p.name}님의 비밀 정보`;
+
+  const roleClass = p.role === '탐험대' ? 'role-explorer' : 'role-skeleton';
+  const roleGoal = p.role === '탐험대' 
+    ? '목표: 4라운드가 끝나기 전에 보물 상자를 모두 찾아야 합니다!' 
+    : '목표: 탐험대가 보물을 다 찾기 전에 크라켄을 깨우거나 4라운드를 버텨내세요!';
+
+  let curseHtml = '';
+  if (G.curseExp) {
+    curseHtml = `<li><span>🏴‍☠️ 선장의 저주 카드:</span> <b>${p.secretKnowledge.curse}장</b></li>`;
+  }
+
+  content.innerHTML = `
+    <div style="font-size:0.85rem; color:#f4a261; margin-bottom:8px;">⚠️ 다른 사람에게 화면이 보이지 않게 주의하세요!</div>
+    <div class="secret-role-badge ${roleClass}">역할: ${p.role}</div>
+    <div class="role-goal">${roleGoal}</div>
+
+    <div class="hand-breakdown">
+      <div style="font-weight:bold; margin-bottom:6px; color:#48cae4;">현재 손에 든 카드 구성 (총 ${p.hand.length}장):</div>
+      <li><span>📦 빈 상자:</span> <b>${p.secretKnowledge.empty}장</b></li>
+      <li><span>💎 보물 상자:</span> <b>${p.secretKnowledge.treasure}장</b></li>
+      ${curseHtml}
+      <li><span>🐙 크라켄:</span> <b>${p.secretKnowledge.kraken > 0 ? '보유 중 ⚠️' : '없음'}</b></li>
+      <div style="font-size:0.75rem; color:#8d99ae; margin-top:8px;">
+        * 실제 카드는 섞여서 뒷면으로 놓여있으므로, 어느 위치가 어떤 카드인지는 알 수 없습니다.<br>
+        * 이 정보를 바탕으로 진실을 말하거나 자유롭게 거짓말을 해보세요!
+      </div>
+    </div>
+  `;
+
+  modal.classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('secret-modal').classList.remove('open');
+}
+
+function endGame(winnerTeam, reason) {
+  G.active = false;
+  const modal = document.getElementById('secret-modal');
+  const title = document.getElementById('modal-title');
+  const content = document.getElementById('modal-content');
+
+  title.innerText = "🏆 게임 종료";
+  
+  const isExplorers = winnerTeam === 'explorers';
+  const bannerClass = isExplorers ? 'game-over-win-explorers' : 'game-over-win-skeletons';
+  const winText = isExplorers ? '🎉 탐험대 팀 승리!' : '💀 스켈레톤 팀 승리!';
+
+  let rolesList = G.players.map(p => `<li><span>${p.name}:</span> <b>${p.role}</b></li>`).join('');
+
+  content.innerHTML = `
+    <div class="game-over-banner ${bannerClass}">${winText}</div>
+    <p style="margin-bottom:14px;">${reason}</p>
+    
+    <div class="hand-breakdown">
+      <div style="font-weight:bold; margin-bottom:6px; color:#ffd166;">플레이어 정체 공개:</div>
+      ${rolesList}
+    </div>
+  `;
+
+  modal.classList.add('open');
+}
+
+function confirmReset() {
+  if (confirm("현재 게임을 중단하고 설정 화면으로 돌아가시겠습니까?")) {
+    document.getElementById('game-area').style.display = 'none';
+    document.getElementById('setup-screen').style.display = 'block';
+    G.active = false;
+  }
+}
+</script>
+</body>
+</html>

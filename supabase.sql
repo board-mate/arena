@@ -278,18 +278,20 @@ create table if not exists public.boardmate_rooms (
   finished_at timestamptz
 );
 alter table public.boardmate_rooms drop constraint if exists boardmate_rooms_game_check;
-alter table public.boardmate_rooms add constraint boardmate_rooms_game_check check (game in ('maskmen','acquire','calico'));
+alter table public.boardmate_rooms add constraint boardmate_rooms_game_check check (game in ('maskmen','acquire','calico','thegame','kraken'));
 alter table public.boardmate_rooms drop constraint if exists boardmate_rooms_max_players_check;
-alter table public.boardmate_rooms add constraint boardmate_rooms_max_players_check check (max_players between 2 and 6);
+alter table public.boardmate_rooms add constraint boardmate_rooms_max_players_check check (max_players between 2 and 8);
 
 create table if not exists public.boardmate_room_members (
   room_id uuid not null references public.boardmate_rooms(id) on delete cascade,
   user_id uuid not null references public.boardmate_profiles(user_id) on delete cascade,
   seat integer not null,
   joined_at timestamptz not null default now(),
+  last_seen_at timestamptz not null default now(),
   primary key(room_id,user_id),
   unique(room_id,seat)
 );
+alter table public.boardmate_room_members add column if not exists last_seen_at timestamptz not null default now();
 
 create table if not exists public.boardmate_room_state (
   room_id uuid primary key references public.boardmate_rooms(id) on delete cascade,
@@ -317,11 +319,17 @@ DROP FUNCTION IF EXISTS public.submit_boardmate_match(uuid,uuid[]);
 
 create or replace function public.boardmate_game_max(p_game text)
 returns integer language sql immutable as $$
-  select case when p_game='calico' then 4 else 6 end;
+  select case
+    when p_game='calico' then 4
+    when p_game='thegame' then 5
+    when p_game='kraken' then 8
+    else 6 end;
 $$;
 create or replace function public.boardmate_game_min(p_game text)
 returns integer language sql immutable as $$
-  select case when p_game='calico' then 2 else 3 end;
+  select case
+    when p_game in ('calico','thegame') then 2
+    else 3 end;
 $$;
 revoke all on function public.boardmate_game_max(text), public.boardmate_game_min(text) from public, anon, authenticated;
 
@@ -349,7 +357,7 @@ declare uid uuid; rid uuid; mx integer;
 begin
   uid:=public.boardmate_session_user(p_token);
   if uid is null then raise exception '로그인이 필요합니다.'; end if;
-  if p_game not in ('maskmen','acquire','calico') then raise exception '지원하지 않는 게임입니다.'; end if;
+  if p_game not in ('maskmen','acquire','calico','thegame','kraken') then raise exception '지원하지 않는 게임입니다.'; end if;
   if char_length(trim(p_title)) < 1 or char_length(trim(p_title)) > 40 then raise exception '방 제목은 1~40자로 입력하세요.'; end if;
   mx:=public.boardmate_game_max(p_game);
   insert into public.boardmate_rooms(title,game,max_players,host_id)
@@ -364,24 +372,57 @@ create or replace function public.join_boardmate_room(p_token text,p_room_id uui
 returns integer
 language plpgsql security definer set search_path=public,extensions
 as $$
-declare uid uuid; r public.boardmate_rooms%rowtype; s integer; cnt integer;
+declare uid uuid; r public.boardmate_rooms%rowtype; cnt integer; s integer;
 begin
   uid:=public.boardmate_session_user(p_token);
   if uid is null then raise exception '로그인이 필요합니다.'; end if;
   select * into r from public.boardmate_rooms where id=p_room_id for update;
   if not found then raise exception '방을 찾을 수 없습니다.'; end if;
-  if r.status <> 'open' then raise exception '이미 시작한 방입니다.'; end if;
+
   select seat into s from public.boardmate_room_members where room_id=p_room_id and user_id=uid;
-  if found then return s; end if;
+  if found then
+    update public.boardmate_room_members set last_seen_at=now() where room_id=p_room_id and user_id=uid;
+    return s;
+  end if;
+
+  if r.status <> 'open' then raise exception '이미 시작한 방에는 새로 참가할 수 없습니다.'; end if;
   select count(*) into cnt from public.boardmate_room_members where room_id=p_room_id;
   if cnt >= r.max_players then raise exception '이 게임의 최대 인원에 도달했습니다.'; end if;
   select coalesce(min(x),0) into s from generate_series(0,r.max_players-1) x
    where not exists(select 1 from public.boardmate_room_members m where m.room_id=p_room_id and m.seat=x);
-  insert into public.boardmate_room_members(room_id,user_id,seat) values(p_room_id,uid,s);
+  insert into public.boardmate_room_members(room_id,user_id,seat,last_seen_at) values(p_room_id,uid,s,now());
   return s;
 end;
 $$;
 grant execute on function public.join_boardmate_room(text,uuid) to anon, authenticated;
+
+create or replace function public.touch_boardmate_room(p_token text,p_room_id uuid)
+returns void
+language plpgsql security definer set search_path=public,extensions
+as $$
+declare uid uuid;
+begin
+  uid:=public.boardmate_session_user(p_token);
+  if uid is null then raise exception '로그인이 필요합니다.'; end if;
+  update public.boardmate_room_members set last_seen_at=now()
+   where room_id=p_room_id and user_id=uid;
+end;
+$$;
+grant execute on function public.touch_boardmate_room(text,uuid) to anon, authenticated;
+
+create or replace function public.disconnect_boardmate_room(p_token text,p_room_id uuid)
+returns void
+language plpgsql security definer set search_path=public,extensions
+as $$
+declare uid uuid;
+begin
+  uid:=public.boardmate_session_user(p_token);
+  if uid is null then return; end if;
+  update public.boardmate_room_members set last_seen_at='1970-01-01'::timestamptz
+   where room_id=p_room_id and user_id=uid;
+end;
+$$;
+grant execute on function public.disconnect_boardmate_room(text,uuid) to anon, authenticated;
 
 create or replace function public.leave_boardmate_room(p_token text,p_room_id uuid)
 returns void
@@ -464,7 +505,7 @@ create table if not exists public.boardmate_ratings (
   primary key(user_id,game)
 );
 alter table public.boardmate_ratings drop constraint if exists boardmate_ratings_game_check;
-alter table public.boardmate_ratings add constraint boardmate_ratings_game_check check (game in ('maskmen','acquire','calico'));
+alter table public.boardmate_ratings add constraint boardmate_ratings_game_check check (game in ('maskmen','acquire','calico','thegame','kraken'));
 
 create table if not exists public.boardmate_matches (
   room_id uuid primary key references public.boardmate_rooms(id) on delete restrict,
@@ -518,6 +559,7 @@ begin
       jsonb_build_object(
         'id',r.id,'title',r.title,'game',r.game,'status',r.status,'host_id',r.host_id,
         'host_nickname',hp.nickname,'member_count',count(m.user_id),'max_players',r.max_players,
+        'online_count',count(m.user_id) filter(where m.last_seen_at > now()-interval '20 seconds'),
         'min_players',public.boardmate_game_min(r.game),
         'mine',bool_or(m.user_id=uid)
       ) obj
@@ -527,7 +569,7 @@ begin
     where r.status in ('open','playing')
     group by r.id,hp.nickname
     order by r.created_at desc
-    limit 40
+    limit 60
   ) x;
   return out;
 end;
@@ -554,6 +596,7 @@ begin
   )
   select coalesce(jsonb_agg(jsonb_build_object(
     'user_id',m.user_id,'seat',m.seat,'joined_at',m.joined_at,'nickname',p.nickname,
+    'connected',(m.last_seen_at > now()-interval '20 seconds'),'last_seen_at',m.last_seen_at,
     'wins',coalesce(rt.wins,0),'losses',coalesce(rt.losses,0),'games',coalesce(rt.games,0),'elo_rank',rt.elo_rank
   ) order by m.seat),'[]'::jsonb) into ms
   from public.boardmate_room_members m
@@ -676,6 +719,65 @@ end;
 $$;
 grant execute on function public.submit_boardmate_match(text,uuid,uuid[]) to anon, authenticated;
 
+
+create or replace function public.submit_boardmate_team_match(p_token text,p_room_id uuid,p_winners uuid[],p_losers uuid[])
+returns void
+language plpgsql security definer set search_path=public,extensions
+as $$
+declare uid0 uuid; r public.boardmate_rooms%rowtype; u uuid; avgw numeric; avgl numeric; e numeric; d numeric;
+begin
+  uid0:=public.boardmate_session_user(p_token);
+  if uid0 is null then raise exception '로그인이 필요합니다.'; end if;
+  select * into r from public.boardmate_rooms where id=p_room_id for update;
+  if not found or r.host_id<>uid0 or r.status<>'playing' then raise exception '결과를 확정할 수 없습니다.'; end if;
+  if exists(select 1 from public.boardmate_matches where room_id=p_room_id) then raise exception 'already submitted'; end if;
+  if coalesce(array_length(p_winners,1),0)<1 or coalesce(array_length(p_losers,1),0)<1 then raise exception 'invalid teams'; end if;
+  if exists(select 1 from unnest(p_winners||p_losers) as t(z) where not exists(select 1 from public.boardmate_room_members m where m.room_id=p_room_id and m.user_id=t.z)) then raise exception 'invalid player'; end if;
+  foreach u in array p_winners||p_losers loop
+    insert into public.boardmate_ratings(user_id,game) values(u,r.game) on conflict(user_id,game) do nothing;
+  end loop;
+  select avg(elo) into avgw from public.boardmate_ratings where game=r.game and user_id=any(p_winners);
+  select avg(elo) into avgl from public.boardmate_ratings where game=r.game and user_id=any(p_losers);
+  foreach u in array p_winners loop
+    select 1.0/(1.0+power(10.0,(avgl-elo)/400.0)) into e from public.boardmate_ratings where user_id=u and game=r.game;
+    d:=24*(1-e);
+    update public.boardmate_ratings set elo=elo+d,wins=wins+1,games=games+1,updated_at=now() where user_id=u and game=r.game;
+  end loop;
+  foreach u in array p_losers loop
+    select 1.0/(1.0+power(10.0,(avgw-elo)/400.0)) into e from public.boardmate_ratings where user_id=u and game=r.game;
+    d:=24*(0-e);
+    update public.boardmate_ratings set elo=elo+d,losses=losses+1,games=games+1,updated_at=now() where user_id=u and game=r.game;
+  end loop;
+  insert into public.boardmate_matches(room_id,game,finishing_order) values(p_room_id,r.game,p_winners||p_losers);
+  update public.boardmate_rooms set status='finished',finished_at=now() where id=p_room_id;
+end;
+$$;
+grant execute on function public.submit_boardmate_team_match(text,uuid,uuid[],uuid[]) to anon, authenticated;
+
+create or replace function public.submit_boardmate_coop_match(p_token text,p_room_id uuid,p_win boolean)
+returns void
+language plpgsql security definer set search_path=public,extensions
+as $$
+declare uid0 uuid; r public.boardmate_rooms%rowtype; u uuid; e numeric; d numeric; ids uuid[];
+begin
+  uid0:=public.boardmate_session_user(p_token);
+  if uid0 is null then raise exception '로그인이 필요합니다.'; end if;
+  select * into r from public.boardmate_rooms where id=p_room_id for update;
+  if not found or r.host_id<>uid0 or r.status<>'playing' then raise exception '결과를 확정할 수 없습니다.'; end if;
+  if exists(select 1 from public.boardmate_matches where room_id=p_room_id) then raise exception 'already submitted'; end if;
+  select array_agg(user_id order by seat) into ids from public.boardmate_room_members where room_id=p_room_id;
+  foreach u in array ids loop
+    insert into public.boardmate_ratings(user_id,game) values(u,r.game) on conflict(user_id,game) do nothing;
+    select 1.0/(1.0+power(10.0,(1000.0-elo)/400.0)) into e from public.boardmate_ratings where user_id=u and game=r.game;
+    d:=24*((case when p_win then 1 else 0 end)-e);
+    update public.boardmate_ratings set elo=elo+d,wins=wins+(case when p_win then 1 else 0 end),losses=losses+(case when p_win then 0 else 1 end),games=games+1,updated_at=now() where user_id=u and game=r.game;
+  end loop;
+  insert into public.boardmate_matches(room_id,game,finishing_order) values(p_room_id,r.game,ids);
+  update public.boardmate_rooms set status='finished',finished_at=now() where id=p_room_id;
+end;
+$$;
+grant execute on function public.submit_boardmate_coop_match(text,uuid,boolean) to anon, authenticated;
+
 -- 참고: v3에서 생성된 기존 회원은 password_hash가 비어 있을 수 있습니다.
--- 그 경우 SQL Editor에서 아래처럼 새 비밀번호를 지정하면 v4 로그인으로 전환됩니다.
+-- 그 경우 SQL Editor에서 아래처럼 새 비밀번호를 지정하면 v5 로그인으로 전환됩니다.
 -- select public.admin_reset_boardmate_password('닉네임','1234');

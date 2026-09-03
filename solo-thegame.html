@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Game - 보드게임 아레나 웹</title>
+<style>
+  :root {
+    --bg: #1e1f29;
+    --card-bg: #2b2d3c;
+    --fire-color: #3498db;
+    --accent: #e74c3c;
+    --text: #ffffff;
+  }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Pretendard", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    margin: 0;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    user-select: none;
+  }
+  .setup-panel, .game-panel {
+    background: #282a36;
+    padding: 16px 20px;
+    border-radius: 12px;
+    margin-bottom: 16px;
+    display: flex;
+    gap: 15px;
+    align-items: center;
+    flex-wrap: wrap;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+  }
+  button {
+    background: var(--accent);
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-weight: bold;
+    cursor: pointer;
+  }
+  button:disabled { background: #555; cursor: not-allowed; }
+  select, label { cursor: pointer; font-size: 0.95rem; }
+  
+  .board {
+    display: grid;
+    grid-template-columns: repeat(2, 140px);
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+  .pile {
+    background: var(--card-bg);
+    border: 2px dashed #4f5366;
+    border-radius: 10px;
+    height: 160px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: transform 0.1s, border-color 0.1s;
+    position: relative;
+  }
+  .pile:hover { border-color: #f1c40f; }
+  .pile.on-fire {
+    border: 3px solid var(--fire-color);
+    box-shadow: 0 0 15px rgba(52, 152, 219, 0.7);
+  }
+  .pile-label { font-size: 0.8rem; color: #a0a0b0; margin-bottom: 8px; }
+  .pile-val { font-size: 2.8rem; font-weight: bold; }
+  .fire-badge {
+    position: absolute;
+    top: 6px;
+    background: var(--fire-color);
+    font-size: 0.7rem;
+    padding: 2px 6px;
+    border-radius: 10px;
+    font-weight: bold;
+  }
+
+  .status-box {
+    margin-bottom: 12px;
+    font-weight: bold;
+    font-size: 1.1rem;
+    text-align: center;
+  }
+  .log-box {
+    font-size: 0.85rem;
+    color: #e74c3c;
+    height: 24px;
+    text-align: center;
+  }
+
+  .hand-container {
+    text-align: center;
+    max-width: 650px;
+  }
+  .hand {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 10px;
+  }
+  .card {
+    background: #383a59;
+    border: 2px solid #555;
+    border-radius: 8px;
+    width: 60px;
+    height: 90px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: transform 0.15s;
+  }
+  .card.fire {
+    color: var(--fire-color);
+    border-color: var(--fire-color);
+  }
+  .card.selected {
+    border-color: #f1c40f;
+    transform: translateY(-12px);
+    box-shadow: 0 4px 10px rgba(241, 196, 15, 0.4);
+  }
+</style>
+</head>
+<body>
+<a href="./index.html#/solo" style="position:fixed;top:10px;left:10px;z-index:99;background:#111827;color:#fff;text-decoration:none;padding:8px 10px;border-radius:9px;font-weight:900;font-size:12px">← BoardMate 1인플</a>
+
+<div class="setup-panel" id="setup">
+  <label>
+    플레이어 수:
+    <select id="player-count">
+      <option value="1">1인 (솔로)</option>
+      <option value="2" selected>2인</option>
+      <option value="3">3인</option>
+      <option value="4">4인</option>
+      <option value="5">5인</option>
+    </select>
+  </label>
+  <label style="display: flex; align-items: center; gap: 4px;">
+    <input type="checkbox" id="opt-fire"> 온 파이어(On Fire) 확장 포함
+  </label>
+  <button onclick="startGame()">게임 시작</button>
+</div>
+
+<div class="game-panel" id="game-controls" style="display: none;">
+  <span id="turn-indicator">P1 차례</span>
+  <span id="deck-info">남은 덱: 98장</span>
+  <button id="btn-end-turn" onclick="endTurn()" disabled>턴 종료</button>
+  <button onclick="resetGame()" style="background:#555;">다시 시작</button>
+</div>
+
+<div class="status-box" id="status-msg"></div>
+<div class="log-box" id="error-msg"></div>
+
+<div class="board">
+  <div class="pile" id="pile-ui-0" onclick="playCard(0)">
+    <span class="pile-label">오름차순 (1▲)</span>
+    <span class="pile-val" id="pile-val-0">1</span>
+  </div>
+  <div class="pile" id="pile-ui-1" onclick="playCard(1)">
+    <span class="pile-label">오름차순 (1▲)</span>
+    <span class="pile-val" id="pile-val-1">1</span>
+  </div>
+  <div class="pile" id="pile-ui-2" onclick="playCard(2)">
+    <span class="pile-label">내림차순 (100▼)</span>
+    <span class="pile-val" id="pile-val-2">100</span>
+  </div>
+  <div class="pile" id="pile-ui-3" onclick="playCard(3)">
+    <span class="pile-label">내림차순 (100▼)</span>
+    <span class="pile-val" id="pile-val-3">100</span>
+  </div>
+</div>
+
+<div class="hand-container" id="hand-wrapper" style="display:none;">
+  <div id="hand-title">내 손패</div>
+  <div class="hand" id="hand"></div>
+</div>
+
+<script>
+const FIRE_CARDS = [22, 33, 44, 55, 66, 77];
+
+let G = {
+  active: false,
+  totalPlayers: 2,
+  isFireExp: false,
+  deck: [],
+  piles: [1, 1, 100, 100],
+  fireActive: [false, false, false, false], // 각 열의 불꽃 활성화 여부
+  fireTimer: [0, 0, 0, 0], // 불꽃 커버 제한 카운트
+  hands: [],
+  currentTurn: 0,
+  playedCount: 0
+};
+
+let selectedHandIdx = null;
+
+function startGame() {
+  const pCount = parseInt(document.getElementById('player-count').value);
+  const useFire = document.getElementById('opt-fire').checked;
+
+  G.active = true;
+  G.totalPlayers = pCount;
+  G.isFireExp = useFire;
+  G.currentTurn = 0;
+  G.playedCount = 0;
+  G.piles = [1, 1, 100, 100];
+  G.fireActive = [false, false, false, false];
+  G.fireTimer = [0, 0, 0, 0];
+  selectedHandIdx = null;
+
+  // 덱 생성 (2~99)
+  G.deck = Array.from({length: 98}, (_, i) => i + 2).sort(() => Math.random() - 0.5);
+
+  // 패 배분 (1인: 8장, 2인: 7장, 3~5인: 6장)
+  const handSize = pCount === 1 ? 8 : (pCount === 2 ? 7 : 6);
+  G.hands = [];
+  for (let i = 0; i < pCount; i++) {
+    G.hands.push(G.deck.splice(0, handSize).sort((a, b) => a - b));
+  }
+
+  document.getElementById('setup').style.display = 'none';
+  document.getElementById('game-controls').style.display = 'flex';
+  document.getElementById('hand-wrapper').style.display = 'block';
+
+  render();
+}
+
+function resetGame() {
+  document.getElementById('setup').style.display = 'flex';
+  document.getElementById('game-controls').style.display = 'none';
+  document.getElementById('hand-wrapper').style.display = 'none';
+  document.getElementById('status-msg').innerText = '';
+  document.getElementById('error-msg').innerText = '';
+  G.active = false;
+}
+
+function isCardFire(val) {
+  return G.isFireExp && FIRE_CARDS.includes(val);
+}
+
+function selectCard(idx) {
+  selectedHandIdx = (selectedHandIdx === idx) ? null : idx;
+  document.getElementById('error-msg').innerText = '';
+  render();
+}
+
+function isValidMove(val, pileIdx) {
+  const cur = G.piles[pileIdx];
+  if (pileIdx < 2) {
+    return val > cur || val === cur - 10;
+  } else {
+    return val < cur || val === cur + 10;
+  }
+}
+
+function playCard(pileIdx) {
+  if (selectedHandIdx === null || !G.active) return;
+  const currentHand = G.hands[G.currentTurn];
+  const cardVal = currentHand[selectedHandIdx];
+
+  if (!isValidMove(cardVal, pileIdx)) {
+    document.getElementById('error-msg').innerText = "규칙에 맞지 않는 위치입니다 (순서 또는 ±10 되돌리기 필요)";
+    return;
+  }
+
+  // 카드 배치
+  currentHand.splice(selectedHandIdx, 1);
+  G.piles[pileIdx] = cardVal;
+  G.playedCount++;
+  selectedHandIdx = null;
+
+  // 불꽃 카드 처리
+  if (isCardFire(cardVal)) {
+    G.fireActive[pileIdx] = true;
+    G.fireTimer[pileIdx] = G.totalPlayers === 1 ? 0 : 1; // 덮어야 하는 턴 유예
+  } else {
+    G.fireActive[pileIdx] = false;
+  }
+
+  render();
+}
+
+function endTurn() {
+  const minRequired = G.deck.length > 0 ? (G.totalPlayers === 1 ? 2 : 2) : 1;
+  const currentHand = G.hands[G.currentTurn];
+
+  if (G.playedCount < minRequired && currentHand.length > 0) return;
+
+  // 불꽃 규칙 검증: 덮이지 않고 방치된 불꽃 확인
+  for (let i = 0; i < 4; i++) {
+    if (G.fireActive[i]) {
+      if (G.fireTimer[i] === 0) {
+        gameOver(false, "불꽃 카드를 시간 내에 덮지 못해 패배했습니다!");
+        return;
+      }
+      G.fireTimer[i]--;
+    }
+  }
+
+  // 카드 보충
+  const limit = G.totalPlayers === 1 ? 8 : (G.totalPlayers === 2 ? 7 : 6);
+  while (currentHand.length < limit && G.deck.length > 0) {
+    currentHand.push(G.deck.pop());
+  }
+  currentHand.sort((a, b) => a - b);
+
+  // 전원 승리 체크
+  const allClear = G.hands.every(h => h.length === 0);
+  if (allClear && G.deck.length === 0) {
+    gameOver(true, "축하합니다! 모든 카드를 내려놓아 완벽하게 승리했습니다!");
+    return;
+  }
+
+  // 턴 전환
+  G.playedCount = 0;
+  G.currentTurn = (G.currentTurn + 1) % G.totalPlayers;
+
+  // 다음 플레이어가 낼 카드가 있는지 체크
+  checkValidPlays();
+  render();
+}
+
+function checkValidPlays() {
+  const hand = G.hands[G.currentTurn];
+  if (hand.length === 0) return;
+
+  const minReq = G.deck.length > 0 ? 2 : 1;
+  let possibleMoves = 0;
+
+  hand.forEach(card => {
+    for (let i = 0; i < 4; i++) {
+      if (isValidMove(card, i)) possibleMoves++;
+    }
+  });
+
+  if (possibleMoves < minReq && hand.length >= minReq) {
+    gameOver(false, `P${G.currentTurn + 1}님이 필요한 카드를 낼 수 없어 패배했습니다.`);
+  }
+}
+
+function gameOver(win, msg) {
+  G.active = false;
+  let leftCards = G.deck.length + G.hands.reduce((acc, cur) => acc + cur.length, 0);
+  document.getElementById('status-msg').innerText = `${win ? '🎉 승리' : '💀 게임 종료'}: ${msg} (남은 카드: ${leftCards}장)`;
+  document.getElementById('btn-end-turn').disabled = true;
+}
+
+function render() {
+  // 덱 & 상태
+  document.getElementById('deck-info').innerText = `남은 덱: ${G.deck.length}장`;
+  document.getElementById('turn-indicator').innerText = `P${G.currentTurn + 1}의 차례`;
+
+  const minReq = G.deck.length > 0 ? 2 : 1;
+  const currentHand = G.hands[G.currentTurn] || [];
+  
+  if (G.active) {
+    document.getElementById('status-msg').innerText = 
+      `카드를 최소 ${minReq}장 이상 내야 합니다. (현재 낸 장수: ${G.playedCount}장)`;
+    document.getElementById('btn-end-turn').disabled = 
+      (G.playedCount < minReq && currentHand.length > 0);
+  }
+
+  // 열 렌더링
+  for (let i = 0; i < 4; i++) {
+    const pileUi = document.getElementById(`pile-ui-${i}`);
+    const valSpan = document.getElementById(`pile-val-${i}`);
+    valSpan.innerText = G.piles[i];
+
+    if (G.fireActive[i]) {
+      pileUi.classList.add('on-fire');
+      if (!pileUi.querySelector('.fire-badge')) {
+        const badge = document.createElement('span');
+        badge.className = 'fire-badge';
+        badge.innerText = 'ON FIRE';
+        pileUi.appendChild(badge);
+      }
+    } else {
+      pileUi.classList.remove('on-fire');
+      const badge = pileUi.querySelector('.fire-badge');
+      if (badge) badge.remove();
+    }
+  }
+
+  // 손패 렌더링
+  const handDiv = document.getElementById('hand');
+  handDiv.innerHTML = '';
+  document.getElementById('hand-title').innerText = `P${G.currentTurn + 1} 손패 (${currentHand.length}장)`;
+
+  currentHand.forEach((val, idx) => {
+    const cardEl = document.createElement('div');
+    cardEl.className = `card ${selectedHandIdx === idx ? 'selected' : ''} ${isCardFire(val) ? 'fire' : ''}`;
+    cardEl.innerText = val;
+    cardEl.onclick = () => selectCard(idx);
+    handDiv.appendChild(cardEl);
+  });
+}
+</script>
+<div style="margin-top:18px;font-size:12px"><a href="./rules-the-game.pdf" target="_blank" style="color:#f1c40f">한국어 룰북 열기</a></div>
+</body>
+</html>

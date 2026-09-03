@@ -30,7 +30,16 @@ function tierInfo(row){
   if(wins>=1)return {text:'🥈 실버',cls:'silver'};
   return {text:'🥉 브론즈',cls:'bronze'};
 }
-function gameInfo(game){return game==='maskmen'?{name:'마스크맨',icon:'🥊',min:3,max:6}:game==='acquire'?{name:'어콰이어',icon:'🏙️',min:3,max:6}:{name:'캘리코',icon:'🧵',min:2,max:4};}
+function gameInfo(game){
+  const map={
+    maskmen:{name:'마스크맨',icon:'🥊',min:3,max:6},
+    acquire:{name:'어콰이어',icon:'🏙️',min:3,max:6},
+    calico:{name:'캘리코',icon:'🧵',min:2,max:4},
+    thegame:{name:'더 게임',icon:'🃏',min:2,max:5},
+    kraken:{name:'노터치 크라켄',icon:'🐙',min:3,max:8}
+  };
+  return map[game]||{name:game,icon:'🎲',min:2,max:6};
+}
 
 function playerId(){
   let id = localStorage.getItem(STORAGE_PREFIX+'player_id');
@@ -148,58 +157,94 @@ const BOARD_SIZE=16;
 const BLOCKED_CELLS=new Set([119,120,135,136]);
 const ROBOT_COLORS=['red','yellow','green','blue'];
 const DIRS=[{dr:-1,dc:0,bit:1},{dr:0,dc:1,bit:2},{dr:1,dc:0,bit:4},{dr:0,dc:-1,bit:8}];
-// 8×8 사분면 라이브러리에서 매일 서로 다른 4장을 골라 회전/배치합니다.
-// 물리판 느낌을 위해 내부 L자 벽은 서로 붙지 않게 만들고, 바깥 테두리에는 짧은 벽(stub)도 둡니다.
-function makeRicochetTile(seed){
-  const rnd=seededRand(seed),cands=[];for(let r=1;r<=6;r++)for(let c=1;c<=6;c++)cands.push([r,c]);
-  for(let i=cands.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[cands[i],cands[j]]=[cands[j],cands[i]];}
-  const chosen=[];for(const p of cands){if(chosen.every(q=>Math.max(Math.abs(p[0]-q[0]),Math.abs(p[1]-q[1]))>=2)){chosen.push(p);if(chosen.length===4)break;}}
-  const masks=[3,6,12,9];for(let i=3;i>0;i--){const j=Math.floor(rnd()*(i+1));[masks[i],masks[j]]=[masks[j],masks[i]];}
-  const corners=chosen.map((p,i)=>[p[0],p[1],masks[i]]),targets=chosen.map(p=>[p[0],p[1]]);
-  const barCands=cands.filter(p=>chosen.every(q=>Math.max(Math.abs(p[0]-q[0]),Math.abs(p[1]-q[1]))>=2));
-  const bars=[];if(barCands.length){const p=barCands[Math.floor(rnd()*barCands.length)],bits=[1,2,4,8];bars.push([p[0],p[1],bits[Math.floor(rnd()*4)]]);}
-  return{corners,targets,bars};
-}
-const RICOCHET_TILES=Array.from({length:24},(_,i)=>makeRicochetTile(0x51f15e+i*7919));
+function seededRand(seed){let a=seed>>>0;return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+function dateNumber(dateKey){const [y,m,d]=dateKey.split('-').map(Number);return Math.floor(Date.UTC(y,m-1,d)/86400000);}
 function addWallPair(walls,cell,bit){
   const step={1:[-1,0,4],2:[0,1,8],4:[1,0,1],8:[0,-1,2]},r=Math.floor(cell/16),c=cell%16,[dr,dc,op]=step[bit],nr=r+dr,nc=c+dc;
   walls[cell]|=bit;if(nr>=0&&nr<16&&nc>=0&&nc<16)walls[nr*16+nc]|=op;
 }
-function rot8(r,c,rot){for(let i=0;i<rot;i++)[r,c]=[c,7-r];return[r,c];}
-function rotMask(mask,rot){let out=0;const vec=[[1,-1,0],[2,0,1],[4,1,0],[8,0,-1]];for(const [bit,dr,dc] of vec)if(mask&bit){let a=dr,b=dc;for(let i=0;i<rot;i++)[a,b]=[b,-a];out|=a===-1?1:b===1?2:a===1?4:8;}return out;}
-function seededRand(seed){let a=seed>>>0;return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
-function dateNumber(dateKey){const [y,m,d]=dateKey.split('-').map(Number);return Math.floor(Date.UTC(y,m-1,d)/86400000);}
-function addOuterEdgeStubs(walls,rnd){
-  const halves=[[2,3,4,5],[10,11,12,13]];
-  for(const opts of halves){const c=opts[Math.floor(rnd()*opts.length)];addWallPair(walls,c,2);}
-  for(const opts of halves){const c=opts[Math.floor(rnd()*opts.length)];addWallPair(walls,15*16+c,2);}
-  for(const opts of halves){const r=opts[Math.floor(rnd()*opts.length)];addWallPair(walls,r*16,4);}
-  for(const opts of halves){const r=opts[Math.floor(rnd()*opts.length)];addWallPair(walls,r*16+15,4);}
+function rotateLocal(r,c,rot){for(let i=0;i<rot;i++)[r,c]=[c,7-r];return[r,c];}
+function rotateMask(mask,rot){let out=0;const v=[[1,-1,0],[2,0,1],[4,1,0],[8,0,-1]];for(const [bit,dr,dc] of v)if(mask&bit){let a=dr,b=dc;for(let i=0;i<rot;i++)[a,b]=[b,-a];out|=a===-1?1:b===1?2:a===1?4:8;}return out;}
+
+// 한 사분면(8×8)은 정확히:
+// - 바깥쪽 두 변에 붙는 1칸짜리 벽 2개
+// - 서로 닿지 않는 ㄱ자 벽 4개
+// 를 가집니다. 4장을 합치면 1칸 벽 8개 + ㄱ자 벽 16개입니다.
+function makeRicochetQuadrant(seed){
+  const rnd=seededRand(seed);
+  const topStub=1+Math.floor(rnd()*6);
+  const leftStub=1+Math.floor(rnd()*6);
+  const pool=[]; for(let r=1;r<=6;r++)for(let c=1;c<=6;c++)pool.push([r,c]);
+  for(let i=pool.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[pool[i],pool[j]]=[pool[j],pool[i]];}
+  const corners=[];
+  const stubPoints=[[0,topStub],[0,topStub+1],[leftStub,0],[leftStub+1,0]];
+  const farFromStubs=(r,c)=>stubPoints.every(([sr,sc])=>Math.max(Math.abs(r-sr),Math.abs(c-sc))>=2);
+  for(const [r,c] of pool){
+    if(!farFromStubs(r,c))continue;
+    if(corners.every(([rr,cc])=>Math.max(Math.abs(r-rr),Math.abs(c-cc))>=3)){
+      corners.push([r,c]);
+      if(corners.length===4)break;
+    }
+  }
+  // 드물게 랜덤 배치가 4개를 못 찾으면 검증된 기본 위치 사용.
+  if(corners.length<4){corners.splice(0,corners.length,[1,1],[1,5],[5,1],[5,5]);}
+  const masks=[3,6,12,9];
+  for(let i=masks.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[masks[i],masks[j]]=[masks[j],masks[i]];}
+  return {topStub,leftStub,corners:corners.map((p,i)=>[p[0],p[1],masks[i]])};
+}
+const RICOCHET_QUADRANTS=Array.from({length:64},(_,i)=>makeRicochetQuadrant(0xA17C9E+i*104729));
+
+function placeQuadrant(walls,targets,tile,or,oc,rot){
+  // canonical tile의 top/left가 완성 보드의 바깥 모서리를 향하도록 배치.
+  const stubDefs=[
+    [0,tile.topStub,2],       // 위 변에서 아래로 내려오는 세로 벽
+    [tile.leftStub,0,4]       // 왼쪽 변에서 오른쪽으로 들어오는 가로 벽
+  ];
+  for(const [lr,lc,bit] of stubDefs){
+    const [rr,cc]=rotateLocal(lr,lc,rot),g=(or+rr)*16+(oc+cc),m=rotateMask(bit,rot);
+    for(const b of [1,2,4,8])if(m&b)addWallPair(walls,g,b);
+  }
+  for(const [lr,lc,mask] of tile.corners){
+    const [rr,cc]=rotateLocal(lr,lc,rot),g=(or+rr)*16+(oc+cc),m=rotateMask(mask,rot);
+    for(const b of [1,2,4,8])if(m&b)addWallPair(walls,g,b);
+    targets.push(g);
+  }
 }
 function buildDailyRicochetBoard(dateKey){
-  const rnd=seededRand(Math.abs(dateNumber(dateKey))*2654435761),pool=Array.from({length:RICOCHET_TILES.length},(_,i)=>i);
-  for(let i=pool.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[pool[i],pool[j]]=[pool[j],pool[i]];}const order=pool.slice(0,4);
-  const walls=Array(256).fill(0),targets=[];
-  for(let c=0;c<16;c++){walls[c]|=1;walls[240+c]|=4;}
-  for(let r=0;r<16;r++){walls[r*16]|=8;walls[r*16+15]|=2;}
-  const origins=[[0,0],[0,8],[8,0],[8,8]];
-  origins.forEach(([or,oc],q)=>{
-    const tile=RICOCHET_TILES[order[q]],rot=Math.floor(rnd()*4);
-    for(const [lr,lc,mask] of tile.corners){const [rr,cc]=rot8(lr,lc,rot),g=(or+rr)*16+(oc+cc),m=rotMask(mask,rot);for(const bit of [1,2,4,8])if(m&bit)addWallPair(walls,g,bit);}
-    for(const [lr,lc,mask] of tile.bars||[]){const [rr,cc]=rot8(lr,lc,rot),g=(or+rr)*16+(oc+cc),m=rotMask(mask,rot);for(const bit of [1,2,4,8])if(m&bit)addWallPair(walls,g,bit);}
-    for(const [lr,lc] of tile.targets){const [rr,cc]=rot8(lr,lc,rot);targets.push((or+rr)*16+(oc+cc));}
-  });
-  addOuterEdgeStubs(walls,rnd);
-  return{walls,targets,layout:order};
+  const rnd=seededRand((Math.abs(dateNumber(dateKey))*2654435761)>>>0);
+  const pool=Array.from({length:RICOCHET_QUADRANTS.length},(_,i)=>i);
+  for(let i=pool.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[pool[i],pool[j]]=[pool[j],pool[i]];}
+  const order=pool.slice(0,4),walls=Array(256).fill(0),targets=[];
+  // 외곽 전체를 굵은 검정 벽으로 만들지 않습니다. 이동은 보드 경계 판정으로 멈춥니다.
+  // 각 위치에서 바깥 모서리를 향하는 회전은 고정: 좌상/우상/우하/좌하.
+  const placements=[
+    [0,0,0],
+    [0,8,1],
+    [8,8,2],
+    [8,0,3]
+  ];
+  placements.forEach(([or,oc,rot],q)=>placeQuadrant(walls,targets,RICOCHET_QUADRANTS[order[q]],or,oc,rot));
+  return {walls,targets,layout:order,wallSpec:{single:8,corners:16}};
 }
-function moveRobot(state,robotIndex,dirIndex,puzzle){const dir=DIRS[dirIndex],current=state[robotIndex];let r=Math.floor(current/16),c=current%16;const occupied=new Set(state);occupied.delete(current);const blocked=new Set(puzzle.blocked);while(true){const pos=r*16+c;if(puzzle.walls[pos]&dir.bit)break;const nr=r+dir.dr,nc=c+dir.dc;if(nr<0||nr>=16||nc<0||nc>=16)break;const np=nr*16+nc;if(blocked.has(np)||occupied.has(np))break;r=nr;c=nc;}const next=r*16+c;if(next===current)return state;const copy=[...state];copy[robotIndex]=next;return copy;}
-function shortestRicochet(puzzle,maxDepth=9){
+function moveRobot(state,robotIndex,dirIndex,puzzle){
+  const dir=DIRS[dirIndex],current=state[robotIndex];let r=Math.floor(current/16),c=current%16;
+  const occupied=new Set(state);occupied.delete(current);const blocked=new Set(puzzle.blocked);
+  while(true){
+    const pos=r*16+c;if(puzzle.walls[pos]&dir.bit)break;
+    const nr=r+dir.dr,nc=c+dir.dc;if(nr<0||nr>=16||nc<0||nc>=16)break;
+    const np=nr*16+nc;if(blocked.has(np)||occupied.has(np))break;r=nr;c=nc;
+  }
+  const next=r*16+c;if(next===current)return state;const copy=[...state];copy[robotIndex]=next;return copy;
+}
+function shortestRicochet(puzzle,maxDepth=10){
   const start=[...puzzle.robots];if(start[puzzle.targetRobot]===puzzle.target)return 0;
   let frontier=[start];const seen=new Set([start.join('-')]);
   for(let depth=1;depth<=maxDepth;depth++){
     const nf=[];
     for(const st of frontier)for(let robot=0;robot<4;robot++)for(let dir=0;dir<4;dir++){
-      const nx=moveRobot(st,robot,dir,puzzle);if(nx===st)continue;if(nx[puzzle.targetRobot]===puzzle.target)return depth;const k=nx.join('-');if(!seen.has(k)){seen.add(k);nf.push(nx);}
+      const nx=moveRobot(st,robot,dir,puzzle);if(nx===st)continue;
+      if(nx[puzzle.targetRobot]===puzzle.target)return depth;
+      const k=nx.join('-');if(!seen.has(k)){seen.add(k);nf.push(nx);}
     }
     frontier=nf;if(!frontier.length)break;
   }
@@ -208,18 +253,19 @@ function shortestRicochet(puzzle,maxDepth=9){
 const RICOCHET_PUZZLE_CACHE=new Map();
 function getRicochetPuzzle(dateKey){
   if(RICOCHET_PUZZLE_CACHE.has(dateKey))return RICOCHET_PUZZLE_CACHE.get(dateKey);
-  const boardInfo=buildDailyRicochetBoard(dateKey),blocked=[...BLOCKED_CELLS],blockedSet=new Set(blocked),rnd=seededRand(Math.abs(dateNumber(dateKey))*2246822519+97),safe=[];
+  const boardInfo=buildDailyRicochetBoard(dateKey),blocked=[...BLOCKED_CELLS],blockedSet=new Set(blocked);
+  const rnd=seededRand((Math.abs(dateNumber(dateKey))*2246822519+97)>>>0),safe=[];
   for(let i=0;i<256;i++)if(!blockedSet.has(i))safe.push(i);
   let best=null,bestDepth=-1;
-  for(let attempt=0;attempt<36;attempt++){
+  for(let attempt=0;attempt<56;attempt++){
     const target=boardInfo.targets[Math.floor(rnd()*boardInfo.targets.length)],targetRobot=Math.floor(rnd()*4),robots=[];
     while(robots.length<4){const cell=safe[Math.floor(rnd()*safe.length)];if(cell!==target&&!robots.includes(cell))robots.push(cell);}
-    const candidate={date:dateKey,walls:boardInfo.walls,blocked,robots,targetRobot,target};
-    const depth=shortestRicochet(candidate,9);
+    const candidate={date:dateKey,walls:boardInfo.walls,blocked,robots,targetRobot,target,wallSpec:boardInfo.wallSpec};
+    const depth=shortestRicochet(candidate,10);
     if(depth!=null&&depth>bestDepth){best=candidate;bestDepth=depth;}
-    if(depth!=null&&depth>=6&&depth<=9){best=candidate;break;}
+    if(depth!=null&&depth>=6&&depth<=10){best=candidate;break;}
   }
-  if(!best){best={date:dateKey,walls:boardInfo.walls,blocked,robots:[17,46,209,238],targetRobot:0,target:boardInfo.targets[0]};}
+  if(!best)best={date:dateKey,walls:boardInfo.walls,blocked,robots:[17,46,209,238],targetRobot:0,target:boardInfo.targets[0],wallSpec:boardInfo.wallSpec};
   RICOCHET_PUZZLE_CACHE.set(dateKey,best);return best;
 }
 function directionFromBoardClick(fromCell,toCell){
@@ -256,7 +302,7 @@ function rollOne(){const a=new Uint32Array(1);crypto.getRandomValues(a);return a
 // -------------------- pages --------------------
 async function renderHome(){
   shell(`<section class="hero"><div><h1><span>BoardMate</span> Arcade</h1><p>보드메이트에서 같이 즐기는 웹 보드게임 공간.<br>데일리 퍼즐, AI 연습, 로그인 기반 온라인 방을 한 곳에 모았습니다.</p><div class="social-links"><a class="social-link" href="${LINKS.instagram}" target="_blank" rel="noreferrer">📷 Instagram</a><a class="social-link" href="${LINKS.somoim}" target="_blank" rel="noreferrer">👥 소모임</a><a class="social-link" href="${LINKS.shop}" target="_blank" rel="noreferrer">🛍 마플샵</a></div></div><div class="hero-badge">🎲</div></section>
-  <section class="mode-grid"><button class="mode-card" data-go="solo"><span>🧠</span><b>1인플 · AI 대전</b><small>마스크맨 / 어콰이어 / 캘리코</small></button><button class="mode-card" data-go="multi"><span>🌐</span><b>다인플 · 온라인 방</b><small>회원 로그인 · 방 만들기 · 게임별 티어</small></button></section>
+  <section class="mode-grid"><button class="mode-card" data-go="solo"><span>🧠</span><b>1인플 · AI/솔로</b><small>마스크맨 / 어콰이어 / 캘리코 / 캐스캐디아 / 더 게임</small></button><button class="mode-card" data-go="multi"><span>🌐</span><b>다인플 · 온라인 방</b><small>자동 저장 · 재접속 · 게임별 티어</small></button></section>
   <div class="section-title"><h2>오늘의 게임</h2><small>${formatDate(kstDate())} · KST</small></div><section class="game-grid">${homeCard('ricochet','🤖','리코셰','적은 이동 수 → 동률이면 먼저 클리어')} ${homeCard('pensterdam','🧩','펜토리니','도움칸 적게 사용 → 동률이면 먼저 클리어')} ${homeCard('yahtzee','🎲','Yahtzee','언제든 플레이 · 올타임 최고 점수')}</section><div id="connection"></div>`);
   document.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>location.hash=`#/${b.dataset.go}`);
   for(const g of ['ricochet','pensterdam','yahtzee']){const data=await loadLeaderboard(g,5);const el=document.querySelector(`#lb-${g}`);if(el)el.innerHTML=leaderboardHtml(g,data,false);}
@@ -267,7 +313,14 @@ function homeCard(game,icon,title,desc){return `<article class="game-card"><div 
 function bindHome(){document.querySelectorAll('[data-play]').forEach(b=>b.onclick=()=>location.hash=`#/${b.dataset.play}`);document.querySelectorAll('[data-more]').forEach(b=>b.onclick=async()=>{const g=b.dataset.more,card=b.closest('.game-card'),expanded=b.textContent==='접기',data=await loadLeaderboard(g,expanded?5:100);card.querySelector(`#lb-${g}`).innerHTML=leaderboardHtml(g,data,!expanded);bindHome();});}
 
 function renderSolo(){
-  shell(`<div class="page-head"><div><h1>🧠 1인플 · AI/솔로</h1><p>마스크맨과 어콰이어는 업로드해 주신 AI 버전, 캘리코는 공개된 MyAutoma 솔로 데모로 연결합니다.</p></div><div class="actions"><button class="ghost" id="backHome">← 홈</button></div></div><section class="library-grid"><article class="library-card maskmen"><div class="library-icon">🥊</div><h2>마스크맨</h2><p>3~6인 규칙을 AI들과 연습합니다. 4시즌 점수와 서열 추론 로직을 사용합니다.</p><a class="primary link-btn" href="./solo-maskmen.html">AI와 대전</a></article><article class="library-card acquire"><div class="library-icon">🏙️</div><h2>어콰이어</h2><p>타일 배치, 호텔 체인, 주식과 합병을 AI들과 연습합니다.</p><a class="primary link-btn" href="./solo-acquire.html">AI와 대전</a></article><article class="library-card calico"><div class="library-icon">🧵</div><h2>캘리코</h2><p>MyAutoma에서 공개한 1인 솔로 데모입니다. 외부 사이트에서 새 탭으로 실행됩니다.</p><a class="primary link-btn" href="https://myautoma.github.io/games/calico/index.html" target="_blank" rel="noreferrer">솔로 데모 열기 ↗</a></article></section>`);
+  shell(`<div class="page-head"><div><h1>🧠 1인플 · AI/솔로</h1><p>AI 연습 게임과 공개 솔로 구현을 한 곳에서 실행합니다.</p></div><div class="actions"><button class="ghost" id="backHome">← 홈</button></div></div>
+  <section class="library-grid">
+    <article class="library-card maskmen"><div class="library-icon">🥊</div><h2>마스크맨</h2><p>3~6인 규칙을 AI들과 연습합니다.</p><a class="primary link-btn" href="./solo-maskmen.html">AI와 대전</a></article>
+    <article class="library-card acquire"><div class="library-icon">🏙️</div><h2>어콰이어</h2><p>타일 배치, 호텔 체인, 주식과 합병을 AI들과 연습합니다.</p><a class="primary link-btn" href="./solo-acquire.html">AI와 대전</a></article>
+    <article class="library-card calico"><div class="library-icon">🧵</div><h2>캘리코</h2><p>공개된 MyAutoma 솔로 구현입니다.</p><a class="primary link-btn" href="https://myautoma.github.io/games/calico/index.html" target="_blank" rel="noreferrer">솔로 데모 열기 ↗</a><a class="text-link" href="./rules-calico.pdf" target="_blank">한국어 룰북</a></article>
+    <article class="library-card cascadia"><div class="library-icon">🌲</div><h2>캐스캐디아</h2><p>공개된 Cascadia 웹 구현으로 1인 플레이를 즐깁니다.</p><a class="primary link-btn" href="https://cascadiagame.github.io/" target="_blank" rel="noreferrer">솔로 게임 열기 ↗</a></article>
+    <article class="library-card thegame"><div class="library-icon">🃏</div><h2>더 게임</h2><p>업로드한 HTML로 1인 솔로 플레이. ±10 되돌리기 규칙을 지원합니다.</p><a class="primary link-btn" href="./solo-thegame.html">솔로 플레이</a><a class="text-link" href="./rules-the-game.pdf" target="_blank">한국어 룰북</a></article>
+  </section>`);
   document.querySelector('#backHome').onclick=()=>location.hash='#/';
 }
 
@@ -275,21 +328,27 @@ async function loadRatingMap(game,userIds){
   if(!userIds.length)return{};const rows=await callRpc('boardmate_get_ratings',{p_token:memberToken(),p_game:game,p_user_ids:userIds});return Object.fromEntries((rows||[]).map(r=>[r.user_id,r]));
 }
 async function renderAuthPanel(){
-  shell(`<div class="page-head"><div><h1>🌐 다인플 · 온라인</h1><p>방 만들기와 참여는 로그인이 필요합니다.</p></div><div class="actions"><button class="ghost" id="backHome">← 홈</button></div></div><section class="auth-card"><div class="auth-tabs"><button class="active" data-auth-tab="login">로그인</button><button data-auth-tab="signup">회원가입</button></div><form id="authForm"><input id="authNick" maxlength="20" placeholder="닉네임" required><input id="authPass" type="password" minlength="4" maxlength="72" placeholder="비밀번호/PIN (4자 이상)" required><button class="primary" id="authSubmit">로그인</button><div id="authStatus" class="bonus-note"></div></form><p class="auth-note">v4부터 이메일 인증을 사용하지 않습니다. 닉네임과 비밀번호는 BoardMate DB에서 직접 관리하며, 비밀번호 원문은 저장하지 않습니다.</p></section>`);
+  shell(`<div class="page-head"><div><h1>🌐 다인플 · 온라인</h1><p>방 만들기와 참여는 로그인이 필요합니다.</p></div><div class="actions"><button class="ghost" id="backHome">← 홈</button></div></div><section class="auth-card"><div class="auth-tabs"><button class="active" data-auth-tab="login">로그인</button><button data-auth-tab="signup">회원가입</button></div><form id="authForm"><input id="authNick" maxlength="20" placeholder="닉네임" required><input id="authPass" type="password" minlength="4" maxlength="72" placeholder="비밀번호/PIN (4자 이상)" required><button class="primary" id="authSubmit">로그인</button><div id="authStatus" class="bonus-note"></div></form><p class="auth-note">v5도 이메일 인증을 사용하지 않습니다. 닉네임과 비밀번호는 BoardMate DB에서 직접 관리하며, 비밀번호 원문은 저장하지 않습니다.</p></section>`);
   document.querySelector('#backHome').onclick=()=>location.hash='#/';let mode='login';
   document.querySelectorAll('[data-auth-tab]').forEach(b=>b.onclick=()=>{mode=b.dataset.authTab;document.querySelectorAll('[data-auth-tab]').forEach(x=>x.classList.toggle('active',x===b));document.querySelector('#authSubmit').textContent=mode==='login'?'로그인':'회원가입';});
   document.querySelector('#authForm').onsubmit=async e=>{e.preventDefault();const n=document.querySelector('#authNick').value.trim(),pw=document.querySelector('#authPass').value,st=document.querySelector('#authStatus'),btn=document.querySelector('#authSubmit');if(!n||pw.length<4){st.textContent='닉네임과 4자 이상 비밀번호를 입력하세요.';return;}btn.disabled=true;st.textContent='처리 중…';try{const data=await callRpc(mode==='signup'?'boardmate_register':'boardmate_login',{p_nickname:n,p_password:pw});if(!data?.token)throw new Error('로그인 토큰을 받지 못했습니다.');saveMemberToken(data.token);st.textContent=mode==='signup'?'가입 완료!':'로그인 완료!';setTimeout(()=>renderMulti(),120);}catch(err){st.textContent=String(err.message||err).replace(/^.*?exception:\s*/i,'');}finally{btn.disabled=false;}};
 }
 
 async function renderMulti(){
-  if(!onlineConfigured()){shell(`<div class="page-head"><div><h1>🌐 다인플 · 온라인</h1><p>Supabase 연결 후 사용할 수 있습니다.</p></div></div><div class="connection-note">config.js 설정과 v4 supabase.sql 실행이 필요합니다.</div>`);return;}
+  if(!onlineConfigured()){shell(`<div class="page-head"><div><h1>🌐 다인플 · 온라인</h1><p>Supabase 연결 후 사용할 수 있습니다.</p></div></div><div class="connection-note">config.js 설정과 v5 supabase.sql 실행이 필요합니다.</div>`);return;}
   const me=await authProfile();if(!me){saveMemberToken('');await renderAuthPanel();return;}
-  shell(`<div class="page-head"><div><h1>🌐 다인플 · 온라인</h1><p>방장이 원하는 순간 게임을 시작합니다. 방 인원수는 따로 정하지 않습니다.</p></div><div class="actions"><span class="login-chip">👤 ${esc(me.nickname)}</span><button class="ghost" id="logoutBtn">로그아웃</button></div></div><section class="room-create"><h2>방 만들기</h2><form id="roomForm"><input id="roomTitle" maxlength="40" placeholder="방 제목" required><select id="roomGame"><option value="maskmen">마스크맨</option><option value="acquire">어콰이어</option><option value="calico">캘리코 (온라인 베타)</option></select><button class="primary">방 만들기</button></form><div id="roomStatus" class="bonus-note"></div></section><details class="account-tools"><summary>계정 관리 · 비밀번호 변경</summary><form id="pwForm"><input id="pwCurrent" type="password" minlength="4" placeholder="현재 비밀번호" required><input id="pwNew" type="password" minlength="4" maxlength="72" placeholder="새 비밀번호 (4자 이상)" required><button class="secondary">비밀번호 변경</button><span id="pwStatus" class="bonus-note"></span></form><p>비밀번호를 잊어버리면 운영자가 Supabase SQL Editor에서 새 비밀번호로 재설정할 수 있습니다. 기존 비밀번호 원문을 보는 기능은 없습니다.</p></details><div class="section-title"><h2>열린 방</h2><button class="ghost mini" id="refreshRooms">새로고침</button></div><div id="roomList"><div class="empty">방을 불러오는 중…</div></div>`);
+  shell(`<div class="page-head"><div><h1>🌐 다인플 · 온라인</h1><p>모든 온라인 게임은 행동마다 자동 저장됩니다. 나갔다 돌아와도 같은 자리에서 이어집니다.</p></div><div class="actions"><span class="login-chip">👤 ${esc(me.nickname)}</span><button class="ghost" id="logoutBtn">로그아웃</button></div></div>
+  <section id="activeGamesWrap" class="active-games-wrap hidden"><div class="section-title"><h2>▶ 진행 중인 게임</h2><small>자동 저장 · 재접속</small></div><div id="activeGameList"></div></section>
+  <section class="room-create"><h2>방 만들기</h2><form id="roomForm"><input id="roomTitle" maxlength="40" placeholder="방 제목" required><select id="roomGame"><option value="maskmen">마스크맨</option><option value="acquire">어콰이어</option><option value="calico">캘리코</option><option value="thegame">더 게임</option><option value="kraken">노터치 크라켄</option></select><button class="primary">방 만들기</button></form><div id="roomStatus" class="bonus-note"></div></section>
+  <details class="account-tools"><summary>계정 관리 · 비밀번호 변경</summary><form id="pwForm"><input id="pwCurrent" type="password" minlength="4" placeholder="현재 비밀번호" required><input id="pwNew" type="password" minlength="4" maxlength="72" placeholder="새 비밀번호 (4자 이상)" required><button class="secondary">비밀번호 변경</button><span id="pwStatus" class="bonus-note"></span></form><p>비밀번호를 잊어버리면 운영자가 Supabase SQL Editor에서 새 비밀번호로 재설정할 수 있습니다.</p></details>
+  <div class="section-title"><h2>열린 방</h2><button class="ghost mini" id="refreshRooms">새로고침</button></div><div id="roomList"><div class="empty">방을 불러오는 중…</div></div>`);
   document.querySelector('#logoutBtn').onclick=async()=>{try{await callRpc('boardmate_logout',{p_token:memberToken()});}catch{}saveMemberToken('');renderMulti();};
   document.querySelector('#pwForm').onsubmit=async e=>{e.preventDefault();const st=document.querySelector('#pwStatus');try{await callRpc('boardmate_change_password',{p_token:memberToken(),p_current_password:document.querySelector('#pwCurrent').value,p_new_password:document.querySelector('#pwNew').value});st.textContent='변경 완료';e.target.reset();}catch(err){st.textContent=err.message;}};
   document.querySelector('#roomForm').onsubmit=async e=>{e.preventDefault();const st=document.querySelector('#roomStatus');try{const data=await callRpc('create_boardmate_room',{p_token:memberToken(),p_title:document.querySelector('#roomTitle').value.trim(),p_game:document.querySelector('#roomGame').value});location.hash=`#/room/${data}`;}catch(err){st.textContent=err.message;}};
-  const loadRooms=async()=>{const box=document.querySelector('#roomList');if(!box)return;try{const rooms=await callRpc('boardmate_list_rooms',{p_token:memberToken()});if(!rooms?.length){box.innerHTML='<div class="empty">현재 열려 있는 방이 없습니다.</div>';return;}box.innerHTML=rooms.map(r=>{const gi=gameInfo(r.game),mine=Boolean(r.mine),full=Number(r.member_count)>=Number(r.max_players);return `<article class="room-row"><div><div class="room-title"><span class="game-pill ${r.game}">${gi.icon} ${gi.name}${r.game==='calico'?' · 베타':''}</span><b>${esc(r.title)}</b></div><small>${esc(r.host_nickname||'방장')} · ${r.member_count}명 · ${r.status==='open'?'대기 중':'게임 중'}</small></div><button class="${mine?'primary':'ghost'}" data-room-action="${r.id}" data-mine="${mine?'1':'0'}" data-status="${r.status}" ${!mine&&r.status==='open'&&full?'disabled':''}>${mine?'방으로':r.status==='open'?(full?'가득 참':'참가'):'관전 불가'}</button></article>`;}).join('');box.querySelectorAll('[data-room-action]').forEach(b=>b.onclick=async()=>{if(b.dataset.mine==='1'){location.hash=`#/room/${b.dataset.roomAction}`;return;}if(b.dataset.status!=='open'||b.disabled)return;try{await callRpc('join_boardmate_room',{p_token:memberToken(),p_room_id:b.dataset.roomAction});location.hash=`#/room/${b.dataset.roomAction}`;}catch(err){toast(err.message);}});}catch(err){box.innerHTML=`<div class="empty">${esc(err.message)}</div>`;}};
-  document.querySelector('#refreshRooms').onclick=loadRooms;await loadRooms();const timer=setInterval(loadRooms,2500);addCleanup(()=>clearInterval(timer));
+  const roomCard=r=>{const gi=gameInfo(r.game),mine=Boolean(r.mine),full=Number(r.member_count)>=Number(r.max_players),playing=r.status==='playing';return `<article class="room-row ${playing&&mine?'resume-room':''}"><div><div class="room-title"><span class="game-pill ${r.game}">${gi.icon} ${gi.name}</span><b>${esc(r.title)}</b></div><small>${esc(r.host_nickname||'방장')} · ${r.member_count}명${r.online_count!=null?` · 접속 ${r.online_count}명`:''} · ${r.status==='open'?'대기 중':'게임 중'}</small></div><button class="${mine?'primary':'ghost'}" data-room-action="${r.id}" data-mine="${mine?'1':'0'}" data-status="${r.status}" ${!mine&&r.status==='open'&&full?'disabled':''}>${mine?(playing?'이어하기':'방으로'):r.status==='open'?(full?'가득 참':'참가'):'관전 불가'}</button></article>`;};
+  const bindRoomButtons=root=>root.querySelectorAll('[data-room-action]').forEach(b=>b.onclick=async()=>{if(b.dataset.mine==='1'){location.hash=`#/room/${b.dataset.roomAction}`;return;}if(b.dataset.status!=='open'||b.disabled)return;try{await callRpc('join_boardmate_room',{p_token:memberToken(),p_room_id:b.dataset.roomAction});location.hash=`#/room/${b.dataset.roomAction}`;}catch(err){toast(err.message);}});
+  const loadRooms=async()=>{const box=document.querySelector('#roomList'),activeBox=document.querySelector('#activeGameList'),wrap=document.querySelector('#activeGamesWrap');if(!box)return;try{const rooms=await callRpc('boardmate_list_rooms',{p_token:memberToken()})||[];const active=rooms.filter(r=>r.mine&&r.status==='playing'),open=rooms.filter(r=>r.status==='open');if(active.length){wrap.classList.remove('hidden');activeBox.innerHTML=active.map(roomCard).join('');bindRoomButtons(activeBox);}else wrap.classList.add('hidden');box.innerHTML=open.length?open.map(roomCard).join(''):'<div class="empty">현재 열린 방이 없습니다.</div>';bindRoomButtons(box);}catch(err){box.innerHTML=`<div class="empty">${esc(err.message)}</div>`;}};
+  document.querySelector('#refreshRooms').onclick=loadRooms;await loadRooms();const timer=setInterval(loadRooms,3000);addCleanup(()=>clearInterval(timer));
 }
 
 async function renderRoom(roomId){
@@ -297,8 +356,21 @@ async function renderRoom(roomId){
   const load=async()=>await callRpc('boardmate_get_room',{p_token:memberToken(),p_room_id:roomId});
   let data;try{data=await load();}catch(e){toast('방을 불러오지 못했습니다.');location.hash='#/multi';return;}
   if(!data.members.some(m=>m.user_id===me.user_id)){try{await callRpc('join_boardmate_room',{p_token:memberToken(),p_room_id:roomId});data=await load();}catch(e){toast(e.message);location.hash='#/multi';return;}}
-  const draw=async()=>{data=await load();const {room,members}=data,isHost=room.host_id===me.user_id,gi=gameInfo(room.game),min=Number(room.min_players||gi.min);shell(`<div class="page-head"><div><h1>${gi.icon} ${esc(room.title)}</h1><p>${gi.name}${room.game==='calico'?' · 온라인 베타':''} · 현재 ${members.length}명 · ${room.status==='open'?'대기 중':room.status==='playing'?'게임 중':'종료'}</p></div><div class="actions"><button class="ghost" id="backMulti">← 방 목록</button></div></div><section class="lobby-card"><h2>참여 인원</h2><div class="member-list">${members.map(m=>{const t=tierInfo(m);return `<div class="member-row"><span class="seat-no">${Number(m.seat)+1}</span><span class="tier ${t.cls}">${t.text}</span><b>${esc(m.nickname)}</b>${m.user_id===room.host_id?'<small>방장</small>':''}${room.status==='open'&&isHost&&m.user_id!==room.host_id?`<button class="kick-btn" data-kick="${m.user_id}">강퇴</button>`:''}</div>`;}).join('')}</div><div class="lobby-actions">${room.status==='open'&&isHost?`<button class="primary" id="startRoom" ${members.length<min?'disabled':''}>${members.length<min?`${min}명부터 시작 가능`:'게임 시작'}</button>`:''}${room.status==='open'?'<button class="danger" id="leaveRoom">방 나가기</button>':''}${room.status==='playing'?`<a class="primary link-btn" href="./online-${room.game}.html?room=${encodeURIComponent(room.id)}">게임 입장</a>`:''}</div><p class="pento-tip">방 인원은 만들 때 정하지 않습니다. ${gi.name} 최대 ${room.max_players}명이며 방장은 대기실에서 참가자를 강퇴하거나 원하는 시점에 게임을 시작할 수 있습니다.</p><p class="pento-tip">표시 티어: ELO 1~5위는 #순위, 그 외 2승+·승률 50% 이상 골드 / 1승+ 실버 / 나머지 브론즈. 실제 ELO 숫자는 공개하지 않습니다.</p></section>`);document.querySelector('#backMulti').onclick=()=>location.hash='#/multi';document.querySelector('#startRoom')?.addEventListener('click',async()=>{try{await callRpc('start_boardmate_room',{p_token:memberToken(),p_room_id:roomId});location.href=`./online-${room.game}.html?room=${encodeURIComponent(room.id)}`;}catch(e){toast(e.message);}});document.querySelector('#leaveRoom')?.addEventListener('click',async()=>{try{await callRpc('leave_boardmate_room',{p_token:memberToken(),p_room_id:roomId});location.hash='#/multi';}catch(e){toast(e.message);}});document.querySelectorAll('[data-kick]').forEach(b=>b.onclick=async()=>{if(!confirm('이 참가자를 방에서 내보낼까요?'))return;try{await callRpc('kick_boardmate_room_member',{p_token:memberToken(),p_room_id:roomId,p_user_id:b.dataset.kick});await draw();}catch(e){toast(e.message);}});};
-  await draw();const timer=setInterval(async()=>{if((location.hash||'').includes(`/room/${roomId}`))try{await draw();}catch{}},2200);addCleanup(()=>clearInterval(timer));
+  let touchBusy=false;
+  const touch=async()=>{if(touchBusy)return;touchBusy=true;try{await callRpc('touch_boardmate_room',{p_token:memberToken(),p_room_id:roomId});}catch{}finally{touchBusy=false;}};
+  await touch();
+  const draw=async()=>{data=await load();const {room,members}=data,isHost=room.host_id===me.user_id,gi=gameInfo(room.game),min=Number(room.min_players||gi.min);
+    shell(`<div class="page-head"><div><h1>${gi.icon} ${esc(room.title)}</h1><p>${gi.name} · 현재 ${members.length}명 · ${room.status==='open'?'대기 중':room.status==='playing'?'게임 중':'종료'}</p></div><div class="actions"><button class="ghost" id="backMulti">← 방 목록</button></div></div>
+    <section class="lobby-card"><h2>참여 인원</h2><div class="member-list">${members.map(m=>{const t=tierInfo(m),online=Boolean(m.connected);return `<div class="member-row"><span class="seat-no">${Number(m.seat)+1}</span><span class="presence ${online?'online':'offline'}">${online?'● 접속':'○ 끊김'}</span><span class="tier ${t.cls}">${t.text}</span><b>${esc(m.nickname)}</b>${m.user_id===room.host_id?'<small>방장</small>':''}${room.status==='open'&&isHost&&m.user_id!==room.host_id?`<button class="kick-btn" data-kick="${m.user_id}">강퇴</button>`:''}</div>`;}).join('')}</div>
+    <div class="lobby-actions">${room.status==='open'&&isHost?`<button class="primary" id="startRoom" ${members.length<min?'disabled':''}>${members.length<min?`${min}명부터 시작 가능`:'게임 시작'}</button>`:''}${room.status==='open'?'<button class="danger" id="leaveRoom">방 나가기</button>':''}${room.status==='playing'?`<a class="primary link-btn" href="./online-${room.game}.html?room=${encodeURIComponent(room.id)}">이어하기 / 게임 입장</a><button class="ghost" id="disconnectRoom">나가기 (게임 저장 유지)</button>`:''}</div>
+    <p class="pento-tip">게임 상태는 행동할 때마다 Supabase에 자동 저장됩니다. 브라우저를 닫거나 다른 페이지로 나가도 참가 자리는 남으며, 다인플의 ‘진행 중인 게임’에서 다시 들어올 수 있습니다.</p><p class="pento-tip">접속 표시는 약 20초 이상 신호가 없으면 ‘끊김’으로 바뀝니다. 방장 강퇴는 게임 시작 전 대기실에서 사용할 수 있습니다.</p></section>`);
+    document.querySelector('#backMulti').onclick=()=>location.hash='#/multi';
+    document.querySelector('#startRoom')?.addEventListener('click',async()=>{try{await callRpc('start_boardmate_room',{p_token:memberToken(),p_room_id:roomId});location.href=`./online-${room.game}.html?room=${encodeURIComponent(room.id)}`;}catch(e){toast(e.message);}});
+    document.querySelector('#leaveRoom')?.addEventListener('click',async()=>{try{await callRpc('leave_boardmate_room',{p_token:memberToken(),p_room_id:roomId});location.hash='#/multi';}catch(e){toast(e.message);}});
+    document.querySelector('#disconnectRoom')?.addEventListener('click',async()=>{try{await callRpc('disconnect_boardmate_room',{p_token:memberToken(),p_room_id:roomId});}catch{}location.hash='#/multi';});
+    document.querySelectorAll('[data-kick]').forEach(b=>b.onclick=async()=>{if(!confirm('이 참가자를 방에서 내보낼까요?'))return;try{await callRpc('kick_boardmate_room_member',{p_token:memberToken(),p_room_id:roomId,p_user_id:b.dataset.kick});await draw();}catch(e){toast(e.message);}});
+  };
+  await draw();const timer=setInterval(async()=>{if((location.hash||'').includes(`/room/${roomId}`))try{await touch();await draw();}catch{}},5000);addCleanup(()=>clearInterval(timer));
 }
 
 async function renderRicochet(){
