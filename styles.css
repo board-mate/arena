@@ -33,3 +33,45 @@
 .p-cell:not(.today-hole):hover{outline:3px solid #fff8;outline-offset:-3px;z-index:3}
 
 @media(max-width:540px){.robot-picker-title{align-items:flex-start;flex-direction:column}.piece-btn{height:66px}.piece-preview{height:112px}}
+
+/* 2026-09 Pentorini + Ricochet board update */
+:root{--pentorini-blue:#0a5ca8;--pentorini-green:#84a92f;--pentorini-paper:#fbfaf5;--pentorini-wood:#d9bd8f}
+
+/* Ricochet: fewer classic L-walls are generated in app.js; make the perimeter unmistakable. */
+.ricochet-board{border:7px solid #1f2937;background:#eee8d9;box-shadow:0 8px 20px #11182724,inset 0 0 0 1px #fff8}
+.r-cell{background:#f6f1e5;border-right:1px solid #ddd6c8;border-bottom:1px solid #ddd6c8;overflow:visible}
+.r-cell:not(.blocked)::before{content:"";position:absolute;inset:23%;border:1px solid #e4ddce;background:#faf7ef;border-radius:2px;pointer-events:none;z-index:0}
+.r-cell.wall-u{border-top:4px solid #232c38}.r-cell.wall-r{border-right:4px solid #232c38}.r-cell.wall-d{border-bottom:4px solid #232c38}.r-cell.wall-l{border-left:4px solid #232c38}
+.r-cell.blocked{background:#29313c;box-shadow:inset 0 0 0 2px #11182755}.r-cell.blocked::before{display:none}
+.r-cell.board-move-zone{cursor:pointer}.r-cell.board-move-zone:hover{background:#edf4fb}
+.board-arrow-hint{position:absolute;z-index:3;left:50%;top:50%;transform:translate(-50%,-50%);width:58%;height:58%;min-width:12px;min-height:12px;border-radius:999px;display:grid;place-items:center;background:#0f172acc;color:white;font-size:clamp(8px,1.4vw,15px);font-weight:950;pointer-events:none;box-shadow:0 2px 6px #0003}
+.board-control-note{margin-top:12px;padding:10px 12px;border-radius:11px;background:#eef5fb;color:#36516b;font-size:12px;line-height:1.55;text-align:center}
+.target{z-index:2}.robot{z-index:5}
+
+/* Pentorini board: match the cream calendar + wooden frame layout from the physical game. */
+.pentorini-panel{background:#f5f0e7}
+.pento-board{width:min(100%,560px);aspect-ratio:7/9;display:grid;grid-template-columns:repeat(7,1fr);grid-template-rows:repeat(9,1fr);border:12px solid var(--pentorini-wood);background:var(--pentorini-paper);margin:auto;border-radius:9px;overflow:hidden;box-shadow:inset 0 0 0 2px #b59669,0 12px 26px #6c543321}
+.p-cell{position:relative;border:1px solid #ebe6dc;background:var(--pentorini-paper);padding:0;display:grid;place-items:center;color:#202020;font-weight:900;min-width:0;overflow:visible}
+.p-cell:hover{box-shadow:inset 0 0 0 2px #0a5ca82a;z-index:4}.p-cell:not(.today-hole):hover{outline:0}
+.calendar-label{position:relative;z-index:1;font-size:clamp(10px,2.15vw,19px);letter-spacing:-.045em;pointer-events:none;color:#242424;text-shadow:0 1px 0 #fff}
+.p-cell.weekday-cell .calendar-label{color:var(--pentorini-green);font-weight:950}.p-cell.weekday-muted .calendar-label{opacity:.28}.p-cell.month-cell .calendar-label{font-size:clamp(9px,2vw,18px)}
+.p-cell.accent-date .calendar-label{color:#d75e55}.p-cell.duplicate-date .calendar-label{font-weight:950}
+.p-cell.today-hole{background:#edf6ff;color:var(--pentorini-blue);box-shadow:inset 0 0 0 3px #65a4da;z-index:5}.p-cell.today-hole .calendar-label{color:var(--pentorini-blue);opacity:1;font-weight:1000}.p-cell.occupied .calendar-label{opacity:0}
+
+/* One connected wooden pentomino: no internal grid lines, only the outside contour. */
+.joined-piece{--piece-color:#d8c29c;box-sizing:border-box;background:linear-gradient(100deg,#ffffff20 0 22%,transparent 23% 62%,#0000000b 63% 100%),linear-gradient(0deg,#ffffff12,#00000008),var(--piece-color)!important;border:0 solid #5d493538;box-shadow:inset 0 1px 0 #ffffff45,inset 0 -2px 0 #00000012}
+.joined-piece.piece-F{--piece-color:#d95a5e}.joined-piece.piece-I{--piece-color:#65afd0}.joined-piece.piece-L{--piece-color:#e0b43d}.joined-piece.piece-P{--piece-color:#bd8d72}.joined-piece.piece-N{--piece-color:#65707b}.joined-piece.piece-T{--piece-color:#c94e56}.joined-piece.piece-U{--piece-color:#5ca5c5}.joined-piece.piece-V{--piece-color:#d3a72f}.joined-piece.piece-W{--piece-color:#b98568}.joined-piece.piece-X{--piece-color:#59636d}.joined-piece.piece-Y{--piece-color:#74b6d0}.joined-piece.piece-Z{--piece-color:#e5bc48}
+.joined-piece.edge-u{border-top-width:2px}.joined-piece.edge-r{border-right-width:2px}.joined-piece.edge-d{border-bottom-width:2px}.joined-piece.edge-l{border-left-width:2px}
+.joined-piece.corner-tl{border-top-left-radius:8px}.joined-piece.corner-tr{border-top-right-radius:8px}.joined-piece.corner-bl{border-bottom-left-radius:8px}.joined-piece.corner-br{border-bottom-right-radius:8px}
+.piece-fill{position:absolute;inset:-1px;z-index:3;pointer-events:none}
+
+.piece-preview{height:128px;background:#f5f1e9;border:1px solid #e8dfd2;box-shadow:inset 0 1px 5px #775f3710}
+.mini-grid{display:grid;gap:0;align-items:stretch;justify-items:stretch;filter:drop-shadow(0 3px 3px #0002)}.mini-grid.compact{gap:0}
+.mini-cell{position:relative;width:var(--mini-size,18px);height:var(--mini-size,18px);border-radius:0;background:transparent;box-shadow:none}.mini-cell.mini-empty{opacity:0;pointer-events:none}
+.mini-cell.joined-piece.edge-u{border-top-width:1px}.mini-cell.joined-piece.edge-r{border-right-width:1px}.mini-cell.joined-piece.edge-d{border-bottom-width:1px}.mini-cell.joined-piece.edge-l{border-left-width:1px}
+.mini-cell.joined-piece.corner-tl{border-top-left-radius:5px}.mini-cell.joined-piece.corner-tr{border-top-right-radius:5px}.mini-cell.joined-piece.corner-bl{border-bottom-left-radius:5px}.mini-cell.joined-piece.corner-br{border-bottom-right-radius:5px}
+.mini-cell.anchor-cell::after{z-index:3}
+
+.weekday-choice{margin-bottom:18px;padding:13px;border:1px solid #dce6ee;background:#f6fbff;border-radius:14px}.weekday-choice-head{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-bottom:9px}.weekday-choice-head b{font-size:14px}.weekday-choice-head small{color:#7890a4;font-size:11px;font-weight:800}.weekday-segment{display:grid;grid-template-columns:1fr 1fr;gap:6px}.weekday-segment button{border:1px solid #cad6df;background:white;color:#4b6479;border-radius:10px;padding:9px 8px;font-weight:900;cursor:pointer}.weekday-segment button.active{background:var(--pentorini-blue);border-color:var(--pentorini-blue);color:white;box-shadow:0 4px 10px #0a5ca825}.weekday-choice p{margin:9px 1px 0;color:#6d7f8f;font-size:11px;line-height:1.5}
+
+@media(max-width:540px){.ricochet-board{border-width:5px}.r-cell.wall-u{border-top-width:3px}.r-cell.wall-r{border-right-width:3px}.r-cell.wall-d{border-bottom-width:3px}.r-cell.wall-l{border-left-width:3px}.board-arrow-hint{width:72%;height:72%;font-size:9px}.pento-board{border-width:8px}.weekday-choice-head{align-items:flex-start;flex-direction:column}}

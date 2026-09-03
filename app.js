@@ -125,7 +125,31 @@ const BOARD_SIZE=16;
 const BLOCKED_CELLS=new Set([119,120,135,136]);
 const ROBOT_COLORS=['red','yellow','green','blue'];
 const DIRS=[{dr:-1,dc:0,bit:1},{dr:0,dc:1,bit:2},{dr:1,dc:0,bit:4},{dr:0,dc:-1,bit:8}];
-const BASE_WALLS=[9,1,1,1,1,1,1,1,1,1,1,1,5,1,5,3,8,0,0,0,0,0,2,12,0,0,4,0,3,8,3,10,8,6,8,2,12,2,12,1,0,0,3,8,0,0,0,2,8,1,0,4,1,0,1,6,12,0,0,0,4,0,0,2,8,4,2,9,0,0,2,9,1,0,4,2,9,4,0,2,10,9,0,0,0,0,0,0,0,2,9,0,0,3,8,2,8,0,0,0,0,0,0,1,1,0,0,0,0,0,4,2,8,0,0,0,0,0,8,0,0,2,0,0,4,2,9,2,8,0,0,0,6,8,8,0,0,2,0,2,9,0,4,2,8,0,0,0,1,0,0,4,4,0,6,8,0,2,9,2,8,0,0,0,0,0,6,12,0,0,5,0,0,6,8,2,8,0,0,0,0,6,9,3,8,6,9,0,4,1,0,2,8,0,0,6,8,1,0,0,2,9,0,2,9,0,6,10,10,12,0,1,0,0,0,0,6,8,4,0,0,0,5,2,8,1,0,0,6,8,6,8,1,0,3,8,0,2,9,2,12,4,4,4,5,4,5,4,4,4,4,4,4,4,4,6];
+const BASE_WALL_CORNERS=[
+  [23,12],[28,3],[30,3],[33,6],[42,3],[55,6],
+  [67,9],[76,9],[81,9],[90,9],
+  [126,9],[132,6],[140,9],[154,6],
+  [166,6],[173,6],[181,6],[185,6],
+  [195,6],[204,9],[209,12],[216,6],
+  [228,6],[234,3],[238,9]
+];
+function buildRicochetWalls(){
+  const walls=Array(BOARD_SIZE*BOARD_SIZE).fill(0);
+  for(let c=0;c<BOARD_SIZE;c++){walls[c]|=1;walls[(BOARD_SIZE-1)*BOARD_SIZE+c]|=4;}
+  for(let r=0;r<BOARD_SIZE;r++){walls[r*BOARD_SIZE]|=8;walls[r*BOARD_SIZE+BOARD_SIZE-1]|=2;}
+  const step={1:[-1,0,4],2:[0,1,8],4:[1,0,1],8:[0,-1,2]};
+  for(const [cell,mask] of BASE_WALL_CORNERS){
+    const r=Math.floor(cell/BOARD_SIZE),c=cell%BOARD_SIZE;
+    for(const bit of [1,2,4,8]){
+      if(!(mask&bit))continue;
+      const [dr,dc,opposite]=step[bit],nr=r+dr,nc=c+dc;
+      walls[cell]|=bit;
+      if(nr>=0&&nr<BOARD_SIZE&&nc>=0&&nc<BOARD_SIZE) walls[nr*BOARD_SIZE+nc]|=opposite;
+    }
+  }
+  return walls;
+}
+const BASE_WALLS=buildRicochetWalls();
 const BASE_PUZZLES=[
 {robots:[97,150,87,8],targetRobot:2,target:169},{robots:[179,130,55,246],targetRobot:3,target:42},{robots:[121,182,124,252],targetRobot:3,target:239},{robots:[103,240,93,156],targetRobot:3,target:22},{robots:[198,33,42,128],targetRobot:0,target:22},{robots:[238,79,29,40],targetRobot:1,target:228},{robots:[246,37,68,216],targetRobot:3,target:14},{robots:[78,13,62,97],targetRobot:2,target:32},{robots:[99,254,248,149],targetRobot:2,target:47},{robots:[46,37,0,142],targetRobot:1,target:30},{robots:[48,36,141,194],targetRobot:2,target:160},{robots:[28,19,93,184],targetRobot:0,target:185},{robots:[209,249,223,8],targetRobot:0,target:13},{robots:[33,157,153,137],targetRobot:1,target:137},{robots:[65,89,213,12],targetRobot:2,target:10},{robots:[56,161,69,18],targetRobot:2,target:211},{robots:[217,155,166,1],targetRobot:1,target:228},{robots:[158,61,155,45],targetRobot:0,target:60},{robots:[80,244,16,245],targetRobot:3,target:210},{robots:[216,239,45,134],targetRobot:3,target:75},{robots:[97,176,146,72],targetRobot:3,target:247},{robots:[195,185,113,142],targetRobot:1,target:254},{robots:[92,185,91,196],targetRobot:3,target:185},{robots:[57,97,184,242],targetRobot:3,target:55},{robots:[165,28,154,65],targetRobot:1,target:132},{robots:[228,233,173,238],targetRobot:2,target:209},{robots:[110,36,76,34],targetRobot:2,target:14},{robots:[115,146,12,205],targetRobot:2,target:244},{robots:[64,243,43,41],targetRobot:0,target:189},{robots:[227,160,99,229],targetRobot:2,target:151}
 ];
@@ -136,21 +160,90 @@ function transformVector(dr,dc,sym){const flip=sym>=4,rot=sym%4;if(flip)dc=-dc;f
 function vectorBit(dr,dc){if(dr===-1&&dc===0)return 1;if(dr===0&&dc===1)return 2;if(dr===1&&dc===0)return 4;return 8;}
 function transformCell(index,sym){const [r,c]=transformCoord(Math.floor(index/16),index%16,sym);return r*16+c;}
 function transformWalls(sym){if(sym===0)return BASE_WALLS;const out=Array(256).fill(0),vec=[[-1,0,1],[0,1,2],[1,0,4],[0,-1,8]];for(let i=0;i<256;i++){const ni=transformCell(i,sym);for(const [dr,dc,bit] of vec){if(!(BASE_WALLS[i]&bit))continue;const [a,b]=transformVector(dr,dc,sym);out[ni]|=vectorBit(a,b);}}return out;}
-function getRicochetPuzzle(dateKey){const n=Math.abs(dateNumber(dateKey)), combo=n%(BASE_PUZZLES.length*COLOR_PERMUTATIONS.length*8),sym=combo%8,baseIndex=Math.floor(combo/8)%BASE_PUZZLES.length,permIndex=Math.floor(combo/(8*BASE_PUZZLES.length))%COLOR_PERMUTATIONS.length,base=BASE_PUZZLES[baseIndex],perm=COLOR_PERMUTATIONS[permIndex];return{date:dateKey,walls:transformWalls(sym),blocked:[...BLOCKED_CELLS].map(i=>transformCell(i,sym)),robots:perm.map(old=>transformCell(base.robots[old],sym)),targetRobot:perm.findIndex(old=>old===base.targetRobot),target:transformCell(base.target,sym)};}
+const RICOCHET_PUZZLE_CACHE=new Map();
+function buildRicochetPuzzleFromCombo(dateKey,combo){
+  const sym=combo%8,baseIndex=Math.floor(combo/8)%BASE_PUZZLES.length,permIndex=Math.floor(combo/(8*BASE_PUZZLES.length))%COLOR_PERMUTATIONS.length,base=BASE_PUZZLES[baseIndex],perm=COLOR_PERMUTATIONS[permIndex];
+  return{date:dateKey,walls:transformWalls(sym),blocked:[...BLOCKED_CELLS].map(i=>transformCell(i,sym)),robots:perm.map(old=>transformCell(base.robots[old],sym)),targetRobot:perm.findIndex(old=>old===base.targetRobot),target:transformCell(base.target,sym)};
+}
+function hasRicochetSolutionWithin(puzzle,maxDepth=5){
+  const start=[...puzzle.robots];
+  if(start[puzzle.targetRobot]===puzzle.target)return true;
+  let frontier=[start];const seen=new Set([start.join('-')]);
+  for(let depth=0;depth<maxDepth;depth++){
+    const nextFrontier=[];
+    for(const state of frontier){
+      for(let robot=0;robot<4;robot++)for(let dir=0;dir<4;dir++){
+        const next=moveRobot(state,robot,dir,puzzle);if(next===state)continue;
+        if(next[puzzle.targetRobot]===puzzle.target)return true;
+        const key=next.join('-');if(seen.has(key))continue;seen.add(key);nextFrontier.push(next);
+      }
+    }
+    frontier=nextFrontier;if(!frontier.length)break;
+  }
+  return false;
+}
+function getRicochetPuzzle(dateKey){
+  if(RICOCHET_PUZZLE_CACHE.has(dateKey))return RICOCHET_PUZZLE_CACHE.get(dateKey);
+  const total=BASE_PUZZLES.length*COLOR_PERMUTATIONS.length*8,seed=Math.abs(dateNumber(dateKey))%total;
+  let puzzle=buildRicochetPuzzleFromCombo(dateKey,seed);
+  for(let offset=0;offset<32;offset++){
+    const candidate=buildRicochetPuzzleFromCombo(dateKey,(seed+offset)%total);
+    if(!hasRicochetSolutionWithin(candidate,5)){puzzle=candidate;break;}
+  }
+  RICOCHET_PUZZLE_CACHE.set(dateKey,puzzle);return puzzle;
+}
 function moveRobot(state,robotIndex,dirIndex,puzzle){const dir=DIRS[dirIndex],current=state[robotIndex];let r=Math.floor(current/16),c=current%16;const occupied=new Set(state);occupied.delete(current);const blocked=new Set(puzzle.blocked);while(true){const pos=r*16+c;if(puzzle.walls[pos]&dir.bit)break;const nr=r+dir.dr,nc=c+dir.dc;if(nr<0||nr>=16||nc<0||nc>=16)break;const np=nr*16+nc;if(blocked.has(np)||occupied.has(np))break;r=nr;c=nc;}const next=r*16+c;if(next===current)return state;const copy=[...state];copy[robotIndex]=next;return copy;}
+function directionFromBoardClick(fromCell,toCell){
+  if(fromCell===toCell)return null;
+  const fr=Math.floor(fromCell/BOARD_SIZE),fc=fromCell%BOARD_SIZE,tr=Math.floor(toCell/BOARD_SIZE),tc=toCell%BOARD_SIZE;
+  if(fr===tr)return tc>fc?1:3;
+  if(fc===tc)return tr>fr?2:0;
+  return null;
+}
 
-// -------------------- Pensterdam --------------------
+// -------------------- Pentorini (legacy leaderboard key: pensterdam) --------------------
 const PIECES={F:[[0,1],[0,2],[1,0],[1,1],[2,1]],I:[[0,0],[1,0],[2,0],[3,0],[4,0]],L:[[0,0],[1,0],[2,0],[3,0],[3,1]],P:[[0,0],[0,1],[1,0],[1,1],[2,0]],N:[[0,1],[1,1],[2,0],[2,1],[3,0]],T:[[0,0],[0,1],[0,2],[1,1],[2,1]],U:[[0,0],[0,2],[1,0],[1,1],[1,2]],V:[[0,0],[1,0],[2,0],[2,1],[2,2]],W:[[0,0],[1,0],[1,1],[2,1],[2,2]],X:[[0,1],[1,0],[1,1],[1,2],[2,1]],Y:[[0,0],[1,0],[2,0],[3,0],[2,1]],Z:[[0,0],[0,1],[1,1],[2,1],[2,2]]};
 function normalize(points){const mr=Math.min(...points.map(p=>p[0])),mc=Math.min(...points.map(p=>p[1]));return points.map(([r,c])=>[r-mr,c-mc]).sort((a,b)=>a[0]-b[0]||a[1]-b[1]);}
 const PIECE_ANCHORS={F:[1,1],I:[2,0],L:[2,0],P:[1,0],N:[2,1],T:[1,1],U:[1,1],V:[2,0],W:[1,1],X:[1,1],Y:[2,0],Z:[1,1]};
 function transformRawPoint([r,c],rotation=0,flipped=false){let x=r,y=flipped?-c:c;for(let i=0;i<((rotation%4)+4)%4;i++)[x,y]=[y,-x];return[x,y];}
 function transformPieceState(points,anchor,rotation=0,flipped=false){const raw=points.map(p=>transformRawPoint(p,rotation,flipped)),rawAnchor=transformRawPoint(anchor,rotation,flipped),mr=Math.min(...raw.map(p=>p[0])),mc=Math.min(...raw.map(p=>p[1]));return{points:raw.map(([r,c])=>[r-mr,c-mc]).sort((a,b)=>a[0]-b[0]||a[1]-b[1]),anchor:[rawAnchor[0]-mr,rawAnchor[1]-mc]};}
-const PEN_LABELS=['Jan','Feb','Mar','Apr','Sun','Mon','Tue','May','Jun','Jul','Aug','Wed','Thu','Fri','Sep','Oct','Nov','Dec','26','27','Sat','1','2','3','','','','','4','5','6','7','8','9','10','11','12','13','14','15','16','17','18','19','20','21','22','日','月','23','24','25','26','27','火','水','28','29','30','31','木','金','土'];
-const MONTH_CELL={1:0,2:1,3:2,4:3,5:7,6:8,7:9,8:10,9:14,10:15,11:16,12:17};
-const WEEKDAY_CELL={0:4,1:5,2:6,3:11,4:12,5:13,6:20}; // JS Sun=0
-const DATE_CELL={};
-[1,2,3].forEach((d,i)=>DATE_CELL[d]=21+i); for(let d=4;d<=10;d++)DATE_CELL[d]=28+d-4; for(let d=11;d<=17;d++)DATE_CELL[d]=35+d-11; for(let d=18;d<=22;d++)DATE_CELL[d]=42+d-18; for(let d=23;d<=27;d++)DATE_CELL[d]=49+d-23; for(let d=28;d<=31;d++)DATE_CELL[d]=56+d-28;
-function getPensterdamPuzzle(dateKey){const d=new Date(`${dateKey}T12:00:00+09:00`);const m=Number(dateKey.slice(5,7)),day=Number(dateKey.slice(8,10)),wd=d.getDay();return{date:dateKey,rows:9,cols:7,holes:[MONTH_CELL[m],DATE_CELL[day],WEEKDAY_CELL[wd]],month:m,day,weekday:wd};}
+const PENTORINI_LABELS=[
+  'Mon','Tue','Wed','Thu','Fri','Sat','Sun',
+  'Jan','Feb','Mar','Apr','May','Jun','Jul',
+  'Aug','Sep','Oct','Nov','Dec','25','26',
+  '27','28','29','30','1','2','3',
+  '4','5','6','7','8','9','10',
+  '11','12','13','14','15','16','17',
+  '18','19','20','21','22','23','24',
+  '25','26','27','28','29','30','31',
+  '月','火','水','木','金','土','日'
+];
+const PENTORINI_MONTH_CELL={1:7,2:8,3:9,4:10,5:11,6:12,7:13,8:14,9:15,10:16,11:17,12:18};
+const PENTORINI_WEEKDAY_EN_CELL={1:0,2:1,3:2,4:3,5:4,6:5,0:6};
+const PENTORINI_WEEKDAY_HANJA_CELL={1:56,2:57,3:58,4:59,5:60,6:61,0:62};
+const PENTORINI_DATE_CELL={};
+for(let d=1;d<=31;d++)PENTORINI_DATE_CELL[d]=24+d;
+function getPentoriniPuzzle(dateKey,weekdayMode='en'){
+  const d=new Date(`${dateKey}T12:00:00+09:00`),m=Number(dateKey.slice(5,7)),day=Number(dateKey.slice(8,10)),wd=d.getDay();
+  const weekdayCell=(weekdayMode==='hanja'?PENTORINI_WEEKDAY_HANJA_CELL:PENTORINI_WEEKDAY_EN_CELL)[wd];
+  return{date:dateKey,rows:9,cols:7,holes:[PENTORINI_MONTH_CELL[m],PENTORINI_DATE_CELL[day],weekdayCell],month:m,day,weekday:wd,weekdayMode};
+}
+function joinedCellClasses(has,r,c){
+  const u=!has(r-1,c),rr=!has(r,c+1),d=!has(r+1,c),l=!has(r,c-1),out=[];
+  if(u)out.push('edge-u');if(rr)out.push('edge-r');if(d)out.push('edge-d');if(l)out.push('edge-l');
+  if(u&&l)out.push('corner-tl');if(u&&rr)out.push('corner-tr');if(d&&l)out.push('corner-bl');if(d&&rr)out.push('corner-br');
+  return out.join(' ');
+}
+function pentoriniCellMeta(i,weekdayMode){
+  const classes=[];
+  if(i<=6){classes.push('weekday-cell','weekday-en');if(weekdayMode!=='en')classes.push('weekday-muted');}
+  else if(i>=56){classes.push('weekday-cell','weekday-hanja');if(weekdayMode!=='hanja')classes.push('weekday-muted');}
+  else if(i>=7&&i<=18)classes.push('month-cell');
+  else classes.push('date-cell');
+  if(i===19)classes.push('accent-date');
+  if(i>=19&&i<=24)classes.push('duplicate-date');
+  return classes.join(' ');
+}
 
 // -------------------- Yahtzee --------------------
 const UPPER=['aces','twos','threes','fours','fives','sixes'],LOWER=['threeKind','fourKind','fullHouse','smallStraight','largeStraight','yahtzee','chance'],ALL=[...UPPER,...LOWER];
@@ -164,7 +257,7 @@ function rollOne(){const a=new Uint32Array(1);crypto.getRandomValues(a);return a
 
 // -------------------- pages --------------------
 async function renderHome(){
-  shell(`<section class="hero"><div><h1><span>BoardMate</span> Arcade</h1><p>보드메이트 모임원끼리 매일 가볍게 겨루는 게임 공간.<br>오늘의 리코셰와 펜토미노, 그리고 올타임 Yahtzee 기록에 도전하세요.</p><div class="social-links"><a class="social-link" href="${LINKS.instagram}" target="_blank" rel="noreferrer">📷 Instagram</a><a class="social-link" href="${LINKS.somoim}" target="_blank" rel="noreferrer">👥 소모임</a><a class="social-link" href="${LINKS.shop}" target="_blank" rel="noreferrer">🛍 마플샵</a></div></div><div class="hero-badge">🎲</div></section><div class="section-title"><h2>게임</h2><small>${formatDate(kstDate())} · KST</small></div><section class="game-grid">${homeCard('ricochet','🤖','리코셰','적은 이동 수 → 동률이면 먼저 클리어')} ${homeCard('pensterdam','🧩','펜토미노','오늘의 월·일·요일을 남기고 완성 · 먼저 클리어')} ${homeCard('yahtzee','🎲','Yahtzee','언제든 플레이 · 올타임 최고 점수')}</section><div id="connection"></div>`);
+  shell(`<section class="hero"><div><h1><span>BoardMate</span> Arcade</h1><p>보드메이트 모임원끼리 매일 가볍게 겨루는 게임 공간.<br>오늘의 리코셰와 펜토리니, 그리고 올타임 Yahtzee 기록에 도전하세요.</p><div class="social-links"><a class="social-link" href="${LINKS.instagram}" target="_blank" rel="noreferrer">📷 Instagram</a><a class="social-link" href="${LINKS.somoim}" target="_blank" rel="noreferrer">👥 소모임</a><a class="social-link" href="${LINKS.shop}" target="_blank" rel="noreferrer">🛍 마플샵</a></div></div><div class="hero-badge">🎲</div></section><div class="section-title"><h2>게임</h2><small>${formatDate(kstDate())} · KST</small></div><section class="game-grid">${homeCard('ricochet','🤖','리코셰','적은 이동 수 → 동률이면 먼저 클리어')} ${homeCard('pensterdam','🧩','펜토리니','오늘의 월·일·요일을 남기고 완성 · 먼저 클리어')} ${homeCard('yahtzee','🎲','Yahtzee','언제든 플레이 · 올타임 최고 점수')}</section><div id="connection"></div>`);
   for(const g of ['ricochet','pensterdam','yahtzee']){const data=await loadLeaderboard(g,5);const el=document.querySelector(`#lb-${g}`);if(el)el.innerHTML=leaderboardHtml(g,data,false);}
   bindHome();
   if(!configured()) document.querySelector('#connection').innerHTML='<div class="connection-note">현재는 로컬 순위 모드입니다. <b>config.js</b>에 Supabase 주소/키 두 개만 넣으면 모임원 모두가 같은 순위표를 봅니다.</div>';
@@ -174,11 +267,28 @@ function bindHome(){document.querySelectorAll('[data-play]').forEach(b=>b.onclic
 
 async function renderRicochet(){
   const puzzle=getRicochetPuzzle(kstDate());let state=[...puzzle.robots],selected=puzzle.targetRobot,moves=[];
-  shell(`<div class="page-head"><div><h1>🤖 오늘의 리코셰</h1><p>${formatDate(puzzle.date)} · 같은 색 로봇을 목표 칸으로 보내세요.</p></div><div class="actions"><button class="ghost" id="backHome">← 홈</button><button class="danger" id="resetRicochet">도전 초기화</button></div></div><div class="game-layout"><section class="panel"><div id="rboard" class="ricochet-board"></div></section><aside class="panel"><div class="stat-grid single"><div class="stat"><span>현재 이동</span><b id="moveCount">0</b></div></div><div class="robot-picker-title">로봇 선택 <small>보드의 로봇도 클릭할 수 있어요</small></div><div class="robot-picker" id="robotPicker"></div><div class="direction-pad"><button class="up" data-dir="0" aria-label="위로 이동">↑</button><button class="left" data-dir="3" aria-label="왼쪽으로 이동">←</button><button class="right" data-dir="1" aria-label="오른쪽으로 이동">→</button><button class="down" data-dir="2" aria-label="아래로 이동">↓</button></div><div class="hint">보드의 로봇이나 오른쪽 색 버튼으로 로봇을 선택한 뒤 방향 버튼 또는 키보드 방향키로 움직이세요. 로봇은 벽이나 다른 로봇을 만나기 직전까지 멈추지 않습니다.</div><h3 style="margin-top:18px">오늘의 순위</h3><div id="sideLb"><div class="empty">불러오는 중…</div></div></aside></div>`);
+  shell(`<div class="page-head"><div><h1>🤖 오늘의 리코셰</h1><p>${formatDate(puzzle.date)} · 같은 색 로봇을 목표 칸으로 보내세요.</p></div><div class="actions"><button class="ghost" id="backHome">← 홈</button><button class="danger" id="resetRicochet">도전 초기화</button></div></div><div class="game-layout"><section class="panel"><div id="rboard" class="ricochet-board"></div><div class="board-control-note">로봇을 누른 뒤, 보드에서 그 로봇의 위·아래·왼쪽·오른쪽 방향 아무 칸이나 누르면 이동합니다.</div></section><aside class="panel"><div class="stat-grid single"><div class="stat"><span>현재 이동</span><b id="moveCount">0</b></div></div><div class="robot-picker-title">로봇 선택 <small>보드의 로봇도 클릭할 수 있어요</small></div><div class="robot-picker" id="robotPicker"></div><div class="direction-pad"><button class="up" data-dir="0" aria-label="위로 이동">↑</button><button class="left" data-dir="3" aria-label="왼쪽으로 이동">←</button><button class="right" data-dir="1" aria-label="오른쪽으로 이동">→</button><button class="down" data-dir="2" aria-label="아래로 이동">↓</button></div><div class="hint">보드 조작과 오른쪽 방향 버튼을 모두 사용할 수 있습니다. 로봇은 벽이나 다른 로봇을 만나기 직전까지 멈추지 않습니다.</div><h3 style="margin-top:18px">오늘의 순위</h3><div id="sideLb"><div class="empty">불러오는 중…</div></div></aside></div>`);
   document.querySelector('#backHome').onclick=()=>location.hash='#/';
   const refreshLb=async()=>document.querySelector('#sideLb').innerHTML=leaderboardHtml('ricochet',await loadLeaderboard('ricochet',5),false,false); await refreshLb();
-  const render=()=>{document.querySelector('#moveCount').textContent=moves.length;const blocked=new Set(puzzle.blocked);const el=document.querySelector('#rboard');el.innerHTML=Array.from({length:256},(_,i)=>{const w=puzzle.walls[i],robot=state.findIndex(x=>x===i),isTarget=i===puzzle.target;return `<div class="r-cell ${w&1?'wall-u':''} ${w&2?'wall-r':''} ${w&4?'wall-d':''} ${w&8?'wall-l':''} ${blocked.has(i)?'blocked':''}">${isTarget?`<span class="target ${ROBOT_COLORS[puzzle.targetRobot]}"></span>`:''}${robot>=0?`<button type="button" class="robot ${ROBOT_COLORS[robot]} ${robot===selected?'selected':''}" data-board-robot="${robot}" aria-label="${['빨강','노랑','초록','파랑'][robot]} 로봇 선택"></button>`:''}</div>`;}).join('');el.querySelectorAll('[data-board-robot]').forEach(b=>b.onclick=e=>{e.stopPropagation();selected=Number(b.dataset.boardRobot);renderPicker();render();});};
   const renderPicker=()=>{document.querySelector('#robotPicker').innerHTML=ROBOT_COLORS.map((c,i)=>`<button class="robot-pick ${c} ${i===selected?'active':''}" data-robot="${i}" aria-label="${['빨강','노랑','초록','파랑'][i]} 로봇 선택"><span class="robot-pick-dot"></span></button>`).join('');document.querySelectorAll('[data-robot]').forEach(b=>b.onclick=()=>{selected=Number(b.dataset.robot);renderPicker();render();});};
+  const render=()=>{
+    document.querySelector('#moveCount').textContent=moves.length;
+    const blocked=new Set(puzzle.blocked),el=document.querySelector('#rboard'),selectedCell=state[selected],selectedRow=Math.floor(selectedCell/BOARD_SIZE),selectedCol=selectedCell%BOARD_SIZE;
+    const hintForCell=i=>{
+      const r=Math.floor(i/BOARD_SIZE),c=i%BOARD_SIZE;
+      if(r===selectedRow-1&&c===selectedCol)return[0,'↑'];
+      if(r===selectedRow&&c===selectedCol+1)return[1,'→'];
+      if(r===selectedRow+1&&c===selectedCol)return[2,'↓'];
+      if(r===selectedRow&&c===selectedCol-1)return[3,'←'];
+      return null;
+    };
+    el.innerHTML=Array.from({length:BOARD_SIZE*BOARD_SIZE},(_,i)=>{
+      const w=puzzle.walls[i],robot=state.findIndex(x=>x===i),isTarget=i===puzzle.target,dir=directionFromBoardClick(selectedCell,i),hint=hintForCell(i);
+      return `<div class="r-cell ${w&1?'wall-u':''} ${w&2?'wall-r':''} ${w&4?'wall-d':''} ${w&8?'wall-l':''} ${blocked.has(i)?'blocked':''} ${dir!=null?'board-move-zone':''}" ${dir!=null?`data-board-dir="${dir}"`:''}>${isTarget?`<span class="target ${ROBOT_COLORS[puzzle.targetRobot]}"></span>`:''}${hint&&robot<0&&!blocked.has(i)?`<span class="board-arrow-hint dir-${hint[0]}">${hint[1]}</span>`:''}${robot>=0?`<button type="button" class="robot ${ROBOT_COLORS[robot]} ${robot===selected?'selected':''}" data-board-robot="${robot}" aria-label="${['빨강','노랑','초록','파랑'][robot]} 로봇 선택"></button>`:''}</div>`;
+    }).join('');
+    el.querySelectorAll('[data-board-robot]').forEach(b=>b.onclick=e=>{e.stopPropagation();selected=Number(b.dataset.boardRobot);renderPicker();render();});
+    el.querySelectorAll('[data-board-dir]').forEach(c=>c.onclick=e=>{if(e.target.closest('[data-board-robot]'))return;doMove(Number(c.dataset.boardDir));});
+  };
   const reset=()=>{state=[...puzzle.robots];moves=[];selected=puzzle.targetRobot;renderPicker();render();};
   const doMove=dir=>{const next=moveRobot(state,selected,dir,puzzle);if(next===state){toast('그 방향으로는 움직일 수 없습니다.');return;}state=next;moves.push([selected,dir]);render();if(state[puzzle.targetRobot]===puzzle.target){const count=moves.length;setTimeout(()=>openNameModal({title:'클리어!',big:`${count}회`,rankText:'더 적은 횟수로 다시 성공하면 개인 기록이 갱신됩니다.',onSubmit:n=>submitResult('ricochet',n,count),onClose:()=>{reset();refreshLb();}}),120);}};
   document.querySelectorAll('[data-dir]').forEach(b=>b.onclick=()=>doMove(Number(b.dataset.dir)));document.querySelector('#resetRicochet').onclick=()=>{reset();toast('도전을 초기화했습니다.');};
@@ -186,20 +296,31 @@ async function renderRicochet(){
 }
 
 async function renderPensterdam(){
-  const puzzle=getPensterdamPuzzle(kstDate()),pieceNames=Object.keys(PIECES);let board=Array(63).fill(null),selected='F',rotation=0,flipped=false;const placed={};
-  puzzle.holes.forEach(i=>board[i]='#');
-  shell(`<div class="page-head"><div><h1>🧩 오늘의 펜토미노</h1><p>${formatDate(puzzle.date)} · 오늘의 월 / 일 / 요일 3칸을 남기고 나머지를 모두 채우세요.</p></div><div class="actions"><button class="ghost" id="backHome">← 홈</button><button class="danger" id="resetPento">도전 초기화</button></div></div><div class="pento-wrap"><section class="panel"><div id="pboard" class="pento-board"></div></section><aside class="panel"><h3>타일</h3><div id="piecePreview" class="piece-preview"></div><div class="anchor-help"><span class="anchor-sample"></span><span>흰 점이 기준 칸입니다. 보드에서 클릭한 칸과 이 칸이 맞춰집니다.</span></div><div class="transform-actions"><button class="secondary" id="rotatePiece">↻ 회전</button><button class="secondary" id="flipPiece">⇋ 뒤집기</button></div><div id="pieceBank" class="piece-bank"></div><p class="pento-tip">타일 선택 → 회전/뒤집기 → 보드에서 기준이 될 칸 클릭. 이미 놓은 타일을 누르면 다시 가져옵니다.</p><h3 style="margin-top:18px">오늘의 순위</h3><div id="sideLb"><div class="empty">불러오는 중…</div></div><details class="reference-block"><summary>실물 참고 이미지</summary><div class="photo-grid"><img src="./pensterdam_play.jpg" alt="펜토미노 조각 배치 참고"><img src="./pensterdam_board.jpg" alt="펜토미노 캘린더 보드 참고"></div></details></aside></div>`);
+  const pieceNames=Object.keys(PIECES);let weekdayMode=localStorage.getItem(STORAGE_PREFIX+'pentorini_weekday_mode')||'en',puzzle=getPentoriniPuzzle(kstDate(),weekdayMode),board=Array(63).fill(null),selected='F',rotation=0,flipped=false;const placed={};
+  const applyHoles=()=>{puzzle.holes.forEach(i=>board[i]='#');};
+  applyHoles();
+  shell(`<div class="page-head"><div><h1>🧩 오늘의 펜토리니</h1><p>${formatDate(puzzle.date)} · 오늘의 월 / 일 / 요일 3칸을 남기고 나머지를 12개 타일로 모두 채우세요.</p></div><div class="actions"><button class="ghost" id="backHome">← 홈</button><button class="danger" id="resetPento">도전 초기화</button></div></div><div class="pento-wrap"><section class="panel pentorini-panel"><div id="pboard" class="pento-board"></div></section><aside class="panel"><div class="weekday-choice"><div class="weekday-choice-head"><b>요일 칸 선택</b><small>English / 한자 중 하나</small></div><div class="weekday-segment" id="weekdayMode"><button type="button" data-weekday-mode="en">English</button><button type="button" data-weekday-mode="hanja">한자</button></div><p>펜토리니 보드에는 두 요일 표기가 모두 있습니다. 선택한 쪽의 오늘 요일 1칸만 남겨두면 됩니다.</p></div><h3>타일</h3><div id="piecePreview" class="piece-preview"></div><div class="anchor-help"><span class="anchor-sample"></span><span>흰 점이 기준 칸입니다. 보드에서 클릭한 칸과 이 칸이 맞춰집니다.</span></div><div class="transform-actions"><button class="secondary" id="rotatePiece">↻ 회전</button><button class="secondary" id="flipPiece">⇋ 뒤집기</button></div><div id="pieceBank" class="piece-bank"></div><p class="pento-tip">타일 선택 → 회전/뒤집기 → 보드에서 기준이 될 칸 클릭. 이미 놓은 타일을 누르면 다시 가져옵니다.</p><h3 style="margin-top:18px">오늘의 순위</h3><div id="sideLb"><div class="empty">불러오는 중…</div></div></aside></div>`);
   document.querySelector('#backHome').onclick=()=>location.hash='#/';
   const refreshLb=async()=>document.querySelector('#sideLb').innerHTML=leaderboardHtml('pensterdam',await loadLeaderboard('pensterdam',5),false,false); await refreshLb();
   const currentPiece=()=>transformPieceState(PIECES[selected],PIECE_ANCHORS[selected],rotation,flipped);
-  const removePiece=name=>{if(!placed[name])return;placed[name].forEach(i=>board[i]=null);delete placed[name];puzzle.holes.forEach(i=>board[i]='#');};
-  const miniShapeHtml=(name,points,anchor=null,compact=false)=>{const h=Math.max(...points.map(x=>x[0]))+1,w=Math.max(...points.map(x=>x[1]))+1,cells=new Set(points.map(([r,c])=>`${r},${c}`)),size=compact?12:21;return `<span class="mini-grid ${compact?'compact':''}" style="grid-template-columns:repeat(${w},${size}px);--mini-size:${size}px">${Array.from({length:h*w},(_,i)=>{const r=Math.floor(i/w),c=i%w,key=`${r},${c}`;if(!cells.has(key))return '<span class="mini-cell mini-empty"></span>';const isAnchor=anchor&&anchor[0]===r&&anchor[1]===c;return `<span class="mini-cell piece-${name} ${isAnchor?'anchor-cell':''}"></span>`;}).join('')}</span>`;};
+  const removePiece=name=>{if(!placed[name])return;placed[name].forEach(i=>board[i]=null);delete placed[name];applyHoles();};
+  const miniShapeHtml=(name,points,anchor=null,compact=false)=>{
+    const h=Math.max(...points.map(x=>x[0]))+1,w=Math.max(...points.map(x=>x[1]))+1,cells=new Set(points.map(([r,c])=>`${r},${c}`)),size=compact?12:21,has=(r,c)=>cells.has(`${r},${c}`);
+    return `<span class="mini-grid ${compact?'compact':''}" style="grid-template-columns:repeat(${w},${size}px);--mini-size:${size}px">${Array.from({length:h*w},(_,i)=>{const r=Math.floor(i/w),c=i%w,key=`${r},${c}`;if(!cells.has(key))return '<span class="mini-cell mini-empty"></span>';const isAnchor=anchor&&anchor[0]===r&&anchor[1]===c;return `<span class="mini-cell joined-piece piece-${name} ${joinedCellClasses(has,r,c)} ${isAnchor?'anchor-cell':''}"></span>`;}).join('')}</span>`;
+  };
   const renderPreview=()=>{const cur=currentPiece();document.querySelector('#piecePreview').innerHTML=miniShapeHtml(selected,cur.points,cur.anchor,false);};
-  const renderBank=()=>{document.querySelector('#pieceBank').innerHTML=pieceNames.map((n,idx)=>`<button class="piece-btn ${selected===n?'selected':''} ${placed[n]?'placed':''}" data-piece="${n}" aria-label="펜토미노 타일 ${idx+1}" title="타일 ${idx+1}">${miniShapeHtml(n,normalize(PIECES[n]),null,true)}</button>`).join('');document.querySelectorAll('[data-piece]').forEach(b=>b.onclick=()=>{const n=b.dataset.piece;if(placed[n])removePiece(n);selected=n;rotation=0;flipped=false;renderAll();});};
+  const renderBank=()=>{document.querySelector('#pieceBank').innerHTML=pieceNames.map((n,idx)=>`<button class="piece-btn ${selected===n?'selected':''} ${placed[n]?'placed':''}" data-piece="${n}" aria-label="펜토리니 타일 ${idx+1}" title="타일 ${idx+1}">${miniShapeHtml(n,normalize(PIECES[n]),null,true)}</button>`).join('');document.querySelectorAll('[data-piece]').forEach(b=>b.onclick=()=>{const n=b.dataset.piece;if(placed[n])removePiece(n);selected=n;rotation=0;flipped=false;renderAll();});};
   const tryPlace=boardAnchor=>{removePiece(selected);const ar=Math.floor(boardAnchor/7),ac=boardAnchor%7,cur=currentPiece(),shape=cur.points,anchor=cur.anchor,coords=shape.map(([r,c])=>[ar+(r-anchor[0]),ac+(c-anchor[1])]),inBounds=coords.every(([r,c])=>r>=0&&r<9&&c>=0&&c<7),cells=coords.map(([r,c])=>r*7+c),valid=inBounds&&cells.every(i=>board[i]==null);if(!valid){toast('그 위치에는 놓을 수 없습니다. 기준 칸을 다른 곳에 맞춰보세요.');renderAll();return;}cells.forEach(i=>board[i]=selected);placed[selected]=cells;renderAll();if(pieceNames.every(n=>placed[n]))setTimeout(()=>openNameModal({title:'완성!',big:formatClock(new Date().toISOString()),rankText:'순위는 걸린 시간이 아니라 실제로 먼저 완성한 현재 시각 순입니다.',onSubmit:n=>submitResult('pensterdam',n,0),onClose:()=>{reset();refreshLb();}}),120);};
-  const renderBoard=()=>{const el=document.querySelector('#pboard');el.innerHTML=board.map((v,i)=>`<button class="p-cell ${v==='#'?'today-hole':''}" data-cell="${i}" aria-label="${v==='#'?'오늘 남겨둘 칸':v?'놓인 타일':'빈 칸'}"><span class="calendar-label">${PEN_LABELS[i]}</span>${v&&v!=='#'?`<span class="piece-mark piece-${v}"></span>`:''}</button>`).join('');el.querySelectorAll('[data-cell]').forEach(c=>c.onclick=()=>{const i=Number(c.dataset.cell),v=board[i];if(v==='#')return;if(v){removePiece(v);selected=v;rotation=0;flipped=false;renderAll();}else tryPlace(i);});};
-  const renderAll=()=>{renderBoard();renderBank();renderPreview();};
-  const reset=()=>{board=Array(63).fill(null);puzzle.holes.forEach(i=>board[i]='#');Object.keys(placed).forEach(k=>delete placed[k]);selected='F';rotation=0;flipped=false;renderAll();};
+  const boardPieceClasses=(i,name)=>{const r=Math.floor(i/7),c=i%7,has=(rr,cc)=>rr>=0&&rr<9&&cc>=0&&cc<7&&board[rr*7+cc]===name;return joinedCellClasses(has,r,c);};
+  const renderBoard=()=>{
+    const el=document.querySelector('#pboard');
+    el.innerHTML=board.map((v,i)=>`<button class="p-cell ${pentoriniCellMeta(i,weekdayMode)} ${v==='#'?'today-hole':''} ${v&&v!=='#'?'occupied':''}" data-cell="${i}" aria-label="${v==='#'?'오늘 남겨둘 칸':v?'놓인 타일':'빈 칸'}"><span class="calendar-label">${PENTORINI_LABELS[i]}</span>${v&&v!=='#'?`<span class="piece-fill joined-piece piece-${v} ${boardPieceClasses(i,v)}"></span>`:''}</button>`).join('');
+    el.querySelectorAll('[data-cell]').forEach(c=>c.onclick=()=>{const i=Number(c.dataset.cell),v=board[i];if(v==='#')return;if(v){removePiece(v);selected=v;rotation=0;flipped=false;renderAll();}else tryPlace(i);});
+  };
+  const renderWeekdayMode=()=>{document.querySelectorAll('[data-weekday-mode]').forEach(b=>{const active=b.dataset.weekdayMode===weekdayMode;b.classList.toggle('active',active);b.setAttribute('aria-pressed',active?'true':'false');});};
+  const renderAll=()=>{renderBoard();renderBank();renderPreview();renderWeekdayMode();};
+  const reset=()=>{board=Array(63).fill(null);Object.keys(placed).forEach(k=>delete placed[k]);selected='F';rotation=0;flipped=false;puzzle=getPentoriniPuzzle(kstDate(),weekdayMode);applyHoles();renderAll();};
+  document.querySelectorAll('[data-weekday-mode]').forEach(b=>b.onclick=()=>{const next=b.dataset.weekdayMode;if(next===weekdayMode)return;weekdayMode=next;localStorage.setItem(STORAGE_PREFIX+'pentorini_weekday_mode',weekdayMode);reset();toast(`${weekdayMode==='en'?'English':'한자'} 요일 칸으로 바꿨습니다.`);});
   document.querySelector('#rotatePiece').onclick=()=>{rotation=(rotation+1)%4;renderPreview();};document.querySelector('#flipPiece').onclick=()=>{flipped=!flipped;renderPreview();};document.querySelector('#resetPento').onclick=()=>{reset();toast('도전을 초기화했습니다.');};renderAll();
 }
 
