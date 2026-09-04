@@ -1,12 +1,13 @@
-# BoardMate Arcade v11 — 2026-09-04 작업 반영
+# BoardMate Arcade v11.1 — 2026-09-04 작업 반영
 
-> v10 인수인계 문서를 기반으로 이어서 수정한 버전입니다. 아래 v11 변경사항이 기존 내용보다 우선합니다.
+> v10 인수인계 문서를 기반으로 이어서 수정한 버전입니다. 아래 v11.1 변경사항이 기존 내용보다 우선합니다.
 
-## v11 변경사항
-- 게임 취소 RPC `boardmate_set_cancel_vote` / `boardmate_get_cancel_status`를 최종 재정의하고 `notify pgrst, 'reload schema'`를 추가했습니다. 빠른 복구용 `SUPABASE_CANCEL_FIX.sql`도 포함합니다.
+## v11.1 변경사항
+- 게임 취소 RPC `boardmate_set_cancel_vote` / `boardmate_get_cancel_status`를 최종 재정의하고 `notify pgrst, 'reload schema'`를 추가했습니다.
+- 방 생성 RPC `create_boardmate_room_v8`도 최종 재생성합니다. 빠른 복구용 **`SUPABASE_RPC_FIX_v11_1.sql`**은 방 생성 + 취소 RPC를 한 번에 복구하고 schema cache를 reload합니다. 앱은 v8 RPC가 schema cache에 없을 때 v7 RPC로 한 번 자동 fallback합니다.
 - `online-calico.html`을 사용자가 새로 제공한 Board-Mate Arena 대응 Calico HTML로 교체하고, BoardMate Supabase 방 상태/좌석/자동저장/재접속/ELO 어댑터를 연결했습니다.
 - `online-cascadia.html`을 사용자가 새로 제공한 Cascadia PVP HTML로 교체하고, PeerJS 대신 BoardMate 방에서는 Supabase 공유 상태를 사용하도록 연결했습니다. 새 버전의 A/가족/중급 점수 선택과 회전 반투명 미리보기를 유지합니다.
-- 펜토리니는 선택한 타일의 현재 회전/뒤집기 방향을 기준으로 배치 가능한 모든 위치에 약 34% 투명도의 타일 미리보기를 표시합니다.
+- 펜토리니의 v11 전체 합법 위치 34% 반투명 미리보기는 사용자 요청으로 제거했습니다. **펜토리니는 v10 동작으로 되돌렸으며**, 회전/뒤집기는 우측 선택 타일 미리보기만 갱신하고 보드 전체 후보를 표시하지 않습니다.
 - 사용자 표시 이름 `포켓노바`를 `포크노바`로 변경했습니다. 내부 호환 키/파일 경로 `pocketnova`는 유지합니다.
 - 새 Calico 상태는 현재 차례 키가 `active`이므로 `boardmate_turn_seat`가 Calico에서 `active`를 우선 읽도록 보강했습니다.
 
@@ -16,7 +17,7 @@
 > **목적:** 다음 대화에서 아무 사전 맥락이 없어도 이 README와 ZIP만 보고 바로 작업을 이어갈 수 있게 만든 문서입니다.
 >
 > **현재 기준일:** 2026-09-04
-> **현재 버전:** v11
+> **현재 버전:** v11.1
 > **운영 방식:** GitHub Pages + Supabase / npm·터미널·빌드 없이 정적 파일 업로드
 
 ---
@@ -27,7 +28,7 @@
 - 사용자의 의도는 외부 GitHub 구현의 소스가 공개되어 있다면 그것을 읽고, **현재 BoardMate가 자체 제작한 다인플 구현을 정확하게 고치는 참고 자료**로 쓰는 것이다.
 - 다음 세션 첫 작업은 두 GitHub Pages의 실제 저장소와 라이선스를 찾는 것.
 - **포크노바 1인플은 지금 만들지 않는다.** 나중에 Ark Nova 공식 솔로 규칙 기반으로 만든다.
-- v11에서는 사용자 제공 새 캘리코/캐스캐디아 HTML 교체, 취소 RPC 복구, 펜토리니 미리보기, 포크노바 명칭 변경까지 반영했다.
+- v11.1에서는 사용자 제공 새 캘리코/캐스캐디아 HTML 교체와 포크노바 명칭 변경을 유지하고, 취소/방 생성 RPC 복구를 보강했다. 펜토리니의 v11 전체 위치 반투명 미리보기는 제거하여 v10 동작으로 복귀했다.
 
 ---
 
@@ -391,7 +392,7 @@ select public.admin_reset_boardmate_password('회원닉네임', '1234');
 
 ### v11 취소 RPC 오류 복구
 
-`Could not find the function public.boardmate_set_cancel_vote(...) in the schema cache`가 보이면 프론트 문제가 아니라 Supabase에 RPC가 아직 생성/노출되지 않은 상태입니다. v11의 `SUPABASE_CANCEL_FIX.sql` 전체를 SQL Editor에서 실행하면 함수 재생성 + PostgREST schema reload까지 수행합니다. 전체 `supabase.sql`을 다시 실행해도 됩니다.
+`Could not find the function ... in the schema cache`가 보이면 Supabase에 해당 RPC가 아직 생성/노출되지 않은 상태입니다. v11.1의 `SUPABASE_RPC_FIX_v11_1.sql` 전체를 SQL Editor에서 실행하면 **방 생성 + 취소 RPC 재생성 + PostgREST schema reload**까지 한 번에 수행합니다. 전체 `supabase.sql`을 다시 실행해도 됩니다.
 
 ### 주의 / 향후 논의 가능점
 
@@ -851,14 +852,14 @@ index_test.html             테스트용 진입 파일
 
 다음 작업자가 이 README를 읽고 바로 이어갈 때는 아래 상태로 이해하면 됩니다.
 
-> BoardMate Arcade v11은 GitHub Pages + Supabase 기반 모임용 보드게임 사이트다. 메인은 미니게임(펜토리니/Yahtzee), 1인플, 다인플, 마이페이지로 구성되어 있다. 리코셰는 삭제했고 다시 만들지 않는다. 자체 닉네임+4자 이상 비밀번호 로그인, 관리자 정지/퇴출, 자동 저장/재접속/접속 끊김, 진행 중 게임, 게임별 비공개 ELO와 메달, 대기실 방장 강퇴, 전원 동의 게임 취소가 구현되어 있다. 온라인 게임은 마스크맨/어콰이어/캘리코/캐스캐디아/포크노바 베타/더 게임/노터치 크라켄이다. 캘리코·캐스캐디아의 외부 1인플 GitHub Pages는 현재 wrapper로도 열지만, **다음 작업의 핵심은 그 공개 소스를 찾아 BoardMate 자체 온라인 캘리코/캐스캐디아의 보드 좌표·룰·점수 로직을 검증하는 것**이다. 캘리코 온라인은 육각 보드와 가장자리 22칸, 고양이 점 1/2/3 그룹 선택을 반영했다. 캐스캐디아 온라인은 새 사용자 제공 HTML로 교체되어 A/초심자·가족/중급 점수와 34% 회전 미리보기를 지원하며 BoardMate Supabase 자동 저장에 연결했다. 포크노바 온라인은 원본 자체의 미완성 요소가 있는 베타이며 1인플은 아직 만들지 않고, 나중에 아크노바 공식 솔로 룰 기반으로 만들 예정이다. 룰북 PDF는 ZIP에 넣지 않는다. 다음 작업 전 외부 Calico/Cascadia 저장소·라이선스 확인, Supabase 다기기 E2E, 캐스캐디아 재접속, 캘리코 실물 보드 정확성 검증이 우선이다.
+> BoardMate Arcade v11.1은 GitHub Pages + Supabase 기반 모임용 보드게임 사이트다. 메인은 미니게임(펜토리니/Yahtzee), 1인플, 다인플, 마이페이지로 구성되어 있다. 리코셰는 삭제했고 다시 만들지 않는다. 자체 닉네임+4자 이상 비밀번호 로그인, 관리자 정지/퇴출, 자동 저장/재접속/접속 끊김, 진행 중 게임, 게임별 비공개 ELO와 메달, 대기실 방장 강퇴, 전원 동의 게임 취소가 구현되어 있다. 온라인 게임은 마스크맨/어콰이어/캘리코/캐스캐디아/포크노바 베타/더 게임/노터치 크라켄이다. 캘리코·캐스캐디아의 외부 1인플 GitHub Pages는 현재 wrapper로도 열지만, **다음 작업의 핵심은 그 공개 소스를 찾아 BoardMate 자체 온라인 캘리코/캐스캐디아의 보드 좌표·룰·점수 로직을 검증하는 것**이다. 캘리코 온라인은 육각 보드와 가장자리 22칸, 고양이 점 1/2/3 그룹 선택을 반영했다. 캐스캐디아 온라인은 새 사용자 제공 HTML로 교체되어 A/초심자·가족/중급 점수와 34% 회전 미리보기를 지원하며 BoardMate Supabase 자동 저장에 연결했다. 포크노바 온라인은 원본 자체의 미완성 요소가 있는 베타이며 1인플은 아직 만들지 않고, 나중에 아크노바 공식 솔로 룰 기반으로 만들 예정이다. 룰북 PDF는 ZIP에 넣지 않는다. 다음 작업 전 외부 Calico/Cascadia 저장소·라이선스 확인, Supabase 다기기 E2E, 캐스캐디아 재접속, 캘리코 실물 보드 정확성 검증이 우선이다.
 
 ---
 
 # 21. v11 배포 전에 마지막으로 할 것
 
 1. `config.js`에 실제 Supabase URL / anon key 확인
-2. Supabase SQL Editor에서 **v11 `supabase.sql` 전체 Run** (취소 오류만 빠르게 복구할 때는 `SUPABASE_CANCEL_FIX.sql`)
+2. Supabase SQL Editor에서 **v11.1 `supabase.sql` 전체 Run** 또는 빠른 RPC 복구용 **`SUPABASE_RPC_FIX_v11_1.sql` 전체 Run**
 3. 관리자 계정이 필요하면:
 
 ```sql

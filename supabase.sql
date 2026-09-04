@@ -1267,7 +1267,7 @@ grant execute on function public.boardmate_set_cancel_vote(text,uuid,boolean) to
 
 -- ============================================================================
 -- v11 final patch: cancel-vote RPC exposure + PostgREST schema cache refresh
--- Run the entire file OR SUPABASE_CANCEL_FIX.sql after deploying v11.
+-- Run the entire file OR SUPABASE_RPC_FIX_v11_1.sql after deploying v11.1.
 -- ============================================================================
 drop function if exists public.boardmate_set_cancel_vote(text,uuid,boolean);
 drop function if exists public.boardmate_get_cancel_status(text,uuid);
@@ -1322,4 +1322,32 @@ end;$$;
 grant execute on function public.boardmate_set_cancel_vote(text,uuid,boolean) to anon, authenticated;
 
 -- Ask Supabase/PostgREST to refresh the exposed RPC schema immediately.
+notify pgrst, 'reload schema';
+
+-- ============================================================================
+-- v11.1 final patch: create_boardmate_room_v8 RPC exposure repair
+-- ============================================================================
+-- Recreate at the very end so PostgREST sees the exact named parameters used by app.js.
+drop function if exists public.create_boardmate_room_v8(text,text,text);
+create function public.create_boardmate_room_v8(p_token text,p_title text,p_game text)
+returns uuid
+language plpgsql security definer set search_path=public,extensions
+as $$
+declare uid uuid; rid uuid; mx integer; nm text; ttl text;
+begin
+  uid:=public.boardmate_session_user(p_token);
+  if uid is null then raise exception '로그인이 필요합니다.'; end if;
+  if p_game not in ('maskmen','acquire','calico','cascadia','pocketnova','thegame','kraken') then raise exception '지원하지 않는 게임입니다.'; end if;
+  select nickname into nm from public.boardmate_profiles where user_id=uid;
+  ttl:=trim(coalesce(p_title,''));
+  if ttl='' then ttl:=left(coalesce(nm,'보드메이트')||'의 '||public.boardmate_game_ko(p_game)||' 한 판',40); end if;
+  if char_length(ttl)>40 then ttl:=left(ttl,40); end if;
+  mx:=public.boardmate_game_max(p_game);
+  insert into public.boardmate_rooms(title,game,max_players,host_id,play_mode)
+  values(ttl,p_game,mx,uid,'turn') returning id into rid;
+  insert into public.boardmate_room_members(room_id,user_id,seat) values(rid,uid,0);
+  return rid;
+end;
+$$;
+grant execute on function public.create_boardmate_room_v8(text,text,text) to anon, authenticated;
 notify pgrst, 'reload schema';
