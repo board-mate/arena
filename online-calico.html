@@ -246,13 +246,42 @@ function queueSave(snapshot){
   const snap=clone(snapshot);
   pendingSaves++;
   saveChain=saveChain.then(async()=>{
+    let working=clone(snap), mergedDraft=false;
     try{
-      const nextRevision=await saveState(revision,snap);
-      revision=Number(nextRevision??revision+1);
-      await maybeSubmit(snap);
+      for(let attempt=0;attempt<5;attempt++){
+        try{
+          const nextRevision=await saveState(revision,working);
+          revision=Number(nextRevision??revision+1);
+          if(mergedDraft) callbacks.forEach(cb=>{try{cb(clone(working));}catch(err){console.warn(err);}});
+          await maybeSubmit(working);
+          return;
+        }catch(e){
+          const isConflict=String(e?.message||e).toLowerCase().includes('revision conflict');
+          const row=await loadState().catch(()=>null);
+          if(row) revision=Number(row?.revision||revision);
+          const latest=row?.state ? clone(row.state) : null;
+          const editor=Number(snap?._lastEditorSeat);
+          if(
+            isConflict &&
+            snap?.setupPhase==='goal-draft' && latest?.setupPhase==='goal-draft' &&
+            Number.isInteger(editor) && editor>=0 &&
+            snap.goalChoices?.[editor] && latest.goalChoices?.[editor]
+          ){
+            // 다른 좌석의 최신 선택은 유지하고, 충돌을 낸 클라이언트의 자기 좌석 선택만 덮어쓴다.
+            latest.goalChoices[editor]=clone(snap.goalChoices[editor]);
+            latest._lastEditorSeat=editor;
+            latest._arenaRevision=Math.max(Number(latest._arenaRevision||0),Number(snap._arenaRevision||0));
+            working=latest;
+            mergedDraft=true;
+            continue;
+          }
+          if(latest) callbacks.forEach(cb=>{try{cb(clone(latest));}catch(err){console.warn(err);}});
+          throw e;
+        }
+      }
+      throw new Error('Calico design draft save retry exceeded');
     }catch(e){
       console.warn('Calico BoardMate save conflict:',e);
-      try{const row=await loadState();revision=Number(row?.revision||revision);if(row?.state)callbacks.forEach(cb=>cb(clone(row.state)));}catch{}
     }finally{pendingSaves=Math.max(0,pendingSaves-1);}
   });
   return saveChain;
@@ -345,7 +374,7 @@ if(roomId) window.addEventListener('DOMContentLoaded',()=>{
 
     <section class="card hidden" id="goalDraftStep">
       <h2 class="section-title">디자인 타일 선택</h2>
-      <p style="margin-top:-4px;color:var(--muted);line-height:1.5">각 플레이어는 6종 중 무작위로 뽑힌 4개를 확인하고 3개를 선택합니다. <strong>선택한 순서</strong>가 실제 퀼트 보드의 <b>위쪽 → 왼쪽 아래 → 오른쪽</b> 디자인 슬롯에 대응합니다.</p>
+      <p style="margin-top:-4px;color:var(--muted);line-height:1.5">각 플레이어는 <strong>자기 화면에서 자기 후보 4개 중 3개를 직접 선택</strong>합니다. <strong>선택한 순서</strong>가 실제 퀼트 보드의 <b>위쪽 → 왼쪽 아래 → 오른쪽</b> 디자인 슬롯에 대응합니다. 온라인에서는 다른 플레이어의 후보를 대신 선택할 수 없습니다.</p>
       <div class="goal-draft-wrap" id="goalDraftPlayers"></div>
       <div class="draft-footer">
         <div><button class="btn" id="randomGoalsBtn">모두 무작위 3개 선택</button> <button class="btn" id="backSetupBtn">설정으로</button></div>
@@ -566,17 +595,54 @@ if(roomId) window.addEventListener('DOMContentLoaded',()=>{
     postToArena('BOARD_MATE_GAME_STATE',{state:snapshot,gameState:snapshot,reason,revision:lastArenaRevision});
     updateArenaUi();
   }
+  function publishArenaSetup(reason='goal-draft',editorSeat=null){
+    if(!pendingSetup || suppressArenaPublish || !isArenaMode()) return;
+    lastArenaRevision++;
+    const snapshot={
+      version:VERSION,gameId:GAME_ID,_gameId:GAME_ID,
+      setupPhase:'goal-draft',
+      players:deepClone(pendingSetup.players),
+      settings:deepClone(pendingSetup.settings),
+      goalChoices:deepClone(pendingSetup.goalChoices),
+      _arenaRevision:lastArenaRevision
+    };
+    if(editorSeat!==null && editorSeat!==undefined && Number.isInteger(Number(editorSeat)) && Number(editorSeat)>=0) snapshot._lastEditorSeat=Number(editorSeat);
+    publishViaSdk(snapshot,reason);
+    postToArena('BOARD_MATE_GAME_STATE',{state:snapshot,gameState:snapshot,reason,revision:lastArenaRevision});
+    updateArenaUi();
+  }
   function receiveArenaState(incoming){
     const next=extractArenaState(incoming) || incoming;
     if(!next || !Array.isArray(next.players)) return false;
     if(next.version!==VERSION && next.gameId!==GAME_ID && next._gameId!==GAME_ID) return false;
     const previousActive=state?.active;
     const rev=Number(next._arenaRevision ?? incoming?._arenaRevision ?? incoming?.revision ?? 0);
-    if(rev && rev < Number(state?._arenaRevision||0)) return false;
+    if(rev && rev < Math.max(Number(state?._arenaRevision||0),Number(lastArenaRevision||0))) return false;
     suppressArenaPublish=true;
-    state=deepClone(next); state.version=VERSION; state.gameId=GAME_ID; state._gameId=GAME_ID;
     if(rev) lastArenaRevision=Math.max(lastArenaRevision,rev);
     arenaCtx.connected=true; arenaCtx.lastMessageAt=Date.now();
+
+    // 온라인 디자인 타일 선택 단계도 방 공유 상태로 저장한다.
+    // 방장은 후보만 만들고, 각 참가자는 자기 좌석의 3개만 직접 선택한다.
+    if(next.setupPhase==='goal-draft'){
+      pendingSetup={
+        players:deepClone(next.players),
+        settings:deepClone(next.settings||{}),
+        goalChoices:deepClone(next.goalChoices||[])
+      };
+      state=null;
+      $('#gameScreen').classList.add('hidden');
+      $('#setupScreen').classList.remove('hidden');
+      $('#setupStep').classList.add('hidden');
+      $('#goalDraftStep').classList.remove('hidden');
+      renderGoalDraft();
+      suppressArenaPublish=false;
+      updateArenaUi();
+      return true;
+    }
+
+    pendingSetup=null;
+    state=deepClone(next); state.version=VERSION; state.gameId=GAME_ID; state._gameId=GAME_ID;
     const me=myPlayerIndex();
     if(Number.isInteger(me) && me>=0 && me<state.players.length){ viewedPlayer = previousActive===undefined ? me : Math.min(viewedPlayer,state.players.length-1); }
     else viewedPlayer=Math.min(viewedPlayer,state.players.length-1);
@@ -774,16 +840,30 @@ if(roomId) window.addEventListener('DOMContentLoaded',()=>{
     $('#setupStep').classList.add('hidden');
     $('#goalDraftStep').classList.remove('hidden');
     renderGoalDraft();
+    if(isArenaMode()) publishArenaSetup('goal-draft-start');
   }
 
   function renderGoalDraft(){
+    if(!pendingSetup) return;
     const holder=$('#goalDraftPlayers'); holder.innerHTML='';
+    const online=isArenaMode();
+    const me=myPlayerIndex();
     pendingSetup.players.forEach((p,pi)=>{
       const wrap=document.createElement('div'); wrap.className='goal-player';
-      const selected=pendingSetup.goalChoices[pi].selected;
-      wrap.innerHTML=`<h3>${pi+1}. ${escapeHtml(p.name)}</h3><div class="goal-options"></div>`;
+      const choice=pendingSetup.goalChoices[pi]||{options:[],selected:[]};
+      const selected=choice.selected||[];
+      const own=!online || pi===me;
+      if(online && !own){
+        const done=selected.length===3;
+        wrap.innerHTML=`<h3>${pi+1}. ${escapeHtml(p.name)}</h3>
+          <div class="setup-note"><strong>${done?'선택 완료':'선택 중'}</strong> · ${selected.length}/3<br>
+          각 플레이어는 자기 화면에서 자기 디자인 타일만 선택합니다.</div>`;
+        holder.appendChild(wrap);
+        return;
+      }
+      wrap.innerHTML=`<h3>${pi+1}. ${escapeHtml(p.name)}${online?' · 내 디자인':''}</h3><div class="goal-options"></div>`;
       const grid=wrap.querySelector('.goal-options');
-      pendingSetup.goalChoices[pi].options.forEach(gid=>{
+      (choice.options||[]).forEach(gid=>{
         const g=goalById(gid); const idx=selected.indexOf(gid);
         const card=document.createElement('button'); card.type='button';
         card.className='goal-card'+(idx>=0?' selected':'');
@@ -795,13 +875,34 @@ if(roomId) window.addEventListener('DOMContentLoaded',()=>{
       });
       holder.appendChild(wrap);
     });
-    $('#startGameBtn').disabled=!pendingSetup.goalChoices.every(x=>x.selected.length===3);
+
+    const allReady=pendingSetup.goalChoices.length===pendingSetup.players.length &&
+      pendingSetup.goalChoices.every(x=>Array.isArray(x.selected)&&x.selected.length===3);
+    const start=$('#startGameBtn');
+    if(online){
+      start.disabled=!isSetupHost() || !allReady;
+      start.textContent=isSetupHost() ? (allReady?'게임 시작':'모두 선택할 때까지 대기') : '방장이 게임 시작을 기다리는 중';
+      $('#randomGoalsBtn').textContent='내 디자인 무작위 3개 선택';
+      $('#randomGoalsBtn').disabled=!(Number.isInteger(me)&&pendingSetup.goalChoices[me]);
+      $('#backSetupBtn').classList.add('hidden');
+    }else{
+      start.disabled=!allReady;
+      start.textContent='게임 시작';
+      $('#randomGoalsBtn').textContent='모두 무작위 3개 선택';
+      $('#randomGoalsBtn').disabled=false;
+      $('#backSetupBtn').classList.remove('hidden');
+    }
   }
 
   function toggleGoal(pi,gid){
+    if(isArenaMode()){
+      const me=myPlayerIndex();
+      if(me===null || pi!==me){toast('자기 디자인 타일만 선택할 수 있습니다.');return;}
+    }
     const sel=pendingSetup.goalChoices[pi].selected; const idx=sel.indexOf(gid);
     if(idx>=0) sel.splice(idx,1); else if(sel.length<3) sel.push(gid); else {toast('3개만 선택할 수 있습니다.');return;}
     renderGoalDraft();
+    if(isArenaMode()) publishArenaSetup('goal-choice',pi);
   }
 
   function buildBag(copies){
@@ -829,6 +930,9 @@ if(roomId) window.addEventListener('DOMContentLoaded',()=>{
   }
 
   function startGameFromPending(){
+    if(!pendingSetup) return;
+    if(isArenaMode() && !isSetupHost()){toast('게임 시작은 방장만 할 수 있습니다.');return;}
+    if(!pendingSetup.goalChoices.every(x=>Array.isArray(x.selected)&&x.selected.length===3)){toast('모든 플레이어가 디자인 타일 3개를 선택해야 합니다.');return;}
     const settings=pendingSetup.settings;
     const copies=(settings.lowerVariance || (pendingSetup.players.length===2 && settings.twoPlayerVariant)) ? 2 : 3;
     state={
@@ -1275,8 +1379,23 @@ if(roomId) window.addEventListener('DOMContentLoaded',()=>{
   });
   $('#twoPlayerVariant').addEventListener('change',()=>$('#twoPlayerVariant').dataset.touched='1');
   $('#prepareGoalsBtn').onclick=prepareGoalDraft;
-  $('#randomGoalsBtn').onclick=()=>{pendingSetup.goalChoices.forEach(x=>x.selected=sample(x.options,3));renderGoalDraft();};
-  $('#backSetupBtn').onclick=()=>{$('#goalDraftStep').classList.add('hidden');$('#setupStep').classList.remove('hidden');};
+  $('#randomGoalsBtn').onclick=()=>{
+    if(!pendingSetup)return;
+    if(isArenaMode()){
+      const me=myPlayerIndex();
+      if(me===null || !pendingSetup.goalChoices[me]) return toast('내 좌석 정보를 확인할 수 없습니다.');
+      pendingSetup.goalChoices[me].selected=sample(pendingSetup.goalChoices[me].options,3);
+      renderGoalDraft();
+      publishArenaSetup('goal-random',me);
+    }else{
+      pendingSetup.goalChoices.forEach(x=>x.selected=sample(x.options,3));
+      renderGoalDraft();
+    }
+  };
+  $('#backSetupBtn').onclick=()=>{
+    if(isArenaMode())return toast('온라인 디자인 선택이 시작된 뒤에는 설정으로 돌아갈 수 없습니다.');
+    $('#goalDraftStep').classList.add('hidden');$('#setupStep').classList.remove('hidden');
+  };
   $('#startGameBtn').onclick=startGameFromPending;
   $('#continueBtn').onclick=loadSaved;
   $('#rulesBtn').onclick=showRules;
