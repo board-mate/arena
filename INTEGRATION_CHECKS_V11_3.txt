@@ -1,0 +1,22 @@
+BoardMate Arcade v11.3 validation
+
+PASS: app.js syntax
+PASS: multi-common.js syntax
+PASS: pocketnova/js/*.js syntax
+PASS: pocketnova/data/*.js syntax
+PASS: Forknova solo smoke — 27 turns -> phase=scoring
+PASS: Forknova solo final score smoke
+PASS: v3 core data files and abilities.js/board.js/config.js retained byte-identical from supplied archive
+NOTE: supplied v3 test/smoke.mjs itself fails on its starterKiosk assumption before BoardMate modifications.
+NOTE: live 2-browser Supabase E2E still requires deployment.
+
+SHA-256
+3af81c0caddf6cc7e3561ce543ea87a7beff6e494ad62e7e12a1cfe888a34567  app.js
+5b2ee466ebe84ddac7b1bfb1ca8970597ebbfaefbb8a10eb99fed9efa96e897c  online-pocketnova.html
+bb43cf93b5009ef20780192fd8ddc868d87de0d41db13d43f04e0cd06f96f30b  solo-pocketnova.html
+fda825b824e49102c2f2629bda1c4cee4cab789ae2bc8a4530ef3667e53d16b3  pocketnova/js/ui.js
+a01b436b87aa618799589408e5050f23d9ce7aa7c680b84d6567f037e645f74d  pocketnova/js/engine.js
+d742f6e2137e95d02c26b3a474a8e3a4ccb34dafb2af966e23b3bce579294915  pocketnova/js/state.js
+c061bbbf01598a4a61891b704fd06e51c29a96970bb3d5366bc01c0c687fcd89  pocketnova/js/network.js
+3677167e44e225d2222fec655be5d1a04867f6596c94b87cfd8cec324b8202b0  pocketnova/data/cards-animals.js
+5490af73b2b8c6c3b2d4ab94cf947945dd40aa1dac35b3575c0480acc7986bcf  pocketnova/data/cards-sponsors.js

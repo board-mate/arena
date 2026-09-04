@@ -182,7 +182,7 @@ function rollOne(){const a=new Uint32Array(1);crypto.getRandomValues(a);return a
 // -------------------- pages --------------------
 async function renderHome(){
   shell(`<section class="hero"><div><h1><span>BoardMate</span> Arcade</h1><p>보드메이트에서 같이 즐기는 웹 보드게임 공간.<br>미니게임, AI 연습, 로그인 기반 온라인 방을 한 곳에 모았습니다.</p><div class="social-links"><a class="social-link" href="${LINKS.instagram}" target="_blank" rel="noreferrer">📷 Instagram</a><a class="social-link" href="${LINKS.somoim}" target="_blank" rel="noreferrer">👥 소모임</a><a class="social-link" href="${LINKS.shop}" target="_blank" rel="noreferrer">🛍 마플샵</a></div></div><div class="hero-badge">🎲</div></section>
-  <section class="mode-grid"><button class="mode-card" data-go="solo"><span>🧠</span><b>1인플 · AI/솔로</b><small>마스크맨 / 어콰이어 / 캘리코 / 캐스캐디아 / 더 게임</small></button><button class="mode-card" data-go="multi"><span>🌐</span><b>다인플 · 온라인 방</b><small>자동 저장 · 재접속 · 게임별 티어</small></button></section>
+  <section class="mode-grid"><button class="mode-card" data-go="solo"><span>🧠</span><b>1인플 · AI/솔로</b><small>마스크맨 / 어콰이어 / 캘리코 / 캐스캐디아 / 포크노바 / 더 게임</small></button><button class="mode-card" data-go="multi"><span>🌐</span><b>다인플 · 온라인 방</b><small>자동 저장 · 재접속 · 게임별 티어</small></button></section>
   <div class="section-title"><h2>미니게임</h2><small>${formatDate(kstDate())} · KST</small></div><section class="game-grid daily-two">${homeCard('pensterdam','🧩','펜토리니','도움칸 적게 사용 → 동률이면 먼저 클리어')} ${homeCard('yahtzee','🎲','Yahtzee','언제든 플레이 · 올타임 최고 점수')}</section><div id="connection"></div>`);
   document.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>location.hash=`#/${b.dataset.go}`);
   for(const g of ['pensterdam','yahtzee']){const data=await loadLeaderboard(g,5);const el=document.querySelector(`#lb-${g}`);if(el)el.innerHTML=leaderboardHtml(g,data,false);}
@@ -199,6 +199,7 @@ function renderSolo(){
     <article class="library-card acquire"><div class="library-icon">🏙️</div><h2>어콰이어</h2><p>타일 배치, 호텔 체인, 주식과 합병을 AI들과 연습합니다.</p><span class="save-badge">💾 로컬 자동 저장</span><a class="primary link-btn" href="./solo-acquire.html">AI와 대전</a></article>
     <article class="library-card calico"><div class="library-icon">🧵</div><h2>캘리코</h2><p>공개된 MyAutoma 구현을 BoardMate 상단바 안에서 엽니다.</p><span class="save-badge external">외부 게임 · BoardMate 저장 제외</span><a class="primary link-btn" href="./solo-calico.html">솔로 게임 열기</a></article>
     <article class="library-card cascadia"><div class="library-icon">🌲</div><h2>캐스캐디아</h2><p>공개 Cascadia 웹 구현을 BoardMate 상단바 안에서 엽니다.</p><span class="save-badge external">외부 게임 · BoardMate 저장 제외</span><a class="primary link-btn" href="./solo-cascadia.html">솔로 게임 열기</a></article>
+    <article class="library-card pocketnova"><div class="library-icon">⚡</div><h2>포크노바</h2><p>업로드한 Pocket Nova v3 기반 BoardMate 27턴 솔로 모드입니다.</p><span class="save-badge">💾 로컬 자동 저장</span><a class="primary link-btn" href="./solo-pocketnova.html">1인플 시작</a></article>
     <article class="library-card thegame"><div class="library-icon">🃏</div><h2>더 게임</h2><p>업로드한 HTML로 1인 솔로 플레이. ±10 되돌리기 규칙을 지원합니다.</p><span class="save-badge">💾 로컬 자동 저장</span><a class="primary link-btn" href="./solo-thegame.html">솔로 플레이</a></article>
   </section>`);
   document.querySelector('#backHome').onclick=()=>location.hash='#/';

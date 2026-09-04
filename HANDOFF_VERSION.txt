@@ -1,3 +1,6 @@
-BoardMate Arcade v11.1 handoff
-Date: 2026-09-04
-Changes: Pentorini reverted to v10 behavior; create_boardmate_room_v8 RPC repair + v7 frontend fallback; previous v11 Calico/Cascadia/cancel/포크노바 changes retained.
+v11.3
+2026-09-04
+- Pocket Nova v3 supplied source replaced the Forknova core.
+- Forknova added to 1-player library with BoardMate 27-turn solo + local resume.
+- Forknova online bridge updated to state kind pocketnova-v3-boardmate.
+- No DB/SQL changes in v11.3; room creation and cancellation already confirmed working.

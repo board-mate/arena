@@ -3,7 +3,7 @@
 // ============================================================================
 import { actionCardDef, currentPlayer, nextPlayer, rebuildIconCounts } from './state.js';
 import * as Board from './board.js';
-import { resolveAbility } from './abilities.js';
+import { resolveAbility, triggerSponsorOnAnimalPlaced, computeSponsorBreakIncome, computeSponsorBreakXTokens } from './abilities.js';
 import {
   MAX_X_TOKENS, appealIncome, conservationTarget, SCORING_AREA_WINDOW,
   HAND_LIMIT_WITH_UNIVERSITY, CONSERVATION_BONUSES, donationCost,
@@ -180,11 +180,15 @@ export function resolveAnimals(game, player, { side, plays, xTokens = 0, ctx = {
     removeFromHandOrDisplay(game, player, card, play.fromHand);
     rebuildIconCounts(player);
 
-    // 능력 처리
+    // 동물 카드 자체 능력 처리
     if (card.abilityKey) {
       const result = resolveAbility(game, player, card, ctx);
       if (result) logs.push(result);
     }
+
+    // 스폰서 트리거: 동물 배치 시 발동하는 스폰서 능력 처리
+    const sponsorLogs = triggerSponsorOnAnimalPlaced(game, player, card);
+    logs.push(...sponsorLogs);
 
     pushLog(game, `${player.name}: ${card.name} 포획 (매력도+${card.appeal || 0})`);
   }
@@ -388,9 +392,8 @@ export function resolveXToken(game, player, actionType) {
 
 // ════════════════════════════════════════════════════ TURN END ════
 export function endTurn(game) {
-  // Ark Nova 공식 1인플: 7+6+5+4+3+2 = 총 27턴.
-  // 각 라운드 마지막 턴 뒤 Break를 처리하고 토큰 하나를 기부 칸에 막아 둡니다.
-  // 마지막 2턴 뒤에는 Break 없이 바로 최종 점수 계산으로 갑니다.
+  // BoardMate 1인플: 7+6+5+4+3+2 = 총 27턴.
+  // 각 라운드 마지막 턴 뒤 Break를 처리하고, 마지막 2턴 뒤에는 바로 점수 계산으로 갑니다.
   if (game.solo?.enabled) {
     if (game.phase !== 'playing') return;
     game.solo.turnsRemaining = Math.max(0, Number(game.solo.turnsRemaining || 0) - 1);
@@ -400,7 +403,6 @@ export function endTurn(game) {
         pushLog(game, '🏁 솔로 27턴 종료 — 최종 점수를 계산합니다.');
         return;
       }
-      // 공식 솔로 규칙: Break 시작 때 가장 낮은 비어 있는 기부 칸을 하나 막습니다.
       game.associationBoard.donationsFilled = Math.min(8, Number(game.associationBoard.donationsFilled || 0) + 1);
       runBreak(game);
       game.solo.tokensRemaining = Math.max(2, Number(game.solo.tokensRemaining || 7) - 1);
@@ -427,8 +429,6 @@ export function endTurn(game) {
 
 // ══════════════════════════════════════════════════════ BREAK ════
 function advanceBreakToken(game, steps) {
-  // 공식 1인플에서는 Break 토큰을 사용하지 않습니다.
-  // 카드 효과로 Break를 전진시키더라도 트랙은 움직이지 않습니다.
   if (game.solo?.enabled) return;
   game.breakTrack.position = Math.min(game.breakTrack.length, game.breakTrack.position + steps);
 }
@@ -459,11 +459,13 @@ export function runBreak(game) {
   for (const player of game.players) {
     const income = appealIncome(player.appeal);
     const kioskIncome = computeKioskIncome(game, player);
-    const sponsorIncome = player.playedSponsors.reduce((s, c) => {
-      return c.abilityKey === 'income_per_break' ? s + (c.abilityAmount || 0) : s;
-    }, 0);
+    const sponsorIncome = computeSponsorBreakIncome(player);
+    const sponsorXTokens = computeSponsorBreakXTokens(player);
     player.money += income + kioskIncome + sponsorIncome;
-    pushLog(game, `${player.name}: 수입 ${income}원(매력도) + ${kioskIncome}원(매점) + ${sponsorIncome}원(스폰서)`);
+    if (sponsorXTokens > 0) {
+      player.xTokens = Math.min(MAX_X_TOKENS, player.xTokens + sponsorXTokens);
+    }
+    pushLog(game, `${player.name}: 수입 ${income}원(매력도) + ${kioskIncome}원(매점) + ${sponsorIncome}원(스폰서)${sponsorXTokens ? ` + X토큰 +${sponsorXTokens}` : ''}`);
   }
 
   // F15 동적 타일 추가
@@ -472,7 +474,7 @@ export function runBreak(game) {
   }
 
   // 6. 일반 게임은 휴식 트랙 초기화 + 발동자 X-토큰.
-  // 공식 1인플은 이 단계를 수행하지 않습니다.
+  // BoardMate 솔로는 Break 트랙/X-토큰 보너스를 쓰지 않습니다.
   game.breakTrack.position = 0;
   const p = currentPlayer(game);
   if (game.solo?.enabled) {
@@ -567,11 +569,125 @@ export function computeFinalScores(game) {
 function evaluateFinalScoringCard(game, player, fc) {
   if (!fc) return 0;
   let val = 0;
-  if (fc.id === 'fs_masterball') val = player.playedAnimals.filter(a => a.enclosureSize >= 4).length;
-  else if (fc.id === 'fs_monsterball') val = player.playedAnimals.filter(a => a.enclosureSize <= 2).length;
-  else if (fc.id === 'fs_contacts') val = player.playedSponsors.length;
-  else return 0;
+
+  // ── 자동 집계 카드 ──────────────────────────────────────────
+  if (fc.id === 'fs_masterball') {
+    val = player.playedAnimals.filter(a => (a.enclosureSize || 0) >= 4).length;
+  } else if (fc.id === 'fs_monsterball') {
+    val = player.playedAnimals.filter(a => (a.enclosureSize || 1) <= 2).length;
+  } else if (fc.id === 'fs_contacts') {
+    val = player.playedSponsors.length;
+
+  // ── 낚싯대: 물 칸에 인접한 건물 수 ─────────────────────────
+  } else if (fc.id === 'fs_fishingrod') {
+    const counted = new Set();
+    for (const [k, b] of player.zooBuildings) {
+      if (b.kind === 'enclosure' || b.kind === 'reptileHouse' ||
+          b.kind === 'largeBirdAviary' || b.kind === 'pettingZoo') {
+        const cells = b.cells || [{ q: parseInt(k.split(',')[0]), r: parseInt(k.split(',')[1]) }];
+        const { water } = Board.adjacentWaterRockCounts(game.map, cells);
+        if (water > 0 && !counted.has(k)) { val++; counted.add(k); }
+      }
+    }
+
+  // ── 자전거: 바위 칸에 인접한 건물 수 ───────────────────────
+  } else if (fc.id === 'fs_bicycle') {
+    const counted = new Set();
+    for (const [k, b] of player.zooBuildings) {
+      if (b.kind === 'enclosure' || b.kind === 'reptileHouse' ||
+          b.kind === 'largeBirdAviary' || b.kind === 'pettingZoo') {
+        const cells = b.cells || [{ q: parseInt(k.split(',')[0]), r: parseInt(k.split(',')[1]) }];
+        const { rock } = Board.adjacentWaterRockCounts(game.map, cells);
+        if (rock > 0 && !counted.has(k)) { val++; counted.add(k); }
+      }
+    }
+
+  // ── 지도: 빈 칸 수 (건물 없는 EMPTY 타일) ──────────────────
+  } else if (fc.id === 'fs_map') {
+    val = game.map.tiles.filter(t =>
+      t.type === 'empty' && !player.zooBuildings.has(Board.key(t.q, t.r))
+    ).length;
+
+  // ── 이상한 알: 알 아이콘 수 ────────────────────────────────
+  } else if (fc.id === 'fs_mysteryegg') {
+    val = (player.iconCounts || {})['egg'] || 0;
+
+  // ── 포켓머신: 전설 카드 위 토큰 수 ────────────────────────
+  } else if (fc.id === 'fs_pokemachine') {
+    val = game.conservationProjectsInPlay.reduce((s, p) => {
+      return s + (p.claimedTiers?.filter(t => t.playerId === player.id).length || 0);
+    }, 0);
+    val += game.baseConservationProjects.reduce((s, p) => {
+      return s + (p.claimedTiers?.filter(t => t.playerId === player.id).length || 0);
+    }, 0);
+
+  // ── 포케 도감: 오른쪽 플레이어보다 많은 포켓몬 타입 수 ────
+  } else if (fc.id === 'fs_pokedex') {
+    const idx = game.players.findIndex(p => p.id === player.id);
+    const rightPlayer = game.players[(idx + 1) % game.players.length];
+    const myTypes = new Set(player.playedAnimals.map(a => a.type || (a.types && a.types[0])).filter(Boolean));
+    const theirTypes = new Set(rightPlayer.playedAnimals.map(a => a.type || (a.types && a.types[0])).filter(Boolean));
+    let diff = 0;
+    for (const t of myTypes) { if (!theirTypes.has(t)) diff++; }
+    val = Math.min(4, diff);
+    return val; // 포케 도감은 thresholds 없이 직접 점수
+
+  // ── 학습 장치: 체크리스트 (4개 조건 각 1점) ───────────────
+  } else if (fc.id === 'fs_learningdevice') {
+    val = computeLearningDeviceScore(game, player);
+    return Math.min(4, val);
+
+  // ── 다우징 머신: 지식 트랙 (미구현, 0점) ───────────────────
+  } else if (fc.id === 'fs_dowsing') {
+    val = 0; // 지식 트랙 미구현 → 항상 0
+  }
+
+  // 공통 thresholds/rewards 계산
   let best = 0;
   (fc.thresholds || []).forEach((t, i) => { if (val >= t) best = fc.rewards?.[i] ?? 0; });
   return Math.min(4, best);
+}
+
+// 학습 장치 체크리스트 계산
+function computeLearningDeviceScore(game, player) {
+  let score = 0;
+
+  // 1. 물 칸 모두 연결
+  const waterTiles = game.map.tiles.filter(t => t.type === 'water');
+  if (waterTiles.length > 0 && areTilesConnected(game.map, waterTiles)) score++;
+
+  // 2. 바위 칸 모두 연결
+  const rockTiles = game.map.tiles.filter(t => t.type === 'rock');
+  if (rockTiles.length > 0 && areTilesConnected(game.map, rockTiles)) score++;
+
+  // 3. 가장자리 칸 모두 덮음 (edge tiles all covered by buildings)
+  const edgeTiles = game.map.tiles.filter(t =>
+    t.type === 'empty' && Board.isBorderSpace(game.map, t.q, t.r));
+  if (edgeTiles.length > 0 && edgeTiles.every(t => player.zooBuildings.has(Board.key(t.q, t.r)))) score++;
+
+  // 4. 빈 칸 모두 덮음
+  const buildableTiles = game.map.tiles.filter(t => t.type === 'empty');
+  if (buildableTiles.length > 0 && buildableTiles.every(t => player.zooBuildings.has(Board.key(t.q, t.r)))) score++;
+
+  return score;
+}
+
+// 타일 연결 여부 (BFS)
+function areTilesConnected(map, tiles) {
+  if (tiles.length <= 1) return true;
+  const tileSet = new Set(tiles.map(t => Board.key(t.q, t.r)));
+  const visited = new Set();
+  const queue = [tiles[0]];
+  visited.add(Board.key(tiles[0].q, tiles[0].r));
+  while (queue.length) {
+    const { q, r } = queue.shift();
+    for (const n of Board.neighbors(q, r)) {
+      const k = Board.key(n.q, n.r);
+      if (!visited.has(k) && tileSet.has(k)) {
+        visited.add(k);
+        queue.push(n);
+      }
+    }
+  }
+  return visited.size === tiles.length;
 }

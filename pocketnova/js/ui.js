@@ -14,7 +14,13 @@ const root = document.getElementById('app');
 const network = createNetworkAdapter();
 const QUERY = new URLSearchParams(location.search);
 const IS_SOLO = QUERY.get('solo') === '1';
-const SOLO_SAVE_KEY = 'boardmate:pocketnova:solo:v1';
+const IS_ONLINE = QUERY.get('online') === '1' && window.parent !== window;
+const ONLINE_SEAT = Number.isFinite(Number(QUERY.get('seat'))) ? Number(QUERY.get('seat')) : -1;
+const ONLINE_HOST = QUERY.get('host') === '1';
+let ONLINE_NAMES = [];
+try { ONLINE_NAMES = JSON.parse(QUERY.get('names') || '[]'); } catch {}
+const SOLO_SAVE_KEY = 'boardmate:pocketnova:solo:v3';
+let resultPublished = false;
 
 let game = null;
 let ui = {
@@ -67,6 +73,7 @@ function clearSoloGame() { if (IS_SOLO) localStorage.removeItem(SOLO_SAVE_KEY); 
 function render(node) { root.innerHTML=''; root.appendChild(node); }
 function rerender() {
   if (game) {
+    if (IS_ONLINE) ui.viewPlayerId = currentPlayer(game)?.id || ui.viewPlayerId;
     saveSoloGame();
     render(game.phase==='scoring' ? scoreView() : mainView());
     network.publish?.(game);
@@ -75,9 +82,26 @@ function rerender() {
 
 // ───────────────────────── SETUP SCREEN ──────────────────────
 export function startSetupScreen() {
+  if (IS_ONLINE) {
+    network.onRemoteUpdate?.(incoming => {
+      if (!incoming?.players?.length) return;
+      game = incoming;
+      ui.viewPlayerId = currentPlayer(game)?.id || game.players[Math.max(0,ONLINE_SEAT)]?.id || game.players[0]?.id;
+      closeModal();
+      render(game.phase==='scoring' ? scoreView() : mainView());
+    });
+    if (!ONLINE_HOST) { render(onlineWaitingView()); return; }
+  }
   const saved = loadSoloGame();
   if (saved?.solo?.enabled) { render(soloResumeView(saved)); return; }
   render(setupView());
+}
+
+function onlineWaitingView() {
+  const wrap=el('div',{class:'setup-screen'});
+  wrap.appendChild(el('h1',{},'⚡ 포크노바 · 온라인'));
+  wrap.appendChild(el('p',{},'방장이 게임을 준비하고 있습니다. 준비가 끝나면 자동으로 같은 게임 상태가 표시됩니다.'));
+  return wrap;
 }
 
 function soloResumeView(saved) {
@@ -92,10 +116,10 @@ function soloResumeView(saved) {
 
 function setupView() {
   const wrap = el('div', { class:'setup-screen' });
-  wrap.appendChild(el('h1', {}, IS_SOLO ? '⚡ 포크노바 · 1인플' : '⚡ 포크노바'));
-  wrap.appendChild(el('p', {}, IS_SOLO ? '아크노바 공식 1인플 방식 · 27턴 안에 매력도와 보존 점수 트랙을 교차시키세요.' : '아크노바 × 포켓몬 리스킨 — 로컬 hotseat'));
+  wrap.appendChild(el('h1', {}, IS_SOLO ? '⚡ 포크노바 · 1인플' : IS_ONLINE ? '⚡ 포크노바 · 온라인 설정' : '⚡ 포크노바'));
+  wrap.appendChild(el('p', {}, IS_SOLO ? 'BoardMate 27턴 솔로 모드 · 매력도와 보존 점수 트랙을 교차시키세요.' : IS_ONLINE ? '방장이 초기 설정과 시작 손패 드래프트를 진행합니다.' : '아크노바 × 포켓몬 리스킨 — 로컬 hotseat'));
 
-  let count = IS_SOLO ? 1 : 3;
+  let count = IS_SOLO ? 1 : IS_ONLINE ? Math.max(2, ONLINE_NAMES.length || 2) : 3;
   const nameInputs = el('div', { class:'player-inputs' });
 
   function renderNameInputs() {
@@ -103,15 +127,17 @@ function setupView() {
     for (let i=0; i<count; i++) {
       nameInputs.appendChild(el('input', {
         placeholder:`트레이너 ${i+1}`, 'data-idx':i,
+        ...(IS_ONLINE?{value:ONLINE_NAMES[i] || `트레이너 ${i+1}`,disabled:''}:{})
       }));
     }
   }
 
+  const countOptions = IS_SOLO ? [1] : IS_ONLINE ? [count] : [2,3,4];
   const countSel = el('select', {
     onchange: e => { count=Number(e.target.value); renderNameInputs(); },
-    ...(IS_SOLO?{disabled:''}:{})
-  }, (IS_SOLO?[1]:[2,3,4]).map(n =>
-    el('option', { value:n, ...((IS_SOLO||n===3)?{selected:''}:{}) }, IS_SOLO?'1명 · 공식 솔로':`${n}명`)
+    ...((IS_SOLO||IS_ONLINE)?{disabled:''}:{})
+  }, countOptions.map(n =>
+    el('option', { value:n, ...((IS_SOLO||IS_ONLINE||n===3)?{selected:''}:{}) }, IS_SOLO?'1명 · 27턴 솔로':`${n}명`)
   ));
 
   const mapSel = el('select', {},
@@ -141,7 +167,6 @@ function setupView() {
     const soloAppeal = IS_SOLO ? Number(document.querySelector('#solo-difficulty')?.value || 20) : 20;
     game = createGame({ playerNames:names, mapId, solo:IS_SOLO, soloAppeal });
     ui.viewPlayerId = currentPlayer(game).id;
-    // F13 특수: 시작 매점 설정
     setupStarterKiosk();
     startDraftPhase();
   }));
@@ -218,7 +243,8 @@ function showDraftModal(player, onDone) {
 
 // ───────────────────────── MAIN VIEW ────────────────────────
 function mainView() {
-  const shell = el('div', { class:'app-shell' });
+  const readOnly = IS_ONLINE && ONLINE_SEAT >= 0 && ONLINE_SEAT !== Number(game.currentPlayerIndex);
+  const shell = el('div', { class:`app-shell${readOnly?' online-readonly':''}` });
   shell.appendChild(topbar());
   const left = el('div');
   left.appendChild(playerSection());
@@ -236,15 +262,12 @@ function topbar() {
   const target = conservationTarget(p.conservation);
   const pct = Math.min(100, Math.abs(p.appeal-target) > 0
     ? (p.appeal/target*100).toFixed(0) : 100);
+  const indicator = game.solo?.enabled
+    ? [`솔로 ${game.solo.round}/6 · `, el('b',{},`${Math.min(game.turnNumber,27)}/27턴`), ` · 이번 라운드 ${game.solo.turnsRemaining}턴 남음`]
+    : [`턴 ${game.turnNumber} · `, el('b',{},p.name), ` 차례`, ` | 휴식트랙: ${game.breakTrack.position}/${game.breakTrack.length}`, ...(IS_ONLINE&&ONLINE_SEAT!==game.currentPlayerIndex?[' · 보기 전용']:[])];
   return el('div', { class:'topbar' }, [
     el('div', { class:'brand' }, ['⚡ 포크노바', el('small',{},'× 아크노바 리테마')]),
-    el('div', { class:'turn-indicator' }, game.solo?.enabled ? [
-      `솔로 ${game.solo.round}/6 · `, el('b',{},`${Math.min(game.turnNumber,27)}/27턴`),
-      ` · 이번 라운드 ${game.solo.turnsRemaining}턴 남음`,
-    ] : [
-      `턴 ${game.turnNumber} · `, el('b',{},p.name), ` 차례`,
-      ` | 휴식트랙: ${game.breakTrack.position}/${game.breakTrack.length}`,
-    ]),
+    el('div', { class:'turn-indicator' }, indicator),
   ]);
 }
 
@@ -259,7 +282,7 @@ function playerSection() {
     tabs.appendChild(el('div', {
       class:`player-tab${p.id===ui.viewPlayerId?' active':''}`,
       style:`background:${p.color}22;border-color:${p.id===ui.viewPlayerId?p.color:'transparent'}`,
-      onclick: () => { ui.viewPlayerId=p.id; rerender(); },
+      onclick: () => { if (IS_ONLINE) return; ui.viewPlayerId=p.id; rerender(); },
     }, [
       p.name,
       p.id===currentPlayer(game).id ? ' 🔷' : '',
@@ -716,7 +739,7 @@ function showAnimalsModal(side, eff) {
         Engine.resolveAnimals(game, player, { side, plays, xTokens:ui.pendingXTokens });
         Engine.checkAndRunBreak(game);
         closeModal(); ui.activeAction=null; ui.pendingXTokens=0;
-        rerender();
+        checkAndHandlePendingEffects(player, rerender);
       } catch(e) { alert(e.message); }
     }),
     btn('취소', closeModal, 'btn btn-secondary'),
@@ -867,7 +890,7 @@ function showSponsorsModal(side, eff) {
         });
         Engine.checkAndRunBreak(game);
         closeModal(); ui.activeAction=null; ui.pendingXTokens=0;
-        rerender();
+        checkAndHandlePendingEffects(player, rerender);
       } catch(e) { alert(e.message); }
     }),
     btn('💰 휴식 전진+돈', () => {
@@ -953,11 +976,11 @@ function endTurnPanel() {
 
   wrap.appendChild(el('div', { style:'margin-bottom:10px;' }, [
     el('p',{style:'font-size:12px;color:#aaa;'},`현재 차례: ${cp.name}`),
-    el('p',{style:'font-size:11px;color:#666;'},
-      game.solo?.enabled ? `공식 솔로: 라운드 ${game.solo.round}/6 · 이번 라운드 ${game.solo.turnsRemaining}턴 남음 · 전체 ${Math.min(game.turnNumber,27)}/27턴` : `휴식 트랙: ${game.breakTrack.position} / ${game.breakTrack.length}`),
+    el('p',{style:'font-size:11px;color:#666;'}, game.solo?.enabled
+      ? `27턴 솔로: 라운드 ${game.solo.round}/6 · 이번 라운드 ${game.solo.turnsRemaining}턴 남음 · 전체 ${Math.min(game.turnNumber,27)}/27턴`
+      : `휴식 트랙: ${game.breakTrack.position} / ${game.breakTrack.length}`),
   ]));
 
-  // 일반 게임 휴식 트랙 / 공식 솔로 턴 카운트 시각화
   const btVis = el('div', { class:'break-track-vis' });
   const visLen = game.solo?.enabled ? game.solo.tokensRemaining : game.breakTrack.length;
   const filled = game.solo?.enabled ? (game.solo.tokensRemaining-game.solo.turnsRemaining) : game.breakTrack.position;
@@ -975,6 +998,7 @@ function endTurnPanel() {
     ui.pendingXTokens = 0;
     ui.selectedHexes = [];
     if (game.phase==='scoring') {
+      if (IS_ONLINE) network.publish?.(game);
       render(scoreView());
     } else {
       rerender();
@@ -1079,27 +1103,375 @@ function closeModal() {
   if (ui.modal) { ui.modal.remove(); ui.modal=null; }
 }
 
+// ══════════════════════════════════════════════════════════════
+// ★ _pendingAfterFinishing 효과 처리 — 동물카드 12장 모달
+// ══════════════════════════════════════════════════════════════
+
+function checkAndHandlePendingEffects(player, onDone) {
+  if (!player._pendingAfterFinishing || !player._pendingAfterFinishing.length) {
+    onDone();
+    return;
+  }
+  const effect = player._pendingAfterFinishing.shift();
+  switch (effect.type) {
+    case 'mischief':
+      showMischiefModal(player, effect, () => checkAndHandlePendingEffects(player, onDone));
+      break;
+    case 'free_kiosk_pavilion':
+    case 'free_special_build':
+      showFreeBuildModal(player, effect, () => checkAndHandlePendingEffects(player, onDone));
+      break;
+    case 'mood':
+      showMoodModal(player, effect, () => checkAndHandlePendingEffects(player, onDone));
+      break;
+    case 'effort':
+      showEffortModal(player, effect, () => checkAndHandlePendingEffects(player, onDone));
+      break;
+    case 'copycat':
+      showCopycatModal(player, effect, () => checkAndHandlePendingEffects(player, onDone));
+      break;
+    case 'trade_hand_for_card':
+      showTradeModal(player, effect, () => checkAndHandlePendingEffects(player, onDone));
+      break;
+    case 'pick_final_scoring':
+      showPickFinalScoringModal(player, effect, () => checkAndHandlePendingEffects(player, onDone));
+      break;
+    default:
+      // 알 수 없는 타입 → 스킵
+      checkAndHandlePendingEffects(player, onDone);
+  }
+}
+
+// ── 개구쟁이: 필드에서 카드 1장 가져오기 ─────────────────────
+function showMischiefModal(player, effect, onDone) {
+  let chosen = null;
+  const body = el('div');
+  body.appendChild(el('p', { style: 'color:#f39c12;margin-bottom:8px;' },
+    `${effect.card.name} [개구쟁이]: 필드에서 카드 1장을 손으로 가져옵니다.`));
+
+  const row = el('div', { class: 'display-row' });
+  game.display.forEach(c => {
+    const card = renderCard(c, { compact: true });
+    card.onclick = () => {
+      chosen = c;
+      row.querySelectorAll('.zoo-card').forEach(e => e.classList.remove('selected-card'));
+      card.classList.add('selected-card');
+    };
+    row.appendChild(card);
+  });
+  if (!game.display.length) {
+    body.appendChild(el('p', { style: 'color:#aaa;' }, '필드가 비어 있습니다.'));
+  }
+  body.appendChild(row);
+
+  showModal('개구쟁이 — 필드 카드 선택', body, [
+    btn('가져오기', () => {
+      if (!chosen) { alert('카드를 선택하세요.'); return; }
+      const i = game.display.indexOf(chosen);
+      if (i >= 0) game.display.splice(i, 1);
+      player.hand.push(chosen);
+      // 필드 보충
+      while (game.display.length < 6 && game.deck.length) game.display.push(game.deck.shift());
+      closeModal(); rerender(); onDone();
+    }),
+    btn('건너뛰기', () => { closeModal(); rerender(); onDone(); }, 'btn btn-secondary'),
+  ]);
+}
+
+// ── 내구/신중: 무료 건물 건설 모달 ──────────────────────────
+function showFreeBuildModal(player, effect, onDone) {
+  const isFreeSpecial = effect.type === 'free_special_build';
+  const title = isFreeSpecial
+    ? `${effect.card.name} [신중] — 대습지초원 무료 건설`
+    : `${effect.card.name} [내구] — 매점/파빌리온 무료 건설`;
+
+  const body = el('div');
+  body.appendChild(el('p', { style: 'color:#f39c12;margin-bottom:8px;' },
+    isFreeSpecial
+      ? '지도에서 5칸을 선택해 대습지초원을 무료로 건설합니다.'
+      : '지도에서 위치를 선택해 매점 또는 파빌리온을 무료로 건설합니다.'));
+
+  if (!isFreeSpecial) {
+    // 매점 vs 파빌리온 선택
+    let buildKind = 'kiosk';
+    const kindRow = el('div', { style: 'margin-bottom:8px;display:flex;gap:6px;' });
+    ['kiosk', 'pavilion'].forEach(k => {
+      const b = btn(k === 'kiosk' ? '매점' : '파빌리온', () => {
+        buildKind = k;
+        kindRow.querySelectorAll('button').forEach(b2 => b2.classList.remove('active'));
+        b.classList.add('active');
+      }, 'btn btn-sm');
+      if (k === 'kiosk') b.classList.add('active');
+      kindRow.appendChild(b);
+    });
+    body.appendChild(kindRow);
+    body.appendChild(el('p', { style: 'font-size:11px;color:#aaa;' },
+      '위치 선택 후 지도에서 클릭하세요. (현재 버전: 아무 빈 칸에 즉시 건설)'));
+
+    showModal(title, body, [
+      btn('빈 칸에 즉시 건설', () => {
+        // 빈 칸 자동 선택 (첫 번째 빈 EMPTY 타일)
+        const emptyTile = game.map.tiles.find(t =>
+          t.type === 'empty' && !player.zooBuildings.has(`${t.q},${t.r}`));
+        if (!emptyTile) { alert('건설 가능한 빈 칸이 없습니다.'); return; }
+        try {
+          // 무료 건설: 비용 선지급 후 건설
+          player.money += 2; // 매점/파빌리온 size=1, costPerSpace=2
+          Engine.resolveBuild(game, player, {
+            side: player.actionSlots.find(s => s.actionType === 'build')?.side || 'I',
+            buildings: [{ kind: buildKind, cells: [{ q: emptyTile.q, r: emptyTile.r }] }],
+            xTokens: 0,
+          });
+        } catch {
+          player.money -= 2; // 실패 시 환불
+        }
+        closeModal(); rerender(); onDone();
+      }),
+      btn('건너뛰기', () => { closeModal(); rerender(); onDone(); }, 'btn btn-secondary'),
+    ]);
+  } else {
+    // largeBirdAviary: 5칸 자동 (연속된 빈 칸 5개)
+    body.appendChild(el('p', { style: 'font-size:11px;color:#aaa;' },
+      '빈 칸이 5개 이상 있으면 자동 배치됩니다.'));
+    showModal(title, body, [
+      btn('자동 배치', () => {
+        const emptyTiles = game.map.tiles.filter(t =>
+          t.type === 'empty' && !player.zooBuildings.has(`${t.q},${t.r}`));
+        if (emptyTiles.length < 5) { alert('빈 칸이 5개 이상 필요합니다.'); closeModal(); onDone(); return; }
+        const cells = emptyTiles.slice(0, 5);
+        try {
+          player.money += 10; // size=5, costPerSpace=2
+          Engine.resolveBuild(game, player, {
+            side: player.actionSlots.find(s => s.actionType === 'build')?.side || 'I',
+            buildings: [{ kind: 'largeBirdAviary', cells }],
+            xTokens: 0,
+          });
+        } catch { player.money -= 10; }
+        closeModal(); rerender(); onDone();
+      }),
+      btn('건너뛰기', () => { closeModal(); rerender(); onDone(); }, 'btn btn-secondary'),
+    ]);
+  }
+}
+
+// ── 변덕: 도움 카드를 슬롯 1 또는 5에 배치 ──────────────────
+function showMoodModal(player, effect, onDone) {
+  const body = el('div');
+  body.appendChild(el('p', { style: 'color:#f39c12;margin-bottom:8px;' },
+    `${effect.card.name} [변덕]: 행동 카드를 슬롯 1 또는 5에 배치합니다.`));
+
+  const actionNames = player.actionSlots.map((s, i) =>
+    `${i + 1}번 슬롯 — ${s.actionType} (${s.side}면)`);
+
+  const btnRow = el('div', { style: 'display:flex;flex-direction:column;gap:4px;' });
+  [0, 4].forEach(slotIdx => {
+    if (slotIdx < player.actionSlots.length) {
+      btnRow.appendChild(btn(`슬롯 ${slotIdx + 1}에 배치: ${actionNames[slotIdx]}`, () => {
+        // 현재 sponsors 카드를 해당 슬롯으로 이동
+        const sponsorsIdx = player.actionSlots.findIndex(s => s.actionType === 'sponsors');
+        if (sponsorsIdx >= 0) {
+          const [moved] = player.actionSlots.splice(sponsorsIdx, 1);
+          player.actionSlots.splice(slotIdx, 0, moved);
+        }
+        closeModal(); rerender(); onDone();
+      }, 'btn btn-blue'));
+    }
+  });
+  body.appendChild(btnRow);
+
+  showModal('변덕 — 행동 카드 슬롯 배치', body, [
+    btn('건너뛰기', () => { closeModal(); rerender(); onDone(); }, 'btn btn-secondary'),
+  ]);
+}
+
+// ── 노력: 아무 행동 카드를 슬롯 1에 배치 ────────────────────
+function showEffortModal(player, effect, onDone) {
+  const body = el('div');
+  body.appendChild(el('p', { style: 'color:#f39c12;margin-bottom:8px;' },
+    `${effect.card.name} [노력]: 아무 행동 카드를 슬롯 1에 배치합니다.`));
+
+  const btnRow = el('div', { style: 'display:flex;flex-direction:column;gap:4px;' });
+  player.actionSlots.forEach((s, i) => {
+    btnRow.appendChild(btn(`${s.actionType} (현재 슬롯 ${i + 1}) → 슬롯 1로`, () => {
+      const [moved] = player.actionSlots.splice(i, 1);
+      player.actionSlots.unshift(moved);
+      closeModal(); rerender(); onDone();
+    }, 'btn btn-blue'));
+  });
+  body.appendChild(btnRow);
+
+  showModal('노력 — 행동 카드 슬롯 1 배치', body, [
+    btn('건너뛰기', () => { closeModal(); rerender(); onDone(); }, 'btn btn-secondary'),
+  ]);
+}
+
+// ── 깔짝: 매력도 1위 플레이어의 슬롯1~N 행동 중 1개 사용 ────
+function showCopycatModal(player, effect, onDone) {
+  const leader = effect.leader;
+  const maxSlot = effect.maxSlot || 3;
+  const body = el('div');
+  body.appendChild(el('p', { style: 'color:#f39c12;margin-bottom:8px;' },
+    `${effect.card.name} [깔짝]: ${leader.name}의 슬롯1~${maxSlot} 행동 중 1개 사용`));
+
+  const availableSlots = leader.actionSlots.slice(0, maxSlot);
+  const btnRow = el('div', { style: 'display:flex;flex-direction:column;gap:4px;' });
+  availableSlots.forEach((s, i) => {
+    btnRow.appendChild(btn(`${leader.name}의 슬롯 ${i + 1}: ${s.actionType} (${s.side}면)`, () => {
+      closeModal();
+      // 해당 액션을 현재 플레이어가 수행
+      showActionModal(s.actionType, s.side, i + 1);
+      onDone();
+    }, 'btn btn-blue'));
+  });
+  body.appendChild(btnRow);
+
+  showModal('깔짝 — 리더 행동 카드 사용', body, [
+    btn('건너뛰기', () => { closeModal(); rerender(); onDone(); }, 'btn btn-secondary'),
+  ]);
+}
+
+// ── 출랑: 손패 버리고 필드/덱에서 1장 획득 ──────────────────
+function showTradeModal(player, effect, onDone) {
+  const remaining = effect.remaining || 1;
+  if (remaining <= 0 || player.hand.length === 0) { rerender(); onDone(); return; }
+
+  let chosen = null;
+  const body = el('div');
+  body.appendChild(el('p', { style: 'color:#f39c12;margin-bottom:8px;' },
+    `${effect.card.name} [출랑]: 손패 1장을 버리고 필드 또는 덱에서 1장을 가져옵니다. (남은 횟수: ${remaining})`));
+
+  // 버릴 카드 선택
+  body.appendChild(el('p', { style: 'font-size:11px;color:#aaa;' }, '버릴 카드:'));
+  let discardTarget = null;
+  const handRow = el('div', { class: 'hand-grid' });
+  player.hand.forEach(c => {
+    const card = renderCard(c, { compact: true });
+    card.onclick = () => {
+      discardTarget = c;
+      handRow.querySelectorAll('.zoo-card').forEach(e => e.classList.remove('selected-card'));
+      card.classList.add('selected-card');
+    };
+    handRow.appendChild(card);
+  });
+  body.appendChild(handRow);
+
+  // 필드에서 가져올 카드 선택
+  body.appendChild(el('p', { style: 'font-size:11px;color:#aaa;margin-top:8px;' }, '가져올 카드 (필드):'));
+  let pickTarget = null;
+  const dispRow = el('div', { class: 'display-row' });
+  game.display.forEach(c => {
+    const card = renderCard(c, { compact: true });
+    card.onclick = () => {
+      pickTarget = c;
+      dispRow.querySelectorAll('.zoo-card').forEach(e => e.classList.remove('selected-card'));
+      card.classList.add('selected-card');
+    };
+    dispRow.appendChild(card);
+  });
+  body.appendChild(dispRow);
+
+  showModal('출랑 — 카드 교환', body, [
+    btn('덱에서 뽑기', () => {
+      if (!discardTarget) { alert('버릴 카드를 선택하세요.'); return; }
+      const i = player.hand.indexOf(discardTarget);
+      if (i >= 0) { game.discard.push(player.hand.splice(i, 1)[0]); }
+      if (game.deck.length) player.hand.push(game.deck.shift());
+      closeModal(); rerender();
+      if (remaining - 1 > 0) {
+        checkAndHandlePendingEffects(player, onDone);
+      } else { onDone(); }
+    }),
+    btn('필드에서 가져오기', () => {
+      if (!discardTarget || !pickTarget) { alert('버릴 카드와 가져올 카드를 모두 선택하세요.'); return; }
+      const di = player.hand.indexOf(discardTarget);
+      if (di >= 0) { game.discard.push(player.hand.splice(di, 1)[0]); }
+      const pi = game.display.indexOf(pickTarget);
+      if (pi >= 0) {
+        player.hand.push(game.display.splice(pi, 1)[0]);
+        while (game.display.length < 6 && game.deck.length) game.display.push(game.deck.shift());
+      }
+      closeModal(); rerender();
+      if (remaining - 1 > 0) {
+        checkAndHandlePendingEffects(player, onDone);
+      } else { onDone(); }
+    }, 'btn btn-blue'),
+    btn('건너뛰기', () => { closeModal(); rerender(); onDone(); }, 'btn btn-secondary'),
+  ]);
+}
+
+// ── 의젓: 최종점수카드 2장 중 1장 선택 ──────────────────────
+function showPickFinalScoringModal(player, effect, onDone) {
+  const options = effect.options || [];
+  if (!options.length) { rerender(); onDone(); return; }
+
+  let chosen = null;
+  const body = el('div');
+  body.appendChild(el('p', { style: 'color:#f39c12;margin-bottom:8px;' },
+    `${effect.card.name} [의젓]: 최종점수 카드 ${options.length}장 중 1장을 선택합니다.`));
+
+  const row = el('div', { style: 'display:flex;gap:8px;flex-wrap:wrap;' });
+  options.forEach(fc => {
+    const card = el('div', {
+      class: 'zoo-card kind-finalscoring',
+      style: 'cursor:pointer;padding:8px;min-width:120px;',
+      onclick: () => {
+        chosen = fc;
+        row.querySelectorAll('.zoo-card').forEach(e => e.classList.remove('selected-card'));
+        card.classList.add('selected-card');
+      },
+    }, [
+      el('div', { class: 'card-name' }, fc.name),
+      el('div', { style: 'font-size:10px;color:#aaa;margin-top:4px;' }, fc.metric || ''),
+    ]);
+    row.appendChild(card);
+  });
+  body.appendChild(row);
+
+  showModal('의젓 — 최종점수 카드 선택', body, [
+    btn('선택 확인', () => {
+      if (!chosen) { alert('카드를 선택하세요.'); return; }
+      player.finalScoringCards = player.finalScoringCards || [];
+      player.finalScoringCards.push(chosen);
+      // 선택 안 된 카드는 버림
+      options.filter(o => o !== chosen).forEach(o => {
+        if (game.finalScoringDeckRemaining) game.finalScoringDeckRemaining.push(o);
+      });
+      closeModal(); rerender(); onDone();
+    }),
+    btn('건너뛰기', () => { closeModal(); rerender(); onDone(); }, 'btn btn-secondary'),
+  ]);
+}
+
 // ──────── SCORE VIEW ────────
 function scoreView() {
   const scores = Engine.computeFinalScores(game);
+  if (IS_ONLINE && !resultPublished && scores.length) {
+    resultPublished = true;
+    setTimeout(() => network.publishResult?.(scores.map(s=>s.playerId)), 0);
+  }
   const wrap = el('div', { class:'scoreboard' });
   const soloScore = game.solo?.enabled ? scores[0] : null;
   wrap.appendChild(el('h2',{style:'text-align:center;margin-bottom:8px;'},
     game.solo?.enabled ? (soloScore?.victoryPoints>=0?'🎉 솔로 성공!':'🌙 솔로 도전 종료') : '🏆 최종 결과'));
-  if (game.solo?.enabled) wrap.appendChild(el('p',{style:'text-align:center;color:#aaa;margin:0 0 20px;'},soloScore?.victoryPoints>=0?'최종 VP가 0 이상입니다. 공식 솔로 승리 조건을 달성했습니다.':'최종 VP가 0 미만입니다. 다음 판에는 시작 매력도나 전략을 조정해 보세요.')); 
+  if (game.solo?.enabled) wrap.appendChild(el('p',{style:'text-align:center;color:#aaa;margin:0 0 20px;'},soloScore?.victoryPoints>=0?'최종 VP가 0 이상입니다. 솔로 목표를 달성했습니다.':'최종 VP가 0 미만입니다. 다음 판에는 시작 매력도나 전략을 조정해 보세요.'));
 
   scores.forEach((s,i) => {
     const row = el('div', { class:`score-row${i===0?' rank-1':''}` });
+    const player = game.players.find(p => p.id === s.playerId);
+    const cardDetails = player && player.finalScoringCards.length
+      ? player.finalScoringCards.map(fc => `${fc.name}`).join(', ')
+      : '없음';
     row.appendChild(el('div',{}, [
       el('div',{style:'font-size:16px;font-weight:700;'},game.solo?.enabled?s.name:`${i+1}위 ${s.name}`),
       el('div',{style:'font-size:12px;color:#aaa;'},
-        `매력도 ${s.appeal} | 보존 ${s.conservation} (목표 ${s.target}) | 카드 보너스 ${s.cardBonus}`),
+        `매력도 ${s.appeal} | 보존 ${s.conservation} (목표 ${s.target}) | 카드 보너스 ${s.cardBonus}점`),
+      el('div',{style:'font-size:11px;color:#666;'},`최종점수 카드: ${cardDetails}`),
     ]));
-    row.appendChild(el('div',{class:'score-vp'},`${s.victoryPoints}VP`));
+    row.appendChild(el('div',{class:'score-vp'},`${s.victoryPoints > 0 ? '+' : ''}${s.victoryPoints}VP`));
     wrap.appendChild(row);
   });
 
-  wrap.appendChild(el('div',{style:'text-align:center;margin-top:20px;'}, [
+  if (!IS_ONLINE) wrap.appendChild(el('div',{style:'text-align:center;margin-top:20px;'}, [
     btn('새 게임', () => { clearSoloGame(); game=null; render(setupView()); }),
   ]));
   return wrap;

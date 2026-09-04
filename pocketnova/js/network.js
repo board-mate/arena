@@ -14,10 +14,24 @@ class LocalHotseatAdapter{
   isConnected(){return false;}
 }
 class ArcadeAdapter{
-  constructor(){this._callbacks=[];window.addEventListener('message',e=>{if(e.data?.type==='game_state'&&e.data.state){try{const state=deserializeState(e.data.state);this._callbacks.forEach(cb=>cb(state));}catch(err){console.warn('remote state parse failed',err);}}});setTimeout(()=>window.parent.postMessage({type:'pocketnova_ready'},'*'),0);}
+  constructor(){
+    this._callbacks=[];
+    window.addEventListener('message',e=>{
+      if(e.data?.type==='game_state'&&e.data.state){
+        try{
+          const state=deserializeState(e.data.state);
+          this._callbacks.forEach(cb=>cb(state));
+        }catch(err){console.warn('remote state parse failed',err);}
+      }
+    });
+    setTimeout(()=>window.parent.postMessage({type:'pocketnova_ready'},'*'),0);
+  }
   publish(state){try{window.parent.postMessage({type:'game_state',state:serializeState(state)},'*');}catch(e){console.warn(e)}}
   publishResult(order){try{window.parent.postMessage({type:'game_result',order},'*');}catch(e){console.warn(e)}}
   onRemoteUpdate(cb){this._callbacks.push(cb)}
   isConnected(){return true;}
 }
-export function createNetworkAdapter(){const q=new URLSearchParams(location.search);return q.get('online')==='1'&&window.parent!==window?new ArcadeAdapter():new LocalHotseatAdapter();}
+export function createNetworkAdapter(){
+  const q=new URLSearchParams(location.search);
+  return q.get('online')==='1'&&window.parent!==window?new ArcadeAdapter():new LocalHotseatAdapter();
+}
