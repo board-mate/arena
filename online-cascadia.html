@@ -1,57 +1,795 @@
-<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>BoardMate Online · 캐스캐디아</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="./config.js"></script>
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<title>캐스캐디아 온라인 PVP 2-4인</title>
 <style>
-:root{font-family:Pretendard,"Noto Sans KR",system-ui,sans-serif;color:#203326;background:#edf5e9}*{box-sizing:border-box}body{margin:0;min-width:320px;background:linear-gradient(#eef5e9,#dcebd7)}button{font:inherit;cursor:pointer}.bar{position:sticky;top:0;z-index:30;background:#214f39;color:white;padding:10px 14px;display:flex;justify-content:space-between;gap:10px;align-items:center;box-shadow:0 4px 16px #0002}.bar a{color:white;text-decoration:none;font-weight:900}.wrap{width:min(1260px,calc(100% - 20px));margin:15px auto 50px}.card{background:#fff;border:1px solid #cddbc9;border-radius:18px;padding:14px;box-shadow:0 8px 24px #1d4d3410;margin-bottom:12px}.players{display:flex;gap:7px;overflow:auto}.player{min-width:150px;border:1px solid #c7d6c4;border-radius:12px;padding:8px;background:#f7fbf5}.player.active{outline:3px solid #e39b3d;background:#fff8e7}.player b,.player small{display:block}.player small{font-size:10px;color:#66786a;margin-top:3px}.status{font-size:12px;color:#627267;margin:8px 0}.main{display:grid;grid-template-columns:minmax(0,1fr) 350px;gap:12px}.market{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.pair{border:2px solid #c7d6c4;border-radius:14px;background:#f9fcf8;padding:7px;min-width:0}.pair.selected{outline:4px solid #d97706}.hab-card{height:88px;border:0;border-radius:12px;width:100%;position:relative;overflow:hidden;color:#fff;text-shadow:0 1px 2px #0008;font-weight:950}.hab-card small{position:absolute;left:5px;right:5px;bottom:5px;background:#ffffffd9;color:#334155;text-shadow:none;border-radius:8px;padding:3px;font-size:9px}.animal-token{width:55px;height:55px;border-radius:50%;border:3px solid #fff;box-shadow:0 2px 8px #0003;margin:8px auto 2px;display:grid;place-items:center;background:#f3ead2;font-size:28px}.animal-token.pick{outline:4px solid #d97706}.pair button{width:100%}.btn{border:1px solid #aebdac;border-radius:10px;padding:8px 10px;background:#fff;font-weight:900}.btn.primary{background:#2f855a;color:#fff;border-color:#2f855a}.btn.gold{background:#f5c451;color:#4b3b06}.btn:disabled{opacity:.4;cursor:not-allowed}.pine-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:9px}.view-tabs{display:flex;gap:5px;overflow:auto;margin:8px 0}.view-tabs button{border:1px solid #c7d6c4;background:#fff;border-radius:999px;padding:6px 9px;font-size:11px;font-weight:900;white-space:nowrap}.view-tabs button.active{background:#214f39;color:#fff}.eco-wrap{overflow:auto;background:#f7f4e8;border-radius:16px;border:1px solid #d7d1bd;padding:8px;min-height:520px}.eco{position:relative;width:760px;height:620px;margin:auto}.hex{position:absolute;width:78px;height:90px;clip-path:polygon(50% 0,94% 25%,94% 75%,50% 100%,6% 75%,6% 25%);display:grid;place-items:center;text-align:center;filter:drop-shadow(0 2px 2px #0002);overflow:hidden}.hex.empty{background:#ffffff80;outline:2px dashed #78917f;outline-offset:-7px;cursor:pointer}.hex.empty:hover{filter:drop-shadow(0 0 8px #e39b3d)}.hex .animal{font-size:31px;z-index:3}.hex .eligible{position:absolute;bottom:10px;font-size:10px;background:#ffffffc9;border-radius:8px;padding:2px 4px;z-index:3}.hex .pine{position:absolute;top:10px;right:15px;font-size:12px;z-index:3}.legend{display:flex;gap:6px;flex-wrap:wrap;font-size:10px;margin:8px 0}.legend span{padding:4px 7px;border-radius:999px;background:#eef5e9}.score{display:grid;grid-template-columns:1fr auto;gap:4px 8px;font-size:11px;background:#f6faf4;border-radius:12px;padding:10px}.score b{font-size:15px}.note{font-size:11px;line-height:1.6;color:#657469;background:#f5f8f3;border-radius:11px;padding:9px}.logs{max-height:180px;overflow:auto;background:#173726;color:#e4eee7;border-radius:11px;padding:9px;font-size:10px}.logs div{margin-bottom:4px}.pending{border:2px solid #e0a84a;background:#fff9e8;border-radius:13px;padding:10px;margin-top:10px}.final{background:#fff3c4;border:1px solid #e2c366;border-radius:13px;padding:12px;line-height:1.6}.animal-place{display:flex;gap:7px;flex-wrap:wrap}.animal-place button{min-width:80px}.reference-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.reference-grid>div{display:flex;gap:5px;flex-wrap:wrap;align-content:flex-start}.reference-grid b{width:100%;font-size:11px;color:#475569}.ref-chip{border-left:6px solid var(--ref,#94a3b8);background:#f8fafc;border-radius:8px;padding:5px 7px;font-size:11px;font-weight:900}.animal-ref{border-left:0;background:#fff7df}.ref-flow,.ref-score{display:grid;gap:5px;margin-top:10px;padding:9px;border-radius:11px;background:#f6faf4;font-size:11px;line-height:1.45}.ref-flow b,.ref-score b{color:#214f39}.pair.selected{opacity:.72}.pair.selected .hab-card{background:#e8eee7!important;color:#627267!important;text-shadow:none!important}@media(max-width:920px){.main{grid-template-columns:1fr}.market{grid-template-columns:repeat(2,1fr)}}@media(max-width:560px){.eco{transform:scale(.74);transform-origin:top left}.eco-wrap{height:480px}.market{grid-template-columns:1fr 1fr}}
-</style></head><body><header class="bar"><span style="display:flex;gap:6px"><a href="./index.html#/">← 홈</a><a href="./index.html#/multi">다인플</a></span><b id="title">🌲 캐스캐디아 온라인</b><span id="sync">연결 중…</span></header><main class="wrap"><div id="app">불러오는 중…</div></main>
-<script type="module">
-import {configured,roomId,getMe,loadRoom,loadState,saveState,startStatePoll,submitMatch,ratingBadges,esc,showFatal,endPanel} from './multi-common.js';
-if(!configured()||!roomId)showFatal('Supabase 설정 또는 room 주소가 없습니다.');
-const H=[{id:'mountain',name:'산악',icon:'⛰️',color:'#718096'},{id:'forest',name:'삼림',icon:'🌲',color:'#2f855a'},{id:'prairie',name:'초원',icon:'🌾',color:'#d6a64b'},{id:'wetland',name:'습지',icon:'💧',color:'#4aa7a1'},{id:'river',name:'하천',icon:'🌊',color:'#4b88c7'}],A=[{id:'bear',name:'곰',icon:'🐻'},{id:'elk',name:'엘크',icon:'🦌'},{id:'salmon',name:'연어',icon:'🐟'},{id:'hawk',name:'매',icon:'🦅'},{id:'fox',name:'여우',icon:'🦊'}],DIRS=[[1,0],[1,-1],[0,-1],[-1,0],[-1,1],[0,1]],ANIMAL_SCORE=n=>n<=0?0:n===1?2:n===2?5:9;
-const key=(q,r)=>`${q},${r}`,parse=k=>k.split(',').map(Number),clone=x=>JSON.parse(JSON.stringify(x));
-let me,room,members,badges={},mySeat=-1,state=null,revision=0,saving=false,submitted=false,viewSeat=0,splitMode=false,splitHab=0,splitAni=1,rerollSet=new Set(),pendingRot=0;
-function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
-function neighbors(k){const[q,r]=parse(k);return DIRS.map(([dq,dr])=>key(q+dq,r+dr))}
-function habitatStyle(tile){if(!tile||!Array.isArray(tile.habitats)||!tile.habitats.length)return 'background:#e8eee7;color:#7b8b80;text-shadow:none';const c1=H.find(x=>x.id===tile.habitats[0])?.color||'#999',c2=H.find(x=>x.id===tile.habitats[1])?.color||c1,ang=120+Number(tile.rotation||0)*60;return `background:linear-gradient(${ang}deg,${c1} 0 49%,${c2} 51% 100%)`}
-function rotateEdges(edges,n){n=((n%6)+6)%6;return edges.map((_,i)=>edges[(i-n+6)%6])}
-function makeFullHabitatDeck(){const deck=[];for(let i=0;i<85;i++){const h1=H[i%5].id,h2=H[(i*2+1)%5].id,dual=i%3!==0,animals=shuffle(A.map(x=>x.id)).slice(0,1+(i%3)),edges=dual?[h1,h1,h1,h2,h2,h2]:Array(6).fill(h1);deck.push({id:i,habitats:dual?[h1,h2]:[h1],edges,rotation:0,animals,special:i<25})}return shuffle(deck)}
-function starter(seat){const presets=[['forest','river','mountain'],['prairie','wetland','forest'],['mountain','prairie','river'],['wetland','river','forest'],['forest','mountain','prairie']],hs=presets[seat%presets.length],coords=[[0,0],[1,0],[0,1]],out={};coords.forEach(([q,r],i)=>out[key(q,r)]={id:`S${seat}-${i}`,habitats:[hs[i]],edges:Array(6).fill(hs[i]),rotation:0,animals:[A[(seat+i)%5].id,A[(seat+i+2)%5].id],special:false,animal:null,starter:true});return out}
-function makeAnimalBag(){const bag=[];for(const a of A)for(let i=0;i<20;i++)bag.push(a.id);return shuffle(bag)}
-function drawAnimal(s){return s.animalBag.pop()||null}
-function normalizeFour(s){let guard=0;while(guard++<8){const vals=s.market.map(x=>x?.animal).filter(Boolean),counts=Object.fromEntries(A.map(a=>[a.id,vals.filter(v=>v===a.id).length])),four=Object.entries(counts).find(([,n])=>n===4)?.[0];if(!four)break;const removed=[];s.market.forEach(p=>{if(p?.animal===four){removed.push(p.animal);p.animal=drawAnimal(s)}});s.animalBag.unshift(...shuffle(removed));s.logs.unshift(`과잉 공급: ${A.find(a=>a.id===four).name} 4개를 자동 교체`)}}
-function initialState(){const n=members.length,all=makeFullHabitatDeck(),need=n*20+3,deck=all.slice(0,need),animalBag=makeAnimalBag(),market=[];for(let i=0;i<4;i++)market.push({tile:deck.pop(),animal:animalBag.pop()});const s={kind:'cascadia-v7-beginner',current:0,turnNo:1,phase:'choose',deck,animalBag,market,ecos:members.map((_,i)=>starter(i)),pinecones:Array(n).fill(0),turns:Array(n).fill(0),pending:null,over:false,scores:null,finalOrder:null,logs:[`게임 시작 · 공식 초심자 동물 점수 카드 · ${members[0].nickname} 선`]};normalizeFour(s);return prepareState(s)}
+  :root{
+    --ink:#26352c; --paper:#f4f0df; --panel:#fffdf5; --line:#c8c2a7; --wood:#6b4a2f;
+    --mountain:#d8e6ee; --forest:#3f7748; --prairie:#e4bd48; --wetland:#78b4a6; --river:#4f9ac5;
+    --accent:#5e7d45; --danger:#a54d43; --shadow:0 10px 30px rgba(39,49,39,.14);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;min-height:100%;font-family:system-ui,-apple-system,"Segoe UI","Noto Sans KR",sans-serif;color:var(--ink);background:
+    radial-gradient(circle at 18% 0%,rgba(255,255,255,.85),transparent 34%),
+    linear-gradient(135deg,#dce7dc,#f1e8cf 52%,#d9e4e2)}
+  button,input,select{font:inherit}
+  button{cursor:pointer}
+  .hidden{display:none!important}
+  #app{min-height:100vh}
+  .screen{min-height:100vh;padding:24px}
+  .setup-wrap{max-width:980px;margin:0 auto;display:grid;grid-template-columns:1.08fr .92fr;gap:22px;align-items:start}
+  .hero,.setup-card,.panel{background:rgba(255,253,245,.94);border:1px solid rgba(100,90,60,.18);box-shadow:var(--shadow);border-radius:22px}
+  .hero{padding:28px;position:sticky;top:24px;overflow:hidden}
+  .hero:before{content:"";position:absolute;inset:-30% -20% auto 40%;height:280px;background:radial-gradient(circle,#9ec5a1 0,rgba(158,197,161,.12) 52%,transparent 70%);pointer-events:none}
+  .kicker{letter-spacing:.18em;text-transform:uppercase;font-size:12px;font-weight:800;color:#68806a}
+  h1{font-size:clamp(34px,6vw,66px);line-height:.98;margin:10px 0 14px;color:#3c563f;letter-spacing:-.05em}
+  .subtitle{font-size:17px;line-height:1.7;color:#536257;margin:0 0 18px}
+  .badges{display:flex;flex-wrap:wrap;gap:8px}.badge{padding:7px 10px;border-radius:999px;background:#eef2e8;border:1px solid #d4dec9;font-size:12px;font-weight:750}
+  .hero-note{margin-top:20px;padding:14px;border-radius:14px;background:#f3ead7;border:1px solid #e0d1b5;font-size:13px;line-height:1.6}
+  .setup-card{padding:24px}.setup-card h2{margin:0 0 18px;font-size:22px}
+  .field{margin:15px 0}.field label{display:block;font-size:13px;font-weight:800;margin-bottom:7px;color:#526254}
+  .seg{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.seg button{border:1px solid #c8cfbf;background:#fff;border-radius:12px;padding:11px;font-weight:800}.seg button.active{background:#5f7e55;color:#fff;border-color:#5f7e55}
+  .name-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.name-grid input,select{width:100%;padding:11px 12px;border:1px solid #c9cdbd;border-radius:11px;background:#fff}
+  .primary{border:0;background:#496a4f;color:#fff;font-weight:850;padding:13px 18px;border-radius:13px;box-shadow:0 6px 16px rgba(73,106,79,.2)}
+  .secondary{border:1px solid #bcc5b6;background:#fff;color:#3e5142;font-weight:750;padding:10px 13px;border-radius:11px}
+  .danger{border:1px solid #d4a9a4;background:#fff4f2;color:#94473e;font-weight:750;padding:10px 13px;border-radius:11px}
+  .setup-actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:20px}.setup-actions .primary{flex:1;min-width:180px}
+  .load-box{margin-top:13px;border-top:1px dashed #c8c2a7;padding-top:13px}.mode-box{display:grid;grid-template-columns:1fr 1fr;gap:8px}.mode-box button{border:1px solid #c8cfbf;background:#fff;border-radius:12px;padding:11px;font-weight:850}.mode-box button.active{background:#385d4a;color:#fff;border-color:#385d4a}.online-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.room-input{display:flex;gap:8px}.room-input input{flex:1;text-transform:uppercase;letter-spacing:.15em;font-weight:850}.net-pill{display:inline-flex;align-items:center;gap:6px;padding:6px 9px;border-radius:999px;background:#edf5e9;border:1px solid #c9dec3;font-size:11px;font-weight:850}.net-dot{width:8px;height:8px;border-radius:50%;background:#58a36b;box-shadow:0 0 0 3px rgba(88,163,107,.14)}.lobby-list{display:grid;gap:8px;margin:14px 0}.lobby-slot{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border:1px solid #d2d6ca;background:#fff;border-radius:11px}.lobby-slot.me{border-color:#64805e;background:#eef4e9}.room-code{font-size:30px;font-weight:950;letter-spacing:.18em;color:#3e6148}.copy-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.online-note{padding:10px 12px;border-radius:11px;background:#eef3f6;border:1px solid #cbd7df;font-size:12px;line-height:1.55}
 
-function prepareState(s){
-  if(!s||typeof s!=='object')return s;
-  s.market=Array.isArray(s.market)?s.market.slice(0,4):[];while(s.market.length<4)s.market.push({tile:null,animal:null});s.market=s.market.map(p=>p&&typeof p==='object'?p:{tile:null,animal:null});
-  s.ecos=Array.isArray(s.ecos)?s.ecos:members.map((_,i)=>starter(i));while(s.ecos.length<members.length)s.ecos.push(starter(s.ecos.length));
-  s.pinecones=Array.isArray(s.pinecones)?s.pinecones:Array(members.length).fill(0);while(s.pinecones.length<members.length)s.pinecones.push(0);
-  s.turns=Array.isArray(s.turns)?s.turns:Array(members.length).fill(0);while(s.turns.length<members.length)s.turns.push(0);
-  s.logs=Array.isArray(s.logs)?s.logs:[];s.current=Number.isInteger(Number(s.current))?Math.max(0,Math.min(members.length-1,Number(s.current))):0;s.phase=s.phase||'choose';
-  return s;
+  .game-shell{display:grid;grid-template-rows:auto 1fr;min-height:100vh}
+  .topbar{position:sticky;top:0;z-index:30;background:rgba(247,244,232,.93);backdrop-filter:blur(12px);border-bottom:1px solid rgba(70,80,60,.15);padding:10px 16px;display:flex;align-items:center;gap:12px;justify-content:space-between}
+  .brand{display:flex;align-items:center;gap:10px}.brand-mark{width:36px;height:36px;border-radius:11px;background:conic-gradient(var(--forest),var(--wetland),var(--river),var(--mountain),var(--prairie),var(--forest));box-shadow:inset 0 0 0 4px rgba(255,255,255,.55)}.brand strong{display:block}.brand small{color:#6c766d}
+  .stat-row{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}.stat{background:#fff;border:1px solid #d2d2c4;border-radius:10px;padding:7px 10px;font-size:12px}.stat b{font-size:14px;margin-left:5px}
+  .top-actions{display:flex;gap:7px}.icon-btn{border:1px solid #c7c9bd;background:#fff;border-radius:10px;padding:8px 10px;font-weight:750}
+  .layout{display:grid;grid-template-columns:300px minmax(520px,1fr) 320px;gap:14px;padding:14px;min-height:0}
+  .sidebar,.rightbar{display:flex;flex-direction:column;gap:12px;min-width:0}
+  .panel{padding:14px;border-radius:16px;box-shadow:0 6px 20px rgba(38,53,44,.08)}
+  .panel h3{font-size:14px;margin:0 0 10px;letter-spacing:.02em}.muted{color:#6a746b;font-size:12px;line-height:1.5}
+  .players{display:grid;gap:8px}.player-card{border:1px solid #d1d3c7;background:#fff;border-radius:12px;padding:10px;display:grid;grid-template-columns:1fr auto;gap:4px;cursor:pointer}.player-card.active{border-color:#64805e;background:#eef4e9;box-shadow:inset 4px 0 0 #64805e}.player-card.viewing{outline:2px solid #91a68c}.player-name{font-weight:850}.player-meta{font-size:12px;color:#6a746b}.pine{font-weight:850;color:#6f5830}
+  .objective{border-radius:12px;padding:11px;background:#f2efe2;border:1px solid #d8d0ba}.objective h4{margin:0 0 6px}.objective p{margin:0;font-size:12px;line-height:1.55}
+  .wild-key{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;margin-top:9px}.wild-key span{text-align:center;padding:5px 2px;background:#fff;border-radius:8px;border:1px solid #dedace;font-size:17px}
+  .action-grid{display:grid;gap:7px}.action-grid button{width:100%}
+  .notice{padding:10px;border-radius:10px;background:#f5edd8;border:1px solid #e4d3a9;font-size:12px;line-height:1.5}
+  .notice.good{background:#edf5e9;border-color:#c9dec3}.notice.warn{background:#fff0ec;border-color:#e4bbb2}
+
+  .center{display:grid;grid-template-rows:auto minmax(470px,1fr);gap:12px;min-width:0}
+  .market-panel{padding:13px}.market-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}.market-head h3{margin:0}.market-help{font-size:12px;color:#6b756c}
+  .market{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}.market-slot{border:1px solid #cfd1c5;background:#fff;border-radius:14px;overflow:hidden;position:relative;min-width:0;transition:.15s}.market-slot:hover{transform:translateY(-1px);box-shadow:0 8px 18px rgba(45,60,45,.1)}.market-slot.selected{outline:3px solid #6f8c67}.market-slot.replacing{outline:3px dashed #af5d50}
+  .market-tile,.market-token{padding:8px;display:flex;align-items:center;justify-content:center}.market-tile{min-height:96px;border-bottom:1px dashed #ddd6c5}.market-token{min-height:58px;gap:7px;background:#faf8f0}.animal-token{width:39px;height:39px;border-radius:50%;display:grid;place-items:center;background:#fff;border:3px solid #d3c6a9;box-shadow:0 3px 8px rgba(0,0,0,.1);font-size:22px}.token-name{font-size:11px;font-weight:800}
+  .market-slot button.slot-hit{position:absolute;inset:0;border:0;background:transparent}.market-slot.split .market-tile,.market-slot.split .market-token{cursor:pointer;position:relative;z-index:2}.market-slot.split button.slot-hit{display:none}
+  .mini-hex{width:84px;height:78px}.mini-label{position:absolute;top:5px;left:6px;font-size:10px;background:rgba(255,255,255,.9);padding:2px 5px;border-radius:6px;font-weight:800}.keystone-star{position:absolute;top:6px;right:7px;font-size:14px}
+  .split-confirm{margin-top:9px;display:flex;justify-content:flex-end;gap:7px}
+
+  .board-panel{padding:0;overflow:hidden;position:relative;min-height:470px;background:
+    radial-gradient(circle at center,rgba(255,255,255,.93),rgba(241,238,220,.9)),
+    repeating-linear-gradient(45deg,rgba(84,102,83,.025) 0 2px,transparent 2px 8px)}
+  .board-toolbar{position:absolute;z-index:5;left:10px;top:10px;display:flex;gap:7px;flex-wrap:wrap}.board-toolbar .chip{background:rgba(255,255,255,.92);border:1px solid #d3d1c4;border-radius:9px;padding:6px 9px;font-size:12px;font-weight:750}
+  #boardSvg{width:100%;height:100%;min-height:520px;display:block;touch-action:manipulation}.hex-cell{filter:drop-shadow(0 3px 2px rgba(40,50,40,.13))}.hex-cell text{pointer-events:none}.ghost{fill:rgba(92,125,82,.06);stroke:#6c8a66;stroke-width:2;stroke-dasharray:6 5;cursor:pointer}.ghost:hover{fill:rgba(92,125,82,.14)}.pending-preview{opacity:.34;pointer-events:none;transition:opacity .12s}.preview-hit{fill:rgba(255,255,255,.001);stroke:#63835e;stroke-width:2;stroke-dasharray:6 5;cursor:pointer}.preview-pos:hover .pending-preview{opacity:.68}.preview-pos:hover .preview-hit{stroke-width:4;stroke-dasharray:none}.wild-target{stroke:#f6a23c!important;stroke-width:5!important;cursor:pointer}.wild-target:hover{filter:drop-shadow(0 0 8px rgba(246,162,60,.8))}.view-only-banner{position:absolute;right:10px;top:10px;z-index:6;background:#fff4dd;border:1px solid #e5c88f;border-radius:9px;padding:6px 9px;font-size:12px;font-weight:800}
+  .phasebar{position:absolute;left:50%;bottom:12px;transform:translateX(-50%);z-index:7;background:rgba(40,52,42,.92);color:#fff;border-radius:999px;padding:9px 14px;font-size:12px;font-weight:750;max-width:90%;text-align:center;box-shadow:0 6px 20px rgba(0,0,0,.18)}
+
+  .score-mini{display:grid;grid-template-columns:1fr auto;gap:5px 8px;font-size:12px}.terrain-dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px}.score-mini b{text-align:right}
+  .rules-list{margin:0;padding-left:18px;font-size:12px;line-height:1.55}.rules-list li+li{margin-top:5px}
+
+  .modal-back{position:fixed;inset:0;z-index:100;background:rgba(24,31,25,.58);display:grid;place-items:center;padding:18px}.modal{max-width:780px;max-height:88vh;overflow:auto;width:min(100%,780px);background:#fffdf6;border-radius:19px;box-shadow:0 25px 70px rgba(0,0,0,.25);padding:22px}.modal h2{margin:0 0 13px}.modal h3{margin:19px 0 7px}.modal p,.modal li{line-height:1.6}.modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:18px;position:sticky;bottom:-22px;background:linear-gradient(transparent,#fffdf6 24%);padding:22px 0 0}
+  .score-table{width:100%;border-collapse:collapse;font-size:12px}.score-table th,.score-table td{border-bottom:1px solid #e0dccf;padding:7px 6px;text-align:right}.score-table th:first-child,.score-table td:first-child{text-align:left}.score-table thead th{background:#f1eee3;position:sticky;top:0}.winner{font-weight:900;color:#3f6c43}
+  .score-scroll{overflow:auto}
+  .footer-note{font-size:11px;color:#777f77;margin-top:13px;line-height:1.5}
+
+  @media(max-width:1180px){.layout{grid-template-columns:250px 1fr}.rightbar{grid-column:1/-1;display:grid;grid-template-columns:repeat(3,1fr)}.center{min-width:0}.market{gap:6px}}
+  @media(max-width:820px){.screen{padding:12px}.setup-wrap{grid-template-columns:1fr}.hero{position:static}.layout{grid-template-columns:1fr;padding:8px}.sidebar{display:grid;grid-template-columns:1fr 1fr}.sidebar .panel:first-child{grid-column:1/-1}.rightbar{grid-template-columns:1fr}.topbar{align-items:flex-start}.stat-row{display:none}.brand small{display:none}.market{grid-template-columns:repeat(2,1fr)}.center{grid-template-rows:auto minmax(480px,1fr)}.board-panel{min-height:480px}.name-grid{grid-template-columns:1fr}.market-tile{min-height:86px}}
+  @media(max-width:560px){.sidebar{grid-template-columns:1fr}.top-actions .icon-btn:nth-child(2){display:none}.market{grid-template-columns:repeat(2,1fr)}.mini-hex{width:72px;height:66px}.layout{gap:8px}.panel{padding:11px}.topbar{padding:8px}.brand-mark{width:31px;height:31px}.brand strong{font-size:13px}.phasebar{border-radius:12px;width:calc(100% - 18px)}}
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="./config.js"></script>
+<script type="module">
+import {configured,roomId,getMe,loadRoom,loadState,saveState,startStatePoll,submitMatch,ratingBadges,showFatal} from './multi-common.js';
+let initPromise=null,revision=0,room=null,members=[],me=null,badges={},callbacks=[],saveChain=Promise.resolve(),pending=0,submitted=false,pollStarted=false;
+const clone=x=>JSON.parse(JSON.stringify(x));
+async function init(){
+  if(initPromise)return initPromise;
+  initPromise=(async()=>{
+    if(!configured()||!roomId)showFatal('Supabase 설정 또는 room 주소가 없습니다.');
+    me=await getMe();if(!me)showFatal('로그인이 필요합니다.');
+    ({room,members}=await loadRoom());if(room.game!=='cascadia')showFatal('캐스캐디아 방이 아닙니다.');
+    const playerIndex=members.findIndex(m=>m.user_id===me.user_id);if(playerIndex<0)showFatal('이 방의 참가자가 아닙니다.');
+    badges=await ratingBadges('cascadia',members.map(m=>m.user_id)).catch(()=>({}));
+    const row=await loadState();revision=Number(row?.revision||0);
+    if(row?.state && !(row.state.version===2 && Array.isArray(row.state.players) && row.state.players.every(p=>p&&p.board&&typeof p.board==='object'))) showFatal('이 방은 이전 캐스캐디아 저장 상태입니다. 새 버전은 새 방을 만들어 시작해 주세요.');
+    const displayNames=members.map(m=>`${badges[m.user_id]?.text||'🥉'} ${m.nickname}`);
+    const ctx={roomId,room,me,members,playerIndex,isHost:room.host_id===me.user_id,state:row?.state||null,displayNames};
+    if(!pollStarted){pollStarted=true;startStatePoll(async r=>{revision=Math.max(revision,Number(r?.revision||0));if(r?.state&&pending===0)callbacks.forEach(cb=>{try{cb(clone(r.state));}catch(e){console.warn(e)}});},{interval:1100});}
+    return ctx;
+  })();return initPromise;
 }
-function countThree(s){const vals=s.market.map(x=>x?.animal),counts={};vals.forEach(v=>counts[v]=(counts[v]||0)+1);return Object.entries(counts).find(([,n])=>n===3)?.[0]||null}
-function validHabitatSpots(eco){const out=new Set();for(const k of Object.keys(eco))for(const n of neighbors(k))if(!eco[n])out.add(n);return [...out]}
-function validAnimalSpots(eco,animal){if(!animal)return[];return Object.keys(eco||{}).filter(k=>{const t=eco[k];return t&&!t.animal&&Array.isArray(t.animals)&&t.animals.includes(animal)})}
-function groupsForAnimal(eco,animal){const occupied=Object.keys(eco).filter(k=>eco[k].animal===animal),seen=new Set(),groups=[];for(const st of occupied){if(seen.has(st))continue;const stack=[st],g=[];seen.add(st);while(stack.length){const x=stack.pop();g.push(x);for(const n of neighbors(x))if(eco[n]?.animal===animal&&!seen.has(n)){seen.add(n);stack.push(n)}}groups.push(g)}return groups}
-function largestHabitat(eco,hab){const cells=Object.keys(eco||{}).filter(k=>Array.isArray(eco[k]?.habitats)&&eco[k].habitats.includes(hab)),seen=new Set();let best=0;for(const st of cells){if(seen.has(st))continue;const stack=[st];let n=0;seen.add(st);while(stack.length){const x=stack.pop(),tile=eco[x];n++;const ns=neighbors(x);for(let d=0;d<6;d++){if(tile.edges?.[d]!==hab)continue;const z=ns[d],nt=eco[z];if(nt?.edges?.[(d+3)%6]===hab&&!seen.has(z)){seen.add(z);stack.push(z)}}}best=Math.max(best,n)}return best}
-function rawScore(eco,pine){const animalBy={};let animalTotal=0;for(const a of A){const v=groupsForAnimal(eco,a.id).reduce((sum,g)=>sum+ANIMAL_SCORE(g.length),0);animalBy[a.id]=v;animalTotal+=v}const habitats={};for(const h of H)habitats[h.id]=largestHabitat(eco,h.id);const habitatTotal=Object.values(habitats).reduce((a,b)=>a+b,0);return{animalBy,animalTotal,habitats,habitatTotal,pine,bonus:0,total:animalTotal+habitatTotal+pine}}
-function applyHabitatBonuses(scores){for(const h of H){const vals=scores.map(s=>s.habitats[h.id]),mx=Math.max(...vals),maxSeats=vals.map((v,i)=>v===mx?i:-1).filter(i=>i>=0);if(scores.length===2){if(maxSeats.length===2){scores[0].bonus++;scores[1].bonus++}else scores[maxSeats[0]].bonus+=2;continue}if(maxSeats.length>=3){maxSeats.forEach(i=>scores[i].bonus+=1);continue}if(maxSeats.length===2){maxSeats.forEach(i=>scores[i].bonus+=2);continue}scores[maxSeats[0]].bonus+=3;const below=vals.filter(v=>v<mx),second=Math.max(...below),secondSeats=vals.map((v,i)=>v===second?i:-1).filter(i=>i>=0);if(secondSeats.length===1)scores[secondSeats[0]].bonus+=1}scores.forEach(s=>s.total+=s.bonus)}
-function finish(s){s.over=true;s.phase='done';s.pending=null;s.scores=s.ecos.map((e,i)=>rawScore(e,s.pinecones[i]));applyHabitatBonuses(s.scores);s.finalOrder=s.scores.map((_,i)=>i).sort((a,b)=>s.scores[b].total-s.scores[a].total||s.pinecones[b]-s.pinecones[a]||a-b);s.logs.unshift(`게임 종료 · 1위 ${members[s.finalOrder[0]].nickname}`)}
-function endTurn(s){const seat=s.current;s.turns[seat]++;for(const p of s.market){if(!p.tile&&s.deck.length)p.tile=s.deck.pop();if(!p.animal&&s.animalBag.length)p.animal=drawAnimal(s)}normalizeFour(s);if(s.turns.every(x=>x>=20)){finish(s);return}s.current=(s.current+1)%members.length;s.turnNo++;s.phase='choose';s.pending=null}
-async function mutate(fn){if(saving||!state)return;saving=true;const next=clone(state);try{fn(next);const nr=await saveState(revision,next);revision=nr;state=next;splitMode=false;rerollSet.clear();pendingRot=0;render();document.querySelector('#sync').textContent='자동 저장됨';if(next.over)maybeSubmit()}catch(e){console.warn(e);document.querySelector('#sync').textContent='재동기화 중';const row=await loadState();revision=row.revision;state=row.state;render()}finally{saving=false}}
-function choosePair(hIdx,aIdx,usePine=false){if(state.over||state.current!==mySeat||state.phase!=='choose')return;if(hIdx<0||aIdx<0||!state.market[hIdx]?.tile||!state.market[aIdx]?.animal)return;if(hIdx!==aIdx&&!usePine)return;if(hIdx!==aIdx&&state.pinecones[mySeat]<1)return;mutate(s=>{if(hIdx!==aIdx)s.pinecones[mySeat]--;const tile=s.market[hIdx].tile,animal=s.market[aIdx].animal;s.market[hIdx].tile=null;s.market[aIdx].animal=null;s.pending={tile,animal};s.phase='placeHabitat';s.logs.unshift(`${members[mySeat].nickname}: ${hIdx===aIdx?'선택지 1쌍':'솔방울로 조합 분리'} 선택`)})}
-function placeHabitat(k){if(state.current!==mySeat||state.phase!=='placeHabitat'||!state.pending?.tile)return;if(!validHabitatSpots(state.ecos[mySeat]).includes(k))return;const rot=pendingRot;mutate(s=>{const t=s.pending.tile;s.ecos[mySeat][k]={...t,edges:rotateEdges(t.edges||Array(6).fill(t.habitats[0]),rot),rotation:rot,animal:null};s.pending.placedKey=k;s.phase='placeAnimal'})}
-function placeAnimal(k){if(state.current!==mySeat||state.phase!=='placeAnimal'||!state.pending?.animal)return;if(!validAnimalSpots(state.ecos[mySeat],state.pending.animal).includes(k))return;mutate(s=>{const a=s.pending.animal;s.ecos[mySeat][k].animal=a;if(s.ecos[mySeat][k].special)s.pinecones[mySeat]++;s.pending.animal=null;endTurn(s)})}
-function discardAnimal(){if(state.current!==mySeat||state.phase!=='placeAnimal')return;mutate(s=>{if(s.pending?.animal)s.animalBag.unshift(s.pending.animal);s.logs.unshift(`${members[mySeat].nickname}: 동물 토큰을 주머니로 반환`);s.pending.animal=null;endTurn(s)})}
-function rerollThree(){const a=countThree(state);if(!a||state.current!==mySeat||state.phase!=='choose')return;mutate(s=>{const removed=[];s.market.forEach(p=>{if(p.animal===a){removed.push(p.animal);p.animal=drawAnimal(s)}});s.animalBag.unshift(...shuffle(removed));normalizeFour(s);s.logs.unshift(`과잉 공급 ${A.find(x=>x.id===a).name} 3개 교체`)})}
-function rerollWithPine(){if(state.current!==mySeat||state.phase!=='choose'||state.pinecones[mySeat]<1||!rerollSet.size)return;mutate(s=>{s.pinecones[mySeat]--;const removed=[];[...rerollSet].forEach(i=>{if(s.market[i]?.animal){removed.push(s.market[i].animal);s.market[i].animal=drawAnimal(s)}});s.animalBag.unshift(...shuffle(removed));normalizeFour(s);s.logs.unshift(`${members[mySeat].nickname}: 솔방울로 동물 ${removed.length}개 교체`)})}
-async function maybeSubmit(){if(submitted||room.host_id!==me.user_id||!state?.over||!state.finalOrder)return;submitted=true;try{await submitMatch(state.finalOrder.map(i=>members[i].user_id));document.querySelector('#sync').textContent='결과 반영 완료'}catch(e){if(!String(e.message).includes('already'))submitted=false}}
-function pos(k,eco){const coords=Object.keys(eco).concat(validHabitatSpots(eco)),qs=coords.map(x=>parse(x)[0]),rs=coords.map(x=>parse(x)[1]),minQ=Math.min(...qs),minR=Math.min(...rs),[q,r]=parse(k),W=78,H=90;return{x:90+W*((q-minQ)+(r-minR)/2),y:70+H*.75*(r-minR)}}
-function hexHtml(t){if(!t)return'';const animalIcon=t.animal?(A.find(a=>a.id===t.animal)?.icon||''):'';const eligible=(Array.isArray(t.animals)?t.animals:[]).map(id=>A.find(a=>a.id===id)?.icon||'').join('');return `<span class="animal">${animalIcon}</span><span class="eligible">${eligible}</span>${t.special?'<span class="pine">🌲</span>':''}`}
-function marketPairHtml(p,i,myTurn){const tile=p?.tile||null,animal=p?.animal||null,canChoose=myTurn&&state.phase==='choose'&&tile&&animal;const hText=tile?(tile.habitats||[]).map(id=>{const h=H.find(x=>x.id===id);return h?`${h.icon} ${h.name}`:id}).join(' / '):'선택한 타일';const elig=tile?(tile.animals||[]).map(id=>A.find(a=>a.id===id)?.icon||'').join(''):'';return `<div class="pair ${(!tile||!animal)?'selected':''}"><button class="hab-card" style="${habitatStyle(tile)}" data-hab="${i}" ${!canChoose?'disabled':''}>${tile?`${hText}${tile.special?' · 🌲':''}<small>${elig||'동물'} 배치 가능</small>`:'<span>배치 중…</span><small>현재 플레이어가 가져간 타일</small>'}</button><button class="animal-token ${rerollSet.has(i)?'pick':''}" data-animal="${i}" ${!canChoose?'disabled':''}>${animal?(A.find(a=>a.id===animal)?.icon||'?'):'…'}</button><button class="btn primary" data-pair="${i}" ${!canChoose?'disabled':''}>${canChoose?'이 쌍 선택':'선택됨'}</button></div>`}
-function referenceHtml(){return `<section class="card"><h3 style="margin-top:0">📌 캐스캐디아 참고표</h3><div class="reference-grid"><div><b>지형 5종</b>${H.map(h=>`<span class="ref-chip" style="--ref:${h.color}">${h.icon} ${h.name}</span>`).join('')}</div><div><b>동물 5종</b>${A.map(a=>`<span class="ref-chip animal-ref">${a.icon} ${a.name}</span>`).join('')}</div></div><div class="ref-flow"><b>한 차례</b><span>① 선택지 4쌍 중 1쌍 선택</span><span>② 서식지 타일을 기존 타일과 한 면 이상 붙여 배치</span><span>③ 동물 그림이 있는 빈 타일에 동물 배치</span><span>④ 선택지 보충 → 다음 사람</span></div><div class="ref-score"><b>현재 온라인판 · 초심자 동물 카드</b><span>같은 종류 무리: 1마리 <strong>2점</strong> · 2마리 <strong>5점</strong> · 3마리 이상 <strong>9점</strong></span><span>지형: 산악/삼림/초원/습지/하천 각각 가장 큰 연결 영역을 계산</span><span>🌲 솔방울: 남은 1개당 1점</span></div></section>`}
-function render(){if(!state)return;document.querySelector('#title').textContent=`🌲 ${room.title}`;if(viewSeat>=members.length)viewSeat=mySeat;const app=document.querySelector('#app'),myTurn=state.current===mySeat&&!state.over,eco=state.ecos[viewSeat],score=state.over?state.scores[viewSeat]:rawScore(eco,state.pinecones[viewSeat]),three=countThree(state);app.innerHTML=`<section class="card"><div class="players">${members.map((m,i)=>`<div class="player ${i===state.current&&!state.over?'active':''}"><b>${esc(badges[m.user_id]?.text||'🥉')} ${esc(m.nickname)}${i===mySeat?' · 나':''}</b><small>${state.turns[i]}/20턴 · 솔방울 ${state.pinecones[i]}${state.over?` · ${state.scores[i].total}점`:''}</small></div>`).join('')}</div><div class="status">턴 ${state.turnNo} · ${state.over?'게임 종료':`${esc(members[state.current].nickname)} 차례 · ${state.phase==='choose'?'선택지 고르기':state.phase==='placeHabitat'?'서식지 타일 배치':'동물 토큰 배치'}`}</div></section><div class="main"><section><section class="card"><h3 style="margin-top:0">선택지 4쌍</h3><div class="market">${state.market.map((p,i)=>marketPairHtml(p,i,myTurn)).join('')}</div>${myTurn&&state.phase==='choose'?`<div class="pine-actions"><button class="btn gold" id="splitBtn" ${state.pinecones[mySeat]<1?'disabled':''}>🌲 조합 분리 ${splitMode?'취소':'사용'}</button>${three?`<button class="btn" id="rerollThree">과잉 공급 3개 교체 (${A.find(a=>a.id===three).name})</button>`:''}<button class="btn" id="pineReroll" ${state.pinecones[mySeat]<1||!rerollSet.size?'disabled':''}>🌲 선택 동물 ${rerollSet.size}개 교체</button></div>${splitMode?`<div class="pending"><b>솔방울 1개 사용 · 서식지와 동물을 따로 선택</b><p>서식지 ${splitHab+1}번 / 동물 ${splitAni+1}번</p><button class="btn primary" id="confirmSplit">이 조합 가져오기</button></div>`:''}`:''}${myTurn&&state.phase==='placeHabitat'?`<div class="pending"><b>서식지 타일 방향</b><p>두 지형 타일은 회전 방향에 따라 연결되는 면이 달라집니다.</p><button class="btn" id="rotateHab">↻ 60° 회전 (${pendingRot*60}°)</button></div>`:''}</section><div class="view-tabs">${members.map((m,i)=>`<button data-view="${i}" class="${i===viewSeat?'active':''}">${esc(m.nickname)}</button>`).join('')}</div><section class="card"><div class="legend">${H.map(h=>`<span style="background:${h.color};color:white">${h.icon} ${h.name}</span>`).join('')}</div><div class="eco-wrap"><div id="eco" class="eco"></div></div>${myTurn&&state.phase==='placeAnimal'?`<div class="pending"><b>${A.find(a=>a.id===state.pending?.animal)?.icon||'🐾'} 동물 토큰 배치</b><p>해당 동물 그림이 있고 비어 있는 서식지 타일을 누르세요. 놓지 않으려면 주머니로 돌려놓을 수 있습니다.</p><button class="btn" id="discardAnimal">동물 토큰 돌려놓기</button></div>`:''}${state.over?`<div class="final"><b>최종 순위</b><br>${state.finalOrder.map((i,n)=>`${n+1}위 ${esc(members[i].nickname)} · ${state.scores[i].total}점`).join('<br>')}</div>`:''}</section></section><aside><section class="card"><h3 style="margin-top:0">${esc(members[viewSeat].nickname)} 점수</h3><div class="score"><span>동물 (초심자 카드)</span><b>${score.animalTotal}</b><span>가장 큰 광역 지형</span><b>${score.habitatTotal}</b><span>광역 지형 상위권</span><b>${score.bonus||0}</b><span>남은 솔방울</span><b>${score.pine}</b><span>합계</span><b>${score.total}</b></div><p class="note">공식 초심자 변형을 사용합니다. 같은 종류 동물 무리는 1마리 2점, 2마리 5점, 3마리 이상 9점입니다. 각 지형은 가장 큰 연결 영역만 계산합니다.</p></section><section class="card"><h3 style="margin-top:0">차례 규칙</h3><p class="note">서식지 타일+동물 토큰 4쌍 중 하나를 가져옵니다. 서식지는 기존 생태계와 한 면 이상 붙여 놓고, 동물은 해당 동물 그림이 있는 빈 타일에 놓습니다. 솔방울은 조합을 분리하거나 동물 토큰을 교체할 때 쓸 수 있습니다.</p></section>${referenceHtml()}<section class="card"><h3 style="margin-top:0">로그</h3><div class="logs">${state.logs.slice(0,50).map(x=>`<div>${esc(x)}</div>`).join('')}</div></section></aside></div>`;
- const board=app.querySelector('#eco');for(const k of Object.keys(eco)){const t=eco[k],d=document.createElement('div'),p=pos(k,eco);d.className='hex';d.style.cssText=`left:${p.x}px;top:${p.y}px;${habitatStyle(t)}`;d.innerHTML=hexHtml(t);if(viewSeat===mySeat&&myTurn&&state.phase==='placeAnimal'&&validAnimalSpots(eco,state.pending.animal).includes(k))d.onclick=()=>placeAnimal(k);board.appendChild(d)}if(viewSeat===mySeat&&myTurn&&state.phase==='placeHabitat')for(const k of validHabitatSpots(eco)){const d=document.createElement('div'),p=pos(k,eco);d.className='hex empty';d.style.cssText=`left:${p.x}px;top:${p.y}px`;d.textContent='＋';d.onclick=()=>placeHabitat(k);board.appendChild(d)}
- app.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>{viewSeat=Number(b.dataset.view);render()});app.querySelectorAll('[data-pair]').forEach(b=>b.onclick=()=>choosePair(Number(b.dataset.pair),Number(b.dataset.pair),false));app.querySelectorAll('[data-hab]').forEach(b=>b.onclick=()=>{if(splitMode){splitHab=Number(b.dataset.hab);render()}});app.querySelectorAll('[data-animal]').forEach(b=>b.onclick=()=>{const i=Number(b.dataset.animal);if(splitMode){splitAni=i;render();return}if(rerollSet.has(i))rerollSet.delete(i);else rerollSet.add(i);render()});app.querySelector('#splitBtn')?.addEventListener('click',()=>{splitMode=!splitMode;render()});app.querySelector('#confirmSplit')?.addEventListener('click',()=>choosePair(splitHab,splitAni,true));app.querySelector('#rerollThree')?.addEventListener('click',rerollThree);app.querySelector('#pineReroll')?.addEventListener('click',rerollWithPine);app.querySelector('#discardAnimal')?.addEventListener('click',discardAnimal);app.querySelector('#rotateHab')?.addEventListener('click',()=>{pendingRot=(pendingRot+1)%6;render()});if(state.over){app.insertAdjacentHTML('beforeend',endPanel('캐스캐디아 종료','최종 점수와 순위가 반영되었습니다.'));maybeSubmit()}}
-(async()=>{try{me=await getMe();if(!me)return showFatal('로그인이 필요합니다.');({room,members}=await loadRoom());if(room.game!=='cascadia')return showFatal('캐스캐디아 방이 아닙니다.');if(members.length<2||members.length>4)return showFatal('캐스캐디아는 2~4명이 필요합니다.');mySeat=members.findIndex(m=>m.user_id===me.user_id);if(mySeat<0)return showFatal('이 방의 참가자가 아닙니다.');viewSeat=mySeat;badges=await ratingBadges('cascadia',members.map(m=>m.user_id));const row=await loadState();revision=row?.revision||0;state=prepareState(row?.state);if(!state&&room.host_id===me.user_id){state=initialState();revision=await saveState(0,state)}if(!state){document.querySelector('#app').innerHTML='<section class="card"><h2>게임 준비 중…</h2><p class="note">방장이 게임 상태를 만드는 중입니다. 잠시만 기다려 주세요.</p></section>';}else render();startStatePoll(async row=>{revision=row.revision;if(row.state){state=prepareState(row.state);render()}},{interval:1500})}catch(e){showFatal(e.message)}})();
-</script></body></html>
+async function maybeSubmit(s){if(submitted||!s?.gameOver||!Array.isArray(s.finalOrder))return;const c=await init();if(!c.isHost)return;const order=s.finalOrder.map(i=>members[Number(i)]?.user_id).filter(Boolean);if(order.length!==members.length)return;submitted=true;try{await submitMatch(order);}catch(e){if(!String(e?.message||e).toLowerCase().includes('already')){submitted=false;console.warn('Cascadia match submit:',e)}}}
+function save(snapshot){const snap=clone(snapshot);pending++;saveChain=saveChain.then(async()=>{try{const nr=await saveState(revision,snap);revision=Number(nr??revision+1);await maybeSubmit(snap);}catch(e){console.warn('Cascadia BoardMate save conflict:',e);try{const row=await loadState();revision=Number(row?.revision||revision);if(row?.state)callbacks.forEach(cb=>cb(clone(row.state)));}catch{}}finally{pending=Math.max(0,pending-1);}});return saveChain;}
+window.BoardMateCascadiaBridge={init,save,subscribe(cb){callbacks.push(cb);return()=>{callbacks=callbacks.filter(x=>x!==cb);};}};
+</script>
+
+</head>
+<body>
+<div id="app"></div>
+<div id="modalRoot"></div>
+<script>
+/*
+  Cascadia online/local multiplayer - clean-room browser implementation.
+  Gameplay references:
+  - User-provided Korean rulebook.
+  - Public solo UI at https://cascadiagame.github.io/
+  - Public repository listing at https://github.com/cascadiagame/cascadiagame.github.io
+  This file intentionally does not bundle/copy original artwork or source assets.
+*/
+(() => {
+'use strict';
+
+const HABITATS = {
+  mountain:{name:'산악', color:'#d8e6ee'},
+  forest:{name:'삼림', color:'#3f7748'},
+  prairie:{name:'초원', color:'#e4bd48'},
+  wetland:{name:'습지', color:'#78b4a6'},
+  river:{name:'하천', color:'#4f9ac5'}
+};
+const HABS = Object.keys(HABITATS);
+const WILDLIFE = {
+  bear:{name:'곰', icon:'🐻'}, elk:{name:'엘크', icon:'🦌'}, salmon:{name:'연어', icon:'🐟'}, hawk:{name:'매', icon:'🦅'}, fox:{name:'여우', icon:'🦊'}
+};
+const WILDS = Object.keys(WILDLIFE);
+const DIRS = [[1,0],[1,-1],[0,-1],[-1,0],[-1,1],[0,1]];
+const R = 45;
+const SQ3 = Math.sqrt(3);
+const SAVE_KEY = 'cascadia-pvp-v1';
+
+let state = null;
+let setupPlayers = 2;
+let setupMode = 'online';
+let viewPlayer = 0;
+const net = {mode:'local', role:null, peer:null, hostConn:null, clients:new Map(), playerIndex:null, room:null, connected:false, lobby:null, suppressSync:false, status:'', scriptPromise:null};
+let replaceSelection = new Set();
+let toastTimer = null;
+let bmCtx = null;
+
+const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+const key = (q,r) => `${q},${r}`;
+const clone = obj => JSON.parse(JSON.stringify(obj));
+const shuffle = arr => { for(let i=arr.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]];} return arr; };
+const esc = s => String(s).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
+
+function showSetup(){
+  cleanupNetwork(false);
+  const saved = localStorage.getItem(SAVE_KEY);
+  document.getElementById('app').innerHTML = `
+  <main class="screen">
+    <div class="setup-wrap">
+      <section class="hero">
+        <div class="kicker">ONLINE / LOCAL · 2-4 PLAYERS</div>
+        <h1>캐스캐디아<br>PVP</h1>
+        <p class="subtitle">온라인에서는 방 코드를 공유해 각자 기기에서 접속하고, 로컬에서는 한 화면을 번갈아 사용합니다.</p>
+        <div class="badges"><span class="badge">2-4명</span><span class="badge">각 20차례</span><span class="badge">온라인 P2P</span><span class="badge">회전 미리보기</span><span class="badge">자동 점수</span></div>
+        <div class="hero-note"><b>온라인 방식</b><br>정적 GitHub Pages에서도 사용할 수 있도록 WebRTC 데이터 채널(PeerJS 공용 시그널링)을 사용합니다. 방장이 게임 상태를 만들고 참가자에게 실시간 동기화합니다.</div>
+      </section>
+      <section class="setup-card">
+        <h2>게임 설정</h2>
+        <div class="field"><label>플레이 방식</label><div class="mode-box" id="modeSeg"><button data-mode="online" class="${setupMode==='online'?'active':''}">🌐 온라인 PVP</button><button data-mode="local" class="${setupMode==='local'?'active':''}">🖥️ 로컬 PVP</button></div></div>
+        <div class="field"><label>플레이어 수</label><div class="seg" id="playerSeg">${[2,3,4].map(n=>`<button data-n="${n}" class="${n===setupPlayers?'active':''}">${n}명</button>`).join('')}</div></div>
+        <div id="localFields" class="${setupMode==='local'?'':'hidden'}">
+          <div class="field"><label>플레이어 이름</label><div class="name-grid" id="nameGrid"></div></div>
+        </div>
+        <div id="onlineFields" class="${setupMode==='online'?'':'hidden'}">
+          <div class="field"><label>내 이름</label><input id="onlineName" maxlength="12" value="플레이어" style="width:100%;padding:11px 12px;border:1px solid #c9cdbd;border-radius:11px;background:#fff"></div>
+          <div class="field"><label>방 참가 코드</label><div class="room-input"><input id="joinCode" maxlength="8" placeholder="예: A7K2QF" style="padding:11px 12px;border:1px solid #c9cdbd;border-radius:11px;background:#fff"><button class="secondary" id="joinBtn">참가</button></div></div>
+          <div class="online-note">방을 만들면 6자리 코드를 친구에게 보내세요. 친구는 같은 페이지에서 코드를 입력해 참가합니다.</div>
+        </div>
+        <div class="field"><label for="scoreMode">동물 점수 방식</label>
+          <select id="scoreMode">
+            <option value="A">정식 A 카드 세트 · 자동 계산 (첫 게임 추천)</option>
+            <option value="family">초심자/가족 변형 · 자동 계산</option>
+            <option value="intermediate">중급자 변형 · 자동 계산</option>
+          </select>
+        </div>
+        <div class="field muted">A 카드 자동 계산: 곰은 정확히 2마리 무리, 엘크는 직선 무리, 연어는 가지치기 없는 떼, 매는 서로 인접하지 않은 개체, 여우는 인접 동물 가짓수로 계산합니다.</div>
+        <div class="setup-actions"><button class="primary" id="startBtn">${setupMode==='online'?'온라인 방 만들기':'새 게임 시작'}</button><button class="secondary" id="rulesBtn">규칙 요약</button></div>
+        <div class="load-box ${saved&&setupMode==='local'?'':'hidden'}" id="loadBox"><button class="secondary" id="loadBtn" style="width:100%">저장된 로컬 게임 이어하기</button></div>
+      </section>
+    </div>
+  </main>`;
+  renderNameInputs();
+  $$('#modeSeg button').forEach(b=>b.onclick=()=>{setupMode=b.dataset.mode;showSetup();});
+  $$('#playerSeg button').forEach(b=>b.onclick=()=>{setupPlayers=+b.dataset.n; $$('#playerSeg button').forEach(x=>x.classList.toggle('active',x===b)); renderNameInputs();});
+  $('#startBtn').onclick = setupMode==='online'?createOnlineRoom:startNewGame;
+  if($('#joinBtn')) $('#joinBtn').onclick=joinOnlineRoom;
+  if($('#joinCode')) $('#joinCode').addEventListener('keydown',e=>{if(e.key==='Enter')joinOnlineRoom();});
+  $('#rulesBtn').onclick = showRules;
+  if(saved&&setupMode==='local') $('#loadBtn').onclick = loadGame;
+}
+
+function renderNameInputs(){
+  const box=$('#nameGrid'); if(!box)return;
+  const old=[...box.querySelectorAll('input')].map(x=>x.value);
+  box.innerHTML=Array.from({length:setupPlayers},(_,i)=>`<input maxlength="12" id="pname${i}" value="${esc(old[i]||`플레이어 ${i+1}`)}" aria-label="플레이어 ${i+1} 이름">`).join('');
+}
+
+
+async function startBoardMateMode(){
+  const app=document.getElementById('app');
+  app.innerHTML='<main class="screen"><section class="setup-card" style="max-width:720px;margin:8vh auto"><h2>BoardMate 방 연결 중…</h2><div class="online-note">방 정보와 저장 상태를 불러오고 있습니다.</div></section></main>';
+  while(!window.BoardMateCascadiaBridge) await new Promise(r=>setTimeout(r,30));
+  bmCtx=await window.BoardMateCascadiaBridge.init();
+  setupPlayers=bmCtx.members.length; net.mode='online';net.role=bmCtx.isHost?'host':'guest';net.playerIndex=bmCtx.playerIndex;net.room=bmCtx.roomId;net.connected=true;net.status='BoardMate 자동 저장 연결됨';
+  net.lobby={playerCount:setupPlayers,scoreMode:'A',players:[...bmCtx.displayNames],started:Boolean(bmCtx.state)};
+  window.BoardMateCascadiaBridge.subscribe(incoming=>{if(!incoming)return;state=clone(incoming);net.lobby.started=true;viewPlayer=net.playerIndex;replaceSelection.clear();renderGame();if(state.gameOver)setTimeout(showScores,120);});
+  if(bmCtx.state){state=clone(bmCtx.state);viewPlayer=net.playerIndex;renderGame();if(state.gameOver)setTimeout(showScores,120);}else showBoardMateSetup();
+}
+function showBoardMateSetup(){
+  const app=document.getElementById('app');
+  const names=bmCtx.displayNames||bmCtx.members.map(m=>m.nickname);
+  app.innerHTML=`<main class="screen"><div class="setup-wrap"><section class="hero"><div class="kicker">BOARDMATE ONLINE ROOM</div><h1>캐스캐디아<br>PVP</h1><p class="subtitle">BoardMate 방의 좌석과 Supabase 자동 저장을 사용합니다.</p><div class="badges"><span class="badge">${names.length}명</span><span class="badge">각 20차례</span><span class="badge">자동 저장/재접속</span><span class="badge">회전 미리보기 34%</span></div><div class="hero-note"><b>참가자</b><br>${names.map(esc).join(' · ')}</div></section><section class="setup-card"><h2>${bmCtx.isHost?'게임 설정':'게임 준비 중'}</h2>${bmCtx.isHost?`<div class="field"><label for="bmScoreMode">동물 점수 방식</label><select id="bmScoreMode"><option value="A">정식 A 카드 세트 · 자동 계산</option><option value="family">초심자/가족 변형 · 자동 계산</option><option value="intermediate">중급자 변형 · 자동 계산</option></select></div><div class="online-note">플레이어 수와 이름은 BoardMate 방에서 고정됩니다. 점수 방식만 고른 뒤 시작하세요.</div><div class="setup-actions"><button class="primary" id="bmStart">게임 시작</button><button class="secondary" id="bmRules">규칙 요약</button></div>`:`<div class="online-note">방장이 점수 방식을 정하고 게임을 시작하면 자동으로 같은 게임판이 열립니다.</div><div class="setup-actions"><button class="secondary" id="bmRules">규칙 요약</button><button class="secondary" id="bmBack">방으로 돌아가기</button></div>`}</section></div></main>`;
+  $('#bmRules').onclick=showRules;
+  if($('#bmBack'))$('#bmBack').onclick=()=>location.href=`./index.html#/room/${encodeURIComponent(bmCtx.roomId)}`;
+  if($('#bmStart'))$('#bmStart').onclick=()=>{initGame([...bmCtx.displayNames],$('#bmScoreMode').value);net.lobby.started=true;};
+}
+
+function randomRoomCode(){
+  const chars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let out=''; const a=new Uint32Array(6); crypto.getRandomValues(a);
+  for(const n of a) out+=chars[n%chars.length];
+  return out;
+}
+function loadPeerJS(){
+  if(window.Peer)return Promise.resolve();
+  if(net.scriptPromise)return net.scriptPromise;
+  const urls=['https://unpkg.com/peerjs@1.5.5/dist/peerjs.min.js','https://cdn.jsdelivr.net/npm/peerjs@1.5.5/dist/peerjs.min.js'];
+  net.scriptPromise=new Promise((resolve,reject)=>{
+    const tryLoad=i=>{
+      if(i>=urls.length){net.scriptPromise=null;reject(new Error('PeerJS 로드 실패'));return;}
+      const sc=document.createElement('script'); sc.src=urls[i]; sc.async=true;
+      sc.onload=()=>window.Peer?resolve():tryLoad(i+1);
+      sc.onerror=()=>{sc.remove();tryLoad(i+1)};
+      document.head.appendChild(sc);
+    };
+    tryLoad(0);
+  });
+  return net.scriptPromise;
+}
+function cleanupNetwork(closePeer=true){
+  if(closePeer){try{net.hostConn&&net.hostConn.close()}catch(e){}; try{net.clients.forEach(c=>c.close())}catch(e){}; try{net.peer&&net.peer.destroy()}catch(e){}}
+  net.mode='local';net.role=null;net.peer=null;net.hostConn=null;net.clients=new Map();net.playerIndex=null;net.room=null;net.connected=false;net.lobby=null;net.suppressSync=false;net.status='';
+}
+function createOnlineRoom(){
+  const name=($('#onlineName')?.value||'플레이어 1').trim()||'플레이어 1';
+  const scoreMode=$('#scoreMode').value;
+  const room=randomRoomCode();
+  net.mode='online';net.role='host';net.playerIndex=0;net.room=room;net.lobby={playerCount:setupPlayers,scoreMode,players:Array(setupPlayers).fill(null),started:false};net.lobby.players[0]=name;net.status='연결 준비 중…';
+  renderOnlineLobby();
+  loadPeerJS().then(()=>{
+    const peerId=`cascadia-${room.toLowerCase()}`;
+    net.peer=new Peer(peerId);
+    net.peer.on('open',()=>{net.connected=true;net.status='방이 열렸습니다.';wireHostPeer();renderOnlineLobby();});
+    net.peer.on('error',err=>{net.status=`연결 오류: ${err.type||err.message}`;state?renderGame():renderOnlineLobby();});
+    net.peer.on('disconnected',()=>{net.connected=false;net.status='시그널링 서버 연결이 끊겼습니다.';state?renderGame():renderOnlineLobby();});
+  }).catch(()=>{net.status='온라인 연결 라이브러리를 불러오지 못했습니다. 네트워크/CSP를 확인하세요.';renderOnlineLobby();});
+}
+function wireHostPeer(){
+  net.peer.on('connection',conn=>{
+    conn.on('data',msg=>handleHostMessage(conn,msg));
+    conn.on('close',()=>{
+      const idx=conn.playerIndex;
+      if(idx!=null && net.lobby && !net.lobby.started){net.lobby.players[idx]=null;}
+      net.clients.delete(conn.peer); broadcastLobby(); if(!state)renderOnlineLobby(); else renderGame();
+    });
+  });
+}
+function handleHostMessage(conn,msg){
+  if(!msg||typeof msg!=='object')return;
+  if(msg.type==='hello'){
+    const requestedName=String(msg.name||'플레이어').slice(0,12);
+    if(net.lobby?.started){
+      const occupied=new Set([...net.clients.values()].map(c=>c.playerIndex));
+      const slot=state?.players.findIndex((p,i)=>i>0&&p.name===requestedName&&!occupied.has(i))??-1;
+      if(slot<0){conn.send({type:'reject',reason:'이미 시작된 게임입니다. 재접속하려면 기존 플레이어 이름을 정확히 입력하세요.'});return;}
+      conn.playerIndex=slot; net.clients.set(conn.peer,conn);
+      conn.send({type:'welcome',playerIndex:slot,room:net.room,lobby:net.lobby}); conn.send({type:'state',state}); renderGame(); return;
+    }
+    if(net.lobby.players.some(n=>n===requestedName)){conn.send({type:'reject',reason:'이미 사용 중인 이름입니다. 다른 이름으로 참가하세요.'});return;}
+    const slot=net.lobby.players.findIndex((x,i)=>i>0&&!x);
+    if(slot<0){conn.send({type:'reject',reason:'방이 가득 찼습니다.'});return;}
+    conn.playerIndex=slot; net.clients.set(conn.peer,conn); net.lobby.players[slot]=requestedName;
+    conn.send({type:'welcome',playerIndex:slot,room:net.room,lobby:net.lobby}); broadcastLobby(); renderOnlineLobby(); return;
+  }
+  if(msg.type==='state' && state && conn.playerIndex===state.current){
+    const incoming=msg.state;
+    if(!incoming||incoming.players?.length!==state.players.length)return;
+    net.suppressSync=true; state=incoming; net.suppressSync=false; viewPlayer=net.playerIndex; broadcastState(); renderGame();
+  }
+}
+function broadcastLobby(){
+  if(net.role!=='host'||!net.lobby)return;
+  net.clients.forEach(c=>{if(c.open)c.send({type:'lobby',lobby:net.lobby})});
+}
+function broadcastState(){
+  if(net.role!=='host'||!state)return;
+  net.clients.forEach(c=>{if(c.open)c.send({type:'state',state})});
+}
+function joinOnlineRoom(){
+  const name=($('#onlineName')?.value||'플레이어').trim()||'플레이어';
+  const room=($('#joinCode')?.value||'').trim().toUpperCase().replace(/[^A-Z0-9]/g,'');
+  if(room.length<4){flash('방 코드를 확인하세요.');return;}
+  net.mode='online';net.role='guest';net.room=room;net.status='방에 연결 중…';net.playerIndex=null;net.lobby=null;renderOnlineLobby();
+  loadPeerJS().then(()=>{
+    net.peer=new Peer();
+    net.peer.on('open',()=>{
+      const conn=net.peer.connect(`cascadia-${room.toLowerCase()}`,{reliable:true}); net.hostConn=conn;
+      conn.on('open',()=>{net.connected=true;net.status='방장과 연결되었습니다.';conn.send({type:'hello',name});renderOnlineLobby();});
+      conn.on('data',handleGuestMessage);
+      conn.on('close',()=>{net.connected=false;net.status='방장과 연결이 끊겼습니다.'; if(state)renderGame();else renderOnlineLobby();});
+      conn.on('error',()=>{net.status='방장 연결 오류';renderOnlineLobby();});
+    });
+    net.peer.on('error',err=>{net.status=`연결 오류: ${err.type||err.message}`;state?renderGame():renderOnlineLobby();});
+  }).catch(()=>{net.status='온라인 연결 라이브러리를 불러오지 못했습니다. 네트워크/CSP를 확인하세요.';renderOnlineLobby();});
+}
+function handleGuestMessage(msg){
+  if(!msg||typeof msg!=='object')return;
+  if(msg.type==='reject'){net.status=msg.reason||'참가할 수 없습니다.';renderOnlineLobby();return;}
+  if(msg.type==='welcome'){net.playerIndex=msg.playerIndex;net.lobby=msg.lobby;net.status='참가 완료';renderOnlineLobby();return;}
+  if(msg.type==='lobby'){net.lobby=msg.lobby;if(!state)renderOnlineLobby();return;}
+  if(msg.type==='state'){
+    net.suppressSync=true; state=msg.state; net.suppressSync=false;
+    if(net.playerIndex!=null)viewPlayer=net.playerIndex; renderGame();
+  }
+}
+function renderOnlineLobby(){
+  const app=document.getElementById('app'); const l=net.lobby;
+  const slots=l?l.players:Array(setupPlayers).fill(null);
+  const ready=l&&slots.every(Boolean);
+  app.innerHTML=`<main class="screen"><div class="setup-wrap"><section class="hero"><div class="kicker">ONLINE ROOM</div><h1>캐스캐디아<br>PVP</h1><p class="subtitle">친구들이 같은 페이지에서 방 코드를 입력하면 자동으로 자리가 배정됩니다.</p><div class="hero-note"><b>연결 방식</b><br>브라우저 간 WebRTC P2P 연결입니다. 방장 탭을 닫으면 현재 온라인 게임도 종료됩니다.</div></section><section class="setup-card"><div class="copy-row"><div><div class="muted">방 코드</div><div class="room-code">${esc(net.room||'------')}</div></div><button class="secondary" id="copyRoom">코드 복사</button></div><div style="margin:12px 0"><span class="net-pill"><span class="net-dot"></span>${esc(net.status||'연결 중')}</span></div><div class="lobby-list">${slots.map((n,i)=>`<div class="lobby-slot ${i===net.playerIndex?'me':''}"><b>${i+1}번 자리</b><span>${n?esc(n):'참가 대기…'}${i===net.playerIndex?' · 나':''}</span></div>`).join('')}</div>${net.role==='host'?`<button class="primary" id="onlineStart" style="width:100%" ${ready&&net.connected?'':'disabled'}>${ready?'게임 시작':'모든 플레이어를 기다리는 중…'}</button>`:`<div class="online-note">방장이 게임을 시작할 때까지 기다리세요.</div>`}<div class="setup-actions"><button class="secondary" id="leaveRoom">방 나가기</button><button class="secondary" id="rulesLobby">규칙 요약</button></div></section></div></main>`;
+  $('#copyRoom').onclick=()=>navigator.clipboard?.writeText(net.room||'').then(()=>flash('방 코드를 복사했습니다.')).catch(()=>flash(`방 코드: ${net.room}`));
+  $('#leaveRoom').onclick=()=>{cleanupNetwork(true);state=null;setupMode='online';showSetup();};
+  $('#rulesLobby').onclick=showRules;
+  if($('#onlineStart'))$('#onlineStart').onclick=startOnlineGame;
+}
+function startOnlineGame(){
+  if(net.role!=='host'||!net.lobby||!net.lobby.players.every(Boolean))return;
+  const names=[...net.lobby.players], scoreMode=net.lobby.scoreMode;
+  initGame(names,scoreMode); net.lobby.started=true; broadcastState(); renderGame();
+}
+
+function makeDeck(){
+  const deck=[]; let id=1;
+  // 25 keystone tiles: five per habitat, balanced across wildlife.
+  HABS.forEach((h,hi)=>{
+    for(let j=0;j<5;j++) deck.push({id:id++, habitats:[h], wildlife:[WILDS[(hi+j)%5]], keystone:true, rotation:0});
+  });
+  // 60 dual-habitat tiles: six for each of the ten habitat pairs.
+  let pairNo=0;
+  for(let a=0;a<HABS.length;a++) for(let b=a+1;b<HABS.length;b++){
+    for(let j=0;j<6;j++){
+      const cnt=(j%3===0)?3:2;
+      const start=(pairNo*2+j)%5;
+      const allowed=[]; for(let k=0;k<cnt;k++) allowed.push(WILDS[(start+k*2)%5]);
+      deck.push({id:id++, habitats:[HABS[a],HABS[b]], wildlife:[...new Set(allowed)], keystone:false, rotation:Math.floor(Math.random()*6)});
+    }
+    pairNo++;
+  }
+  return shuffle(deck);
+}
+
+function makeWildlifeBag(){
+  const bag=[]; WILDS.forEach(w=>{for(let i=0;i<20;i++)bag.push(w)}); return shuffle(bag);
+}
+
+const STARTERS = [
+  [
+    {habitats:['forest','river'],wildlife:['bear','salmon','fox']},
+    {habitats:['mountain','wetland'],wildlife:['hawk','bear']},
+    {habitats:['prairie'],wildlife:['elk','fox','hawk']}
+  ],[
+    {habitats:['mountain','forest'],wildlife:['bear','hawk']},
+    {habitats:['wetland','river'],wildlife:['salmon','fox','hawk']},
+    {habitats:['prairie','forest'],wildlife:['elk','fox']}
+  ],[
+    {habitats:['mountain','prairie'],wildlife:['elk','bear','fox']},
+    {habitats:['river','forest'],wildlife:['salmon','hawk']},
+    {habitats:['wetland'],wildlife:['salmon','fox','bear']}
+  ],[
+    {habitats:['mountain','river'],wildlife:['salmon','bear','hawk']},
+    {habitats:['forest','wetland'],wildlife:['fox','bear']},
+    {habitats:['prairie'],wildlife:['elk','hawk','fox']}
+  ],[
+    {habitats:['mountain'],wildlife:['hawk','bear']},
+    {habitats:['forest','prairie'],wildlife:['elk','fox','bear']},
+    {habitats:['wetland','river'],wildlife:['salmon','hawk','fox']}
+  ]
+];
+
+function starterBoard(index){
+  const tpl=STARTERS[index%STARTERS.length];
+  const coords=[[0,0],[1,0],[0,1]];
+  const board={};
+  coords.forEach(([q,r],i)=>board[key(q,r)]={...clone(tpl[i]),id:`S${index}-${i}`,keystone:false,rotation:(index+i)%6,wildlifeToken:null,q,r,starter:true});
+  return board;
+}
+
+function startNewGame(){
+  net.mode='local';net.role=null;net.playerIndex=null;net.connected=false;
+  const names=Array.from({length:setupPlayers},(_,i)=>($(`#pname${i}`).value||`플레이어 ${i+1}`).trim());
+  const scoreMode=$('#scoreMode').value;
+  initGame(names,scoreMode);
+}
+function initGame(names,scoreMode){
+  const playerCount=names.length;
+  const allDeck=makeDeck();
+  const tileCount={2:43,3:63,4:83}[playerCount];
+  const deck=allDeck.slice(0,tileCount);
+  const bag=makeWildlifeBag();
+  const starters=shuffle([0,1,2,3,4]);
+  const market=Array.from({length:4},()=>({tile:deck.pop(),token:bag.pop()}));
+  state={version:2,players:names.map((name,i)=>({name,nature:0,turns:0,board:starterBoard(starters[i])})),
+    current:0,totalMoves:0,scoreMode,deck,bag,market,natureSupply:25,phase:'draft',pending:null,splitMode:false,splitTile:null,splitToken:null,replaceMode:false,tripleUsed:false,lastSnapshot:null,message:'선택지에서 타일+동물 한 쌍을 고르세요.',gameOver:false};
+  resolveFourDuplicates(); viewPlayer=net.mode==='online'&&net.playerIndex!=null?net.playerIndex:0; replaceSelection.clear(); saveGame(); renderGame();
+}
+
+function saveGame(){
+  if(!state)return;
+  if(bmCtx){window.BoardMateCascadiaBridge?.save(state);return;}
+  if(net.mode==='local') localStorage.setItem(SAVE_KEY,JSON.stringify(state));
+  if(net.mode==='online'&&!net.suppressSync){
+    if(net.role==='host') broadcastState();
+    else if(net.role==='guest'&&net.hostConn?.open) net.hostConn.send({type:'state',state});
+  }
+}
+function loadGame(){
+  try{cleanupNetwork(true);state=JSON.parse(localStorage.getItem(SAVE_KEY)); if(!state||!state.players)throw new Error(); viewPlayer=state.current; replaceSelection.clear(); renderGame();}
+  catch(e){localStorage.removeItem(SAVE_KEY); alert('저장 데이터를 불러오지 못했습니다.'); showSetup();}
+}
+function canAct(){return net.mode!=='online'||(net.connected&&net.playerIndex===state?.current)}
+function requireTurn(){if(canAct())return true;flash('지금은 내 차례가 아닙니다.');return false;}
+
+function snapshot(){ const s=clone(state); s.lastSnapshot=null; return s; }
+function setLastSnapshot(){ state.lastSnapshot=snapshot(); }
+function undoLast(){ if(!requireTurn())return; if(!state.lastSnapshot)return; const restore=state.lastSnapshot; state=restore; viewPlayer=state.current; replaceSelection.clear(); saveGame(); renderGame(); flash('최근 행동을 되돌렸습니다.'); }
+
+function currentPlayer(){return state.players[state.current]}
+function drawToken(){ return state.bag.length?state.bag.pop():null; }
+function returnTokens(tokens){ state.bag.push(...tokens.filter(Boolean)); shuffle(state.bag); }
+function drawTile(){ return state.deck.length?state.deck.pop():null; }
+function countsMarket(){const c={};state.market.forEach(s=>{if(s.token)c[s.token]=(c[s.token]||0)+1});return c}
+function duplicateInfo(){ const c=countsMarket(); const entries=Object.entries(c).sort((a,b)=>b[1]-a[1]); return entries[0]||[null,0]; }
+
+function replaceMarketTokens(indices, costNature=false){
+  if(!indices.length)return;
+  if(costNature){ if(currentPlayer().nature<1){flash('솔방울이 없습니다.');return false;} currentPlayer().nature--; state.natureSupply++; }
+  const removed=[];
+  indices.forEach(i=>{removed.push(state.market[i].token); state.market[i].token=null;});
+  indices.forEach(i=>state.market[i].token=drawToken());
+  returnTokens(removed);
+  resolveFourDuplicates();
+  return true;
+}
+function resolveFourDuplicates(){
+  let guard=0;
+  while(guard++<20){
+    const [w,n]=duplicateInfo(); if(n!==4||!w)break;
+    const removed=state.market.map(s=>s.token); state.market.forEach(s=>s.token=null); state.market.forEach(s=>s.token=drawToken()); returnTokens(removed);
+  }
+}
+function tripleReplace(){
+  if(!requireTurn())return;
+  if(state.phase!=='draft'||state.tripleUsed)return;
+  const [w,n]=duplicateInfo(); if(n!==3)return;
+  setLastSnapshot(); const idx=[]; state.market.forEach((s,i)=>{if(s.token===w)idx.push(i)}); replaceMarketTokens(idx,false); state.tripleUsed=true; saveGame(); renderGame(); flash(`${WILDLIFE[w].name} 토큰 3개를 교체했습니다.`);
+}
+
+function activateSplit(){
+  if(!requireTurn())return;
+  if(state.phase!=='draft'||state.splitMode)return;
+  if(currentPlayer().nature<1){flash('솔방울이 없습니다.');return;}
+  setLastSnapshot(); currentPlayer().nature--; state.natureSupply++; state.splitMode=true; state.splitTile=null; state.splitToken=null; state.message='솔방울 사용: 원하는 서식지 타일과 동물 토큰을 각각 선택하세요.'; saveGame(); renderGame();
+}
+function activateReplaceMode(){
+  if(!requireTurn())return;
+  if(state.phase!=='draft')return; if(currentPlayer().nature<1){flash('솔방울이 없습니다.');return;}
+  state.replaceMode=!state.replaceMode; replaceSelection.clear(); state.message=state.replaceMode?'교체할 동물 토큰을 1개 이상 고른 뒤 확정하세요.':'선택지에서 타일+동물 한 쌍을 고르세요.'; renderGame();
+}
+function confirmNatureReplace(){
+  if(!requireTurn())return;
+  const idx=[...replaceSelection]; if(!idx.length){flash('교체할 토큰을 선택하세요.');return;}
+  setLastSnapshot(); if(replaceMarketTokens(idx,true)){state.replaceMode=false;replaceSelection.clear();state.message='토큰을 교체했습니다. 계속 선택하세요.';saveGame();renderGame();}
+}
+
+function chooseMarketSlot(i){ if(!requireTurn())return; if(state.phase!=='draft'||state.replaceMode||state.splitMode)return; beginDraft(i,i); }
+function selectSplitTile(i){ if(!requireTurn())return; if(!state.splitMode||state.phase!=='draft')return; state.splitTile=i; renderGame(); }
+function selectSplitToken(i){ if(!requireTurn())return; if(!state.splitMode||state.phase!=='draft')return; state.splitToken=i; renderGame(); }
+function confirmSplitDraft(){ if(!requireTurn())return; if(state.splitTile==null||state.splitToken==null){flash('타일과 토큰을 모두 선택하세요.');return;} beginDraft(state.splitTile,state.splitToken,true); }
+
+function beginDraft(tileIndex, tokenIndex, splitAlreadyPaid=false){
+  if(!requireTurn())return;
+  if(state.phase!=='draft')return;
+  if(!state.lastSnapshot) setLastSnapshot();
+  const tile=state.market[tileIndex].tile, token=state.market[tokenIndex].token;
+  if(!tile||!token){flash('선택할 수 없는 조합입니다.');return;}
+  state.pending={tile:clone(tile),token,tileIndex,tokenIndex,rotation:tile.rotation||0,placedCoord:null};
+  state.market[tileIndex].tile=null; state.market[tokenIndex].token=null;
+  state.phase='placeTile'; state.splitMode=false; state.splitTile=null;state.splitToken=null;state.replaceMode=false;replaceSelection.clear();
+  state.message='가져온 서식지 타일의 방향을 정한 뒤, 점선 위치를 클릭해 배치하세요.';
+  saveGame(); renderGame();
+}
+function rotatePending(delta){ if(!requireTurn())return; if(state.phase!=='placeTile'||!state.pending)return; state.pending.rotation=(state.pending.rotation+delta+6)%6; saveGame(); renderBoard(); updatePhaseControls(); }
+
+function adjacentEmpty(board){
+  const out=new Map(); Object.values(board).forEach(c=>DIRS.forEach(([dq,dr])=>{const q=c.q+dq,r=c.r+dr,k=key(q,r);if(!board[k])out.set(k,{q,r})})); return [...out.values()];
+}
+function placeTile(q,r){
+  if(!requireTurn())return;
+  if(state.phase!=='placeTile'||!state.pending||viewPlayer!==state.current)return;
+  const p=currentPlayer(), k=key(q,r); if(p.board[k])return;
+  const valid=adjacentEmpty(p.board).some(c=>c.q===q&&c.r===r); if(!valid)return;
+  const t=clone(state.pending.tile); t.q=q;t.r=r;t.rotation=state.pending.rotation;t.wildlifeToken=null;
+  p.board[k]=t; state.pending.placedCoord={q,r}; state.phase='placeWildlife'; state.message='동물 토큰을 놓을 수 있는 빈 타일을 클릭하거나, 토큰을 주머니로 반환하세요.';
+  saveGame(); renderGame();
+}
+function validWildlifeCells(player, wild){ return Object.values(player.board).filter(c=>!c.wildlifeToken && c.wildlife.includes(wild)); }
+function placeWildlife(q,r){
+  if(!requireTurn())return;
+  if(state.phase!=='placeWildlife'||!state.pending||viewPlayer!==state.current)return;
+  const p=currentPlayer(), cell=p.board[key(q,r)]; if(!cell||cell.wildlifeToken||!cell.wildlife.includes(state.pending.token))return;
+  cell.wildlifeToken=state.pending.token;
+  if(cell.keystone && cell.wildlife.length===1 && state.natureSupply>0){p.nature++;state.natureSupply--;flash('특수 서식지에 알맞은 동물을 놓아 솔방울 1개를 얻었습니다.');}
+  finishTurn(false);
+}
+function returnPendingWildlife(){ if(!requireTurn())return; if(state.phase!=='placeWildlife'||!state.pending)return; returnTokens([state.pending.token]); finishTurn(true); }
+
+function finishTurn(tokenReturned){
+  const p=currentPlayer();
+  const ti=state.pending.tileIndex, wi=state.pending.tokenIndex;
+  let newTile=drawTile();
+  state.market[ti].tile=newTile;
+  state.market[wi].token=drawToken();
+  p.turns++; state.totalMoves++; state.pending=null;
+  resolveFourDuplicates();
+  const ended=!newTile;
+  if(ended){state.phase='gameOver';state.gameOver=true;state.message='마지막 타일 배치가 끝났습니다. 점수를 계산합니다.';const fs=computeScores();state.finalScores=fs;state.finalOrder=fs.map((s,i)=>({i,total:s.total,nature:s.nature})).sort((a,b)=>b.total-a.total||b.nature-a.nature||a.i-b.i).map(x=>x.i);saveGame();renderGame();setTimeout(showScores,250);return;}
+  state.current=(state.current+1)%state.players.length; viewPlayer=state.current; state.phase='draft';state.splitMode=false;state.splitTile=null;state.splitToken=null;state.replaceMode=false;state.tripleUsed=false;replaceSelection.clear();state.lastSnapshot=null;
+  state.message='선택지에서 타일+동물 한 쌍을 고르세요.';
+  saveGame(); renderGame();
+}
+
+function renderGame(){
+  if(!state){showSetup();return;}
+  const p=currentPlayer();
+  const [dupWild,dupN]=duplicateInfo();
+  const app=document.getElementById('app');
+  app.innerHTML=`<div class="game-shell">
+    <header class="topbar">
+      <div class="brand"><div class="brand-mark"></div><div><strong>캐스캐디아 PVP</strong><small>${net.mode==='online'?'온라인':'로컬'} ${state.players.length}인 · ${scoreModeName()}</small></div></div>
+      <div class="stat-row"><span class="stat">현재 <b>${esc(p.name)}</b></span><span class="stat">남은 차례 <b>${Math.max(0,20-p.turns)}</b></span><span class="stat">타일 더미 <b>${state.deck.length}</b></span><span class="stat">솔방울 <b>${p.nature}</b></span></div>
+      <div class="top-actions">${net.mode==='online'?`<span class="net-pill"><span class="net-dot"></span>${bmCtx?'BoardMate 자동 저장':`${net.role==='host'?'방장':'참가'} ${esc(net.room||'')}`}</span>`:''}<button class="icon-btn" id="rulesTop">규칙</button>${net.mode==='local'?'<button class="icon-btn" id="saveTop">저장</button>':''}<button class="icon-btn" id="newTop">나가기</button></div>
+    </header>
+    <div class="layout">
+      <aside class="sidebar">
+        <section class="panel"><h3>플레이어</h3><div class="players">${state.players.map((x,i)=>`<div class="player-card ${i===state.current?'active':''} ${i===viewPlayer?'viewing':''}" data-view="${i}"><div><div class="player-name">${esc(x.name)}</div><div class="player-meta">${x.turns}/20 차례 · 타일 ${Object.keys(x.board).length}</div></div><div class="pine">🌲 ${x.nature}</div></div>`).join('')}</div></section>
+        <section class="panel"><h3>이번 게임 동물 점수</h3>${objectiveHTML()}<div class="wild-key">${WILDS.map(w=>`<span title="${WILDLIFE[w].name}">${WILDLIFE[w].icon}</span>`).join('')}</div></section>
+        <section class="panel"><h3>차례 행동</h3><div class="action-grid" id="phaseControls"></div></section>
+      </aside>
+      <main class="center">
+        <section class="panel market-panel">
+          <div class="market-head"><h3>공용 선택지</h3><div class="market-help">${marketHelp()}</div></div>
+          <div class="market" id="market">${state.market.map((s,i)=>marketSlotHTML(s,i)).join('')}</div>
+          ${state.splitMode?`<div class="split-confirm"><button class="secondary" id="cancelSplit">취소/되돌리기</button><button class="primary" id="confirmSplit">선택 확정</button></div>`:''}
+          ${state.replaceMode?`<div class="split-confirm"><button class="secondary" id="cancelReplace">취소</button><button class="primary" id="confirmReplace">선택한 토큰 교체 (솔방울 1)</button></div>`:''}
+          ${dupN===3 && state.phase==='draft' && !state.tripleUsed?`<div class="notice" style="margin-top:9px">과잉 공급: <b>${WILDLIFE[dupWild].name} 3개</b>. 현재 플레이어는 원하면 같은 토큰 3개를 한 번 교체할 수 있습니다.</div>`:''}
+        </section>
+        <section class="panel board-panel">
+          <div class="board-toolbar"><span class="chip" id="boardOwner"></span><span class="chip" id="boardScoreMini"></span></div>
+          <div id="viewOnly" class="view-only-banner hidden">다른 플레이어 생태계 보기</div>
+          <svg id="boardSvg" role="img" aria-label="플레이어 생태계"></svg>
+          <div class="phasebar" id="phasebar">${esc(state.message||'')}</div>
+        </section>
+      </main>
+      <aside class="rightbar">
+        <section class="panel"><h3>실시간 서식지 규모</h3><div id="habScores" class="score-mini"></div><div class="muted" style="margin-top:8px">각 지형별 가장 큰 연결 구역을 표시합니다. 최종 상위권 보너스는 게임 종료 시 플레이어끼리 비교해 자동 계산합니다.</div></section>
+        <section class="panel"><h3>핵심 규칙</h3><ul class="rules-list"><li>새 타일은 기존 타일과 최소 1면이 맞닿아야 합니다.</li><li>동물은 비어 있고 해당 동물 아이콘이 있는 타일에만 놓습니다.</li><li>특수(★) 타일에 맞는 동물을 놓으면 솔방울 1개를 얻습니다.</li><li>솔방울 1개로 타일/동물을 서로 다른 열에서 고르거나, 원하는 동물 토큰을 교체할 수 있습니다.</li></ul></section>
+        <section class="panel"><h3>상태</h3><div class="notice ${state.phase==='placeWildlife'?'good':''}">${esc(state.message||'')}</div><div class="footer-note">${net.mode==='online'?(canAct()?'내 차례 · 실시간 동기화':'상대 차례 · 실시간 동기화'):'자동 저장됨'} · 원본 게임 일러스트 대신 자체 SVG를 사용합니다.</div></section>
+      </aside>
+    </div>
+  </div>`;
+  wireGameEvents(); renderBoard(); updatePhaseControls(); renderHabScores();
+}
+
+function scoreModeName(){return state.scoreMode==='A'?'A 카드 자동':state.scoreMode==='family'?'초심자/가족': '중급자'}
+function objectiveHTML(){
+  if(state.scoreMode==='family')return `<div class="objective"><h4>초심자/가족 변형</h4><p>같은 종류 동물의 인접 무리마다 1마리=2점, 2마리=5점, 3마리 이상=9점.</p></div>`;
+  if(state.scoreMode==='intermediate')return `<div class="objective"><h4>중급자 변형</h4><p>같은 종류 동물의 인접 무리마다 2마리=5점, 3마리=8점, 4마리 이상=12점. 1마리는 0점.</p></div>`;
+  return `<div class="objective"><h4>A 카드 세트</h4><p><b>곰</b> 정확히 2마리 무리의 쌍 수 · <b>엘크</b> 직선 무리 · <b>연어</b> 각 개체가 연어 2마리 이하와 인접한 떼 · <b>매</b> 다른 매와 인접하지 않은 개체 · <b>여우</b> 주변 동물 가짓수.</p></div>`;
+}
+function marketHelp(){ if(state.replaceMode)return '교체할 동물 토큰을 클릭'; if(state.splitMode)return '타일 영역과 동물 영역을 각각 클릭'; if(state.phase!=='draft')return '현재 배치 단계'; return '한 열을 클릭해 한 쌍 드래프트'; }
+
+function tileMiniSVG(tile){ if(!tile)return `<div class="muted">비어 있음</div>`; const id='g'+tile.id+'-'+Math.random().toString(36).slice(2,7); return `<svg class="mini-hex" viewBox="-52 -50 104 100"><defs>${gradientDef(tile,id)}</defs>${tileShapeSVG(tile,0,0,39,id,false)}<text x="0" y="4" text-anchor="middle" font-size="9" font-weight="800" fill="#26352c">${tile.habitats.map(h=>HABITATS[h].name[0]).join('·')}</text><text x="0" y="18" text-anchor="middle" font-size="10">${tile.wildlife.map(w=>WILDLIFE[w].icon).join('')}</text></svg>`; }
+function marketSlotHTML(s,i){
+  const selectedTile=state.splitMode&&state.splitTile===i, selectedToken=state.splitMode&&state.splitToken===i, repl=state.replaceMode&&replaceSelection.has(i);
+  return `<div class="market-slot ${state.splitMode?'split':''} ${(selectedTile||selectedToken)?'selected':''} ${repl?'replacing':''}" data-slot="${i}">
+    ${s.tile&&s.tile.keystone?'<span class="keystone-star" title="특수 서식지">★</span>':''}
+    <div class="market-tile" data-tile-select="${i}">${tileMiniSVG(s.tile)}</div>
+    <div class="market-token" data-token-select="${i}">${s.token?`<div class="animal-token">${WILDLIFE[s.token].icon}</div><div class="token-name">${WILDLIFE[s.token].name}</div>`:'<div class="muted">비어 있음</div>'}</div>
+    ${state.phase==='draft'&&!state.splitMode&&!state.replaceMode?`<button class="slot-hit" data-pair="${i}" aria-label="${i+1}번 조합 선택"></button>`:''}
+  </div>`;
+}
+
+function wireGameEvents(){
+  $('#rulesTop').onclick=showRules; if($('#saveTop'))$('#saveTop').onclick=()=>{saveGame();flash('게임을 저장했습니다.')}; $('#newTop').onclick=()=>{if(bmCtx){location.href=`./index.html#/room/${encodeURIComponent(bmCtx.roomId)}`;return;}if(confirm(net.mode==='online'?'온라인 방에서 나갈까요?':'현재 게임을 끝내고 설정 화면으로 돌아갈까요?')){cleanupNetwork(true);state=null;showSetup();}};
+  $$('[data-view]').forEach(el=>el.onclick=()=>{viewPlayer=+el.dataset.view;renderGame();});
+  $$('[data-pair]').forEach(el=>el.onclick=()=>chooseMarketSlot(+el.dataset.pair));
+  if(state.splitMode){$$('[data-tile-select]').forEach(el=>el.onclick=()=>selectSplitTile(+el.dataset.tileSelect));$$('[data-token-select]').forEach(el=>el.onclick=()=>selectSplitToken(+el.dataset.tokenSelect));$('#confirmSplit').onclick=confirmSplitDraft;$('#cancelSplit').onclick=undoLast;}
+  if(state.replaceMode){$$('[data-token-select]').forEach(el=>el.onclick=()=>{const i=+el.dataset.tokenSelect;replaceSelection.has(i)?replaceSelection.delete(i):replaceSelection.add(i);renderGame();});$('#confirmReplace').onclick=confirmNatureReplace;$('#cancelReplace').onclick=()=>{state.replaceMode=false;replaceSelection.clear();state.message='선택지에서 타일+동물 한 쌍을 고르세요.';renderGame();};}
+}
+
+function updatePhaseControls(){
+  const box=$('#phaseControls'); if(!box)return;
+  const p=currentPlayer(); const [dw,dn]=duplicateInfo(); let html='';
+  if(net.mode==='online'&&!canAct()&&state.phase!=='gameOver'){box.innerHTML=`<div class="notice">⏳ <b>${esc(currentPlayer().name)}</b>의 차례입니다.<br>내 차례가 되면 자동으로 조작이 활성화됩니다.</div>`;return;}
+  if(state.phase==='draft'){
+    if(dn===3&&!state.tripleUsed) html+=`<button class="secondary" id="tripleBtn">같은 ${WILDLIFE[dw].name} 3개 교체</button>`;
+    html+=`<button class="secondary" id="splitBtn" ${p.nature<1||state.splitMode?'disabled':''}>🌲 솔방울: 타일/동물 따로 선택</button>`;
+    html+=`<button class="secondary" id="replaceBtn" ${p.nature<1?'disabled':''}>🌲 솔방울: 동물 토큰 교체</button>`;
+    if(state.lastSnapshot)html+=`<button class="secondary" id="undoBtn">최근 행동 되돌리기</button>`;
+  } else if(state.phase==='placeTile'){
+    html+=`<button class="secondary" id="rotL">↶ 반시계 회전</button><button class="secondary" id="rotR">↷ 시계 회전</button><button class="danger" id="undoBtn">드래프트 취소/되돌리기</button>`;
+  } else if(state.phase==='placeWildlife'){
+    const n=validWildlifeCells(p,state.pending.token).length;
+    html+=`<div class="notice ${n?'good':'warn'}">${WILDLIFE[state.pending.token].icon} ${WILDLIFE[state.pending.token].name}: 배치 가능 ${n}곳</div><button class="secondary" id="returnWild">동물 토큰을 주머니로 반환</button><button class="danger" id="undoBtn">이번 차례 되돌리기</button>`;
+  } else html=`<button class="primary" id="scoreBtn">최종 점수 보기</button>`;
+  box.innerHTML=html;
+  if($('#tripleBtn'))$('#tripleBtn').onclick=tripleReplace;
+  if($('#splitBtn'))$('#splitBtn').onclick=activateSplit;
+  if($('#replaceBtn'))$('#replaceBtn').onclick=activateReplaceMode;
+  if($('#rotL'))$('#rotL').onclick=()=>rotatePending(-1); if($('#rotR'))$('#rotR').onclick=()=>rotatePending(1);
+  if($('#returnWild'))$('#returnWild').onclick=returnPendingWildlife;
+  if($('#undoBtn'))$('#undoBtn').onclick=undoLast;
+  if($('#scoreBtn'))$('#scoreBtn').onclick=showScores;
+}
+
+function axialToPixel(q,r){return {x:R*SQ3*(q+r/2),y:R*1.5*r}}
+function hexPoints(cx,cy,rr){const pts=[];for(let i=0;i<6;i++){const a=(-30+i*60)*Math.PI/180;pts.push(`${(cx+rr*Math.cos(a)).toFixed(2)},${(cy+rr*Math.sin(a)).toFixed(2)}`)}return pts.join(' ')}
+function halfPointsRight(cx,cy,rr){ const p=[];[-90,-30,30,90].forEach(deg=>{const a=deg*Math.PI/180;p.push(`${(cx+rr*Math.cos(a)).toFixed(2)},${(cy+rr*Math.sin(a)).toFixed(2)}`)});return p.join(' ')}
+function halfPointsLeft(cx,cy,rr){ const p=[];[90,150,210,270].forEach(deg=>{const a=deg*Math.PI/180;p.push(`${(cx+rr*Math.cos(a)).toFixed(2)},${(cy+rr*Math.sin(a)).toFixed(2)}`)});return p.join(' ')}
+function gradientDef(){return ''}
+function tileShapeSVG(tile,cx,cy,rr,id,board=true){
+  const stroke=tile.starter?'#756646':'#ffffff';
+  if(tile.habitats.length===1){return `<polygon points="${hexPoints(cx,cy,rr)}" fill="${HABITATS[tile.habitats[0]].color}" stroke="${stroke}" stroke-width="3"/>`;}
+  const [a,b]=tile.habitats; const rot=(tile.rotation||0)*60;
+  return `<g transform="rotate(${rot} ${cx} ${cy})"><polygon points="${halfPointsLeft(cx,cy,rr)}" fill="${HABITATS[a].color}"/><polygon points="${halfPointsRight(cx,cy,rr)}" fill="${HABITATS[b].color}"/></g><polygon points="${hexPoints(cx,cy,rr)}" fill="none" stroke="${stroke}" stroke-width="3"/>`;
+}
+function edgeTerrain(cell,edge){
+  if(cell.habitats.length===1)return cell.habitats[0];
+  const rel=(edge-(cell.rotation||0)+6)%6; return [5,0,1].includes(rel)?cell.habitats[1]:cell.habitats[0];
+}
+
+function renderBoard(){
+  const svg=$('#boardSvg'); if(!svg)return; const player=state.players[viewPlayer]; const cells=Object.values(player.board); let ghosts=[];
+  if(viewPlayer===state.current&&state.phase==='placeTile'&&canAct())ghosts=adjacentEmpty(player.board);
+  const points=[...cells.map(c=>axialToPixel(c.q,c.r)),...ghosts.map(c=>axialToPixel(c.q,c.r))];
+  let minX=-150,maxX=150,minY=-150,maxY=150; if(points.length){minX=Math.min(...points.map(p=>p.x))-R*2;maxX=Math.max(...points.map(p=>p.x))+R*2;minY=Math.min(...points.map(p=>p.y))-R*2;maxY=Math.max(...points.map(p=>p.y))+R*2;}
+  const width=Math.max(500,maxX-minX),height=Math.max(420,maxY-minY); svg.setAttribute('viewBox',`${minX} ${minY} ${width} ${height}`);
+  const pendingWild=(viewPlayer===state.current&&state.phase==='placeWildlife'&&state.pending)?state.pending.token:null;
+  let html='';
+  cells.forEach(cell=>{
+    const {x,y}=axialToPixel(cell.q,cell.r); const validWild=pendingWild&&!cell.wildlifeToken&&cell.wildlife.includes(pendingWild); const id=`cell-${viewPlayer}-${cell.q}-${cell.r}`;
+    html+=`<g class="hex-cell" data-cell="${cell.q},${cell.r}">${tileShapeSVG(cell,x,y,R,id,true)}
+      <text x="${x}" y="${y-10}" text-anchor="middle" font-size="10" font-weight="900" fill="#243329">${cell.habitats.map(h=>HABITATS[h].name[0]).join('·')}${cell.keystone?' ★':''}</text>
+      <text x="${x}" y="${y+7}" text-anchor="middle" font-size="${cell.wildlifeToken?25:13}">${cell.wildlifeToken?WILDLIFE[cell.wildlifeToken].icon:cell.wildlife.map(w=>WILDLIFE[w].icon).join('')}</text>
+      ${validWild?`<polygon data-wild="${cell.q},${cell.r}" class="wild-target" points="${hexPoints(x,y,R-3)}" fill="rgba(255,255,255,.01)"/>`:''}
+    </g>`;
+  });
+  ghosts.forEach(g=>{
+    const {x,y}=axialToPixel(g.q,g.r);
+    if(state.pending?.tile){
+      const preview=clone(state.pending.tile); preview.rotation=state.pending.rotation;
+      html+=`<g class="preview-pos" data-place="${g.q},${g.r}"><g class="pending-preview">${tileShapeSVG(preview,x,y,R-3,`prev-${g.q}-${g.r}`,true)}<text x="${x}" y="${y-7}" text-anchor="middle" font-size="9" font-weight="900" fill="#243329">${preview.habitats.map(h=>HABITATS[h].name[0]).join('·')}${preview.keystone?' ★':''}</text><text x="${x}" y="${y+10}" text-anchor="middle" font-size="12">${preview.wildlife.map(w=>WILDLIFE[w].icon).join('')}</text></g><polygon class="preview-hit" points="${hexPoints(x,y,R-2)}"/></g>`;
+    } else html+=`<polygon data-place="${g.q},${g.r}" class="ghost" points="${hexPoints(x,y,R-2)}"/>`;
+  });
+  svg.innerHTML=html;
+  $$('[data-place]').forEach(el=>el.onclick=()=>{const [q,r]=el.dataset.place.split(',').map(Number);placeTile(q,r)});
+  $$('[data-wild]').forEach(el=>el.onclick=()=>{const [q,r]=el.dataset.wild.split(',').map(Number);placeWildlife(q,r)});
+  $('#boardOwner').textContent=`${player.name}의 생태계`;
+  $('#viewOnly').classList.toggle('hidden',viewPlayer===state.current);
+  $('#boardScoreMini').textContent=`타일 ${cells.length} · 동물 ${cells.filter(c=>c.wildlifeToken).length}`;
+}
+
+function renderHabScores(){
+  const box=$('#habScores'); if(!box)return; const s=habitatScores(state.players[viewPlayer]);
+  box.innerHTML=HABS.map(h=>`<span><i class="terrain-dot" style="background:${HABITATS[h].color}"></i>${HABITATS[h].name}</span><b>${s[h]}</b>`).join('');
+}
+
+function connectedComponentsByToken(player,wild){
+  const coords=Object.values(player.board).filter(c=>c.wildlifeToken===wild); const set=new Set(coords.map(c=>key(c.q,c.r))); const seen=new Set(), comps=[];
+  for(const c of coords){const k0=key(c.q,c.r);if(seen.has(k0))continue;const comp=[],stack=[c];seen.add(k0);while(stack.length){const x=stack.pop();comp.push(x);DIRS.forEach(([dq,dr])=>{const nk=key(x.q+dq,x.r+dr);if(set.has(nk)&&!seen.has(nk)){seen.add(nk);stack.push(player.board[nk])}})}comps.push(comp)}return comps;
+}
+function habitatScores(player){
+  const out={};
+  HABS.forEach(h=>{
+    const relevant=Object.values(player.board).filter(c=>c.habitats.includes(h)); const seen=new Set(); let best=0;
+    for(const c of relevant){const k0=key(c.q,c.r);if(seen.has(k0))continue;let n=0,stack=[c];seen.add(k0);while(stack.length){const x=stack.pop();n++;DIRS.forEach(([dq,dr],d)=>{const nb=player.board[key(x.q+dq,x.r+dr)];if(!nb||!nb.habitats.includes(h))return;if(edgeTerrain(x,d)!==h||edgeTerrain(nb,(d+3)%6)!==h)return;const nk=key(nb.q,nb.r);if(!seen.has(nk)){seen.add(nk);stack.push(nb)}})}best=Math.max(best,n)}
+    out[h]=best>=2?best:0;
+  }); return out;
+}
+
+function familyWildScores(player, intermediate=false){
+  const scores={}; WILDS.forEach(w=>{scores[w]=connectedComponentsByToken(player,w).reduce((sum,c)=>{const n=c.length; if(intermediate)return sum+(n===1?0:n===2?5:n===3?8:12); return sum+(n===1?2:n===2?5:9);},0)});return scores;
+}
+function bearAScore(player){const pairs=connectedComponentsByToken(player,'bear').filter(c=>c.length===2).length;return [0,4,11,19,27][Math.min(4,pairs)]}
+function salmonAScore(player){
+  const table=[0,2,5,8,12,16,20,25]; let score=0;
+  for(const comp of connectedComponentsByToken(player,'salmon')){let valid=true;for(const c of comp){let deg=0;DIRS.forEach(([dq,dr])=>{const nb=player.board[key(c.q+dq,c.r+dr)];if(nb&&nb.wildlifeToken==='salmon')deg++});if(deg>2){valid=false;break}}if(valid)score+=table[Math.min(7,comp.length)]}
+  return score;
+}
+function hawkAScore(player){
+  let n=0;for(const c of Object.values(player.board).filter(c=>c.wildlifeToken==='hawk')){const adj=DIRS.some(([dq,dr])=>{const nb=player.board[key(c.q+dq,c.r+dr)];return nb&&nb.wildlifeToken==='hawk'});if(!adj)n++}const table=[0,2,5,8,11,14,18,22,26];return table[Math.min(8,n)];
+}
+function foxAScore(player){
+  let score=0;for(const c of Object.values(player.board).filter(c=>c.wildlifeToken==='fox')){const types=new Set();DIRS.forEach(([dq,dr])=>{const nb=player.board[key(c.q+dq,c.r+dr)];if(nb&&nb.wildlifeToken)types.add(nb.wildlifeToken)});score+=Math.min(5,types.size)}return score;
+}
+function elkAScore(player){
+  const elk=Object.values(player.board).filter(c=>c.wildlifeToken==='elk'); if(!elk.length)return 0; const idx=new Map(elk.map((c,i)=>[key(c.q,c.r),i]));
+  const candMap=new Map(); const vals=[0,2,5,9,13];
+  elk.forEach((c,i)=>candMap.set((1<<i)>>>0,{mask:(1<<i)>>>0,score:2}));
+  const axes=[[1,0],[0,1],[1,-1]];
+  for(const c of elk){for(const [dq,dr] of axes){for(let len=2;len<=4;len++){let mask=0,ok=true;for(let k=0;k<len;k++){const j=idx.get(key(c.q+dq*k,c.r+dr*k));if(j==null){ok=false;break}mask=(mask|(1<<j))>>>0;}if(ok)candMap.set(mask,{mask,score:vals[len]});}}}
+  const cands=[...candMap.values()]; const byBit=Array.from({length:elk.length},()=>[]);cands.forEach(c=>{for(let i=0;i<elk.length;i++)if(c.mask&(1<<i))byBit[i].push(c)});
+  const memo=new Map(); const full=elk.length>=31?0:((1<<elk.length)-1)>>>0;
+  function dp(mask){if(mask===0)return 0;if(memo.has(mask))return memo.get(mask);let p=0;while(p<elk.length && !(mask&(1<<p)))p++;let best=0;for(const c of byBit[p])if((c.mask&mask)===c.mask)best=Math.max(best,c.score+dp((mask^c.mask)>>>0));memo.set(mask,best);return best}
+  return dp(full);
+}
+function wildlifeScores(player){
+  if(state.scoreMode==='family')return familyWildScores(player,false);if(state.scoreMode==='intermediate')return familyWildScores(player,true);
+  return {bear:bearAScore(player),elk:elkAScore(player),salmon:salmonAScore(player),hawk:hawkAScore(player),fox:foxAScore(player)};
+}
+
+function majorityBonuses(habsByPlayer){
+  const bonus=state.players.map(()=>Object.fromEntries(HABS.map(h=>[h,0]))); const n=state.players.length;
+  HABS.forEach(h=>{const vals=habsByPlayer.map(x=>x[h]);const max=Math.max(...vals);if(max<=0)return;const leaders=vals.map((v,i)=>v===max?i:-1).filter(i=>i>=0);
+    if(n===2){if(leaders.length===2){leaders.forEach(i=>bonus[i][h]=1)}else bonus[leaders[0]][h]=2;return;}
+    if(leaders.length===1){bonus[leaders[0]][h]=3;const lower=vals.filter(v=>v<max);const second=Math.max(...lower);const seconds=vals.map((v,i)=>v===second?i:-1).filter(i=>i>=0);if(second>0&&seconds.length===1)bonus[seconds[0]][h]=1;}
+    else if(leaders.length===2)leaders.forEach(i=>bonus[i][h]=2);else leaders.forEach(i=>bonus[i][h]=1);
+  });return bonus;
+}
+function computeScores(){
+  const h=state.players.map(habitatScores); const b=majorityBonuses(h);
+  return state.players.map((p,i)=>{const w=wildlifeScores(p);const wildTotal=Object.values(w).reduce((a,x)=>a+x,0);const habTotal=Object.values(h[i]).reduce((a,x)=>a+x,0);const bonusTotal=Object.values(b[i]).reduce((a,x)=>a+x,0);const total=wildTotal+habTotal+bonusTotal+p.nature;return {name:p.name,wild:w,wildTotal,hab:h[i],habTotal,bonus:b[i],bonusTotal,nature:p.nature,total}});
+}
+function showScores(){
+  const scores=computeScores();const max=Math.max(...scores.map(s=>s.total));let winners=scores.filter(s=>s.total===max);if(winners.length>1){const pine=Math.max(...winners.map(s=>s.nature));winners=winners.filter(s=>s.nature===pine)}
+  const winnerNames=winners.map(s=>s.name).join(', ');
+  const header=state.players.map(p=>`<th>${esc(p.name)}</th>`).join('');
+  const rows=[];
+  WILDS.forEach(w=>rows.push(`<tr><td>${WILDLIFE[w].icon} ${WILDLIFE[w].name}</td>${scores.map(s=>`<td>${s.wild[w]}</td>`).join('')}</tr>`));
+  rows.push(`<tr><td><b>동물 소계</b></td>${scores.map(s=>`<td><b>${s.wildTotal}</b></td>`).join('')}</tr>`);
+  HABS.forEach(h=>rows.push(`<tr><td>${HABITATS[h].name} 연결 / 보너스</td>${scores.map(s=>`<td>${s.hab[h]} + ${s.bonus[h]}</td>`).join('')}</tr>`));
+  rows.push(`<tr><td><b>서식지 소계</b></td>${scores.map(s=>`<td><b>${s.habTotal+s.bonusTotal}</b></td>`).join('')}</tr>`);
+  rows.push(`<tr><td>남은 솔방울</td>${scores.map(s=>`<td>${s.nature}</td>`).join('')}</tr>`);
+  rows.push(`<tr><td><b>최종 점수</b></td>${scores.map(s=>`<td class="${s.total===max?'winner':''}"><b>${s.total}</b></td>`).join('')}</tr>`);
+  showModal(`<h2>최종 점수</h2><div class="notice good"><b>승자: ${esc(winnerNames)}</b><br>동점이면 남은 솔방울이 많은 플레이어가 승리하고, 그래도 같으면 공동 승리입니다.</div><div class="score-scroll" style="margin-top:12px"><table class="score-table"><thead><tr><th>항목</th>${header}</tr></thead><tbody>${rows.join('')}</tbody></table></div><div class="footer-note">서식지 연결은 타일의 맞닿는 면에서 같은 지형이 이어질 때만 연결로 계산합니다. 본 구현은 A/초심자/중급 동물 점수를 자동 계산합니다.</div>`,`<button class="secondary" id="closeScore">닫기</button><button class="primary" id="restartScore">새 게임</button>`);
+  $('#closeScore').onclick=closeModal;$('#restartScore').textContent=bmCtx?'방으로 돌아가기':'새 게임';$('#restartScore').onclick=()=>{if(bmCtx){location.href=`./index.html#/room/${encodeURIComponent(bmCtx.roomId)}`;return;}closeModal();localStorage.removeItem(SAVE_KEY);cleanupNetwork(true);state=null;showSetup();};
+}
+
+function showRules(){
+  showModal(`<h2>다인 플레이 규칙 요약</h2>
+  <h3>준비</h3><p>2/3/4명은 각각 43/63/83개의 서식지 타일을 사용합니다. 공용 선택지에는 항상 서식지 타일 4개와 동물 토큰 4개를 한 쌍씩 놓습니다. 각 플레이어는 시작 서식지 1개(이 구현에서는 3개의 연결된 시작 헥스)를 받습니다.</p>
+  <h3>차례</h3><ol><li>공용 선택지의 타일+동물 한 쌍을 가져옵니다.</li><li>새 타일은 기존 타일과 적어도 한 면이 닿게 놓습니다. 회전은 배치 전 자유롭게 할 수 있습니다.</li><li>동물은 비어 있고 해당 동물 표시가 있는 서식지에 놓습니다. 원하지 않거나 놓을 수 없으면 주머니로 반환할 수 있습니다.</li><li>선택지의 빈 타일/토큰을 같은 자리에서 보충합니다.</li></ol>
+  <h3>과잉 공급과 솔방울</h3><p>동물 토큰 4개가 모두 같으면 전부 자동 교체합니다. 3개가 같으면 차례 플레이어가 그 3개를 한 번 교체할 수 있습니다. 솔방울 1개를 쓰면 (1) 서로 다른 열에서 타일 1개와 토큰 1개를 골라 가져오거나, (2) 원하는 수의 동물 토큰을 교체할 수 있습니다.</p>
+  <h3>종료 및 점수</h3><p>각 플레이어는 정확히 20차례를 진행합니다. 동물 점수 + 지형별 가장 큰 연결 구역 + 지형 상위권 보너스 + 남은 솔방울(개당 1점)을 합산합니다. 2명은 각 지형 1위 2점(동률 각 1점), 3-4명은 1위 3점·2위 1점이며 동률 규칙도 자동 반영합니다.</p>
+  <h3>온라인 플레이</h3><p>${bmCtx?'BoardMate 방에서는 Supabase 공유 상태에 행동마다 자동 저장되며, 브라우저를 닫았다가 같은 방으로 다시 들어와 이어할 수 있습니다.': '온라인 모드는 정적 호스팅에서도 동작하도록 WebRTC P2P를 사용합니다. 방장이 방 코드를 만들고, 참가자는 같은 페이지에서 코드를 입력합니다. 방장 브라우저가 게임 상태 동기화의 중심이므로 방장 탭이 닫히면 게임 연결이 종료됩니다.'}</p><h3>이 HTML의 지원 범위</h3><p>정식 첫 게임에 권장되는 A 점수카드 세트와 초심자/중급 변형의 동물 점수를 자동 계산합니다. B/C/D 카드의 다양한 도형 점수는 이 단일 HTML 버전에는 아직 포함하지 않았습니다.</p>`,`<button class="primary" id="closeRules">확인</button>`);$('#closeRules').onclick=closeModal;
+}
+function showModal(body,actions){document.getElementById('modalRoot').innerHTML=`<div class="modal-back"><div class="modal">${body}<div class="modal-actions">${actions||'<button class="primary" id="closeModal">닫기</button>'}</div></div></div>`;if($('#closeModal'))$('#closeModal').onclick=closeModal;}
+function closeModal(){document.getElementById('modalRoot').innerHTML='';}
+function flash(msg){
+  let el=document.getElementById('flashToast');if(!el){el=document.createElement('div');el.id='flashToast';el.style.cssText='position:fixed;z-index:200;left:50%;top:68px;transform:translateX(-50%);background:#26352c;color:white;padding:9px 14px;border-radius:999px;font:700 12px system-ui;box-shadow:0 8px 25px rgba(0,0,0,.24);';document.body.appendChild(el)}el.textContent=msg;el.style.display='block';clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.style.display='none',2300);
+}
+
+document.addEventListener('keydown',e=>{if(!state)return;if(e.key.toLowerCase()==='r'&&state.phase==='placeTile'){rotatePending(1);e.preventDefault()}if(e.key==='Escape'&&document.querySelector('.modal-back'))closeModal();});
+if(new URLSearchParams(location.search).get('room')) startBoardMateMode().catch(e=>{console.error(e);document.getElementById('app').innerHTML=`<main class="screen"><section class="setup-card" style="max-width:720px;margin:8vh auto"><h2>게임을 열 수 없습니다.</h2><div class="online-note">${esc(e.message||String(e))}</div><div class="setup-actions"><button class="secondary" onclick="location.href='./index.html#/multi'">다인플 목록</button></div></section></main>`;}); else showSetup();
+})();
+</script>
+</body>
+</html>

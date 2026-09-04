@@ -1,0 +1,3 @@
+BoardMate Arcade v11 handoff
+Date: 2026-09-04
+Changes: cancel RPC patch, new Calico/Cascadia integration, Pentorini 34% legal-placement previews, 포크노바 display name.

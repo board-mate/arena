@@ -144,3 +144,11 @@
 .game-pill.pocketnova{background:#fff1a8;color:#6b5200}
 .library-card.pocketnova{background:linear-gradient(145deg,#fff7b8,#fff)}
 @media(max-width:760px){.game-grid.daily-two{grid-template-columns:1fr}}
+
+
+/* v11 Pentorini: selected orientation shown at every legal placement (~34% opacity). */
+.pento-board{position:relative}
+.pento-ghost-layer{position:absolute;inset:0;z-index:4;pointer-events:none;overflow:hidden}
+.pento-ghost-cell{position:absolute;left:calc(var(--ghost-col) * (100% / 7));top:calc(var(--ghost-row) * 10%);width:calc(100% / 7);height:10%;opacity:.34;box-sizing:border-box;filter:saturate(.92);}
+.pento-ghost-cell.piece-helper{opacity:.28}
+.p-cell.today-hole,.p-cell.occupied{z-index:5}

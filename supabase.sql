@@ -996,7 +996,8 @@ begin
     end if;
     return nullif(p_state->>'current','')::integer;
   end if;
-  if p_game in ('calico','cascadia','thegame','kraken') then return nullif(p_state->>'current','')::integer; end if;
+  if p_game='calico' then return coalesce(nullif(p_state->>'active','')::integer,nullif(p_state->>'current','')::integer); end if;
+  if p_game in ('cascadia','thegame','kraken') then return nullif(p_state->>'current','')::integer; end if;
   return null;
 exception when others then return null;
 end;
@@ -1095,7 +1096,7 @@ returns text language sql immutable as $$
     when 'acquire' then '어콰이어'
     when 'calico' then '캘리코'
     when 'cascadia' then '캐스캐디아'
-    when 'pocketnova' then '포켓노바'
+    when 'pocketnova' then '포크노바'
     when 'thegame' then '더 게임'
     when 'kraken' then '노터치 크라켄'
     else '보드게임' end;
@@ -1147,7 +1148,8 @@ begin
     end if;
     return nullif(p_state->>'current','')::integer;
   end if;
-  if p_game in ('calico','cascadia','thegame','kraken') then return nullif(p_state->>'current','')::integer; end if;
+  if p_game='calico' then return coalesce(nullif(p_state->>'active','')::integer,nullif(p_state->>'current','')::integer); end if;
+  if p_game in ('cascadia','thegame','kraken') then return nullif(p_state->>'current','')::integer; end if;
   if p_game='pocketnova' then return nullif(p_state->>'currentSeat','')::integer; end if;
   return null;
 exception when others then return null;
@@ -1261,3 +1263,63 @@ begin
 end;
 $$;
 grant execute on function public.boardmate_set_cancel_vote(text,uuid,boolean) to anon, authenticated;
+
+
+-- ============================================================================
+-- v11 final patch: cancel-vote RPC exposure + PostgREST schema cache refresh
+-- Run the entire file OR SUPABASE_CANCEL_FIX.sql after deploying v11.
+-- ============================================================================
+drop function if exists public.boardmate_set_cancel_vote(text,uuid,boolean);
+drop function if exists public.boardmate_get_cancel_status(text,uuid);
+create function public.boardmate_get_cancel_status(p_token text,p_room_id uuid)
+returns jsonb
+language plpgsql security definer stable set search_path=public,extensions
+as $$
+declare uid uuid; r public.boardmate_rooms%rowtype; total_count integer; vote_count integer; mine boolean; voters jsonb;
+begin
+  uid:=public.boardmate_session_user(p_token);
+  if uid is null then raise exception '로그인이 필요합니다.'; end if;
+  select * into r from public.boardmate_rooms where id=p_room_id;
+  if not found then raise exception '방을 찾을 수 없습니다.'; end if;
+  if not exists(select 1 from public.boardmate_room_members where room_id=p_room_id and user_id=uid) then raise exception '이 방의 참가자가 아닙니다.'; end if;
+  select count(*) into total_count from public.boardmate_room_members where room_id=p_room_id;
+  select count(*) into vote_count from public.boardmate_room_cancel_votes where room_id=p_room_id;
+  select exists(select 1 from public.boardmate_room_cancel_votes where room_id=p_room_id and user_id=uid) into mine;
+  select coalesce(jsonb_agg(p.nickname order by m.seat),'[]'::jsonb) into voters
+  from public.boardmate_room_cancel_votes v join public.boardmate_room_members m on m.room_id=v.room_id and m.user_id=v.user_id join public.boardmate_profiles p on p.user_id=v.user_id where v.room_id=p_room_id;
+  return jsonb_build_object('room_status',r.status,'votes',vote_count,'members',total_count,'mine',mine,'voters',voters);
+end;$$;
+grant execute on function public.boardmate_get_cancel_status(text,uuid) to anon, authenticated;
+
+create function public.boardmate_set_cancel_vote(p_token text,p_room_id uuid,p_vote boolean)
+returns jsonb
+language plpgsql security definer set search_path=public,extensions
+as $$
+declare uid uuid; r public.boardmate_rooms%rowtype; total_count integer; vote_count integer; mine boolean; voters jsonb; cur_status text;
+begin
+  uid:=public.boardmate_session_user(p_token);
+  if uid is null then raise exception '로그인이 필요합니다.'; end if;
+  select * into r from public.boardmate_rooms where id=p_room_id for update;
+  if not found then raise exception '방을 찾을 수 없습니다.'; end if;
+  if not exists(select 1 from public.boardmate_room_members where room_id=p_room_id and user_id=uid) then raise exception '이 방의 참가자가 아닙니다.'; end if;
+  if r.status='cancelled' then return public.boardmate_get_cancel_status(p_token,p_room_id); end if;
+  if r.status<>'playing' then raise exception '진행 중인 게임에서만 취소 투표를 할 수 있습니다.'; end if;
+  if coalesce(p_vote,false) then
+    insert into public.boardmate_room_cancel_votes(room_id,user_id,voted_at) values(p_room_id,uid,now())
+    on conflict(room_id,user_id) do update set voted_at=excluded.voted_at;
+  else
+    delete from public.boardmate_room_cancel_votes where room_id=p_room_id and user_id=uid;
+  end if;
+  select count(*) into total_count from public.boardmate_room_members where room_id=p_room_id;
+  select count(*) into vote_count from public.boardmate_room_cancel_votes where room_id=p_room_id;
+  if total_count>0 and vote_count>=total_count then update public.boardmate_rooms set status='cancelled',finished_at=now(),turn_user_id=null,turn_updated_at=now() where id=p_room_id; end if;
+  select exists(select 1 from public.boardmate_room_cancel_votes where room_id=p_room_id and user_id=uid) into mine;
+  select coalesce(jsonb_agg(p.nickname order by m.seat),'[]'::jsonb) into voters
+  from public.boardmate_room_cancel_votes v join public.boardmate_room_members m on m.room_id=v.room_id and m.user_id=v.user_id join public.boardmate_profiles p on p.user_id=v.user_id where v.room_id=p_room_id;
+  select status into cur_status from public.boardmate_rooms where id=p_room_id;
+  return jsonb_build_object('room_status',cur_status,'votes',vote_count,'members',total_count,'mine',mine,'voters',voters);
+end;$$;
+grant execute on function public.boardmate_set_cancel_vote(text,uuid,boolean) to anon, authenticated;
+
+-- Ask Supabase/PostgREST to refresh the exposed RPC schema immediately.
+notify pgrst, 'reload schema';

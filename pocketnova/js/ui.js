@@ -82,7 +82,7 @@ export function startSetupScreen() {
 
 function soloResumeView(saved) {
   const wrap=el('div',{class:'setup-screen'});
-  wrap.appendChild(el('h1',{},'⚡ 포켓노바 · 1인플'));
+  wrap.appendChild(el('h1',{},'⚡ 포크노바 · 1인플'));
   wrap.appendChild(el('p',{},`저장된 게임이 있습니다 · ${Math.min(Number(saved.turnNumber||1),27)}/27턴 · ${saved.phase==='scoring'?'종료됨':`라운드 ${saved.solo?.round||1}/6`}`));
   wrap.appendChild(btn('▶ 이어하기',()=>{game=saved;ui.viewPlayerId=currentPlayer(game).id;render(game.phase==='scoring'?scoreView():mainView());},'btn'));
   wrap.appendChild(el('span',{style:'display:inline-block;width:8px'}));
@@ -92,7 +92,7 @@ function soloResumeView(saved) {
 
 function setupView() {
   const wrap = el('div', { class:'setup-screen' });
-  wrap.appendChild(el('h1', {}, IS_SOLO ? '⚡ 포켓노바 · 1인플' : '⚡ 포켓노바'));
+  wrap.appendChild(el('h1', {}, IS_SOLO ? '⚡ 포크노바 · 1인플' : '⚡ 포크노바'));
   wrap.appendChild(el('p', {}, IS_SOLO ? '아크노바 공식 1인플 방식 · 27턴 안에 매력도와 보존 점수 트랙을 교차시키세요.' : '아크노바 × 포켓몬 리스킨 — 로컬 hotseat'));
 
   let count = IS_SOLO ? 1 : 3;
@@ -237,7 +237,7 @@ function topbar() {
   const pct = Math.min(100, Math.abs(p.appeal-target) > 0
     ? (p.appeal/target*100).toFixed(0) : 100);
   return el('div', { class:'topbar' }, [
-    el('div', { class:'brand' }, ['⚡ 포켓노바', el('small',{},'× 아크노바 리테마')]),
+    el('div', { class:'brand' }, ['⚡ 포크노바', el('small',{},'× 아크노바 리테마')]),
     el('div', { class:'turn-indicator' }, game.solo?.enabled ? [
       `솔로 ${game.solo.round}/6 · `, el('b',{},`${Math.min(game.turnNumber,27)}/27턴`),
       ` · 이번 라운드 ${game.solo.turnsRemaining}턴 남음`,
