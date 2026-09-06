@@ -1,26 +1,18 @@
-# BoardMate Arcade v11.4.1 — 판타지 왕국 다인플 통합
+# Fantasy Realms — BoardMate unified multiplayer integration
 
-## 추가된 파일
-- `online-fantasy-realms.html` — 판타지 왕국 3~6인 실시간 PvP
+Supersedes the original v11.4.1 PeerJS-only integration.
 
-## 사이트 통합
-- `app.js`의 다인플 페이지에 `🏰 판타지 왕국 · 실시간 3~6인` 바로가기 추가
-- 게임 정보에 `fantasyrealms: 3~6인` 추가
+## Current architecture
+Fantasy Realms is a normal BoardMate multiplayer game:
 
-## 연결 방식
-판타지 왕국은 현재 제공된 원본의 PeerJS/WebRTC 방 구조를 그대로 사용합니다.
-- 별도 Supabase 테이블/RPC 필요 없음
-- 방장은 `fantasy-realms-{방코드}` Peer ID를 사용
-- 참가자는 방 코드로 방장에게 WebRTC 연결
-- 방장 브라우저가 게임 상태와 턴을 권위적으로 처리
+`다인플 → 방 만들기 → 판타지 왕국 → 3~6인 → 게임 시작`
 
-## 배포
-1. ZIP 압축 해제
-2. 기존 GitHub Pages 저장소 파일에 덮어쓰기
-3. GitHub Pages 배포 완료 후 `#/multi` → 판타지 왕국 → 게임 열기
-4. 2대 이상의 브라우저/기기로 테스트
+The game uses the shared BoardMate Supabase room and Realtime infrastructure. The old standalone PeerJS lobby/room-code flow is no longer used.
 
-## 주의
-판타지 왕국은 현재 BoardMate Supabase 다인플 방 목록과 독립되어 있습니다. 따라서 중앙 방 목록의 `＋ 방 만들기`에서 생성하는 방에는 포함하지 않았습니다. 게임 자체의 방 만들기/참가 화면을 통해 3~6명이 방 코드로 입장합니다.
+## State privacy
+The public game state contains turn/order/discard/deck-count/player-name information only. Hands and special-card selections are kept in `boardmate_game_private_states`.
 
-Supabase SQL 추가 작업은 없습니다.
+Normal participants receive only their own private state. The host receives the full private map because the current client architecture uses an authoritative host to apply game actions.
+
+## Required Supabase migration
+Run `SUPABASE_FANTASY_REALMS_UNIFIED.sql` once on an existing v11/v11.4 database.

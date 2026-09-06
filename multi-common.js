@@ -73,6 +73,41 @@ export async function saveState(expectedRevision,state){
   void broadcastStateRevision(newRevision);
   return newRevision;
 }
+
+// Fantasy Realms uses a private-per-room state row because player hands are secret.
+// The public room_state contains only redacted game state; the private RPC returns
+// the caller's seat state (or the full host state for the authoritative host).
+export async function loadFantasyState(){
+  const t=token();
+  if(!t)throw new Error('로그인이 필요합니다.');
+  await touchPresence();
+  return await rpc('get_boardmate_fantasy_state',{p_token:t,p_room_id:roomId});
+}
+export async function saveFantasyState(expectedRevision,publicState,privateStates){
+  const t=token();
+  if(!t)throw new Error('로그인이 필요합니다.');
+  await touchPresence();
+  const newRevision=await rpc('put_boardmate_fantasy_state',{
+    p_token:t,p_room_id:roomId,p_expected_revision:expectedRevision,
+    p_public_state:publicState,p_private_states:privateStates
+  });
+  void broadcastStateRevision(newRevision);
+  return Number(newRevision);
+}
+export async function sendRoomBroadcast(event,payload={}){
+  try{
+    const ch=await getStateChannel();
+    if(!ch)return false;
+    const result=await ch.send({type:'broadcast',event,payload});
+    return result==='ok';
+  }catch(e){console.warn(`[BoardMate Realtime] ${event} broadcast failed.`,e);return false;}
+}
+export async function subscribeRoomBroadcast(event,handler){
+  const ch=await getStateChannel();
+  if(!ch)return null;
+  ch.on('broadcast',{event},msg=>{try{handler(msg?.payload??msg);}catch(e){console.warn(`[BoardMate Realtime] ${event} handler failed.`,e);}});
+  return ch;
+}
 function tier(row){const wins=Number(row?.wins||0),losses=Number(row?.losses||0),rank=Number(row?.elo_rank||0);if(rank>=1&&rank<=5)return{text:`#${rank}`,cls:'rank',title:`전체 ${rank}위`};if(wins>=2&&wins/(wins+losses||1)>=.5)return{text:'🥇',cls:'gold',title:'골드'};if(wins>=1)return{text:'🥈',cls:'silver',title:'실버'};return{text:'🥉',cls:'bronze',title:'브론즈'};}
 export async function ratingBadges(game,userIds){const rows=await rpc('boardmate_get_ratings',{p_token:token(),p_game:game,p_user_ids:userIds});return Object.fromEntries((rows||[]).map(r=>[r.user_id,tier(r)]));}
 export async function submitMatch(order){return await rpc('submit_boardmate_match',{p_token:token(),p_room_id:roomId,p_order:order});}

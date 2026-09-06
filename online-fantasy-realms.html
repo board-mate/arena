@@ -11,37 +11,26 @@
 <script>var cursedHoardSuits=false; var playerCount=3;</script>
 <script src="https://fantasy-realms.github.io/js/deck.js"></script>
 <script src="https://fantasy-realms.github.io/js/hand.js"></script>
-<script src="https://unpkg.com/peerjs@1.5.5/dist/peerjs.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="./config.js"></script>
 </head>
+
 
 <body>
 <div class="app">
   <div class="top">
-    <div class="brand"><h1>판타지 왕국 · 온라인 3~6인</h1><p>각자 자기 기기에서 접속 · 한국어 카드 효과 · 현재 점수 자동 계산</p></div>
-    <div class="badge" id="netBadge">연결 안 됨</div>
+    <div class="brand"><h1>판타지 왕국 · BoardMate 온라인 3~6인</h1><p>BoardMate 공통 방 · Supabase Realtime · 비공개 손패</p></div>
+    <div class="badge" id="netBadge">연결 확인 중…</div>
   </div>
 
   <section class="panel" id="lobbyPanel">
-    <div class="setup">
-      <div class="field"><label>내 이름</label><input id="myName" maxlength="16" placeholder="플레이어 이름"></div>
-      <div class="field"><label>방 인원</label><select id="maxPlayers"><option>3</option><option>4</option><option>5</option><option>6</option></select></div>
-      <button class="btn primary" id="createBtn">방 만들기</button>
-      <div class="field"><label>방 코드</label><input id="roomInput" maxlength="6" placeholder="ABC123"></div>
-      <button class="btn good" id="joinBtn">방 참가</button>
-    </div>
-    <p class="small">GitHub Pages 같은 정적 호스팅에서도 온라인 대전이 가능하도록 WebRTC(PeerJS) 방 구조로 만들었습니다.</p>
-  </section>
-
-  <section class="panel wide" id="roomPanel" style="display:none">
     <div class="player-head">
-      <div><div class="small">방 코드</div><div id="roomCode" style="font-size:30px;font-weight:900;color:var(--gold);letter-spacing:.12em">------</div></div>
-      <button class="btn primary" id="startBtn" disabled>게임 시작</button>
+      <div><div class="small">BoardMate 방</div><div id="roomCode" style="font-size:24px;font-weight:900;color:var(--gold);word-break:break-all">-</div></div>
+      <a class="btn" href="./index.html#/multi">← 다인플</a>
     </div>
     <div id="seatList" style="margin-top:10px"></div>
-    <div class="small" id="roomHint"></div>
+    <div class="small" id="roomHint" style="margin-top:8px">공통 BoardMate 방 상태를 불러오는 중입니다.</div>
   </section>
-
-  <div class="players wide" id="players"></div>
 
   <section class="panel wide" id="gamePanel" style="display:none">
     <div class="status">
@@ -51,14 +40,18 @@
     </div>
   </section>
 
+  <section class="panel wide" id="playersPanel" style="display:none">
+    <div class="player-head"><h2>플레이어</h2><span class="small">상대 손패는 비공개</span></div>
+    <div class="players" id="players"></div>
+  </section>
+
   <section class="panel wide" id="discardPanel" style="display:none">
     <div class="player-head"><h2>버린 카드 영역</h2><div class="badge" id="discardCount">0장 / 10장</div></div>
     <div class="discard" id="discard"></div>
   </section>
 
   <section class="panel wide rules">
-    <strong>온라인 기본 규칙</strong> — 3~6명이 각자 7장을 받고 무작위 시작 플레이어부터 진행합니다. 자기 차례에는 덱 또는 공개 버린 카드에서 1장을 가져온 뒤 손에서 1장을 버립니다. 첫 플레이어의 첫 드로우는 덱만 가능합니다. 버린 카드 10장에 도달하면 최종 특수 효과 선택 후 자동 채점합니다.
-    <p class="small">변신 능력자·신기루의 복사 대상, 도플갱어/변화의 책/섬의 대상 선택은 모두 <b>한국어 카드명</b>으로 표시됩니다. 일반 참가자에게는 상대 손패 내용이 전송되지 않습니다.</p>
+    <strong>BoardMate 통합 온라인</strong> — 이 게임은 별도 PeerJS 방이 아니라 BoardMate의 일반 다인플 방에서 실행됩니다. 방 생성/참가/진행/재접속은 다른 게임과 동일하고, 게임 상태 변경은 Supabase Realtime으로 즉시 전달됩니다. 판타지 왕국의 손패는 참가자별 비공개 상태로 저장되며 다른 참가자의 손패는 전송하지 않습니다.
   </section>
 </div>
 
@@ -66,9 +59,12 @@
 <dialog id="actionDialog"><h2 id="actionTitle">특수 카드 설정</h2><div id="actionBody"></div><div style="display:flex;justify-content:flex-end;gap:8px"><button class="btn" id="skipAction">능력 사용 안 함</button><button class="btn good" id="saveAction">저장</button></div></dialog>
 <dialog id="endDialog"><div id="endBody"></div><div style="display:flex;justify-content:flex-end;margin-top:14px"><button class="btn primary" id="endClose">닫기</button></div></dialog>
 
-<script>
+<script type="module">
+import {configured,roomId,getMe,loadRoom,loadFantasyState,saveFantasyState,submitMatch,subscribeRoomBroadcast,sendRoomBroadcast,touchPresence,showFatal} from './multi-common.js';
 (() => {
 'use strict';
+const GAME_ID='fantasyrealms';
+const GAME_VERSION=2;
 const SUIT_KO={land:'땅',flood:'물',weather:'날씨',flame:'불',army:'군대',wizard:'마법사',leader:'지도자',beast:'야수',weapon:'무기',artifact:'유물',wild:'불명'};
 const KO={
 FR01:['산','<b>보너스:</b> 연기와 들불이 모두 있으면 +50. 모든 물의 페널티 제거.'],
@@ -127,238 +123,122 @@ FR53:['도플갱어','<b>효과:</b> 손의 다른 카드 1장의 이름/종류/
 const BASE_IDS=Array.from({length:53},(_,i)=>'FR'+String(i+1).padStart(2,'0'));
 const ACTION_IDS=['FR53','FR52','FR51','FR49','FR09'];
 
+
+
 const $=id=>document.getElementById(id);
 const cardById=id=>deck.getCardById(id);
 const koName=id=>(KO[id]&&KO[id][0])||cardById(id).name;
-const esc=s=>(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
-const code=()=>Array.from({length:6},()=> 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[Math.floor(Math.random()*32)]).join('');
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const shuffle=a=>{const x=a.slice();for(let i=x.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[x[i],x[j]]=[x[j],x[i]]}return x};
+const deepClone=x=>JSON.parse(JSON.stringify(x));
+const optionsHtml=ids=>ids.map(id=>`<option value="${id}">${koName(id)} (${SUIT_KO[cardById(id).suit]||cardById(id).suit})</option>`).join('');
+let me=null,roomInfo=null,members=[],mySeat=null,isHost=false,maxPlayers=6;
+let fullState=null,view=null,revision=0,currentAction=null,subscriptionsReady=false,saveBusy=false,matchSubmitted=false,pollTimer=null;
 
-let peer=null, hostConn=null, isHost=false, mySeat=null, room='', maxPlayers=3;
-let connections=new Map(), lobby=[], state=null, view=null, currentAction=null;
-
-function optionsHtml(ids){
-  return ids.map(id=>`<option value="${id}">${koName(id)} (${SUIT_KO[cardById(id).suit]||cardById(id).suit})</option>`).join('');
+function showDetail(id){const c=cardById(id),k=KO[id]||[c.name,''];$('detailTitle').textContent=`${k[0]} · ${SUIT_KO[c.suit]||c.suit} · 기본 힘 ${c.strength}`;$('detailBody').innerHTML=`<div class="rules">${k[1]}</div>`;$('detailDialog').showModal();}
+function cardEl(id,opt={}){const c=cardById(id),k=KO[id]||[c.name,''],el=document.createElement('div');el.className='card '+c.suit+(opt.click?' click':'');const cfg=opt.config&&ACTION_IDS.includes(id)?'<button class="configure">효과 설정</button>':'';el.innerHTML=`<div><div class="name">${k[0]}</div><div class="meta">${SUIT_KO[c.suit]||c.suit} · 기본 힘 ${c.strength}</div><div class="effect">${k[1]}</div>${cfg}</div><div class="pts"></div>`;el.ondblclick=e=>{e.stopPropagation();showDetail(id)};if(opt.click)el.onclick=opt.click;const b=el.querySelector('.configure');if(b)b.onclick=e=>{e.stopPropagation();openAction(id)};return el;}
+function backEl(){const e=document.createElement('div');e.className='card';e.style.background='linear-gradient(135deg,#172554,#312e81)';e.innerHTML='<div class="name">비공개 손패</div><div class="meta">상대 카드</div><div class="str">✦</div>';return e;}
+function renderRoom(){
+  $('roomCode').textContent=roomId||'-';
+  $('seatList').innerHTML=members.map(m=>`<div style="padding:8px 10px;background:#111827;border-radius:9px;margin:6px 0;display:flex;justify-content:space-between"><span>${Number(m.seat)+1}. ${esc(m.nickname)}${m.user_id===me?.user_id?' (나)':''}${m.user_id===roomInfo?.host_id?' · 방장':''}</span><span>${m.connected?'● 접속':'○ 끊김'}</span></div>`).join('');
+  $('roomHint').textContent=isHost?'판타지 왕국은 BoardMate 공통 방으로 실행됩니다.':'방장과 다른 참가자의 행동이 Realtime으로 동기화됩니다.';
 }
-function showDetail(id){
-  const c=cardById(id),k=KO[id]||[c.name,''];
-  $('detailTitle').textContent=`${k[0]} · ${SUIT_KO[c.suit]||c.suit} · 기본 힘 ${c.strength}`;
-  $('detailBody').innerHTML=`<div class="rules">${k[1]}</div>`;
-  $('detailDialog').showModal();
+function publicSnapshot(){
+  const s=fullState;return {version:GAME_VERSION,gameId:GAME_ID,_gameId:GAME_ID,started:true,playerCount:s.playerCount,players:s.players.map(p=>({seat:p.seat,name:p.name})),current:s.current,startingPlayer:s.startingPlayer,turnNumber:s.turnNumber,phase:s.phase,discardPile:s.discardPile.slice(),drawCount:s.drawPile.length,handCounts:s.hands.map(h=>h.length),gameOver:s.gameOver,finalizeSeat:s.finalizeTask?.seat??null,result:s.result||null};
 }
-function cardEl(id,opt={}){
-  const c=cardById(id),k=KO[id]||[c.name,''],el=document.createElement('div');
-  el.className='card '+c.suit+(opt.click?' click':'');
-  const cfg=opt.config&&ACTION_IDS.includes(id)?'<button class="configure">효과 설정</button>':'';
-  el.innerHTML=`<div><div class="name">${k[0]}</div><div class="meta">${SUIT_KO[c.suit]||c.suit} · 기본 힘 ${c.strength}</div><div class="effect">${k[1]}</div>${cfg}</div><div class="pts"></div>`;
-  el.ondblclick=e=>{e.stopPropagation();showDetail(id)};
-  if(opt.click)el.onclick=opt.click;
-  const b=el.querySelector('.configure');if(b)b.onclick=e=>{e.stopPropagation();openAction(id)};
-  return el;
+function privateSnapshotMap(){
+  const out={};
+  for(let p=0;p<fullState.playerCount;p++) out[String(p)]={hand:fullState.hands[p].slice(),actionData:deepClone(fullState.actionData[p]||{}),finalizeTask:fullState.finalizeTask?.seat===p?deepClone(fullState.finalizeTask):null};
+  out._host={drawPile:fullState.drawPile.slice(),hands:fullState.hands.map(h=>h.slice()),actionData:deepClone(fullState.actionData),finalizeQueue:deepClone(fullState.finalizeQueue||[]),finalizeTask:deepClone(fullState.finalizeTask||null)};
+  return out;
 }
-function backEl(){
-  const e=document.createElement('div');e.className='card';
-  e.style.background='linear-gradient(135deg,#172554,#312e81)';
-  e.innerHTML='<div class="name">비공개 손패</div><div class="meta">상대 카드</div><div class="str">✦</div>';
-  return e;
+function makeView(publicState,privateState,seat){
+  const own=privateState?.[String(seat)]||privateState||{};
+  return {...deepClone(publicState),ownHand:(own.hand||[]).slice(),ownActions:deepClone(own.actionData||{}),finalizeTask:publicState.gameOver?null:deepClone(own.finalizeTask||null),revealHands:publicState.result?.hands||null};
 }
-function showRoom(){
-  $('lobbyPanel').style.display='none';$('roomPanel').style.display='block';$('roomCode').textContent=room;
+function reconstructHost(publicState,privateMap){
+  const h=privateMap?._host;if(!h)throw new Error('호스트 비공개 게임 상태가 없습니다.');
+  fullState={version:GAME_VERSION,gameId:GAME_ID,_gameId:GAME_ID,started:true,playerCount:publicState.playerCount,players:deepClone(publicState.players),current:publicState.current,startingPlayer:publicState.startingPlayer,turnNumber:publicState.turnNumber,phase:publicState.phase,discardPile:deepClone(publicState.discardPile),drawPile:(h.drawPile||[]).slice(),hands:(h.hands||[]).map(x=>x.slice()),actionData:deepClone(h.actionData||[]),gameOver:!!publicState.gameOver,finalizeQueue:deepClone(h.finalizeQueue||[]),finalizeTask:deepClone(h.finalizeTask||null),result:deepClone(publicState.result||null)};
 }
-function showGame(){
-  $('gamePanel').style.display='block';$('discardPanel').style.display='block';
+async function syncState(force=false){
+  try{const row=await loadFantasyState();const rev=Number(row?.revision||0);if(!force&&rev<=revision)return false;revision=rev;if(!row?.state){if(isHost&&!fullState)await startNewGame();return true;}if(isHost)reconstructHost(row.state,row.private);else fullState=null;view=makeView(row.state,row.private,mySeat);renderAll();if(view.gameOver&&view.result)showEnd(view.result);return true;}catch(e){console.warn('Fantasy sync',e);$('netBadge').textContent='연결 오류 · 재시도 중';return false;}}
+async function persist(reason){
+  if(!isHost||!fullState||saveBusy)return false;saveBusy=true;
+  try{const pub=publicSnapshot(),priv=privateSnapshotMap();const newRev=await saveFantasyState(revision,pub,priv);revision=Number(newRev);view=makeView(pub,priv,mySeat);renderAll();if(fullState.gameOver&&fullState.result&&!matchSubmitted){matchSubmitted=true;const order=fullState.result.order.map(x=>members[Number(x.p)]?.user_id).filter(Boolean);try{await submitMatch(order);}catch(e){matchSubmitted=false;console.warn('Fantasy match submit',e);}}$('netBadge').textContent='BoardMate Realtime · 연결됨';return true;}catch(e){console.warn('Fantasy save failed',e);$('netBadge').textContent='저장 실패 · 다시 시도';return false;}finally{saveBusy=false;}}
+function buildGame(){
+  playerCount=members.length;const pile=shuffle(BASE_IDS.slice()),hands=Array.from({length:playerCount},()=>[]);for(let r=0;r<7;r++)for(let p=0;p<playerCount;p++)hands[p].push(pile.pop());const first=Math.floor(Math.random()*playerCount);
+  fullState={version:GAME_VERSION,gameId:GAME_ID,_gameId:GAME_ID,started:true,playerCount,players:members.map((m,i)=>({seat:i,name:m.nickname})),drawPile:pile,discardPile:[],hands,current:first,startingPlayer:first,turnNumber:0,phase:'draw',actionData:Array.from({length:playerCount},()=>({})),gameOver:false,finalizeQueue:[],finalizeTask:null,result:null};
 }
-function renderLobby(){
-  showRoom();
-  $('seatList').innerHTML=lobby.map(p=>`<div style="padding:8px 10px;background:#111827;border-radius:9px;margin:6px 0;display:flex;justify-content:space-between"><span>${p.seat+1}. ${esc(p.name)}${p.seat===mySeat?' (나)':''}</span><span>${p.connected?'● 접속':'○ 끊김'}</span></div>`).join('');
-  $('startBtn').style.display=isHost?'inline-block':'none';
-  $('startBtn').disabled=!isHost||lobby.filter(p=>p.connected).length<3||!!state?.started;
-  $('roomHint').textContent=isHost?'3명 이상 접속하면 시작할 수 있습니다.':'방장이 시작할 때까지 기다리세요.';
-}
-function createRoom(){
-  if(typeof Peer==='undefined')return alert('PeerJS를 불러오지 못했습니다.');
-  if(typeof deck==='undefined'||typeof Hand==='undefined')return alert('Fantasy Realms 점수 엔진을 불러오지 못했습니다.');
-  isHost=true;maxPlayers=Number($('maxPlayers').value);room=code();peer=new Peer('fantasy-realms-'+room);
-  $('netBadge').textContent='방 생성 중…';
-  peer.on('open',()=>{
-    mySeat=0;lobby=[{seat:0,name:($('myName').value.trim()||'방장').slice(0,16),connected:true}];
-    $('netBadge').textContent='방장 · 연결됨';renderLobby();
-  });
-  peer.on('connection',conn=>{
-    conn.on('data',m=>hostReceive(conn,m));
-    conn.on('close',()=>{const s=conn._seat,p=lobby.find(x=>x.seat===s);if(p)p.connected=false;connections.delete(s);broadcastLobby()});
-  });
-  peer.on('error',e=>{if(e.type==='unavailable-id'){try{peer.destroy()}catch(_e){}createRoom()}else alert('연결 오류: '+e.type)});
-}
-function joinRoom(){
-  room=$('roomInput').value.trim().toUpperCase();if(!room)return alert('방 코드를 입력하세요.');
-  isHost=false;peer=new Peer();$('netBadge').textContent='접속 중…';
-  peer.on('open',()=>{
-    hostConn=peer.connect('fantasy-realms-'+room,{reliable:true});
-    hostConn.on('open',()=>hostConn.send({type:'JOIN',name:($('myName').value.trim()||'플레이어').slice(0,16)}));
-    hostConn.on('data',clientReceive);
-    hostConn.on('close',()=>{$('netBadge').textContent='연결 끊김';alert('방장과 연결이 끊겼습니다.')});
-  });
-  peer.on('error',e=>alert('연결 오류: '+e.type));
-}
-function hostReceive(conn,m){
-  if(m.type==='JOIN'){
-    if(state?.started)return conn.send({type:'REJECT',reason:'이미 시작된 방입니다.'});
-    if(lobby.length>=maxPlayers)return conn.send({type:'REJECT',reason:'방이 가득 찼습니다.'});
-    const seat=lobby.length;conn._seat=seat;connections.set(seat,conn);
-    lobby.push({seat,name:m.name||`플레이어 ${seat+1}`,connected:true});
-    conn.send({type:'WELCOME',seat,room,maxPlayers});broadcastLobby();return;
-  }
-  if(m.type==='ACTION'&&conn._seat!=null)hostAction(conn._seat,m.action,m.payload||{});
-}
-function clientReceive(m){
-  if(m.type==='WELCOME'){mySeat=m.seat;room=m.room;maxPlayers=m.maxPlayers;$('netBadge').textContent=`플레이어 ${mySeat+1} · 연결됨`;showRoom()}
-  if(m.type==='REJECT'){alert(m.reason);location.reload()}
-  if(m.type==='LOBBY'){lobby=m.players;renderLobby()}
-  if(m.type==='SNAPSHOT'){view=m.view;showGame();renderGame();maybeFinalizeDialog()}
-  if(m.type==='END'){view=m.view;renderGame();showEnd(m.result)}
-}
-function broadcastLobby(){
-  renderLobby();for(const c of connections.values())if(c.open)c.send({type:'LOBBY',players:lobby,maxPlayers});
-}
-function startGame(){
-  const active=lobby.filter(p=>p.connected);
-  if(active.length<3)return alert('최소 3명이 필요합니다.');
-  if(active.some((p,i)=>p.seat!==i))return alert('끊긴 참가자가 있어 새 방에서 시작하는 것을 권장합니다.');
-  playerCount=active.length;let pile=shuffle(BASE_IDS.slice()),hands=Array.from({length:playerCount},()=>[]);
-  for(let r=0;r<7;r++)for(let p=0;p<playerCount;p++)hands[p].push(pile.pop());
-  const first=Math.floor(Math.random()*playerCount);
-  state={started:true,playerCount,players:active.map((p,i)=>({seat:i,name:p.name})),drawPile:pile,discardPile:[],hands,current:first,startingPlayer:first,turnNumber:0,phase:'draw',actionData:Array.from({length:playerCount},()=>({})),gameOver:false,finalizeQueue:[],finalizeTask:null};
-  broadcastState();
-}
-function snapshot(seat){
-  return {playerCount:state.playerCount,players:state.players,current:state.current,startingPlayer:state.startingPlayer,turnNumber:state.turnNumber,phase:state.phase,discardPile:state.discardPile.slice(),drawCount:state.drawPile.length,handCounts:state.hands.map(h=>h.length),ownHand:(state.hands[seat]||[]).slice(),ownActions:{...(state.actionData[seat]||{})},gameOver:state.gameOver,finalizeTask:state.finalizeTask?.seat===seat?state.finalizeTask:null};
-}
-function broadcastState(){
-  view=snapshot(0);showGame();renderGame();maybeFinalizeDialog();
-  for(const [seat,c] of connections.entries())if(c.open&&seat<state.playerCount)c.send({type:'SNAPSHOT',view:snapshot(seat)});
-}
-function sendAction(action,payload={}){
-  if(isHost)hostAction(mySeat,action,payload);else if(hostConn?.open)hostConn.send({type:'ACTION',action,payload});
-}
-function hostAction(seat,action,payload){
-  if(!state||state.gameOver)return;
+async function startNewGame(){if(!isHost||fullState)return;buildGame();await persist('game-start');}
+function renderAll(){if(!view)return;$('gamePanel').style.display='block';$('playersPanel').style.display='block';$('discardPanel').style.display='block';renderGame();}
+function sendAction(action,payload={}){if(!view||view.gameOver)return;if(isHost)hostAction(mySeat,action,payload);else void sendRoomBroadcast('fantasy_action',{seat:mySeat,action,payload});}
+async function hostAction(seat,action,payload={}){
+  if(!fullState||fullState.gameOver||seat!==fullState.current&&action!=='SET_SPECIAL'&&action!=='NECRO')return;
   if(action==='SET_SPECIAL'){
-    if(!state.hands[seat].includes(payload.cardId))return;
-    if(payload.skip)delete state.actionData[seat][payload.cardId];else state.actionData[seat][payload.cardId]=payload.data;
-    if(state.finalizeTask&&state.finalizeTask.seat===seat&&state.finalizeTask.cardId===payload.cardId)nextFinalize();else broadcastState();
-    return;
+    if(!fullState.hands[seat]?.includes(payload.cardId))return;
+    let ok=false;
+    if(payload.cardId==='FR49') ok=fullState.hands[seat].includes(payload.data?.[0]) && ['land','flood','weather','flame','army','wizard','leader','beast','weapon','artifact'].includes(payload.data?.[1]);
+    else if(payload.cardId==='FR53') ok=fullState.hands[seat].includes(payload.data?.[0])&&payload.data?.[0]!==payload.cardId;
+    else if(payload.cardId==='FR51'||payload.cardId==='FR52') ok=BASE_IDS.includes(payload.data?.[0]);
+    else if(payload.cardId==='FR09') ok=fullState.hands[seat].includes(payload.data?.[0])&&['flood','flame'].includes(cardById(payload.data?.[0]).suit);
+    if(payload.skip) ok=true;if(!ok)return;
+    if(payload.skip)delete fullState.actionData[seat][payload.cardId];else fullState.actionData[seat][payload.cardId]=payload.data;
+    if(fullState.finalizeTask?.seat===seat&&fullState.finalizeTask?.cardId===payload.cardId) nextFinalize(); else await persist('special');return;
   }
   if(action==='NECRO'){
-    if(!state.finalizeTask||state.finalizeTask.seat!==seat||state.finalizeTask.cardId!=='FR28')return;
-    if(payload.target){
-      const i=state.discardPile.indexOf(payload.target),c=i>=0?cardById(payload.target):null;
-      if(c&&['army','leader','wizard','beast'].includes(c.suit)){state.discardPile.splice(i,1);state.hands[seat].push(payload.target)}
-    }
+    if(fullState.finalizeTask?.seat!==seat||fullState.finalizeTask?.cardId!=='FR28')return;
+    if(payload.target){const i=fullState.discardPile.indexOf(payload.target),c=i>=0?cardById(payload.target):null;if(c&&['army','leader','wizard','beast'].includes(c.suit)){fullState.discardPile.splice(i,1);fullState.hands[seat].push(payload.target);}}
     nextFinalize();return;
   }
-  if(state.phase==='finalize'||seat!==state.current)return;
-  if(action==='DRAW'&&state.phase==='draw'){state.hands[seat].push(state.drawPile.pop());state.phase='discard';broadcastState();return}
-  if(action==='TAKE'&&state.phase==='draw'&&!(state.turnNumber===0&&state.current===state.startingPlayer)){
-    const i=Number(payload.index);if(i<0||i>=state.discardPile.length)return;
-    state.hands[seat].push(state.discardPile.splice(i,1)[0]);state.phase='discard';broadcastState();return;
+  if(fullState.phase==='finalize'||seat!==fullState.current)return;
+  if(action==='DRAW'&&fullState.phase==='draw'){if(!fullState.drawPile.length)return;fullState.hands[seat].push(fullState.drawPile.pop());fullState.phase='discard';await persist('draw');return;}
+  if(action==='TAKE'&&fullState.phase==='draw'&&!(fullState.turnNumber===0&&fullState.current===fullState.startingPlayer)){
+    const i=Number(payload.index);if(!Number.isInteger(i)||i<0||i>=fullState.discardPile.length)return;fullState.hands[seat].push(fullState.discardPile.splice(i,1)[0]);fullState.phase='discard';await persist('take');return;
   }
-  if(action==='DISCARD'&&state.phase==='discard'){
-    const i=Number(payload.index);if(i<0||i>=state.hands[seat].length)return;
-    state.discardPile.push(state.hands[seat].splice(i,1)[0]);
-    if(state.discardPile.length>=10){beginFinalize();return}
-    state.turnNumber++;state.current=(state.current+1)%state.playerCount;state.phase='draw';broadcastState();
+  if(action==='DISCARD'&&fullState.phase==='discard'){
+    const i=Number(payload.index);if(!Number.isInteger(i)||i<0||i>=fullState.hands[seat].length)return;fullState.discardPile.push(fullState.hands[seat].splice(i,1)[0]);
+    if(fullState.discardPile.length>=10){beginFinalize();return;}
+    fullState.turnNumber++;fullState.current=(fullState.current+1)%fullState.playerCount;fullState.phase='draw';await persist('discard');
   }
 }
-function beginFinalize(){
-  state.phase='finalize';const q=[];
-  for(let p=0;p<state.playerCount;p++){
-    if(state.hands[p].includes('FR28'))q.push({seat:p,cardId:'FR28'});
-    for(const id of ACTION_IDS)if(state.hands[p].includes(id))q.push({seat:p,cardId:id});
-  }
-  state.finalizeQueue=q;nextFinalize();
-}
-function nextFinalize(){
-  state.finalizeTask=state.finalizeQueue.shift()||null;
-  if(!state.finalizeTask)return finishGame();
-  broadcastState();
-}
-function makeFullHand(p){
-  const h=new Hand(),acts=[];for(const [id,data] of Object.entries(state.actionData[p]||{}))if(data?.length)acts.push([id,...data]);
-  h.loadFromArrays(state.hands[p],acts);return h;
-}
-function discardContext(discard){
-  return {countSuit:s=>discard.reduce((n,id)=>n+(cardById(id).suit===s?1:0),0),contains:name=>discard.some(id=>cardById(id).name===name)};
-}
-function finishGame(){
-  state.gameOver=true;state.phase='end';
-  const dc=discardContext(state.discardPile),hs=state.hands.map((_,p)=>makeFullHand(p)),scores=hs.map(h=>h.score(dc)),bases=hs.map(h=>h.cards().reduce((s,c)=>s+c.card.strength,0));
-  const order=scores.map((s,p)=>({p,s,b:bases[p]})).sort((a,b)=>b.s-a.s||a.b-b.b),best=order[0].s,minBase=Math.min(...order.filter(x=>x.s===best).map(x=>x.b)),winners=order.filter(x=>x.s===best&&x.b===minBase).map(x=>x.p);
-  const result={scores,bases,order,winners,hands:state.hands.map(h=>h.slice())};
-  view={...snapshot(0),revealHands:result.hands};renderGame();showEnd(result);
-  for(const [seat,c] of connections.entries())if(c.open)c.send({type:'END',view:{...snapshot(seat),revealHands:result.hands},result});
-}
-function ownHandObject(){
-  const h=new Hand(),acts=[];for(const [id,data] of Object.entries(view.ownActions||{}))if(data?.length)acts.push([id,...data]);
-  h.loadFromArrays(view.ownHand,acts);return h;
-}
+function beginFinalize(){fullState.phase='finalize';const q=[];for(let p=0;p<fullState.playerCount;p++){if(fullState.hands[p].includes('FR28'))q.push({seat:p,cardId:'FR28'});for(const id of ACTION_IDS)if(fullState.hands[p].includes(id))q.push({seat:p,cardId:id});}fullState.finalizeQueue=q;nextFinalize();}
+async function nextFinalize(){fullState.finalizeTask=fullState.finalizeQueue.shift()||null;if(!fullState.finalizeTask){finishGame();return;}await persist('finalize-step');}
+function makeFullHand(p){const h=new Hand(),acts=[];for(const [id,data] of Object.entries(fullState.actionData[p]||{}))if(data?.length)acts.push([id,...data]);h.loadFromArrays(fullState.hands[p],acts);return h;}
+function discardContext(discard){return {countSuit:s=>discard.reduce((n,id)=>n+(cardById(id).suit===s?1:0),0),contains:name=>discard.some(id=>cardById(id).name===name)};}
+async function finishGame(){fullState.gameOver=true;fullState.phase='end';const dc=discardContext(fullState.discardPile),hs=fullState.hands.map((_,p)=>makeFullHand(p)),scores=hs.map(h=>h.score(dc)),bases=hs.map(h=>h.cards().reduce((s,c)=>s+c.card.strength,0));const order=scores.map((s,p)=>({p,s,b:bases[p]})).sort((a,b)=>b.s-a.s||a.b-b.b);const best=order[0].s,minBase=Math.min(...order.filter(x=>x.s===best).map(x=>x.b)),winners=order.filter(x=>x.s===best&&x.b===minBase).map(x=>x.p);fullState.result={scores,bases,order,winners,hands:fullState.hands.map(h=>h.slice())};await persist('game-over');if(fullState.result)showEnd(fullState.result);}
 function renderGame(){
-  const myTurn=view.current===mySeat&&!view.gameOver&&view.phase!=='finalize';
-  $('players').innerHTML='';
-  for(let p=0;p<view.playerCount;p++){
-    const sec=document.createElement('section');sec.className='panel player'+(p===view.current&&!view.gameOver?' active':'');
-    sec.innerHTML=`<div class="player-head"><h2>${esc(view.players[p].name)}${p===mySeat?' · 나':''}</h2><div class="score" id="score${p}">${p===mySeat?'계산 중':'비공개'}</div></div><div class="small">${view.handCounts[p]}장</div><div class="hand"></div>`;
-    const hand=sec.querySelector('.hand'),cards=view.gameOver&&view.revealHands?view.revealHands[p]:(p===mySeat?view.ownHand:null);
-    if(cards)cards.forEach((id,i)=>hand.appendChild(cardEl(id,{config:p===mySeat&&!view.gameOver,click:p===mySeat&&myTurn&&view.phase==='discard'?()=>sendAction('DISCARD',{index:i}):null})));
-    else for(let i=0;i<view.handCounts[p];i++)hand.appendChild(backEl());
-    $('players').appendChild(sec);
-  }
-  $('discard').innerHTML='';view.discardPile.forEach((id,i)=>$('discard').appendChild(cardEl(id,{click:myTurn&&view.phase==='draw'&&!(view.turnNumber===0&&view.current===view.startingPlayer)?()=>sendAction('TAKE',{index:i}):null})));
-  $('discardCount').textContent=`${view.discardPile.length}장 / 10장`;$('deckBadge').textContent=`덱 ${view.drawCount}장`;
+  const active=view.players[view.current];const myTurn=view.current===mySeat&&!view.gameOver&&view.phase!=='finalize';$('message').textContent=view.gameOver?'게임 종료':myTurn?'내 차례':`${esc(active?.name||'플레이어')} 차례`;
+  $('hint').textContent=view.gameOver?'최종 점수 계산 완료':view.phase==='draw'?(view.current===view.startingPlayer&&view.turnNumber===0?'첫 턴: 덱에서 뽑으세요.':'덱 또는 버린 카드에서 1장 가져오세요.'):'손에서 1장을 버리세요.';
+  $('deckBadge').textContent=`덱 ${view.drawCount}장`;$('discardCount').textContent=`${view.discardPile.length}장 / 10장`;
   $('drawBtn').disabled=!(myTurn&&view.phase==='draw'&&view.drawCount);$('drawBtn').onclick=()=>sendAction('DRAW');
-  if(view.phase==='finalize'){$('message').textContent='최종 효과 설정 중';$('hint').textContent=view.finalizeTask?'내 특수 카드 선택을 완료하세요.':'다른 플레이어를 기다리는 중입니다.'}
-  else if(view.gameOver){$('message').textContent='게임 종료';$('hint').textContent='최종 점수 계산 완료'}
-  else if(myTurn){$('message').textContent='내 차례';$('hint').textContent=view.phase==='draw'?(view.turnNumber===0&&view.current===view.startingPlayer?'첫 턴: 덱에서 뽑으세요.':'덱 또는 버린 카드에서 가져오세요.'):'손에서 1장을 버리세요.'}
-  else{$('message').textContent=`${esc(view.players[view.current].name)} 차례`;$('hint').textContent='상대 행동을 기다리는 중입니다.'}
-  updateOwnScore();
+  $('players').innerHTML='';for(let p=0;p<view.playerCount;p++){const sec=document.createElement('section');sec.className='panel player'+(p===view.current&&!view.gameOver?' active':'');sec.innerHTML=`<div class="player-head"><h2>${esc(view.players[p].name)}${p===mySeat?' · 나':''}</h2><div class="score" id="score${p}">${p===mySeat?'계산 중':'비공개'}</div></div><div class="small">${view.handCounts[p]}장</div><div class="hand"></div>`;const hand=sec.querySelector('.hand'),cards=view.gameOver&&view.revealHands?view.revealHands[p]:(p===mySeat?view.ownHand:null);if(cards)cards.forEach((id,i)=>hand.appendChild(cardEl(id,{config:p===mySeat&&!view.gameOver,click:p===mySeat&&myTurn&&view.phase==='discard'?()=>sendAction('DISCARD',{index:i}):null})));else for(let i=0;i<view.handCounts[p];i++)hand.appendChild(backEl());$('players').appendChild(sec);}
+  $('discard').innerHTML='';view.discardPile.forEach((id,i)=>{const el=cardEl(id,{click:myTurn&&view.phase==='draw'&&!(view.turnNumber===0&&view.current===view.startingPlayer)?()=>sendAction('TAKE',{index:i}):null});$('discard').appendChild(el);});
+  if(view.phase==='finalize')$('hint').textContent=view.finalizeTask?'내 특수 카드의 효과를 선택하세요.':'다른 플레이어의 최종 효과 설정을 기다리는 중입니다.';
+  updateOwnScore();maybeFinalizeDialog();
 }
-function updateOwnScore(){
-  if(!view||view.gameOver)return;
-  try{
-    const h=ownHandObject(),score=h.score(discardContext(view.discardPile));$('score'+mySeat).textContent=score+'점';
-    const map=new Map(h.cards().map(c=>[c.id,c])),mine=$('players').children[mySeat];
-    mine.querySelectorAll('.card').forEach((el,i)=>{const ci=map.get(view.ownHand[i]);if(ci){el.querySelector('.pts').textContent=ci.blanked?'무효 · 0점':`현재 ${ci.points()}점`;el.classList.toggle('blanked-card',ci.blanked)}});
-  }catch(e){$('score'+mySeat).textContent='계산 대기'}
-}
-function openAction(id){
-  if(!view.ownHand.includes(id))return;currentAction=id;$('actionTitle').textContent=`${koName(id)} · 효과 설정`;let html='',ids=[];
-  if(id==='FR28'){ids=view.discardPile.filter(x=>['army','leader','wizard','beast'].includes(cardById(x).suit));html=ids.length?`<div class="modal-row">8번째 카드<select id="aTarget">${optionsHtml(ids)}</select></div>`:'<p>가져올 수 있는 카드가 없습니다.</p>';$('skipAction').textContent='가져오지 않음'}
-  else if(id==='FR53'){ids=view.ownHand.filter(x=>x!==id);html=`<div class="modal-row">복사할 내 카드<select id="aTarget">${optionsHtml(ids)}</select></div>`}
-  else if(id==='FR51'||id==='FR52'){const allowed=id==='FR51'?['artifact','leader','wizard','weapon','beast']:['army','land','weather','flood','flame'];ids=BASE_IDS.filter(x=>allowed.includes(cardById(x).suit));html=`<div class="modal-row">복사할 카드<select id="aTarget">${optionsHtml(ids)}</select></div><div class="small">카드 이름을 전부 한국어로 표시합니다.</div>`}
-  else if(id==='FR49'){ids=view.ownHand.filter(x=>x!==id);html=`<div class="modal-row">종류를 바꿀 카드<select id="aTarget">${optionsHtml(ids)}</select></div><div class="modal-row">새 종류<select id="aSuit">${Object.entries(SUIT_KO).filter(([k])=>k!=='wild').map(([k,v])=>`<option value="${k}">${v}</option>`).join('')}</select></div>`}
-  else if(id==='FR09'){ids=view.ownHand.filter(x=>x!==id&&['flood','flame'].includes(cardById(x).suit));html=ids.length?`<div class="modal-row">페널티 제거 대상<select id="aTarget">${optionsHtml(ids)}</select></div>`:'<p>대상 카드가 없습니다.</p>'}
-  $('actionBody').innerHTML=html;$('saveAction').disabled=!$('aTarget');$('actionDialog').showModal();
-}
-function maybeFinalizeDialog(){if(view?.finalizeTask&&!$('actionDialog').open)openAction(view.finalizeTask.cardId)}
-$('saveAction').onclick=()=>{
-  const target=$('aTarget')?.value;if(!target)return;
-  if(currentAction==='FR28')sendAction('NECRO',{target});
-  else sendAction('SET_SPECIAL',{cardId:currentAction,data:currentAction==='FR49'?[target,$('aSuit').value]:[target]});
-  $('actionDialog').close();$('skipAction').textContent='능력 사용 안 함';
-};
-$('skipAction').onclick=()=>{
-  if(currentAction==='FR28')sendAction('NECRO',{target:null});else sendAction('SET_SPECIAL',{cardId:currentAction,skip:true});
-  $('actionDialog').close();$('skipAction').textContent='능력 사용 안 함';
-};
-function showEnd(r){
-  const names=view.players.map(p=>p.name),win=r.winners.length===1?`${esc(names[r.winners[0]])} 승리!`:`${r.winners.map(i=>esc(names[i])).join(', ')} 공동 승리!`;
-  const rows=r.order.map((x,i)=>`<tr><td>${i+1}위 · ${esc(names[x.p])}</td><td>${x.s}</td><td>${x.b}</td></tr>`).join('');
-  $('endBody').innerHTML=`<div class="winner">${win}</div><table class="ranking"><thead><tr><th>순위</th><th>점수</th><th>기본 힘 합</th></tr></thead><tbody>${rows}</tbody></table>`;$('endDialog').showModal();
-}
+function updateOwnScore(){if(!view||view.gameOver)return;try{const h=(()=>{const hh=new Hand(),acts=[];for(const [id,data]of Object.entries(view.ownActions||{}))if(data?.length)acts.push([id,...data]);hh.loadFromArrays(view.ownHand,acts);return hh;})();const score=h.score(discardContext(view.discardPile));$('score'+mySeat).textContent=score+'점';const map=new Map(h.cards().map(c=>[c.id,c]));const mine=$('players').children[mySeat];mine?.querySelectorAll('.card').forEach((el,i)=>{const ci=map.get(view.ownHand[i]);if(ci){el.querySelector('.pts').textContent=ci.blanked?'무효 · 0점':`현재 ${ci.points()}점`;el.classList.toggle('blanked-card',ci.blanked);}});}catch(e){$('score'+mySeat).textContent='계산 대기';}}
+function openAction(id){if(!view.ownHand.includes(id))return;currentAction=id;$('actionTitle').textContent=`${koName(id)} · 효과 설정`;let html='',ids=[];if(id==='FR28'){ids=view.discardPile.filter(x=>['army','leader','wizard','beast'].includes(cardById(x).suit));html=ids.length?`<div class="modal-row">8번째 카드<select id="aTarget">${optionsHtml(ids)}</select></div>`:'<p>가져올 수 있는 카드가 없습니다.</p>';$('skipAction').textContent='가져오지 않음';}else if(id==='FR53'){ids=view.ownHand.filter(x=>x!==id);html=`<div class="modal-row">복사할 내 카드<select id="aTarget">${optionsHtml(ids)}</select></div>`;}else if(id==='FR51'||id==='FR52'){const allowed=id==='FR51'?['artifact','leader','wizard','weapon','beast']:['army','land','weather','flood','flame'];ids=BASE_IDS.filter(x=>allowed.includes(cardById(x).suit));html=`<div class="modal-row">복사할 카드<select id="aTarget">${optionsHtml(ids)}</select></div><div class="small">한국어 카드명으로 표시합니다.</div>`;}else if(id==='FR49'){ids=view.ownHand.filter(x=>x!==id);html=`<div class="modal-row">종류를 바꿀 카드<select id="aTarget">${optionsHtml(ids)}</select></div><div class="modal-row">새 종류<select id="aSuit">${Object.entries(SUIT_KO).filter(([k])=>k!=='wild').map(([k,v])=>`<option value="${k}">${v}</option>`).join('')}</select></div>`;}else if(id==='FR09'){ids=view.ownHand.filter(x=>x!==id&&['flood','flame'].includes(cardById(x).suit));html=ids.length?`<div class="modal-row">페널티 제거 대상<select id="aTarget">${optionsHtml(ids)}</select></div>`:'<p>대상 카드가 없습니다.</p>';}$('actionBody').innerHTML=html;$('saveAction').disabled=!$('aTarget');$('actionDialog').showModal();}
+function maybeFinalizeDialog(){if(view?.finalizeTask&&!$('actionDialog').open)openAction(view.finalizeTask.cardId);}
+$('saveAction').onclick=()=>{const target=$('aTarget')?.value;if(!target)return;if(currentAction==='FR28')sendAction('NECRO',{target});else sendAction('SET_SPECIAL',{cardId:currentAction,data:currentAction==='FR49'?[target,$('aSuit').value]:[target]});$('actionDialog').close();$('skipAction').textContent='능력 사용 안 함';};
+$('skipAction').onclick=()=>{if(currentAction==='FR28')sendAction('NECRO',{target:null});else sendAction('SET_SPECIAL',{cardId:currentAction,skip:true});$('actionDialog').close();$('skipAction').textContent='능력 사용 안 함';};
+function showEnd(r){const names=view.players.map(p=>p.name),win=r.winners.length===1?`${esc(names[r.winners[0]])} 승리!`:`${r.winners.map(i=>esc(names[i])).join(', ')} 공동 승리!`;const rows=r.order.map((x,i)=>`<tr><td>${i+1}위 · ${esc(names[x.p])}</td><td>${x.s}</td><td>${x.b}</td></tr>`).join('');$('endBody').innerHTML=`<div class="winner">${win}</div><table class="ranking"><thead><tr><th>순위</th><th>점수</th><th>기본 힘 합</th></tr></thead><tbody>${rows}</tbody></table><div style="margin-top:12px;color:#cbd5e1;font-size:12px">BoardMate 방에 결과가 자동 저장되었습니다.</div>`;if(!$('endDialog').open)$('endDialog').showModal();}
 
-$('createBtn').onclick=createRoom;$('joinBtn').onclick=joinRoom;$('startBtn').onclick=startGame;
+async function boot(){
+  if(!configured()||!roomId)showFatal('BoardMate 방 정보가 없습니다. 다인플 방에서 판타지 왕국을 열어주세요.');
+  if(typeof deck==='undefined'||typeof Hand==='undefined')showFatal('판타지 왕국 점수 엔진을 불러오지 못했습니다.');
+  me=await getMe();if(!me)showFatal('로그인이 필요합니다.');
+  ({room:roomInfo,members}=await loadRoom());if(roomInfo.game!==GAME_ID)showFatal('판타지 왕국 방이 아닙니다.');
+  const found=members.find(m=>m.user_id===me.user_id);if(!found)showFatal('이 방의 참가자가 아닙니다.');mySeat=Number(found.seat);isHost=roomInfo.host_id===me.user_id;maxPlayers=Number(roomInfo.max_players||6);renderRoom();
+  $('netBadge').textContent='BoardMate 연결됨';
+  if(!subscriptionsReady){subscriptionsReady=true;await subscribeRoomBroadcast('fantasy_action',msg=>{if(isHost&&msg?.action)void hostAction(Number(msg.seat),msg.action,msg.payload||{});});await subscribeRoomBroadcast('state_changed',msg=>{const rev=Number(msg?.revision||0);if(rev>revision)void syncState();});}
+  const row=await loadFantasyState();revision=Number(row?.revision||0);
+  if(row?.state){if(isHost)reconstructHost(row.state,row.private);view=makeView(row.state,row.private,mySeat);renderAll();if(view.gameOver&&view.result)showEnd(view.result);}else if(isHost){await startNewGame();}else{$('message').textContent='게임 시작 대기 중';$('hint').textContent='방장이 게임을 초기화하면 자동으로 시작됩니다.';}
+  pollTimer=setInterval(()=>void syncState(),10000);
+  window.addEventListener('beforeunload',()=>{if(pollTimer)clearInterval(pollTimer);});
+  setInterval(()=>{void touchPresence(true);},15000);
+}
 $('detailClose').onclick=()=>$('detailDialog').close();$('endClose').onclick=()=>$('endDialog').close();
-$('roomInput').oninput=e=>e.target.value=e.target.value.toUpperCase().replace(/[^A-Z2-9]/g,'').slice(0,6);
+boot().catch(e=>{console.error(e);$('netBadge').textContent='연결 실패';showFatal(e.message||'판타지 왕국을 열 수 없습니다.');});
 })();
 </script>
 </body>
