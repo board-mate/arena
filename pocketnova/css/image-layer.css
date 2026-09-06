@@ -1,0 +1,454 @@
+/* BoardMate Forknova v11.7 image + asset mapping layer. Visual only. */
+
+.zoo-card.has-porknova-art {
+  width: 118px;
+  min-height: 166px;
+  padding: 4px;
+  overflow: hidden;
+  background: #111827;
+}
+
+.porknova-card-art {
+  display: block;
+  width: 100%;
+  aspect-ratio: .715;
+  object-fit: cover;
+  object-position: center;
+  border-radius: 5px;
+  background: #0b1020;
+  pointer-events: none;
+  user-select: none;
+}
+
+.zoo-card.has-porknova-art .card-cost {
+  top: 7px;
+  left: 7px;
+  z-index: 2;
+  padding: 1px 4px;
+  border-radius: 5px;
+  background: rgba(6, 10, 18, .82);
+  text-shadow: 0 1px 2px #000;
+}
+
+.zoo-card.has-porknova-art .card-name {
+  margin-top: 4px;
+  min-height: 1.3em;
+  flex: 0 0 auto;
+}
+
+.zoo-card.has-porknova-art .card-types,
+.zoo-card.has-porknova-art .card-appeal,
+.zoo-card.has-porknova-art .card-ability {
+  position: relative;
+  z-index: 1;
+}
+
+.zoo-card.has-porknova-art .card-ability {
+  max-height: 3.9em;
+  overflow: hidden;
+}
+
+.porknova-image-zoom,
+.porknova-image-link {
+  position: absolute;
+  right: 6px;
+  z-index: 4;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 1px solid rgba(255,255,255,.35);
+  border-radius: 7px;
+  background: rgba(5, 10, 20, .86);
+  color: #fff;
+  font-size: 13px;
+  line-height: 24px;
+  cursor: pointer;
+  opacity: .86;
+}
+
+.porknova-image-zoom { top: 6px; cursor: zoom-in; }
+.porknova-image-link { top: 36px; }
+.porknova-image-zoom:hover,
+.porknova-image-link:hover { opacity: 1; transform: none; }
+
+.action-card.has-porknova-action-art {
+  min-width: 118px;
+  padding: 5px;
+}
+
+.porknova-action-art {
+  display: block;
+  width: 100%;
+  aspect-ratio: .715;
+  object-fit: cover;
+  object-position: top center;
+  border-radius: 6px;
+  pointer-events: none;
+  user-select: none;
+}
+
+.action-card.has-porknova-action-art .slot-strength {
+  position: absolute;
+  left: 8px;
+  top: 8px;
+  z-index: 3;
+  min-width: 28px;
+  padding: 2px 6px;
+  border-radius: 7px;
+  background: rgba(8, 12, 20, .86);
+  color: #fff;
+  text-shadow: 0 1px 2px #000;
+}
+
+.action-card.has-porknova-action-art .action-side {
+  z-index: 3;
+  padding: 2px 5px;
+  border-radius: 5px;
+  background: rgba(8, 12, 20, .86);
+  color: #fff;
+}
+
+.action-card.has-porknova-action-art .action-name {
+  margin-top: 4px;
+  color: var(--text);
+  font-weight: 700;
+}
+
+/* F13/F15: the image is a reference panel, not an SVG hit-area replacement.
+   This preserves the existing board coordinates and build click logic. */
+.porknova-map-reference {
+  margin: 4px 0 10px;
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 9px;
+  overflow: hidden;
+  background: rgba(0,0,0,.18);
+}
+
+.porknova-map-reference > summary {
+  padding: 7px 9px;
+  cursor: pointer;
+  color: #d7e2f3;
+  font-size: 11px;
+  font-weight: 700;
+  user-select: none;
+}
+
+.porknova-map-reference-image {
+  display: block;
+  width: 100%;
+  max-height: 320px;
+  object-fit: contain;
+  background: #0b1020;
+  cursor: zoom-in;
+}
+
+#porknova-image-toolbar {
+  position: fixed;
+  right: 10px;
+  bottom: 10px;
+  z-index: 90;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+}
+
+#porknova-image-toolbar > button {
+  padding: 6px 9px;
+  border: 1px solid rgba(255,255,255,.25);
+  border-radius: 999px;
+  background: rgba(12, 18, 30, .9);
+  color: #fff;
+  box-shadow: 0 3px 14px rgba(0,0,0,.35);
+  font: 700 11px/1.2 system-ui, sans-serif;
+  backdrop-filter: blur(6px);
+  cursor: pointer;
+}
+
+.porknova-image-overlay,
+.porknova-library-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  background: rgba(0, 0, 0, .82);
+  backdrop-filter: blur(5px);
+}
+
+.porknova-image-panel {
+  position: relative;
+  width: min(500px, 94vw);
+  max-height: 94vh;
+  padding: 44px 12px 12px;
+  overflow: auto;
+  border: 1px solid rgba(255,255,255,.2);
+  border-radius: 14px;
+  background: #111827;
+  box-shadow: 0 24px 80px rgba(0,0,0,.55);
+}
+
+.porknova-image-title {
+  position: absolute;
+  left: 14px;
+  top: 12px;
+  right: 54px;
+  overflow: hidden;
+  color: #fff;
+  font-weight: 800;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.porknova-image-close {
+  position: absolute;
+  right: 10px;
+  top: 8px;
+  width: 34px;
+  height: 30px;
+  border: 0;
+  border-radius: 7px;
+  background: rgba(255,255,255,.12);
+  color: #fff;
+  cursor: pointer;
+}
+
+.porknova-image-full {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: calc(94vh - 70px);
+  object-fit: contain;
+  border-radius: 9px;
+}
+
+.porknova-library-overlay { z-index: 950; }
+.porknova-library-panel {
+  display: flex;
+  flex-direction: column;
+  width: min(1080px, 96vw);
+  height: min(850px, 94vh);
+  min-height: 360px;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,.2);
+  border-radius: 14px;
+  background: #101827;
+  box-shadow: 0 24px 80px rgba(0,0,0,.55);
+  color: #fff;
+}
+
+.porknova-library-header,
+.porknova-library-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-bottom: 1px solid rgba(255,255,255,.1);
+}
+
+.porknova-library-header { justify-content: space-between; }
+.porknova-library-heading { min-width: 0; overflow: hidden; font-weight: 800; text-overflow: ellipsis; white-space: nowrap; }
+.porknova-library-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 5px; }
+.porknova-library-actions button,
+.porknova-library-tabs button {
+  padding: 5px 8px;
+  border: 1px solid rgba(255,255,255,.18);
+  border-radius: 7px;
+  background: rgba(255,255,255,.07);
+  color: #fff;
+  cursor: pointer;
+  font-size: 11px;
+}
+.porknova-library-actions button:hover,
+.porknova-library-tabs button:hover,
+.porknova-library-tabs button.active { background: rgba(255,255,255,.16); }
+.porknova-library-close { font-size: 15px !important; }
+
+.porknova-library-controls { flex-wrap: wrap; }
+.porknova-library-tabs { display: flex; flex: 1 1 560px; flex-wrap: wrap; gap: 5px; }
+.porknova-library-search {
+  flex: 0 1 280px;
+  min-width: 180px;
+  padding: 7px 9px;
+  border: 1px solid rgba(255,255,255,.18);
+  border-radius: 7px;
+  background: rgba(0,0,0,.2);
+  color: #fff;
+}
+.porknova-library-search::placeholder { color: #8490a3; }
+
+.porknova-library-note {
+  padding: 7px 12px;
+  border-bottom: 1px solid rgba(255,255,255,.08);
+  color: #f0bf66;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.porknova-library-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(118px, 1fr));
+  gap: 9px;
+  padding: 12px;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+
+.porknova-library-item {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 5px;
+  padding: 5px;
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 8px;
+  background: rgba(255,255,255,.04);
+  color: #d8e2f0;
+  cursor: pointer;
+  text-align: left;
+}
+.porknova-library-item:hover { border-color: rgba(255,255,255,.35); background: rgba(255,255,255,.09); transform: none; }
+.porknova-library-item img { width: 100%; aspect-ratio: .715; object-fit: cover; border-radius: 5px; background: #080d17; }
+.porknova-library-item span { overflow: hidden; font-size: 10px; line-height: 1.3; text-overflow: ellipsis; }
+.porknova-library-empty { grid-column: 1/-1; color: #8f9caf; text-align: center; }
+
+.porknova-images-off .porknova-card-art,
+.porknova-images-off .porknova-action-art,
+.porknova-images-off .porknova-image-zoom,
+.porknova-images-off .porknova-image-link,
+.porknova-images-off .porknova-map-reference {
+  display: none !important;
+}
+
+.porknova-images-off .zoo-card.has-porknova-art {
+  width: 90px;
+  min-height: 120px;
+  padding: 6px;
+}
+
+.porknova-images-off .zoo-card.has-porknova-art .card-name { margin-top: 18px; }
+.porknova-images-off .action-card.has-porknova-action-art { min-width: 90px; padding: 8px 6px; }
+.porknova-images-off .action-card.has-porknova-action-art .slot-strength { position: static; background: transparent; color: var(--money); padding: 0; }
+
+@media (max-width: 700px) {
+  .zoo-card.has-porknova-art { width: 104px; min-height: 150px; }
+  .action-card.has-porknova-action-art { min-width: 104px; }
+  #porknova-image-toolbar { right: 7px; bottom: 7px; }
+  .porknova-map-reference-image { max-height: 220px; }
+  .porknova-library-overlay { padding: 5px; }
+  .porknova-library-panel { width: 100%; height: 98vh; }
+  .porknova-library-header { align-items: flex-start; }
+  .porknova-library-actions button:not(.porknova-library-close) { padding: 5px 6px; }
+  .porknova-library-grid { grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 6px; padding: 7px; }
+}
+
+/* v3 renders conservation projects as plain rows rather than .zoo-card. */
+.porknova-project-row { position: relative; padding-right: 38px !important; }
+.porknova-project-row.has-porknova-project-art {
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr);
+  column-gap: 8px;
+  align-items: start;
+}
+.porknova-project-row-art {
+  grid-column: 1;
+  grid-row: 1 / span 3;
+  width: 72px;
+  aspect-ratio: .715;
+  object-fit: cover;
+  border-radius: 5px;
+  cursor: zoom-in;
+}
+.porknova-project-row.has-porknova-project-art > div { grid-column: 2; }
+.porknova-project-map,
+.porknova-project-zoom {
+  position: absolute;
+  right: 6px;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 1px solid rgba(255,255,255,.22);
+  border-radius: 6px;
+  background: rgba(5,10,20,.82);
+  color: #fff;
+  cursor: pointer;
+  line-height: 24px;
+}
+.porknova-project-map { top: 6px; }
+.porknova-project-zoom { top: 36px; }
+
+.porknova-final-links { display:flex; flex-wrap:wrap; gap:5px; margin-top:5px; }
+.porknova-final-chip {
+  display:inline-flex;
+  align-items:center;
+  gap:4px;
+  padding:3px 6px;
+  border:1px solid rgba(255,255,255,.15);
+  border-radius:999px;
+  background:rgba(255,255,255,.06);
+  color:#dce6f4;
+  font-size:10px;
+  cursor:pointer;
+}
+.porknova-final-chip img { width:22px; height:30px; object-fit:cover; border-radius:3px; }
+
+.porknova-images-off .porknova-project-row-art,
+.porknova-images-off .porknova-project-map,
+.porknova-images-off .porknova-project-zoom,
+.porknova-images-off .porknova-final-links { display:none !important; }
+.action-card > .porknova-image-zoom { top: 36px; }
+.porknova-images-off .porknova-project-row.has-porknova-project-art { display: block; }
+
+.porknova-mapping-workbench {
+  padding: 8px 12px;
+  border-bottom: 1px solid rgba(255,255,255,.08);
+  background: rgba(255,255,255,.025);
+}
+.porknova-workbench-title { margin-bottom:6px; color:#d8e2f0; font-size:11px; font-weight:800; }
+.porknova-workbench-list { display:flex; flex-wrap:wrap; gap:5px; max-height:112px; overflow:auto; }
+.porknova-workbench-card {
+  padding:4px 7px;
+  border:1px solid rgba(255,255,255,.13);
+  border-radius:999px;
+  background:rgba(0,0,0,.16);
+  color:#aeb9c9;
+  font-size:10px;
+  cursor:pointer;
+}
+.porknova-workbench-card.mapped { border-color:rgba(110,231,183,.45); color:#b9f6dc; background:rgba(16,185,129,.09); }
+.porknova-workbench-card:hover { background:rgba(255,255,255,.1); transform:none; }
+
+/* v11.7 mapping provenance */
+.porknova-workbench-card.auto {
+  border-style: dashed;
+}
+.porknova-workbench-card.disabled-auto {
+  opacity: .55;
+  text-decoration: line-through;
+}
+.zoo-card[data-porknova-image-source="builtin"] .porknova-image-link::after,
+.zoo-card[data-porknova-image-source="ocr"] .porknova-image-link::after,
+.zoo-card[data-porknova-image-source="catalog"] .porknova-image-link::after {
+  content: 'A';
+  position: absolute;
+  right: -3px;
+  bottom: -3px;
+  display: grid;
+  place-items: center;
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: #e5e7eb;
+  color: #111827;
+  font: 800 7px/1 system-ui, sans-serif;
+}
+
+
+/* v11.7 source-rule audit hints in the mapping workbench. */
+.porknova-workbench-card.audit-verified { box-shadow: inset 0 0 0 1px rgba(110,231,183,.16); }
+.porknova-workbench-card.audit-mismatch {
+  border-color: rgba(251,191,36,.55);
+  color: #fbd38d;
+  background: rgba(245,158,11,.08);
+}

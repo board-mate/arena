@@ -153,18 +153,23 @@ export function rebuildIconCounts(player) {
     water:0, fire:0, grass:0, fighting:0, psychic:0, fossil:0,
     '관동':0, '성도':0, '호연':0, '신오':0, '하나':0,
   };
+  const addIcon = icon => { if (icon in counts) counts[icon]++; };
   const addCard = card => {
-    if (card.types)   card.types.forEach(t => { if (t in counts) counts[t]++; });
-    if (card.regions) card.regions.forEach(r => { if (r in counts) counts[r]++; });
-    // 물/바위 요구조건도 아이콘으로 집계 (룰북 p.15)
-    if (card.requiresWater) counts.water += card.requiresWater;
-    if (card.requiresRock)  ; // 바위 아이콘은 별도 집계 없음
+    // Current animal data uses singular `type`; keep `types` compatibility for
+    // older/imported states. Water/rock adjacency requirements are not icons.
+    const types = Array.isArray(card.types) ? card.types : (card.type ? [card.type] : []);
+    types.forEach(addIcon);
+    (card.regions || []).forEach(addIcon);
+    // Sponsor/imported cards may expose one or more printed icons separately.
+    const extraIcons = Array.isArray(card.icons) ? card.icons : (card.icon ? [card.icon] : []);
+    extraIcons.forEach(addIcon);
   };
   player.playedAnimals.forEach(addCard);
   player.playedSponsors.forEach(addCard);
-  player.partnerZoos.forEach(r => { if (r in counts) counts[r]++; });
+  player.partnerZoos.forEach(addIcon);
   player.universities.forEach(u => {
-    if (u.icons) u.icons.forEach(ic => { if (ic in counts) counts[ic]++; });
+    const icons = Array.isArray(u?.icons) ? u.icons : (u?.icon ? [u.icon] : []);
+    icons.forEach(addIcon);
   });
   player.iconCounts = counts;
 }

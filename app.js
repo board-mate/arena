@@ -38,7 +38,7 @@ function gameInfo(game){
     thegame:{name:'더 게임',icon:'🃏',min:2,max:5},
     kraken:{name:'노터치 크라켄',icon:'🐙',min:3,max:8},
     cascadia:{name:'캐스캐디아',icon:'🌲',min:2,max:4},
-    pocketnova:{name:'포크노바',icon:'⚡',min:2,max:4},
+    pocketnova:{name:'포크노바 β',icon:'⚡',min:2,max:4},
     fantasyrealms:{name:'판타지 왕국',icon:'🏰',min:3,max:6,page:'online-fantasy-realms.html'}
   };
   return map[game]||{name:game,icon:'🎲',min:2,max:6};
@@ -200,7 +200,7 @@ function renderSolo(){
     <article class="library-card acquire"><div class="library-icon">🏙️</div><h2>어콰이어</h2><p>타일 배치, 호텔 체인, 주식과 합병을 AI들과 연습합니다.</p><span class="save-badge">💾 로컬 자동 저장</span><a class="primary link-btn" href="./solo-acquire.html">AI와 대전</a></article>
     <article class="library-card calico"><div class="library-icon">🧵</div><h2>캘리코</h2><p>공개된 MyAutoma 구현을 BoardMate 상단바 안에서 엽니다.</p><span class="save-badge external">외부 게임 · BoardMate 저장 제외</span><a class="primary link-btn" href="./solo-calico.html">솔로 게임 열기</a></article>
     <article class="library-card cascadia"><div class="library-icon">🌲</div><h2>캐스캐디아</h2><p>공개 Cascadia 웹 구현을 BoardMate 상단바 안에서 엽니다.</p><span class="save-badge external">외부 게임 · BoardMate 저장 제외</span><a class="primary link-btn" href="./solo-cascadia.html">솔로 게임 열기</a></article>
-    <article class="library-card pocketnova"><div class="library-icon">⚡</div><h2>포크노바</h2><p>업로드한 Pocket Nova v3 기반 BoardMate 27턴 솔로 모드입니다.</p><span class="save-badge">💾 로컬 자동 저장</span><a class="primary link-btn" href="./solo-pocketnova.html">1인플 시작</a></article>
+    <article class="library-card pocketnova"><div class="library-icon">⚡</div><h2>포크노바 β</h2><p>v11.7 개발 체크포인트입니다. 이미지 레이어와 검증된 코어 수정이 반영됐고, 일부 전설/점수 룰은 계속 검증 중입니다.</p><span class="save-badge">💾 로컬 자동 저장 · 개발중</span><a class="primary link-btn" href="./solo-pocketnova.html">1인플 테스트</a></article>
     <article class="library-card thegame"><div class="library-icon">🃏</div><h2>더 게임</h2><p>업로드한 HTML로 1인 솔로 플레이. ±10 되돌리기 규칙을 지원합니다.</p><span class="save-badge">💾 로컬 자동 저장</span><a class="primary link-btn" href="./solo-thegame.html">솔로 플레이</a></article>
   </section>`);
   document.querySelector('#backHome').onclick=()=>location.hash='#/';

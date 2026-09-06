@@ -637,9 +637,9 @@ function evaluateFinalScoringCard(game, player, fc) {
     val = computeLearningDeviceScore(game, player);
     return Math.min(4, val);
 
-  // ── 다우징 머신: 지식 트랙 (미구현, 0점) ───────────────────
+  // ── 다우징 머신: 명성 트랙 ───────────────────────────────
   } else if (fc.id === 'fs_dowsing') {
-    val = 0; // 지식 트랙 미구현 → 항상 0
+    val = Number(player.reputation || 0);
   }
 
   // 공통 thresholds/rewards 계산

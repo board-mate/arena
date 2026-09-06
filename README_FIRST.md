@@ -1,3 +1,35 @@
+# BoardMate Arcade 통합 v11.4.8 — 2026-09-06
+
+> **배포 기준:** 기존 v11.4.7 + 캘리코 모바일 보드 전체 맞춤 + 포크노바 v11.7 개발 체크포인트.
+> 아래 v11.4/v11.3 문서는 변경 이력으로 유지합니다.
+
+## 이번 통합본에서 추가된 것
+- **캘리코 모바일 보드 전체 맞춤**
+  - 게임 규칙 좌표계와 720×580 보드 데이터는 변경하지 않습니다.
+  - 모바일(폭 720px 이하)에서는 보드 표시만 실제 사용 가능한 폭에 맞춰 비율 축소합니다.
+  - `board-viewport`의 모바일 가로 스크롤을 제거하고 720×580 전체 보드를 한 번에 표시합니다.
+  - 회전/리사이즈/게임 화면 진입 시 자동 재계산합니다.
+- **포크노바 v11.7 개발 체크포인트 통합**
+  - 카드/지도 이미지 레이어와 OCR/수동 매핑 작업대.
+  - 검증된 v11.7 core fix가 **이미 적용된 상태**로 포함됩니다.
+  - 동물 타입 아이콘 집계 스키마 수정, `다우징 머신` 명성 기반 최종점수 수정.
+  - 주의: 포크노바는 아직 `PLAYABLE_PROTOTYPE / NOT_RULES_COMPLETE / ONLINE_E2E_UNVERIFIED` 상태입니다.
+- **v11.4.7 기능 유지**
+  - Supabase Realtime Broadcast + 10초 polling fallback.
+  - 판타지 왕국 3~6인 공통 Room/Supabase 통합.
+  - 캘리코 V8 정적 가장자리 88개 + 기존 게임 고양이 토큰 repair.
+- **운영 `config.js` 보존**
+  - 업로드된 v11.4.7 패치 ZIP의 `config.js`는 비어 있었으나, 현재 운영/기준본의 공개 Supabase URL + anon publishable key를 유지했습니다.
+  - service_role 키는 절대 클라이언트 파일에 넣지 마세요.
+
+## 배포 전 필수
+1. `SUPABASE_APPLY_ORDER.md`를 읽고 기존 DB인지 신규 DB인지에 맞춰 SQL을 적용/검증합니다.
+2. `python tests/verify_integrated_release.py`를 실행합니다.
+3. GitHub 저장소 루트에 **이 통합본의 파일/폴더 내용을 그대로 덮어쓰기**합니다.
+4. GitHub Pages 배포 후 새로고침(Ctrl+F5)하고 캘리코 모바일/포크노바 새 방을 테스트합니다.
+
+---
+
 # BoardMate Arcade v11.4 — Realtime 업데이트
 
 > 2026-09-04

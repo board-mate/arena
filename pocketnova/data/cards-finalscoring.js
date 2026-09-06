@@ -9,7 +9,7 @@
 export const FINAL_SCORING_CARDS = [
   { id: 'fs_fishingrod', name: '낚싯대', metric: '사파리존에 있는 물 칸 아이콘 수',
     thresholds: [2, 4, 6, 8], rewards: [1, 2, 3, 4] },
-  { id: 'fs_dowsing', name: '다우징 머신', metric: '지식 트랙 칸 수',
+  { id: 'fs_dowsing', name: '다우징 머신', metric: '명성 트랙 칸 수',
     thresholds: [6, 9, 12, 15], rewards: [1, 2, 3, 4] },
   { id: 'fs_masterball', name: '마스터볼', metric: '사파리존에 있는 큰 포켓몬(4+ 크기) 수',
     thresholds: [1, 2, 4, 5], rewards: [1, 2, 3, 4] },

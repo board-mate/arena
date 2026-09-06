@@ -1,0 +1,19 @@
+{
+  "release": "BoardMate Arcade INTEGRATED v11.4.8",
+  "date": "2026-09-06",
+  "base": "BoardMate Arcade FINAL v11.4.7",
+  "components": {
+    "realtime": "v11.4 revision-only Broadcast + 10s polling fallback",
+    "fantasy_realms": "v11.4.7 unified Supabase room/private state",
+    "calico": "V8 + mobile full-board fit",
+    "porknova": "v11.7 development checkpoint, core fixes applied"
+  },
+  "porknova_status": [
+    "PLAYABLE_PROTOTYPE",
+    "NOT_RULES_COMPLETE",
+    "ONLINE_E2E_UNVERIFIED"
+  ],
+  "supabase_new_migration_in_v11_4_8": false,
+  "existing_db_required_migration_if_missing": "SUPABASE_FANTASY_REALMS_UNIFIED.sql",
+  "validation_command": "python tests/verify_integrated_release.py"
+}
