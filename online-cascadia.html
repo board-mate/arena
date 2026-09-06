@@ -100,7 +100,7 @@ async function init(){
     if(row?.state && !(row.state.version===2 && Array.isArray(row.state.players) && row.state.players.every(p=>p&&p.board&&typeof p.board==='object'))) showFatal('이 방은 이전 캐스캐디아 저장 상태입니다. 새 버전은 새 방을 만들어 시작해 주세요.');
     const displayNames=members.map(m=>`${badges[m.user_id]?.text||'🥉'} ${m.nickname}`);
     const ctx={roomId,room,me,members,playerIndex,isHost:room.host_id===me.user_id,state:row?.state||null,displayNames};
-    if(!pollStarted){pollStarted=true;startStatePoll(async r=>{revision=Math.max(revision,Number(r?.revision||0));if(r?.state&&pending===0)callbacks.forEach(cb=>{try{cb(clone(r.state));}catch(e){console.warn(e)}});},{interval:1100});}
+    if(!pollStarted){pollStarted=true;startStatePoll(async r=>{revision=Math.max(revision,Number(r?.revision||0));if(r?.state&&pending===0)callbacks.forEach(cb=>{try{cb(clone(r.state));}catch(e){console.warn(e)}});},{interval:10000});}
     return ctx;
   })();return initPromise;
 }

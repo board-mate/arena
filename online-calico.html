@@ -9,7 +9,7 @@
 <meta name="board-mate-min-players" content="2" />
 <meta name="board-mate-max-players" content="4" />
 <meta name="board-mate-multiplayer" content="true" />
-<script type="application/json" id="boardMateGameManifest">{"id":"calico-pvp","name":"Calico PVP","version":"3.0.0-arena","minPlayers":2,"maxPlayers":4,"multiplayer":true,"turnBased":true,"entry":"single-html","stateMode":"shared"}</script>
+<script type="application/json" id="boardMateGameManifest">{"id":"calico-pvp","name":"Calico PVP","version":"4.0.0-arena","minPlayers":2,"maxPlayers":4,"multiplayer":true,"turnBased":true,"entry":"single-html","stateMode":"shared"}</script>
 <style>
   :root{
     --ink:#362d3c;
@@ -109,7 +109,7 @@
   /* 실제 보드의 내부 5행 홈 영역. 짝수 행이 오른쪽으로 반 칸 밀리는 배치다. */
   .board-grid-layer{position:absolute;left:85px;top:58px;width:550px;height:464px;z-index:2}
   .board-edge-caption{position:absolute;left:50%;bottom:5px;transform:translateX(-50%);z-index:3;max-width:92%;padding:5px 10px;border-radius:999px;background:rgba(255,255,255,.88);border:1px solid rgba(125,58,131,.18);box-shadow:0 2px 8px rgba(40,20,55,.08);font-size:.7rem;font-weight:800;color:#6a5b6d;white-space:nowrap;pointer-events:none}
-  .board-stage.board-image-missing::after{content:"원본 보드 이미지를 불러오지 못했습니다 · 인터넷 연결 시 가장자리 인쇄 타일이 표시됩니다";position:absolute;left:50%;top:18px;transform:translateX(-50%);z-index:4;width:max-content;max-width:90%;padding:6px 10px;border-radius:10px;background:#fff6e6;border:1px solid #eccb90;color:#80571d;font-size:.7rem;font-weight:800;text-align:center}
+  .board-stage.board-image-missing::after{content:"원본 보드 이미지를 불러오지 못했습니다 · 게임 판정은 내장 데이터로 계속됩니다";position:absolute;left:50%;top:18px;transform:translateX(-50%);z-index:4;width:max-content;max-width:90%;padding:6px 10px;border-radius:10px;background:#fff6e6;border:1px solid #eccb90;color:#80571d;font-size:.7rem;font-weight:800;text-align:center}
   .hex{position:absolute;width:var(--hex-w);height:var(--hex-h);clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%);border:none;padding:0;overflow:hidden;background:#f4f0f2;filter:drop-shadow(0 2px 2px rgba(30,20,35,.12));transition:transform .12s,filter .12s}
   .hex::after{content:"";position:absolute;inset:4px;clip-path:inherit;border:2px solid rgba(255,255,255,.65);pointer-events:none}
   /* 빈 홈은 원본 보드 이미지 자체가 보이도록 거의 투명하게 둔다. */
@@ -226,7 +226,7 @@ async function context(){
       startStatePoll(async r=>{
         revision=Math.max(revision,Number(r?.revision||0));
         if(r?.state && pendingSaves===0) callbacks.forEach(cb=>{try{cb(clone(r.state));}catch(e){console.warn(e);}});
-      },{interval:1100});
+      },{interval:10000});
     }
     return out;
   })();
@@ -304,7 +304,7 @@ if(roomId) window.addEventListener('DOMContentLoaded',()=>{
 });
 </script>
 
-</head>
+<style id="calico-v4-ui">.goal-preview{position:relative;width:min(100%,360px);aspect-ratio:1.35;border:1px solid #dfd3e2;border-radius:16px;overflow:hidden;background:#f5f0f5;margin:10px auto}.goal-preview img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}.goal-preview-grid{position:absolute;inset:0}.goal-preview-slot{position:absolute;width:54px;height:62px;transform:translate(-50%,-50%);border:2px dashed rgba(94,44,101,.6);border-radius:12px;background:rgba(255,255,255,.76);display:grid;place-items:center;text-align:center;font-weight:900;color:#5e2c65;font-size:.72rem;padding:4px;box-shadow:0 3px 9px #0002}.goal-preview-slot.filled{border-style:solid;background:#f6eafa}.goal-preview-slot .small{font-size:.58rem;font-weight:700;color:#7a6d7c}.goal-preview-help{font-size:.72rem;color:#756a78;text-align:center;margin-top:5px}.goal-player-preview{display:grid;grid-template-columns:minmax(0,1fr) minmax(260px,360px);gap:14px;align-items:start}.turn-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}.token-auto-note{padding:9px 11px;border-radius:11px;background:#f6f0f7;border:1px solid #e5d8e8;color:#625767;font-size:.78rem;line-height:1.45}.token-award{padding:8px 10px;border-radius:10px;background:#fff8e8;border:1px solid #efd79b;color:#6b5321;font-weight:800;font-size:.78rem;margin-top:7px}@media(max-width:820px){.goal-player-preview{grid-template-columns:1fr}.goal-preview{max-width:340px}.goal-preview-slot{width:48px;height:56px;font-size:.66rem}}@media(max-width:520px){.goal-preview{width:100%;aspect-ratio:1.25}.goal-preview-slot{width:43px;height:50px;font-size:.6rem}.market-row{display:grid;grid-template-columns:repeat(3,1fr)}.hand-row{display:grid;grid-template-columns:repeat(2,1fr)}.tile-card{width:100%;height:auto;aspect-ratio:.86;min-width:0}.board-viewport{overflow:auto;-webkit-overflow-scrolling:touch}.cats-list{grid-template-columns:1fr}.right-column{gap:10px}.top-actions{display:grid;grid-template-columns:1fr 1fr;width:100%}.top-actions .arena-connection{grid-column:1/-1}.btn{min-height:42px}}</style></head>
 <body>
 <div class="app">
   <header class="topbar">
@@ -367,7 +367,7 @@ if(roomId) window.addEventListener('DOMContentLoaded',()=>{
           <strong>각 플레이어는 손에 헝겊 타일 2개</strong>를 들고 시작합니다. 차례에는 손패 1개를 퀼트에 놓은 뒤, 획득 조건을 만족한 고양이/단추 토큰을 놓고, <strong>시장 3개 중 1개를 가져와 손패를 보충</strong>합니다.<br><br>
           디자인 목표 3개는 게임 종료 시 주변 6칸의 <strong>색 또는 무늬</strong>로 검사하며, 둘 다 만족하면 높은 점수만 받습니다.<br><br>
           <strong>보드 정렬:</strong> 빈 홈은 원본 보드가 그대로 보이고, 실제 타일을 놓은 홈만 헝겊 이미지가 덮습니다. 디자인 타일과 인접 6칸 판정도 실제 행 오프셋을 사용합니다.<br><br>
-          <strong>중요:</strong> 원본 솔로 웹 구현처럼 토큰 획득은 일부를 수동 판정하는 세미-샌드박스 방식입니다. 특히 퀼트 보드 바깥쪽에 인쇄된 가장자리 타일도 게임판에 함께 표시되며, 이를 포함한 고양이/단추 그룹은 플레이어가 직접 판정합니다.
+          <strong>토큰 판정:</strong> 새로 놓은 타일을 기준으로 내부 연결 그룹의 고양이/단추 조건을 자동 판정합니다. 보드 가장자리 인쇄 타일도 내장된 색상·무늬 데이터로 연결 그룹 판정에 포함합니다. 원본 보드 이미지는 표시용입니다.
         </div>
       </aside>
     </div>
@@ -423,7 +423,7 @@ if(roomId) window.addEventListener('DOMContentLoaded',()=>{
   </main>
 
   <div class="footer">
-    개인용/비상업적 프로토타입 · Board-Mate Arena 온라인 동기화 어댑터 포함. 게임 규칙은 사용자가 제공한 한국어 룰북을 기준으로 구현했고, 패치 타일/타이틀/보드 참고 이미지는 사용자가 지정한 MyAutoma GitHub Pages의 공개 경로를 런타임에 참조합니다. Calico의 명칭·아트·상표 권리는 각 권리자에게 있습니다.
+    개인용/비상업적 프로토타입 · Board-Mate Arena 온라인 동기화 어댑터 포함. 게임 규칙은 사용자가 제공한 한국어 룰북을 기준으로 구현했고, 보드 참고 이미지는 시각 확인용이며, 가장자리 판정 데이터는 내장되어 있습니다. Calico의 명칭·아트·상표 권리는 각 권리자에게 있습니다.
   </div>
 </div>
 
@@ -443,10 +443,10 @@ if(roomId) window.addEventListener('DOMContentLoaded',()=>{
 
   // The user supplied these public GitHub Pages materials as the visual reference.
   const ASSET_BASE = 'https://myautoma.github.io/games/calico/img';
-  const SAVE_KEY = 'calico-pvp-arena-v3';
-  const VERSION = 3;
+  const SAVE_KEY = 'calico-pvp-arena-v8';
+  const VERSION = 8;
   const GAME_ID = 'calico-pvp';
-  const GAME_MANIFEST = Object.freeze({id:GAME_ID,name:'Calico PVP',version:'3.0.0-arena',minPlayers:2,maxPlayers:4,multiplayer:true,turnBased:true});
+  const GAME_MANIFEST = Object.freeze({id:GAME_ID,name:'Calico PVP',version:'8.0.0-arena',minPlayers:2,maxPlayers:4,multiplayer:true,turnBased:true});
 
   const COLORS = [
     {id:'darkBlue', ko:'남색', css:'#32467b'},
@@ -502,6 +502,71 @@ if(roomId) window.addEventListener('DOMContentLoaded',()=>{
   const BOARD_COLS = 5;
   const BOARD_GEOMETRY = Object.freeze({stepX:100, stepY:87, evenRowOffset:50});
   const GOAL_POSITIONS = ['1,2','3,1','2,3']; // 위쪽, 왼쪽 아래, 오른쪽
+
+
+  // ---------------------------------------------------------------------------
+  // 오프라인 고정 가장자리 데이터(V7)
+  // ---------------------------------------------------------------------------
+  // 사용자 제공 4색 보드 이미지에서 판정에 사용하는 인쇄 가장자리 22칸 × 4보드 = 88칸을
+  // 색상/무늬 데이터로 고정 내장한다. 판정 엔진은 외부 이미지 분석을 전혀 사용하지 않는다.
+  // 패턴 ID: 1 줄무늬, 2 점무늬, 3 격자무늬, 4 꽃무늬, 5 잎무늬, 6 덩굴/소용돌이무늬
+  const PRINTED_EDGE_KEYS = Object.freeze([
+    '-1,0','-1,1','-1,2','-1,3','-1,4','-1,5',
+    '0,-1','0,5','1,-1','1,5','2,-1','2,5','3,-1','3,5','4,-1','4,5',
+    '5,0','5,1','5,2','5,3','5,4','5,5'
+  ]);
+  const EDGE_CATALOG_VERSION=7;
+  const EDGE=(color,pattern)=>Object.freeze({color,pattern});
+  const CALICO_EDGE_CATALOG=Object.freeze({
+    blue:Object.freeze({
+      '-1,0':EDGE('green',4), '-1,1':EDGE('yellow',1), '-1,2':EDGE('lightBlue',6), '-1,3':EDGE('pink',4), '-1,4':EDGE('purple',3), '-1,5':EDGE('yellow',6),
+      '0,-1':EDGE('green',4), '0,5':EDGE('darkBlue',2), '1,-1':EDGE('darkBlue',3), '1,5':EDGE('purple',6),
+      '2,-1':EDGE('lightBlue',5), '2,5':EDGE('yellow',6), '3,-1':EDGE('pink',1), '3,5':EDGE('green',3),
+      '4,-1':EDGE('yellow',2), '4,5':EDGE('darkBlue',4),
+      '5,0':EDGE('yellow',2), '5,1':EDGE('lightBlue',3), '5,2':EDGE('pink',4), '5,3':EDGE('darkBlue',5), '5,4':EDGE('green',6), '5,5':EDGE('pink',2)
+    }),
+    green:Object.freeze({
+      '-1,0':EDGE('darkBlue',5), '-1,1':EDGE('yellow',6), '-1,2':EDGE('green',5), '-1,3':EDGE('darkBlue',1), '-1,4':EDGE('purple',3), '-1,5':EDGE('yellow',6),
+      '0,-1':EDGE('purple',2), '0,5':EDGE('pink',4), '1,-1':EDGE('pink',3), '1,5':EDGE('purple',5),
+      '2,-1':EDGE('lightBlue',1), '2,5':EDGE('yellow',1), '3,-1':EDGE('yellow',5), '3,5':EDGE('lightBlue',3),
+      '4,-1':EDGE('purple',6), '4,5':EDGE('pink',4),
+      '5,0':EDGE('green',1), '5,1':EDGE('darkBlue',2), '5,2':EDGE('green',3), '5,3':EDGE('pink',1), '5,4':EDGE('lightBlue',5), '5,5':EDGE('darkBlue',4)
+    }),
+    purple:Object.freeze({
+      '-1,0':EDGE('yellow',6), '-1,1':EDGE('pink',2), '-1,2':EDGE('purple',4), '-1,3':EDGE('yellow',6), '-1,4':EDGE('lightBlue',1), '-1,5':EDGE('pink',3),
+      '0,-1':EDGE('lightBlue',3), '0,5':EDGE('darkBlue',6), '1,-1':EDGE('darkBlue',1), '1,5':EDGE('lightBlue',4),
+      '2,-1':EDGE('green',5), '2,5':EDGE('pink',5), '3,-1':EDGE('pink',6), '3,5':EDGE('green',1),
+      '4,-1':EDGE('lightBlue',2), '4,5':EDGE('darkBlue',3),
+      '5,0':EDGE('lightBlue',2), '5,1':EDGE('yellow',3), '5,2':EDGE('purple',1), '5,3':EDGE('darkBlue',5), '5,4':EDGE('green',4), '5,5':EDGE('yellow',6)
+    }),
+    yellow:Object.freeze({
+      '-1,0':EDGE('green',4), '-1,1':EDGE('darkBlue',4), '-1,2':EDGE('yellow',1), '-1,3':EDGE('purple',2), '-1,4':EDGE('darkBlue',6), '-1,5':EDGE('green',5),
+      '0,-1':EDGE('pink',5), '0,5':EDGE('lightBlue',4), '1,-1':EDGE('purple',6), '1,5':EDGE('darkBlue',1),
+      '2,-1':EDGE('yellow',2), '2,5':EDGE('green',2), '3,-1':EDGE('green',4), '3,5':EDGE('pink',6),
+      '4,-1':EDGE('darkBlue',3), '4,5':EDGE('lightBlue',5),
+      '5,0':EDGE('darkBlue',3), '5,1':EDGE('purple',5), '5,2':EDGE('yellow',6), '5,3':EDGE('lightBlue',2), '5,4':EDGE('pink',1), '5,5':EDGE('purple',4)
+    })
+  });
+
+  function validateEmbeddedEdgeCatalog(catalog){
+    const boards=['blue','green','purple','yellow'];
+    return boards.every(b=>catalog?.[b] && PRINTED_EDGE_KEYS.every(k=>{
+      const d=catalog[b][k];
+      return !!d && COLORS.some(c=>c.id===d.color) && PATTERNS.some(p=>Number(p.id)===Number(d.pattern));
+    }));
+  }
+  const EDGE_CATALOG_READY=validateEmbeddedEdgeCatalog(CALICO_EDGE_CATALOG);
+  if(!EDGE_CATALOG_READY) throw new Error('Embedded Calico edge catalog is incomplete');
+  function ensureBoardEdgeCatalog(boardColor){
+    const catalog=CALICO_EDGE_CATALOG[boardColor];
+    return catalog ? Promise.resolve(catalog) : Promise.reject(new Error('unknown-board-color'));
+  }
+  function edgeNodeFor(p,key){
+    if(!PRINTED_EDGE_KEYS.includes(key)) return null;
+    const d=p?.edgeCatalog?.[key] || CALICO_EDGE_CATALOG?.[p?.boardColor]?.[key];
+    return d?{type:'printed',tile:{color:d.color,pattern:Number(d.pattern)},cats:[],buttons:[]}:null;
+  }
+  function nodeFor(p,key){return p?.board?.[key] || edgeNodeFor(p,key);}
 
   let playerCount = 2;
   let pendingSetup = null;
@@ -611,10 +676,63 @@ if(roomId) window.addEventListener('DOMContentLoaded',()=>{
     postToArena('BOARD_MATE_GAME_STATE',{state:snapshot,gameState:snapshot,reason,revision:lastArenaRevision});
     updateArenaUi();
   }
+  // ---------------------------------------------------------------------------
+  // 기존 진행 게임 자동 정정(V8)
+  // ---------------------------------------------------------------------------
+  // V7 이전/초기 버전에서 잘못 저장된 고양이 토큰이 있어도, 새 코드는 현재
+  // 보드 전체(내장 인쇄 가장자리 포함)를 다시 검사해 적법하지 않은 토큰만 제거한다.
+  // 타일은 이동/삭제되지 않으므로 정상적으로 획득한 토큰의 그룹은 이후 확장될 수
+  // 있지만 조건을 잃지 않는다. 따라서 현재 상태 기준의 fail-closed 정정이 안전하다.
+  function repairInvalidCatTokens(next){
+    if(!next || !Array.isArray(next.players) || !Array.isArray(next.cats)) return {changed:false,removed:[]};
+    const removed=[];
+    next.players.forEach((p,pi)=>{
+      if(!p?.board || !p?.boardColor) return;
+      p.edgeCatalog = CALICO_EDGE_CATALOG[p.boardColor] || p.edgeCatalog || null;
+      if(!next.inventories) next.inventories={buttons:{},cats:{},rainbow:0};
+      if(!next.inventories.cats) next.inventories.cats={};
+
+      const candidates=[];
+      for(const [key,cell] of Object.entries(p.board)){
+        if(cell?.type!=='patch' || !cell.tile || !Array.isArray(cell.cats)) continue;
+        for(const catId of cell.cats){
+          const cat=next.cats.find(c=>c.id===catId) || catById(catId);
+          if(!cat) { candidates.push({key,catId,valid:false}); continue; }
+          const pattern=cell.tile.pattern;
+          const group=componentFor(p,key,'pattern',pattern);
+          const preferred=Array.isArray(cat.preferred)&&cat.preferred.includes(pattern);
+          const shapeOK=cat.kind==='size' ? group.length>=Number(cat.size) : !!componentHasShape(p,group,cat.shape);
+          candidates.push({key,catId,valid:preferred && group.includes(key) && shapeOK,groupKey:group.slice().sort().join('|')});
+        }
+      }
+
+      // 같은 무늬 연결 그룹에는 고양이 토큰을 하나만 남긴다.
+      // 정상 토큰이 하나 있다면 그것을 우선 보존하고, 조건 불충족/중복 토큰만 제거한다.
+      const keptGroup=new Set();
+      for(const item of candidates){
+        const cell=p.board[item.key];
+        const sameGroupKey=item.groupKey || `${item.key}|${item.catId}`;
+        const keep = item.valid && !keptGroup.has(sameGroupKey);
+        if(keep){
+          keptGroup.add(sameGroupKey);
+        }else{
+          const idx=(cell?.cats||[]).indexOf(item.catId);
+          if(idx>=0){
+            cell.cats.splice(idx,1);
+            removed.push({player:pi,cell:item.key,catId:item.catId});
+            next.inventories.cats[item.catId]=Number(next.inventories.cats[item.catId]||0)+1;
+          }
+        }
+      }
+    });
+    return {changed:removed.length>0,removed};
+  }
+
   function receiveArenaState(incoming){
     const next=extractArenaState(incoming) || incoming;
     if(!next || !Array.isArray(next.players)) return false;
     if(next.version!==VERSION && next.gameId!==GAME_ID && next._gameId!==GAME_ID) return false;
+    const repair=repairInvalidCatTokens(next);
     const previousActive=state?.active;
     const rev=Number(next._arenaRevision ?? incoming?._arenaRevision ?? incoming?.revision ?? 0);
     if(rev && rev < Math.max(Number(state?._arenaRevision||0),Number(lastArenaRevision||0))) return false;
@@ -643,6 +761,7 @@ if(roomId) window.addEventListener('DOMContentLoaded',()=>{
 
     pendingSetup=null;
     state=deepClone(next); state.version=VERSION; state.gameId=GAME_ID; state._gameId=GAME_ID;
+    state.players?.forEach(p=>{p.edgeCatalog=CALICO_EDGE_CATALOG[p.boardColor]||null;});
     const me=myPlayerIndex();
     if(Number.isInteger(me) && me>=0 && me<state.players.length){ viewedPlayer = previousActive===undefined ? me : Math.min(viewedPlayer,state.players.length-1); }
     else viewedPlayer=Math.min(viewedPlayer,state.players.length-1);
@@ -651,6 +770,14 @@ if(roomId) window.addEventListener('DOMContentLoaded',()=>{
     if(previousActive!==state.active || !turnStartSnapshot) beginTurn();
     suppressArenaPublish=false;
     updateArenaUi();
+
+    // 기존 방 상태에 잘못된 고양이 토큰이 있었다면 호스트가 정정 상태를
+    // 한 번 DB/Realtime에 다시 게시한다. 참가자는 우선 즉시 정정된 화면을 본다.
+    if(repair.changed){
+      const detail=repair.removed.map(x=>`${x.player+1}번 ${catById(x.catId)?.ko||x.catId}`).join(', ');
+      toast(`잘못 배치된 고양이 토큰 ${repair.removed.length}개를 자동 정정했습니다.${detail?` (${detail})`:''}`);
+      if(isSetupHost()) setTimeout(()=>autoSave('repair-invalid-cat-tokens'),0);
+    }
     return true;
   }
   function applyArenaContext(raw){
@@ -843,57 +970,20 @@ if(roomId) window.addEventListener('DOMContentLoaded',()=>{
     if(isArenaMode()) publishArenaSetup('goal-draft-start');
   }
 
-  function renderGoalDraft(){
-    if(!pendingSetup) return;
-    const holder=$('#goalDraftPlayers'); holder.innerHTML='';
-    const online=isArenaMode();
-    const me=myPlayerIndex();
-    pendingSetup.players.forEach((p,pi)=>{
-      const wrap=document.createElement('div'); wrap.className='goal-player';
-      const choice=pendingSetup.goalChoices[pi]||{options:[],selected:[]};
-      const selected=choice.selected||[];
-      const own=!online || pi===me;
-      if(online && !own){
-        const done=selected.length===3;
-        wrap.innerHTML=`<h3>${pi+1}. ${escapeHtml(p.name)}</h3>
-          <div class="setup-note"><strong>${done?'선택 완료':'선택 중'}</strong> · ${selected.length}/3<br>
-          각 플레이어는 자기 화면에서 자기 디자인 타일만 선택합니다.</div>`;
-        holder.appendChild(wrap);
-        return;
-      }
-      wrap.innerHTML=`<h3>${pi+1}. ${escapeHtml(p.name)}${online?' · 내 디자인':''}</h3><div class="goal-options"></div>`;
-      const grid=wrap.querySelector('.goal-options');
-      (choice.options||[]).forEach(gid=>{
-        const g=goalById(gid); const idx=selected.indexOf(gid);
-        const card=document.createElement('button'); card.type='button';
-        card.className='goal-card'+(idx>=0?' selected':'');
-        card.innerHTML=`${idx>=0?`<span class="slot">${['위','왼쪽 아래','오른쪽'][idx]}</span>`:''}
-          <span class="goal-formula">${g.formula}</span>
-          <span class="goal-score">한 조건 <b>${g.low}</b> · 양쪽 조건 <b>${g.high}</b></span>
-          <span class="goal-desc">${g.desc}</span>`;
-        card.addEventListener('click',()=>toggleGoal(pi,gid)); grid.appendChild(card);
-      });
-      holder.appendChild(wrap);
-    });
-
-    const allReady=pendingSetup.goalChoices.length===pendingSetup.players.length &&
-      pendingSetup.goalChoices.every(x=>Array.isArray(x.selected)&&x.selected.length===3);
-    const start=$('#startGameBtn');
-    if(online){
-      start.disabled=!isSetupHost() || !allReady;
-      start.textContent=isSetupHost() ? (allReady?'게임 시작':'모두 선택할 때까지 대기') : '방장이 게임 시작을 기다리는 중';
-      $('#randomGoalsBtn').textContent='내 디자인 무작위 3개 선택';
-      $('#randomGoalsBtn').disabled=!(Number.isInteger(me)&&pendingSetup.goalChoices[me]);
-      $('#backSetupBtn').classList.add('hidden');
-    }else{
-      start.disabled=!allReady;
-      start.textContent='게임 시작';
-      $('#randomGoalsBtn').textContent='모두 무작위 3개 선택';
-      $('#randomGoalsBtn').disabled=false;
-      $('#backSetupBtn').classList.remove('hidden');
-    }
+  function goalPreviewHtml(p, choice){
+    const selected=choice?.selected||[],pos={'1,2':[50,22],'3,1':[28,70],'2,3':[72,57]};
+    const slots=GOAL_POSITIONS.map((key,i)=>{const gid=selected[i],g=gid?goalById(gid):null,xy=pos[key];return `<div class="goal-preview-slot ${g?'filled':''}" style="left:${xy[0]}%;top:${xy[1]}%">${g?`${g.formula}<span class="small">${['위','왼쪽 아래','오른쪽'][i]}</span>`:`${i+1}<span class="small">선택 대기</span>`}</div>`}).join('');
+    return `<div><div class="goal-preview"><img src="${ASSET_BASE}/boards/${p.boardColor}.jpg" alt="${escapeHtml(p.name)} 퀼트 보드 미리보기"><div class="goal-preview-grid">${slots}</div></div><div class="goal-preview-help">실제 보드의 3개 디자인 칸 위치를 보면서 순서대로 선택하세요. 위·왼쪽 아래·오른쪽 슬롯을 미리 확인할 수 있습니다.</div></div>`;
   }
-
+  function renderGoalDraft(){
+    if(!pendingSetup)return;const holder=$('#goalDraftPlayers');holder.innerHTML='';const online=isArenaMode(),me=myPlayerIndex();
+    pendingSetup.players.forEach((p,pi)=>{const wrap=document.createElement('div');wrap.className='goal-player';const choice=pendingSetup.goalChoices[pi]||{options:[],selected:[]},selected=choice.selected||[],own=!online||pi===me;
+      if(online&&!own){const done=selected.length===3;wrap.innerHTML=`<h3>${pi+1}. ${escapeHtml(p.name)}</h3><div class="goal-player-preview"><div class="setup-note"><strong>${done?'선택 완료':'선택 중'}</strong> · ${selected.length}/3<br>상대 플레이어의 후보/선택은 공개하지 않고 준비 상태만 표시합니다.</div>${goalPreviewHtml(p,choice)}</div>`;holder.appendChild(wrap);return;}
+      wrap.innerHTML=`<h3>${pi+1}. ${escapeHtml(p.name)}${online?' · 내 디자인':''}</h3><div class="goal-player-preview"><div><div class="goal-options"></div></div>${goalPreviewHtml(p,choice)}</div>`;const grid=wrap.querySelector('.goal-options');
+      (choice.options||[]).forEach(gid=>{const g=goalById(gid),idx=selected.indexOf(gid),card=document.createElement('button');card.type='button';card.className='goal-card'+(idx>=0?' selected':'');card.innerHTML=`${idx>=0?`<span class="slot">${['위','왼쪽 아래','오른쪽'][idx]}</span>`:''}<span class="goal-formula">${g.formula}</span><span class="goal-score">한 조건 <b>${g.low}</b> · 양쪽 조건 <b>${g.high}</b></span><span class="goal-desc">${g.desc}</span>`;card.onclick=()=>toggleGoal(pi,gid);grid.appendChild(card);});holder.appendChild(wrap);});
+    const allReady=pendingSetup.goalChoices.length===pendingSetup.players.length&&pendingSetup.goalChoices.every(x=>Array.isArray(x.selected)&&x.selected.length===3),start=$('#startGameBtn');
+    if(online){start.disabled=!isSetupHost()||!allReady;start.textContent=isSetupHost()?(allReady?'게임 시작':'모두 선택할 때까지 대기'):'방장이 게임 시작을 기다리는 중';$('#randomGoalsBtn').textContent='내 디자인 무작위 3개 선택';$('#randomGoalsBtn').disabled=!(Number.isInteger(me)&&pendingSetup.goalChoices[me]);$('#backSetupBtn').classList.add('hidden');}else{start.disabled=!allReady;start.textContent='게임 시작';$('#randomGoalsBtn').textContent='모두 무작위 3개 선택';$('#randomGoalsBtn').disabled=false;$('#backSetupBtn').classList.remove('hidden');}
+  }
   function toggleGoal(pi,gid){
     if(isArenaMode()){
       const me=myPlayerIndex();
@@ -943,6 +1033,8 @@ if(roomId) window.addEventListener('DOMContentLoaded',()=>{
         ...p,
         goals:pendingSetup.goalChoices[i].selected.slice(),
         board:blankBoard(pendingSetup.goalChoices[i].selected),
+        boardColor:p.boardColor,
+        edgeCatalog:null,
         hand:[]
       })),
       cats:chooseCats(settings.catMode),
@@ -951,13 +1043,15 @@ if(roomId) window.addEventListener('DOMContentLoaded',()=>{
       active:0,
       phase:'place',
       selectedHand:null,
-      claimMode:null,
+      turnTokens:[],
       round:1,
       inventories:{buttons:Object.fromEntries(COLORS.map(c=>[c.id,8])),rainbow:4,cats:{}},
       gameOver:false
     };
     state.cats.forEach(c=>state.inventories.cats[c.id]=8);
     state.players.forEach(p=>{p.hand.push(drawTile(),drawTile());});
+    state.players.forEach(p=>{p.edgeCatalog=CALICO_EDGE_CATALOG[p.boardColor];});
+    if(state.players.some(p=>!p.edgeCatalog)){toast('보드 가장자리 데이터가 없습니다.');return;}
     state.market=[drawTile(),drawTile(),drawTile()].filter(Boolean);
     viewedPlayer=0; currentClaims=[]; dirtyTurn=false;
     enterGame();
@@ -993,8 +1087,8 @@ if(roomId) window.addEventListener('DOMContentLoaded',()=>{
   function phaseLabel(){
     if(state.gameOver) return '게임 종료';
     if(state.phase==='place') return '① 손패 1개 선택 → 빈 칸에 배치';
-    if(state.phase==='claim') return '② 획득한 고양이/단추 토큰 배치 (없으면 건너뛰기)';
-    if(state.phase==='draft') return '③ 시장에서 헝겊 타일 1개 가져오기';
+    if(state.phase==='draft') return '② 시장에서 헝겊 타일 1개를 가져온 뒤 턴 종료';
+    if(state.phase==='turn-end') return '③ 턴 종료 또는 현재 차례 되돌리기';
     return '';
   }
 
@@ -1081,7 +1175,7 @@ if(roomId) window.addEventListener('DOMContentLoaded',()=>{
     stage.appendChild(base);
 
     const grid=document.createElement('div'); grid.className='board-grid-layer'; stage.appendChild(grid);
-    const caption=document.createElement('div'); caption.className='board-edge-caption'; caption.textContent='가장자리 인쇄 타일 포함 · 필요하면 “원본 보드 가장자리 참고”로 확대'; stage.appendChild(caption);
+    const caption=document.createElement('div'); caption.className='board-edge-caption'; caption.textContent='실제 인쇄 가장자리 타일 데이터 포함 · 고양이/단추 자동 판정 · 원본 보드 이미지 기반 자동 추출'; stage.appendChild(caption);
 
     for(let r=0;r<BOARD_ROWS;r++) for(let c=0;c<BOARD_COLS;c++){
       const key=`${r},${c}`; const cell=p.board[key]; const pos=boardCellPosition(r,c);
@@ -1098,7 +1192,7 @@ if(roomId) window.addEventListener('DOMContentLoaded',()=>{
           el.style.setProperty('--tile-color',colorById(cell.tile.color).css);
           el.innerHTML=`<span class="tile-fallback"></span><img class="tile-art" src="${tileAsset(cell.tile)}" alt="${tileLabel(cell.tile)}" onerror="this.style.display='none'">${renderTokens(cell)}`;
         } else if(viewedPlayer===state.active && isMyTurn() && state.phase==='place' && state.selectedHand!==null){el.classList.add('playable');}
-        if(viewedPlayer===state.active && isMyTurn() && state.phase==='claim' && state.claimMode && cell.tile) el.classList.add('selected-target');
+        
         if(viewedPlayer===state.active && isMyTurn()) el.addEventListener('click',()=>onBoardCellClick(key));
       }
       grid.appendChild(el);
@@ -1117,21 +1211,24 @@ if(roomId) window.addEventListener('DOMContentLoaded',()=>{
   }
 
   function onBoardCellClick(key){
-    if(state.gameOver || viewedPlayer!==state.active || !isMyTurn()) return;
-    const p=state.players[state.active],cell=p.board[key];
-    if(cell.type!=='patch') return;
-    if(state.phase==='place'){
-      if(state.selectedHand===null){toast('먼저 손패 타일을 선택하세요.');return;}
-      if(cell.tile){toast('이미 타일이 놓인 칸입니다.');return;}
-      placeTile(key); return;
-    }
-    if(state.phase==='claim' && state.claimMode){claimToken(key);}
+    if(state.gameOver||viewedPlayer!==state.active||!isMyTurn())return;const p=state.players[state.active],cell=p.board[key];if(cell.type!=='patch')return;
+    if(state.phase==='place'){if(state.selectedHand===null){toast('먼저 손패 타일을 선택하세요.');return;}if(cell.tile){toast('이미 타일이 놓인 칸입니다.');return;}void placeTile(key);}
   }
-
+  let placingBusy=false;
   function placeTile(key){
-    const p=state.players[state.active]; const idx=state.selectedHand;
-    const tile=p.hand.splice(idx,1)[0]; p.board[key].tile=tile;
-    state.selectedHand=null; state.phase='claim'; dirtyTurn=true; autoSave('place-tile'); renderGame();
+    if(placingBusy)return; placingBusy=true;
+    try{
+      const p=state.players[state.active],idx=state.selectedHand,tile=p.hand[idx];
+      if(!tile){toast('손패 타일을 다시 선택하세요.');return;}
+      const edgeCatalog=CALICO_EDGE_CATALOG[p.boardColor];
+      if(!edgeCatalog){toast('이 보드의 가장자리 데이터가 없습니다.');return;}
+      p.edgeCatalog=edgeCatalog;
+      p.hand.splice(idx,1); p.board[key].tile=tile; state.selectedHand=null; dirtyTurn=true;
+      state.turnTokens=resolveAutomaticTokens(p,key);
+      if(allBoardsFull()){state.phase='gameover';finishGame();return;}
+      state.phase='draft'; autoSave('place-tile'); renderGame();
+      toast(state.turnTokens.length?`획득: ${state.turnTokens.join(' · ')}`:'전체 보드(인쇄 가장자리 포함) 기준으로 토큰 조건을 확인했습니다. 시장에서 타일을 바로 가져오세요.');
+    } finally { placingBusy=false; }
   }
 
   function renderCats(){
@@ -1146,103 +1243,65 @@ if(roomId) window.addEventListener('DOMContentLoaded',()=>{
   }
 
   function renderControls(){
-    const card=$('#controlCard'); const p=state.players[state.active];
-    if(state.gameOver){card.innerHTML='<h3 class="section-title" style="font-size:1rem">게임 종료</h3><button class="btn primary" id="scoreAgainBtn">최종 점수 보기</button>'; $('#scoreAgainBtn').onclick=showScoreModal; return;}
-    if(isArenaMode() && !isMyTurn()){
-      const me=myPlayerIndex();
-      card.innerHTML=`<h3 class="section-title" style="font-size:1rem">상대 차례</h3><div class="action-line"><b>${escapeHtml(p.name)}</b>의 차례입니다. 행동이 동기화되면 자동으로 화면에 반영됩니다.</div>${me!==null?`<button class="btn" id="viewOwnBoardBtn">내 보드 보기</button>`:''}`;
-      if($('#viewOwnBoardBtn')) $('#viewOwnBoardBtn').onclick=()=>{viewedPlayer=me;renderGame();};
-      return;
-    }
-    if(viewedPlayer!==state.active){
-      card.innerHTML=`<h3 class="section-title" style="font-size:1rem">다른 보드 확인 중</h3><div class="action-line">내 차례입니다. 행동하려면 현재 차례 보드로 돌아가세요.</div><button class="btn primary" id="returnActiveBtn">현재 차례 보드로</button>`;
-      $('#returnActiveBtn').onclick=()=>{viewedPlayer=state.active;renderGame();};return;
-    }
-    let html=`<h3 class="section-title" style="font-size:1rem">차례 진행</h3><div class="action-line"><b>${phaseLabel()}</b>${isArenaMode()?'<br><span style="font-size:.78rem;color:var(--muted)">확정 행동은 Arena 방에 즉시 동기화됩니다.</span>':''}</div>`;
-    if(state.phase==='place'){
-      html+=`<p style="font-size:.83rem;color:var(--muted);line-height:1.5">내 손패에서 타일을 선택한 뒤 빈 육각 칸을 클릭하세요. 보드마다 22개의 헝겊 타일 칸을 채웁니다.</p>`;
-    } else if(state.phase==='claim'){
-      const allFull=allBoardsFull();
-      html+=`<div class="claim-section"><h4>단추 토큰</h4><div class="token-buttons">${COLORS.map(c=>`<button class="token-choice" data-claim="button:${c.id}"><span class="color-dot" style="--dot:${c.css}"></span>${c.ko} (${state.inventories.buttons[c.id]})</button>`).join('')}<button class="token-choice" data-claim="button:rainbow">🌈 무지개 (${state.inventories.rainbow})</button></div></div>`;
-      html+=`<div class="claim-section"><h4>고양이 토큰</h4><div class="token-buttons">${state.cats.map(c=>`<button class="token-choice" data-claim="cat:${c.id}">🐈 ${c.ko} (${state.inventories.cats[c.id]})</button>`).join('')}</div></div>`;
-      html+=`<p style="font-size:.78rem;color:var(--muted);line-height:1.45">토큰 종류를 누른 뒤, 그 토큰을 실제로 올려둘 헝겊 타일을 클릭하세요. 선택한 칸 위에 고양이/단추 토큰이 계속 표시되며 다른 플레이어 화면에도 같은 위치가 표시됩니다.</p>`;
-      html+=`<div style="display:flex;gap:7px;flex-wrap:wrap"><button class="btn small" id="undoClaimBtn" ${currentClaims.length?'':'disabled'}>마지막 토큰 취소</button>${allFull?'<button class="btn primary" id="finishGameBtn">게임 종료 · 점수 계산</button>':'<button class="btn primary" id="toDraftBtn">토큰 단계 완료 · 시장 선택</button>'}</div>`;
-    } else if(state.phase==='draft'){
-      html+=`<p style="font-size:.83rem;color:var(--muted);line-height:1.5">시장 3개 중 1개를 클릭하면 손으로 가져오고, 주머니에서 1개가 즉시 보충됩니다.</p>`;
-    }
-    html+=renderPlacedTokenSummary(p);
-    html+=`<div class="claim-section"><div style="display:flex;gap:7px;flex-wrap:wrap"><button class="btn small warn" id="undoTurnBtn" ${dirtyTurn?'':'disabled'}>현재 차례 되돌리기</button>${isArenaMode()?'<span style="font-size:.76rem;color:var(--muted);align-self:center">온라인 자동 동기화</span>':'<button class="btn small" id="quickSaveBtn">지금 저장</button>'}</div></div>`;
-    card.innerHTML=html;
-    $$('#controlCard [data-claim]').forEach(btn=>{
-      const val=btn.dataset.claim; if(state.claimMode===val) btn.classList.add('active');
-      btn.addEventListener('click',()=>{if(!isMyTurn())return;state.claimMode=state.claimMode===val?null:val;dirtyTurn=true;renderGame();});
-    });
-    if($('#toDraftBtn')) $('#toDraftBtn').onclick=()=>{if(!isMyTurn())return;state.claimMode=null;state.phase='draft';dirtyTurn=true;autoSave('phase-draft');renderGame();};
-    if($('#finishGameBtn')) $('#finishGameBtn').onclick=finishGame;
-    if($('#undoClaimBtn')) $('#undoClaimBtn').onclick=undoLastClaim;
-    if($('#undoTurnBtn')) $('#undoTurnBtn').onclick=undoTurn;
-    if($('#quickSaveBtn')) $('#quickSaveBtn').onclick=()=>{autoSave('manual-save');toast('저장했습니다.');};
-  }
-
-  function claimToken(key){
-    const mode=state.claimMode; if(!mode) return;
-    const [type,id]=mode.split(':'); const p=state.players[state.active]; const cell=p.board[key];
-    if(!cell.tile){toast('헝겊 타일이 있는 칸에 놓으세요.');return;}
-    if(type==='button'){
-      if(id==='rainbow'){
-        if(state.inventories.rainbow<=0){toast('무지개 단추가 남아있지 않습니다.');return;}
-        if(countButtonsByColor(p,'rainbow')>=1){toast('한 플레이어는 무지개 단추를 한 번만 획득합니다.');return;}
-        if(!COLORS.every(c=>countButtonsByColor(p,c.id)>=1)){toast('각 색 단추를 최소 1개씩 모아야 무지개 단추를 얻습니다.');return;}
-        cell.buttons.push('rainbow'); state.inventories.rainbow--;
-      } else {
-        if(state.inventories.buttons[id]<=0){toast('해당 색 단추가 남아있지 않습니다.');return;}
-        if(cell.tile.color!==id){toast('일반 단추는 같은 색 헝겊 타일 위에 놓으세요.');return;}
-        cell.buttons.push(id); state.inventories.buttons[id]--;
-      }
-      currentClaims.push({type:'button',id,key});
-    } else if(type==='cat'){
-      const cat=state.cats.find(c=>c.id===id); if(!cat) return;
-      if(state.inventories.cats[id]<=0){toast('해당 고양이 토큰이 남아있지 않습니다.');return;}
-      if(!cat.preferred.includes(cell.tile.pattern)){toast(`${cat.ko}가 선호하는 무늬 타일에 놓으세요.`);return;}
-      cell.cats.push(id); state.inventories.cats[id]--;
-      currentClaims.push({type:'cat',id,key});
-    }
-    const placedName=type==='cat' ? `${catById(id)?.ko||id} 고양이` : (id==='rainbow'?'무지개 단추':`${colorById(id)?.ko||id} 단추`);
-    state.claimMode=null; dirtyTurn=true; autoSave('claim-token'); renderGame();
-    toast(`${placedName} 토큰을 ${boardLocationLabel(key)} 헝겊 타일 위에 놓았습니다.`);
-  }
-
-  function undoLastClaim(){
-    const a=currentClaims.pop(); if(!a) return;
-    const cell=state.players[state.active].board[a.key];
-    if(a.type==='button'){
-      const idx=cell.buttons.lastIndexOf(a.id); if(idx>=0) cell.buttons.splice(idx,1);
-      if(a.id==='rainbow') state.inventories.rainbow++; else state.inventories.buttons[a.id]++;
-    }else{
-      const idx=cell.cats.lastIndexOf(a.id); if(idx>=0) cell.cats.splice(idx,1); state.inventories.cats[a.id]++;
-    }
-    dirtyTurn=true;autoSave('undo-claim');renderGame();
+    const card=$('#controlCard'),p=state.players[state.active];if(state.gameOver){card.innerHTML='<h3 class="section-title" style="font-size:1rem">게임 종료</h3><button class="btn primary" id="scoreAgainBtn">최종 점수 보기</button>';$('#scoreAgainBtn').onclick=showScoreModal;return;}
+    if(isArenaMode()&&!isMyTurn()){const me=myPlayerIndex();card.innerHTML=`<h3 class="section-title" style="font-size:1rem">상대 차례</h3><div class="action-line"><b>${escapeHtml(p.name)}</b>의 차례입니다. 행동이 동기화되면 자동으로 화면에 반영됩니다.</div>${me!==null?`<button class="btn" id="viewOwnBoardBtn">내 보드 보기</button>`:''}`;if($('#viewOwnBoardBtn'))$('#viewOwnBoardBtn').onclick=()=>{viewedPlayer=me;renderGame();};return;}
+    if(viewedPlayer!==state.active){card.innerHTML=`<h3 class="section-title" style="font-size:1rem">다른 보드 확인 중</h3><div class="action-line">내 차례입니다. 행동하려면 현재 차례 보드로 돌아가세요.</div><button class="btn primary" id="returnActiveBtn">현재 차례 보드로</button>`;$('#returnActiveBtn').onclick=()=>{viewedPlayer=state.active;renderGame();};return;}
+    let html=`<h3 class="section-title" style="font-size:1rem">차례 진행</h3><div class="action-line"><b>${phaseLabel()}</b></div>`;
+    if(state.phase==='place')html+=`<p style="font-size:.83rem;color:var(--muted);line-height:1.5">손패에서 타일을 하나 선택한 뒤 빈 육각 칸을 누르세요. 타일을 놓는 즉시 고양이/단추 조건을 자동 판정하고 바로 시장을 선택할 수 있습니다.</p>`;
+    else if(state.phase==='draft'||state.phase==='turn-end'){html+=`<div class="token-auto-note"><b>토큰 자동 판정 완료</b><br>조건을 만족한 토큰은 새로 놓은 타일을 기준으로 자동 지급되었습니다. ${state.phase==='draft'?'이제 시장에서 1개를 가져오세요.':'시장 선택이 끝났습니다. 턴 종료를 누르세요.'}</div>`;if(state.turnTokens?.length)html+=`<div class="token-award">이번 턴 획득 · ${state.turnTokens.join(' · ')}</div>`;html+=`<div class="turn-actions"><button class="btn small" id="undoTurnBtn" ${dirtyTurn?'':'disabled'}>↶ 현재 차례 되돌리기</button><button class="btn primary" id="endTurnBtn" ${state.phase==='draft'?'disabled':''}>턴 종료</button></div>`;}
+    card.innerHTML=html;if($('#undoTurnBtn'))$('#undoTurnBtn').onclick=undoTurn;if($('#endTurnBtn'))$('#endTurnBtn').onclick=()=>{if(state.phase==='turn-end')advanceTurn();};
   }
 
   function draftMarket(idx){
-    if(state.phase!=='draft' || !isMyTurn()) return;
-    const p=state.players[state.active]; const tile=state.market.splice(idx,1)[0]; p.hand.push(tile);
-    const next=drawTile(); if(next) state.market.push(next);
-    dirtyTurn=true; state.claimMode=null;
-    advanceTurn();
+    if(state.phase!=='draft'||!isMyTurn())return;const p=state.players[state.active],tile=state.market.splice(idx,1)[0];if(!tile)return;p.hand.push(tile);const next=drawTile();if(next)state.market.push(next);dirtyTurn=true;state.phase='turn-end';autoSave('market-take');renderGame();toast('시장 타일을 가져왔습니다. 턴 종료를 누르세요.');
   }
-
   function advanceTurn(){
-    if(allBoardsFull()){finishGame();return;}
-    state.active=(state.active+1)%state.players.length;
-    if(state.active===0) state.round++;
-    state.phase='place'; state.selectedHand=null; state.claimMode=null; viewedPlayer=state.active;
-    autoSave('advance-turn'); renderGame(); beginTurn();
+    if(allBoardsFull()){finishGame();return;}state.active=(state.active+1)%state.players.length;if(state.active===0)state.round++;state.phase='place';state.selectedHand=null;state.turnTokens=[];viewedPlayer=state.active;autoSave('advance-turn');renderGame();beginTurn();
   }
 
   function undoTurn(){
     if(!turnStartSnapshot || !dirtyTurn) return;
     if(!isMyTurn()) return; state=JSON.parse(turnStartSnapshot); currentClaims=[]; dirtyTurn=false; viewedPlayer=state.active; autoSave('undo-turn'); renderGame(); toast('현재 차례 시작 상태로 되돌렸습니다.');
+  }
+
+  function componentFor(p,startKey,prop,value){
+    const seen=new Set([startKey]),q=[startKey],out=[];
+    while(q.length){
+      const k=q.shift(),c=nodeFor(p,k);
+      if(!c||c.type!=='patch'&&c.type!=='printed'||!c.tile||c.tile[prop]!==value)continue;
+      out.push(k);
+      for(const n of allNeighborKeys(k)) if(!seen.has(n)){
+        seen.add(n); const nc=nodeFor(p,n);
+        if((nc?.type==='patch'||nc?.type==='printed')&&nc.tile?.[prop]===value)q.push(n);
+      }
+    }
+    return out;
+  }
+  function tokenCellFor(p,k){return p.board[k]||null;}
+  function hasButtonInComponent(p,keys,color){return keys.some(k=>(tokenCellFor(p,k)?.buttons||[]).includes(color));}
+  function hasCatInComponent(p,keys){return keys.some(k=>(tokenCellFor(p,k)?.cats||[]).length>0);}
+  const AXIAL_SHAPES={callie:[[0,0],[1,0],[0,1]],rumi:[[0,0],[1,0],[2,0]],tecolote:[[0,0],[1,0],[2,0],[3,0]],almond:[[0,0],[1,0],[-1,1],[0,1],[1,1]],leo:[[0,0],[1,0],[2,0],[3,0],[4,0]]};
+  function offsetToAxial(key){const [r,c]=key.split(',').map(Number);return[c-Math.floor(r/2),r];}function axialToKey(q,r){return`${r},${q+Math.floor(r/2)}`;}function rotateAxial(q,r){return[-r,q+r];}
+  function normalizedShape(coords){const minQ=Math.min(...coords.map(x=>x[0])),minR=Math.min(...coords.map(x=>x[1]));return coords.map(([q,r])=>`${q-minQ},${r-minR}`).sort().join('|');}
+  function shapeVariants(shape){let set=new Set(),cur=shape.map(x=>x.slice());for(let i=0;i<6;i++){set.add(normalizedShape(cur));cur=cur.map(([q,r])=>rotateAxial(q,r));}return set;}
+  function componentHasShape(p,keys,shapeName){const variants=shapeVariants(AXIAL_SHAPES[shapeName]||[]),keySet=new Set(keys),axial=new Map(keys.map(k=>[k,offsetToAxial(k)]));for(const origin of keys){const[oq,or]=axial.get(origin);for(const variant of variants){const pts=variant.split('|').map(x=>x.split(',').map(Number));for(const[vq,vr]of pts){const bq=oq-vq,br=or-vr,candidate=pts.map(([q,r])=>axialToKey(bq+q,br+r));if(candidate.every(k=>keySet.has(k)))return candidate;}}}return null;}
+  function resolveAutomaticTokens(p,placedKey){
+    const earned=[],placed=p.board[placedKey]; if(!placed?.tile) return earned;
+    const color=placed.tile.color,colorGroup=componentFor(p,placedKey,'color',color);
+    if(colorGroup.length>=3&&!hasButtonInComponent(p,colorGroup,color)&&Number(state.inventories.buttons[color]||0)>0){
+      placed.buttons.push(color);state.inventories.buttons[color]--;earned.push(`${colorById(color)?.ko||color} 단추`);
+    }
+    if(Number(state.inventories.rainbow||0)>0&&COLORS.every(c=>countButtonsByColor(p,c.id)>=1)&&!Object.values(p.board).some(c=>(c.buttons||[]).includes('rainbow'))){
+      placed.buttons.push('rainbow');state.inventories.rainbow--;earned.push('무지개 단추');
+    }
+    for(const cat of state.cats){
+      if(Number(state.inventories.cats[cat.id]||0)<=0)continue;
+      const pattern=placed.tile.pattern; if(!cat.preferred.includes(pattern))continue;
+      const group=componentFor(p,placedKey,'pattern',pattern); if(hasCatInComponent(p,group))continue;
+      const ok=cat.kind==='size'?group.length>=cat.size:!!componentHasShape(p,group,cat.shape);
+      if(ok){placed.cats.push(cat.id);state.inventories.cats[cat.id]--;earned.push(`${cat.ko} 고양이`);}
+    }
+    return earned;
   }
 
   function countEmpty(p){return Object.values(p.board).filter(c=>c.type==='patch'&&!c.tile).length;}
@@ -1252,14 +1311,14 @@ if(roomId) window.addEventListener('DOMContentLoaded',()=>{
   function countButtonsByColor(p,id){return Object.values(p.board).reduce((n,c)=>n+(c.buttons||[]).filter(x=>x===id).length,0);}
   function countCatsById(p,id){return Object.values(p.board).reduce((n,c)=>n+(c.cats||[]).filter(x=>x===id).length,0);}
 
-  function neighborKeys(key){
-    const [r,c]=key.split(',').map(Number);
-    const shiftedRight = r%2===0; // 짝수 행이 실제 보드에서 오른쪽으로 반 칸 이동
-    const coords = shiftedRight
+  function allNeighborKeys(key){
+    const [r,c]=key.split(',').map(Number), shiftedRight=r%2===0;
+    const coords=shiftedRight
       ? [[r,c-1],[r,c+1],[r-1,c],[r-1,c+1],[r+1,c],[r+1,c+1]]
       : [[r,c-1],[r,c+1],[r-1,c-1],[r-1,c],[r+1,c-1],[r+1,c]];
-    return coords.filter(([rr,cc])=>rr>=0&&rr<BOARD_ROWS&&cc>=0&&cc<BOARD_COLS).map(([rr,cc])=>`${rr},${cc}`);
+    return coords.map(([rr,cc])=>`${rr},${cc}`);
   }
+  function neighborKeys(key){return allNeighborKeys(key).filter(k=>{const[r,c]=k.split(',').map(Number);return r>=0&&r<BOARD_ROWS&&c>=0&&c<BOARD_COLS;});}
 
   function histogram(values){
     const m=new Map(); values.forEach(v=>m.set(v,(m.get(v)||0)+1)); return [...m.values()].sort((a,b)=>b-a);
@@ -1286,7 +1345,7 @@ if(roomId) window.addEventListener('DOMContentLoaded',()=>{
   }
 
   function finishGame(){
-    if(isArenaMode() && !isMyTurn()) return; state.gameOver=true; state.phase='gameover'; state.selectedHand=null; state.claimMode=null; const ranked=rankScores(); state.finalOrder=ranked.rows.map(x=>x.i); state.finalScores=ranked.rows.map(x=>({seat:x.i,total:x.s.total,catTokens:x.s.catTokens,buttonTokens:x.s.buttonTokens})); autoSave('game-over'); renderGame(); showScoreModal();
+    if(isArenaMode() && !isMyTurn()) return; state.gameOver=true; state.phase='gameover'; state.selectedHand=null;  const ranked=rankScores(); state.finalOrder=ranked.rows.map(x=>x.i); state.finalScores=ranked.rows.map(x=>({seat:x.i,total:x.s.total,catTokens:x.s.catTokens,buttonTokens:x.s.buttonTokens})); autoSave('game-over'); renderGame(); showScoreModal();
   }
 
   function rankScores(){
@@ -1312,7 +1371,7 @@ if(roomId) window.addEventListener('DOMContentLoaded',()=>{
   function showBoardReference(){
     const p=state.players[viewedPlayer];
     const src=`${ASSET_BASE}/boards/${p.boardColor}.jpg`;
-    showModal(`<h2>${escapeHtml(p.name)} · 원본 보드 가장자리 참고</h2><p style="color:var(--muted);line-height:1.5">고양이/단추 그룹을 판정할 때 실제 보드에 인쇄된 부분/전체 가장자리 헝겊 타일을 확인하기 위한 참고 이미지입니다. 이 이미지는 MyAutoma GitHub Pages에서 직접 불러옵니다.</p><img class="original-board" src="${src}" alt="${p.boardColor} Calico board" onerror="this.replaceWith(Object.assign(document.createElement('p'),{textContent:'네트워크 또는 원본 경로 문제로 이미지를 불러오지 못했습니다.'}))"><div class="modal-actions"><button class="btn" data-close-modal>닫기</button></div>`);
+    showModal(`<h2>${escapeHtml(p.name)} · 원본 보드 가장자리 참고</h2><p style="color:var(--muted);line-height:1.5">실제 보드 디자인을 확인하기 위한 참고 이미지입니다. 고양이/단추 판정은 이미지가 아니라 내장된 보드 가장자리 데이터로 처리합니다.</p><img class="original-board" src="${src}" alt="${p.boardColor} Calico board" onerror="this.replaceWith(Object.assign(document.createElement('p'),{textContent:'네트워크 또는 원본 경로 문제로 이미지를 불러오지 못했습니다.'}))"><div class="modal-actions"><button class="btn" data-close-modal>닫기</button></div>`);
   }
 
   function showRules(){

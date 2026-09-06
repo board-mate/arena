@@ -38,7 +38,8 @@ function gameInfo(game){
     thegame:{name:'더 게임',icon:'🃏',min:2,max:5},
     kraken:{name:'노터치 크라켄',icon:'🐙',min:3,max:8},
     cascadia:{name:'캐스캐디아',icon:'🌲',min:2,max:4},
-    pocketnova:{name:'포크노바',icon:'⚡',min:2,max:4}
+    pocketnova:{name:'포크노바',icon:'⚡',min:2,max:4},
+    fantasyrealms:{name:'판타지 왕국',icon:'🏰',min:3,max:6}
   };
   return map[game]||{name:game,icon:'🎲',min:2,max:6};
 }
@@ -253,6 +254,7 @@ async function renderMulti(){
   if(!onlineConfigured()){shell(`<div class="page-head"><div><h1>🌐 다인플 · 온라인</h1><p>Supabase 연결 후 사용할 수 있습니다.</p></div></div><div class="connection-note">config.js 설정과 v11 supabase.sql 실행이 필요합니다.</div>`);return;}
   const me=await authProfile();if(!me){saveMemberToken('');shell(`<div class="page-head"><div><h1>🌐 다인플 · 온라인</h1><p>방 만들기와 참여는 로그인이 필요합니다.</p></div></div><section class="auth-card"><a class="primary link-btn" href="#/login">로그인 / 회원가입</a></section>`);return;}
   shell(`<div class="page-head"><div><h1>🌐 다인플 · 온라인</h1><p>게임 상태는 행동마다 자동 저장됩니다. 브라우저를 닫아도 같은 방에서 이어할 수 있습니다.</p></div><div class="actions"><span class="login-chip">👤 ${esc(me.nickname)}</span><a class="ghost link-btn" href="#/mypage">마이페이지</a><a class="primary link-btn" href="#/new-room">＋ 방 만들기</a></div></div>
+  <section class="panel wide" style="margin-bottom:16px"><div class="section-title"><h2>🏰 판타지 왕국 · 실시간 3~6인</h2><small>PeerJS WebRTC</small></div><div class="room-row"><div><div class="room-title"><span class="game-pill fantasyrealms">🏰 판타지 왕국</span><b>각자 기기에서 방 코드로 즉시 대전</b></div><small>3~6인 · 별도 실시간 연결 · BoardMate Supabase 방 목록과 독립적으로 동작</small></div><a class="primary link-btn" href="./online-fantasy-realms.html">게임 열기</a></div></section>
   <section id="activeGamesWrap" class="active-games-wrap hidden"><div class="section-title"><h2>▶ 진행 중인 게임</h2><small>자동 저장 · 재접속</small></div><div id="activeGameList"></div></section>
   <div class="section-title"><h2>열린 방</h2><button class="ghost mini" id="refreshRooms">새로고침</button></div><div id="roomList"><div class="empty">방을 불러오는 중…</div></div>`);
   const roomCard=r=>{const gi=gameInfo(r.game),mine=Boolean(r.mine),full=Number(r.member_count)>=Number(r.max_players),playing=r.status==='playing',myTurn=playing&&mine&&r.turn_user_id===me.user_id;return `<article class="room-row ${playing&&mine?'resume-room':''} ${myTurn?'my-turn-room':''}"><div><div class="room-title"><span class="game-pill ${r.game}">${gi.icon} ${gi.name}</span><b>${esc(r.title)}</b>${myTurn?'<span class="turn-alert">내 차례</span>':''}</div><small>⏳ 턴 기반 · ${esc(r.host_nickname||'방장')} · ${r.member_count}명${r.online_count!=null?` · 접속 ${r.online_count}명`:''} · ${r.status==='open'?'대기 중':r.turn_nickname?`현재 ${esc(r.turn_nickname)} 차례`:'게임 중'}</small></div><button class="${mine?'primary':'ghost'}" data-room-action="${r.id}" data-mine="${mine?'1':'0'}" data-status="${r.status}" ${!mine&&r.status==='open'&&full?'disabled':''}>${mine?(playing?(myTurn?'내 차례 플레이':'이어하기'):'방으로'):r.status==='open'?(full?'가득 참':'참가'):'관전 불가'}</button></article>`;};

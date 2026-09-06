@@ -12,13 +12,127 @@ export async function touchPresence(force=false){const now=Date.now();if(!roomId
 export async function getMe(){const t=token();if(!t)return null;return await rpc('boardmate_me',{p_token:t});}
 export async function loadRoom(){const t=token();if(!t)throw new Error('로그인이 필요합니다.');await touchPresence();const data=await rpc('boardmate_get_room',{p_token:t,p_room_id:roomId});if(!data?.room)throw new Error('방을 찾을 수 없습니다.');return data;}
 export async function loadState(){const t=token();if(!t)throw new Error('로그인이 필요합니다.');await touchPresence();return await rpc('get_boardmate_room_state',{p_token:t,p_room_id:roomId});}
-export async function saveState(expectedRevision,state){const t=token();if(!t)throw new Error('로그인이 필요합니다.');await touchPresence();return await rpc('put_boardmate_room_state',{p_token:t,p_room_id:roomId,p_expected_revision:expectedRevision,p_state:state});}
+// ───────────────────── realtime game-state sync ─────────────────────
+// BoardMate uses a public Realtime Broadcast channel only as a lightweight
+// "state changed" signal. No game state or secret information is broadcast.
+// Every recipient still calls the membership-protected RPC loadState(), so a
+// forged broadcast cannot grant access to a room or alter game state.
+//
+// Channel: boardmate:room:<room UUID>
+// Event:   state_changed
+// Payload: { revision: number }
+//
+// Polling remains as a fallback. This makes the update safe to deploy without
+// requiring a destructive DB migration or changing every game's game logic.
+let stateChannel=null;
+let stateChannelRoom='';
+let stateChannelPromise=null;
+
+async function getStateChannel(){
+  if(!configured()||!roomId)return null;
+  if(stateChannel && stateChannelRoom===roomId)return stateChannel;
+  stateChannelRoom=roomId;
+  stateChannel=sb.channel(`boardmate:room:${roomId}`,{config:{broadcast:{self:false}}});
+  stateChannelPromise=new Promise(resolve=>{
+    let settled=false;
+    const finish=ch=>{if(!settled){settled=true;resolve(ch);}};
+    stateChannel.subscribe(status=>{
+      if(status==='SUBSCRIBED')finish(stateChannel);
+      else if(status==='CHANNEL_ERROR'||status==='TIMED_OUT')finish(null);
+    });
+    setTimeout(()=>finish(null),5000);
+  });
+  return await stateChannelPromise;
+}
+
+async function broadcastStateRevision(revision){
+  try{
+    const ch=await getStateChannel();
+    if(!ch)return false;
+    const result=await ch.send({
+      type:'broadcast',
+      event:'state_changed',
+      payload:{revision:Number(revision)}
+    });
+    return result==='ok';
+  }catch(e){
+    console.warn('[BoardMate Realtime] broadcast failed; polling fallback remains active.',e);
+    return false;
+  }
+}
+
+export async function saveState(expectedRevision,state){
+  const t=token();
+  if(!t)throw new Error('로그인이 필요합니다.');
+  await touchPresence();
+  const newRevision=await rpc('put_boardmate_room_state',{
+    p_token:t,p_room_id:roomId,p_expected_revision:expectedRevision,p_state:state
+  });
+  // Broadcast failure must never turn a successful DB write into a game error.
+  // Recipients will still receive the change through the polling fallback.
+  void broadcastStateRevision(newRevision);
+  return newRevision;
+}
 function tier(row){const wins=Number(row?.wins||0),losses=Number(row?.losses||0),rank=Number(row?.elo_rank||0);if(rank>=1&&rank<=5)return{text:`#${rank}`,cls:'rank',title:`전체 ${rank}위`};if(wins>=2&&wins/(wins+losses||1)>=.5)return{text:'🥇',cls:'gold',title:'골드'};if(wins>=1)return{text:'🥈',cls:'silver',title:'실버'};return{text:'🥉',cls:'bronze',title:'브론즈'};}
 export async function ratingBadges(game,userIds){const rows=await rpc('boardmate_get_ratings',{p_token:token(),p_game:game,p_user_ids:userIds});return Object.fromEntries((rows||[]).map(r=>[r.user_id,tier(r)]));}
 export async function submitMatch(order){return await rpc('submit_boardmate_match',{p_token:token(),p_room_id:roomId,p_order:order});}
 export async function submitTeamMatch(winners,losers){return await rpc('submit_boardmate_team_match',{p_token:token(),p_room_id:roomId,p_winners:winners,p_losers:losers});}
 export async function submitCoopMatch(win){return await rpc('submit_boardmate_coop_match',{p_token:token(),p_room_id:roomId,p_win:Boolean(win)});}
-export function startStatePoll(onRow,options={}){let stopped=false,busy=false,last=-1;const interval=Number(options.interval||1200);const run=async()=>{if(stopped||busy)return;busy=true;try{const row=await loadState();if(row&&Number(row.revision)!==last){last=Number(row.revision);await onRow(row);}}catch(e){console.warn(e);}finally{busy=false;}};run();const id=setInterval(run,interval);return()=>{stopped=true;clearInterval(id);};}
+export function startStatePoll(onRow,options={}){
+  let stopped=false,busy=false,last=-1,pendingRevision=-1;
+  // Realtime is the primary path. Polling is deliberately retained as a
+  // recovery path so a temporary WebSocket/network failure cannot freeze a game.
+  const interval=Number(options.interval||10000);
+
+  const run=async(minRevision=-1)=>{
+    if(stopped)return;
+    if(busy){
+      pendingRevision=Math.max(pendingRevision,Number(minRevision)||-1);
+      return;
+    }
+    busy=true;
+    try{
+      const row=await loadState();
+      const rev=Number(row?.revision??-1);
+      if(row && rev>last && rev>=Number(minRevision||-1)){
+        last=rev;
+        await onRow(row);
+      }
+    }catch(e){console.warn(e);}
+    finally{
+      busy=false;
+      if(!stopped && pendingRevision>last){
+        const next=pendingRevision;
+        pendingRevision=-1;
+        void run(next);
+      }else if(!stopped){
+        pendingRevision=-1;
+      }
+    }
+  };
+
+  let channel=null;
+  (async()=>{
+    try{
+      channel=await getStateChannel();
+      if(channel){
+        channel.on('broadcast',{event:'state_changed'},msg=>{
+          const rev=Number(msg?.payload?.revision??-1);
+          if(rev>last)void run(rev);
+        });
+      }
+    }catch(e){console.warn('[BoardMate Realtime] subscription failed; polling fallback active.',e);}
+    if(!stopped)void run();
+  })();
+
+  const id=setInterval(()=>void run(),interval);
+  return ()=>{
+    stopped=true;
+    clearInterval(id);
+    // Do not remove the channel here: another helper on the same page may
+    // still need it, and the browser will clean it up on navigation.
+  };
+}
 window.addEventListener('focus',()=>touchPresence(true));
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)touchPresence(true)});
 

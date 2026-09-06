@@ -1,3 +1,21 @@
+# BoardMate Arcade v11.4 — Realtime 업데이트
+
+> 2026-09-04
+>
+> v11.4는 기존 게임 규칙/DB 스키마를 유지하면서 온라인 게임의 상태 전달을 **Supabase Realtime Broadcast + 10초 polling fallback** 구조로 개선했습니다.
+>
+> - `multi-common.js`: Realtime `state_changed` 구독/발행 추가
+> - Broadcast payload에는 `revision`만 포함
+> - 실제 게임 상태는 기존 membership-protected RPC로 재조회
+> - Realtime 실패 시 10초 polling으로 자동 복구
+> - 7개 온라인 게임의 기존 1~1.7초 polling fallback을 10초로 조정
+> - DB destructive migration 없음
+>
+> 자세한 적용 순서는 `REALTIME_V11_4_SETUP.md`를 읽으세요.
+> Supabase SQL Editor에서는 `SUPABASE_REALTIME_V11_4.sql`을 실행해 현재 DB 상태를 확인할 수 있습니다.
+
+---
+
 # BoardMate Arcade v11.3 — 2026-09-04 포크노바 v3 교체/1인플 추가
 
 > **다음 대화에서는 이 v11.3 섹션을 가장 먼저 읽고, 아래 v11.2/v11.1 기록은 변경 이력으로만 참고하세요.**
