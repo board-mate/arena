@@ -1,7 +1,9 @@
-BoardMate Arcade INTEGRATED v11.4.8
-base: BoardMate Arcade FINAL v11.4.7
+BoardMate Arcade INTEGRATED v11.4.10
+base-direct: BoardMate Arcade INTEGRATED v11.4.8
+v11.4.9-prerequisite: no
 realtime-v11.4
 fantasyrealms-unified-supabase
 calico-pvp-v8-mobile-fit
 porknova-v11.7-dev-checkpoint
+powergrid-germany-beta-v3-multiplayer-only
 2026-09-06

@@ -39,7 +39,8 @@ function gameInfo(game){
     kraken:{name:'노터치 크라켄',icon:'🐙',min:3,max:8},
     cascadia:{name:'캐스캐디아',icon:'🌲',min:2,max:4},
     pocketnova:{name:'포크노바 β',icon:'⚡',min:2,max:4},
-    fantasyrealms:{name:'판타지 왕국',icon:'🏰',min:3,max:6,page:'online-fantasy-realms.html'}
+    fantasyrealms:{name:'판타지 왕국',icon:'🏰',min:3,max:6,page:'online-fantasy-realms.html'},
+    powergrid:{name:'파워그리드 독일 β',icon:'🔌',min:2,max:6,page:'online-powergrid.html'}
   };
   return map[game]||{name:game,icon:'🎲',min:2,max:6};
 }
@@ -243,11 +244,11 @@ async function renderMyPage(){
 
 async function renderCreateRoom(){
   if(!onlineConfigured())return renderMulti();const me=await authProfile();if(!me){location.hash='#/login';return;}
-  const games=['maskmen','acquire','calico','cascadia','pocketnova','thegame','kraken','fantasyrealms'];let selected='maskmen';
+  const games=['maskmen','acquire','calico','cascadia','pocketnova','powergrid','thegame','kraken','fantasyrealms'];let selected='maskmen';
   shell(`<div class="page-head"><div><h1>➕ 새 방 만들기</h1><p>게임을 고르고 바로 방을 만드세요. 제목을 비우면 닉네임과 게임 이름으로 자동 생성됩니다.</p></div><div class="actions"><button class="ghost" id="backMulti">← 방 목록</button></div></div><section class="room-maker"><label>방 제목 <small>선택 사항</small></label><input id="roomTitle" maxlength="40" placeholder="비워두면 예: ${esc(me.nickname)}의 마스크맨 한 판"><div class="turn-system-note"><b>⏳ 모든 게임은 BoardMate Supabase 방 + Realtime</b><span>판타지 왕국도 다른 게임과 동일한 방 생성·참가·재접속 흐름으로 운영됩니다.</span></div><h2>게임 선택</h2><div id="roomGameGrid" class="library-grid compact-games">${games.map(g=>{const x=gameInfo(g);return `<button class="library-card game-choice ${g==='maskmen'?'selected':''}" data-room-game="${g}"><div class="library-icon">${x.icon}</div><h2>${x.name}</h2><p>${x.min}명부터 · 최대 ${x.max}명</p></button>`;}).join('')}</div><button class="primary create-room-submit" id="createRoomBtn">선택한 게임으로 방 만들기</button><div id="roomStatus" class="bonus-note"></div></section>`);
   document.querySelector('#backMulti').onclick=()=>location.hash='#/multi';
   document.querySelectorAll('[data-room-game]').forEach(b=>b.onclick=()=>{selected=b.dataset.roomGame;document.querySelectorAll('[data-room-game]').forEach(x=>x.classList.toggle('selected',x===b));const title=document.querySelector('#roomTitle');if(!title.value)title.placeholder=`비워두면 예: ${me.nickname}의 ${gameInfo(selected).name} 한 판`;});
-  document.querySelector('#createRoomBtn').onclick=async()=>{const title=document.querySelector('#roomTitle').value.trim(),st=document.querySelector('#roomStatus');st.textContent='';try{let id;try{id=await callRpc('create_boardmate_room_v8',{p_token:memberToken(),p_title:title,p_game:selected});}catch(e){const missing=/create_boardmate_room_v8|PGRST202|schema cache/i.test(String(e?.message||e));if(!missing)throw e;try{id=await callRpc('create_boardmate_room_v7',{p_token:memberToken(),p_title:title,p_game:selected,p_play_mode:'turn'});}catch(fallbackErr){const fallbackMissing=/create_boardmate_room_v7|PGRST202|schema cache|지원하지 않는 게임/i.test(String(fallbackErr?.message||fallbackErr));if(fallbackMissing)throw new Error('Supabase 방 생성 RPC가 아직 적용되지 않았습니다. SUPABASE_RPC_FIX_v11_1.sql을 SQL Editor에서 실행한 뒤 다시 시도하세요.');throw fallbackErr;}}location.hash=`#/room/${id}`;}catch(e){st.textContent=e.message;}};
+  document.querySelector('#createRoomBtn').onclick=async()=>{const title=document.querySelector('#roomTitle').value.trim(),st=document.querySelector('#roomStatus');st.textContent='';try{let id;try{id=await callRpc('create_boardmate_room_v9',{p_token:memberToken(),p_title:title,p_game:selected});}catch(v9e){const v9missing=/create_boardmate_room_v9|PGRST202|schema cache/i.test(String(v9e?.message||v9e));if(!v9missing)throw v9e;if(selected==='powergrid')throw new Error('파워그리드용 Supabase 업데이트가 필요합니다. SUPABASE_POWERGRID_UNIFIED.sql을 먼저 실행하세요.');try{id=await callRpc('create_boardmate_room_v8',{p_token:memberToken(),p_title:title,p_game:selected});}catch(e){const missing=/create_boardmate_room_v8|PGRST202|schema cache/i.test(String(e?.message||e));if(!missing)throw e;try{id=await callRpc('create_boardmate_room_v7',{p_token:memberToken(),p_title:title,p_game:selected,p_play_mode:'turn'});}catch(fallbackErr){const fallbackMissing=/create_boardmate_room_v7|PGRST202|schema cache|지원하지 않는 게임/i.test(String(fallbackErr?.message||fallbackErr));if(fallbackMissing)throw new Error('Supabase 방 생성 RPC가 아직 적용되지 않았습니다. SUPABASE_RPC_FIX_v11_1.sql을 SQL Editor에서 실행한 뒤 다시 시도하세요.');throw fallbackErr;}}}location.hash=`#/room/${id}`;}catch(e){st.textContent=e.message;}};
 }
 
 async function renderMulti(){

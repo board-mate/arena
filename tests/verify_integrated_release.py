@@ -25,6 +25,8 @@ need("payload:{revision:Number(revision)}" in multi.replace(' ',''), 'Broadcast 
 app=read('app.js')
 need('fantasyrealms' in app, 'Fantasy Realms missing from app.js')
 need("포크노바 β" in app, 'Porknova beta/development label missing')
+need("파워그리드 독일 β" in app, 'Power Grid Germany multiplayer entry missing')
+need('solo-powergrid.html' not in app, 'Power Grid must not appear in solo library')
 
 cal=read('online-calico.html')
 need('boardFitShell' in cal and 'calico-mobile-board-fit' in cal, 'Calico mobile fit layer missing')
@@ -57,8 +59,17 @@ need((ROOT/'pocketnova/tools/validate_image_assets.py').exists(), 'Porknova asse
 need((ROOT/'pensterdam_board.jpg').exists(), 'legacy pensterdam_board.jpg lost during overlay')
 need((ROOT/'pensterdam_play.jpg').exists(), 'legacy pensterdam_play.jpg lost during overlay')
 
+pg_online=read('online-powergrid.html')
+pg_engine=read('powergrid/engine.js')
+pg_map=read('powergrid/data/germany-map.js')
+need('powergrid-v3-germany-boardmate' in pg_engine, 'Power Grid Germany v3 state kind missing')
+need('PowerGridGermanyMap' in pg_map, 'Power Grid Germany map data missing')
+need('42도시 · 83연결' in read('powergrid/ui.js'), 'Power Grid Germany automatic graph UI missing')
+need('solo-powergrid.html' not in app and not (ROOT/'solo-powergrid.html').exists(), 'Power Grid solo file/entry must be removed')
+need('option value="usa"' not in pg_online and 'option value="korea"' not in pg_online, 'Power Grid setup must be Germany-only')
+
 handoff=read('HANDOFF_VERSION.txt')
-need('INTEGRATED v11.4.8' in handoff, 'handoff version is not integrated v11.4.8')
+need('INTEGRATED v11.4.10' in handoff, 'handoff version is not integrated v11.4.10')
 
 if errors:
     print('FAIL integrated release verification')
@@ -73,3 +84,4 @@ print(' - Calico V8 88 static edges + repair + mobile full-board fit')
 print(' - Porknova v11.7 image/core checkpoint')
 print(' - operational Supabase config preserved')
 print(' - legacy overlay-only assets preserved')
+print(' - Power Grid Germany beta v3 multiplayer-only graph integration')

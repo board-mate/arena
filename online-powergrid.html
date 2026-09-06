@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>파워그리드 독일 β · BoardMate 온라인</title>
+  <link rel="stylesheet" href="./powergrid/pg-styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="./config.js"></script>
+</head>
+<body>
+<div class="pg-app" id="app">불러오는 중…</div>
+<script src="./powergrid/data/germany-map.js"></script>
+<script src="./powergrid/engine.js"></script>
+<script src="./powergrid/ui.js"></script>
+<script type="module">
+import {
+  configured, roomId, getMe, loadRoom, loadState, saveState, startStatePoll,
+  submitMatch, showFatal, endPanel, touchPresence
+} from './multi-common.js';
+
+const GAME='powergrid';
+const app=document.querySelector('#app');
+let me,room,members,mySeat,isHost,state=null,revision=0,stopPoll=null,submitted=false,saving=false,legacyState=false;
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+function setupView(){
+  const wanted=PowerGrid.defaultRegions(members.length).length;
+  const defaults=new Set(PowerGrid.defaultRegions(members.length));
+  const regionHtml=PowerGrid.GERMANY.REGION_ORDER.map(rid=>{
+    const r=PowerGrid.GERMANY.REGIONS[rid];
+    return `<label class="pg-region-option"><input type="checkbox" value="${rid}" ${defaults.has(rid)?'checked':''}><i style="background:${r.color}"></i><span>${esc(r.name)}</span></label>`;
+  }).join('');
+  app.innerHTML=`
+    <div class="pg-topbar">
+      <div class="pg-title">🔌 파워그리드 독일 β<br><small>${esc(room.title||'BoardMate 온라인')} · ${members.length}인 · 다인플 전용</small></div>
+      <a class="pg-btn small" href="./index.html#/room/${encodeURIComponent(roomId)}">← 방으로</a>
+    </div>
+    <div class="pg-card">
+      <h3>독일맵 게임 설정</h3>
+      ${legacyState?'<div class="pg-setup-warning">이 방에 이전 Power Grid β v2 상태가 남아 있습니다. 방장이 아래 설정으로 새 독일맵 게임을 시작하면 같은 방 state를 v3로 교체합니다.</div>':''}
+      <p>이 버전은 <b>독일맵 다인플만</b> 지원합니다. ${members.length}인 게임은 서로 이어진 지역 <b>${wanted}개</b>를 사용합니다.</p>
+      ${isHost?`<div class="pg-region-selector" id="regionSelector">${regionHtml}</div>
+      <div class="pg-setup-warning" id="regionStatus">지역 ${wanted}개를 선택하세요. 선택 지역들은 하나의 연결된 영역이어야 합니다.</div>
+      <button class="pg-btn primary" id="start">독일맵 게임 시작</button>`:'<p>방장이 사용할 지역을 선택하고 게임을 초기화하면 자동으로 시작됩니다.</p>'}
+    </div>`;
+  document.querySelector('#start')?.addEventListener('click',startGame);
+  document.querySelectorAll('#regionSelector input').forEach(el=>el.addEventListener('change',updateRegionStatus));
+  updateRegionStatus();
+}
+
+function selectedRegions(){
+  return [...document.querySelectorAll('#regionSelector input:checked')].map(el=>el.value);
+}
+function updateRegionStatus(){
+  const box=document.querySelector('#regionStatus'); if(!box)return;
+  const ids=selectedRegions(),wanted=PowerGrid.defaultRegions(members.length).length;
+  let msg=`선택 ${ids.length}/${wanted}`;
+  if(ids.length===wanted) msg+=PowerGrid.GERMANY.regionsConnected(ids)?' · ✅ 서로 연결됨':' · ❌ 서로 연결되지 않음';
+  box.textContent=msg;
+}
+async function startGame(){
+  if(saving)return;
+  try{
+    saving=true;
+    const names=members.slice().sort((a,b)=>a.seat-b.seat).map(m=>m.nickname);
+    const regionIds=selectedRegions();
+    PowerGrid.validateRegionSelection(names.length,regionIds);
+    const s=PowerGrid.newGame({numPlayers:names.length,seatNames:names,regionIds});
+    const nr=await saveState(revision,s);
+    revision=Number(nr); state=s; legacyState=false; draw();
+  }catch(e){alert(e.message||e)}finally{saving=false}
+}
+
+function rankingIds(){
+  return state.order.slice().sort((a,b)=>{
+    const pa=state.players[a],pb=state.players[b];
+    const d=(pb._finalPowered||0)-(pa._finalPowered||0);
+    return d||pb.money-pa.money;
+  }).map(seat=>members.find(m=>Number(m.seat)===Number(seat))?.user_id).filter(Boolean);
+}
+async function maybeSubmit(){
+  if(!state?.gameOver||!isHost||submitted)return;
+  submitted=true;
+  try{await submitMatch(rankingIds())}catch(e){console.warn('match submit',e);submitted=false}
+}
+async function action(a){
+  if(saving||!state)return;
+  const acting=PowerGrid.actingSeats(state);
+  if(Number(a.seat)!==mySeat||acting.indexOf(mySeat)===-1)return alert('현재 내 차례가 아닙니다.');
+  try{
+    saving=true;
+    const next=PowerGrid.applyAction(state,a),nr=await saveState(revision,next);
+    revision=Number(nr);state=next;draw();await maybeSubmit();
+  }catch(e){
+    if(/revision|conflict|expected/i.test(String(e.message||e))){
+      const row=await loadState(); if(row)await onRow(row);
+      alert('다른 기기에서 먼저 상태가 갱신되어 최신 상태를 불러왔습니다.');
+    }else alert(e.message||e);
+  }finally{saving=false}
+}
+function draw(){
+  if(!state)return setupView();
+  const regionNames=(state.map.regionIds||[]).map(r=>PowerGrid.GERMANY.REGIONS[r]?.shortName||r).join('·');
+  PowerGridUI.render(app,{
+    state,mySeat,allowAnySeat:false,
+    subtitle:`BoardMate 공통 방 · Realtime · 독일맵 (${regionNames})`,
+    extraTopHtml:`<a class="pg-btn small" href="./index.html#/room/${encodeURIComponent(roomId)}">← 방</a>`,
+    footerHtml:state.gameOver?endPanel('파워그리드 종료','전력 공급 도시 수 → 보유 현금 순으로 순위를 저장합니다.'): '',
+    onAction:action
+  });
+}
+async function onRow(row){
+  if(!row)return;
+  revision=Number(row.revision||0);
+  const incoming=row.state||null;
+  if(incoming && incoming.kind!==PowerGrid.STATE_KIND){
+    legacyState=true;state=null;setupView();return;
+  }
+  legacyState=false;state=incoming;draw();await maybeSubmit();
+}
+async function boot(){
+  if(!configured()||!roomId)showFatal('BoardMate 다인플 방에서 파워그리드를 열어주세요.');
+  me=await getMe(); if(!me)showFatal('로그인이 필요합니다.');
+  ({room,members}=await loadRoom());
+  if(room.game!==GAME)showFatal('파워그리드 방이 아닙니다.');
+  const m=members.find(x=>x.user_id===me.user_id); if(!m)showFatal('이 방의 참가자가 아닙니다.');
+  if(members.length<2||members.length>6)showFatal('파워그리드는 2~6인 다인플만 지원합니다.');
+  mySeat=Number(m.seat);isHost=room.host_id===me.user_id;
+  const row=await loadState(); if(row)await onRow(row); else setupView();
+  stopPoll=startStatePoll(onRow,{interval:10000});
+  setInterval(()=>void touchPresence(true),15000);
+}
+boot().catch(e=>{console.error(e);showFatal(e.message||'파워그리드를 열 수 없습니다.')});
+window.addEventListener('beforeunload',()=>stopPoll?.());
+</script>
+</body>
+</html>
