@@ -1,5 +1,5 @@
 /*!
- * BoardMate Power Grid Germany - Multiplayer UI Layer v6
+ * BoardMate Power Grid Germany - Multiplayer UI Layer v9
  * 순수 DOM/SVG 렌더링. React 등 프레임워크 없이 동작.
  * window.PowerGrid (engine.js) 를 사용한다.
  */
@@ -49,6 +49,52 @@
     return '<div class="pg-map-features"><b>🗺️ '+esc(def.featureTitle || (def.name+'맵 특징'))+'</b><ul>'+items+'</ul></div>';
   }
 
+
+  function renderBoardTracks(state) {
+    var trigger = PG.STEP2_TRIGGER[state.numPlayers] || 7;
+    var end = PG.END_GAME_CITIES[state.numPlayers] || 17;
+    var maxTrack = Math.max(end, trigger, 1);
+    var cityRows = state.order.map(function (seat) {
+      var p = state.players[seat];
+      var count = (p.cities || []).length;
+      var pct = Math.max(0, Math.min(100, count / maxTrack * 100));
+      var stepPct = Math.max(0, Math.min(100, trigger / maxTrack * 100));
+      return '<div class="pg-city-track-row">' +
+        '<div class="pg-city-track-name"><i style="background:'+SEAT_COLORS[seat%6]+'"></i><span>'+esc(p.name)+'</span><b>'+count+'</b></div>' +
+        '<div class="pg-city-track-bar">' +
+          '<span class="pg-city-track-fill" style="width:'+pct.toFixed(2)+'%;background:'+SEAT_COLORS[seat%6]+'"></span>' +
+          '<span class="pg-city-track-step2" style="left:'+stepPct.toFixed(2)+'%" title="Step 2: '+trigger+'도시"></span>' +
+          '<span class="pg-city-track-marker" style="left:'+pct.toFixed(2)+'%;background:'+SEAT_COLORS[seat%6]+'"></span>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+
+    var resourceRows = ['coal','oil','garbage','uranium'].map(function (r) {
+      var cap = PG.RESOURCE_CAPACITY[r];
+      var filled = state.resourceMarket[r];
+      var emptyCount = cap - filled;
+      var price = filled > 0 ? PG.LADDERS[r][emptyCount] : null;
+      var refillTable = PG.RESOURCE_REPLENISH && PG.RESOURCE_REPLENISH[state.numPlayers];
+      var refill = refillTable && refillTable[r] ? refillTable[r][Math.max(0, Math.min(2, state.step-1))] : null;
+      var cells = '';
+      for (var i=0;i<cap;i++) {
+        cells += '<i class="'+(i>=emptyCount?'filled':'')+'"></i>';
+      }
+      return '<div class="pg-resource-track-row">' +
+        '<div class="pg-resource-track-head"><b>'+esc(resLabel(r))+'</b><span>'+filled+'/'+cap+' · '+(price!=null?('최저 '+price+'€'):'품절')+(refill!=null?(' · 보충 +'+refill):'')+'</span></div>' +
+        '<div class="pg-resource-track-cells '+esc(r)+'">'+cells+'</div>' +
+      '</div>';
+    }).join('');
+
+    return '<section class="pg-board-tracks" aria-label="보드 상태 시각화">' +
+      '<div class="pg-board-tracks-title"><b>📊 보드 상태</b><span>Step '+state.step+' · 도시 트랙 / 자원 트랙</span></div>' +
+      '<div class="pg-board-tracks-grid">' +
+        '<div class="pg-city-track"><div class="pg-track-caption"><b>🏙️ 도시 수</b><span>Step 2 '+trigger+' · 종료 '+end+'</span></div>'+cityRows+'</div>' +
+        '<div class="pg-resource-track"><div class="pg-track-caption"><b>⛏️ 자원 시장</b><span>남은 토큰과 현재 최저가</span></div>'+resourceRows+'</div>' +
+      '</div>' +
+    '</section>';
+  }
+
   // ------------------------------------------------------------
   // 지도 SVG
   // ------------------------------------------------------------
@@ -59,10 +105,14 @@
     var parts = [];
     (G.REGION_ORDER || Object.keys(G.REGIONS || {})).forEach(function (rid) {
       if (selected[rid] || !polys[rid]) return;
-      var points = polys[rid].map(function (p) { return p[0] + ',' + p[1]; }).join(' ');
       var labelPoints = polys[rid];
       var cx = labelPoints.reduce(function (sum,p) { return sum+p[0]; },0)/labelPoints.length;
       var cy = labelPoints.reduce(function (sum,p) { return sum+p[1]; },0)/labelPoints.length;
+      // v9: 제외 음영이 인접 사용 도시까지 덮지 않도록 폴리곤을 중심 기준 50%로 축소한다.
+      var shadeScale = 0.50;
+      var points = labelPoints.map(function (p) {
+        return (cx + (p[0]-cx)*shadeScale).toFixed(1) + ',' + (cy + (p[1]-cy)*shadeScale).toFixed(1);
+      }).join(' ');
       parts.push('<polygon points="'+points+'" class="pg-excluded-region-shape"></polygon>');
       parts.push('<text x="'+cx.toFixed(1)+'" y="'+cy.toFixed(1)+'" class="pg-excluded-region-label">제외</text>');
     });
@@ -129,6 +179,7 @@
       '선택 지역 안에서만 최단 연결비를 계산합니다. 다른 플레이어의 도시를 경유하는 경로도 연결선 비용 계산에는 사용할 수 있습니다.';
     return '<div class="pg-real-map pg-germany-map"><div class="pg-real-map-head"><div><b>독일 보드</b><div class="pg-region-chips">'+regionChips+'</div></div><span class="pg-tag">42도시 · 83연결 자동 계산</span></div>'+
       renderMapFeatures(state.map.boardId || 'germany', true)+
+      renderBoardTracks(state)+
       '<div class="pg-germany-board"><img src="'+esc(PG.BOARD_DEFS.germany.image)+'" alt="Power Grid Germany board" loading="eager">'+excludedShade+markers+'</div>'+
       '<div class="pg-map-note">'+note+'</div>'+
       '<details class="pg-city-picker"'+(canBuild?' open':'')+'><summary>도시 목록'+(canBuild?' · 건설 가능 비용 보기':'')+'</summary>'+cityGroups+'</details></div>';
