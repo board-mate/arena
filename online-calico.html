@@ -780,12 +780,22 @@ if(roomId) window.addEventListener('DOMContentLoaded',()=>{
     pendingSetup=null;
     state=deepClone(next); state.version=VERSION; state.gameId=GAME_ID; state._gameId=GAME_ID;
     state.players?.forEach(p=>{p.edgeCatalog=CALICO_EDGE_CATALOG[p.boardColor]||null;});
+    // 구버전의 자동 토큰 배치가 남아 있는 진행 게임도 현재 게임을 새 방으로
+    // 만들지 않고 그대로 수동 배치 단계로 복구한다.
+    const legacyMigration=migrateLegacyAutoTokenPlacement(state);
+    pendingTokenChoices=[]; tokenPlacementMode=null;
+    if(legacyMigration.changed && isMyTurn()) pendingTokenChoices=buildLegacyPendingTokenChoices(state.players[state.active]);
     const me=myPlayerIndex();
     if(Number.isInteger(me) && me>=0 && me<state.players.length){ viewedPlayer = previousActive===undefined ? me : Math.min(viewedPlayer,state.players.length-1); }
     else viewedPlayer=Math.min(viewedPlayer,state.players.length-1);
     $('#setupScreen').classList.add('hidden'); $('#gameScreen').classList.remove('hidden');
     renderGame();
     if(previousActive!==state.active || !turnStartSnapshot) beginTurn();
+    if(legacyMigration.changed && pendingTokenChoices.length){
+      renderGame();
+      toast('기존 진행 게임의 자동 배치 토큰을 수동 배치 단계로 복구했습니다.');
+      if(isSetupHost()) setTimeout(()=>autoSave('migrate-legacy-token-placement'),0);
+    }
     suppressArenaPublish=false;
     updateArenaUi();
 
@@ -1315,6 +1325,86 @@ if(roomId) window.addEventListener('DOMContentLoaded',()=>{
     toast(`${choice.label}을(를) 놓을 타일을 선택하세요.`);
   }
 
+  // 기존 진행 게임(V8 이하) 호환: 구버전은 획득 토큰을 자동으로 새 타일에
+  // 올려 저장했기 때문에, 새 버전에서 수동 배치 단계로 되돌릴 수 있게 한다.
+  // 정확한 '방금 놓은 타일' 정보가 구버전 상태에 없으므로, 해당 토큰의 현재
+  // 잘못된 자동 배치를 먼저 회수하고 현재 보드에서 합법적인 그룹을 선택하게 한다.
+  function migrateLegacyAutoTokenPlacement(next){
+    if(!next || !Array.isArray(next.players) || next._manualTokenPlacementV9) return {changed:false};
+    const p=next.players[next.active];
+    if(!p || !Array.isArray(next.turnTokens) || !next.turnTokens.length) return {changed:false};
+    if(!['draft','turn-end'].includes(next.phase)) return {changed:false};
+    next.inventories=next.inventories||{buttons:{},cats:{},rainbow:0};
+    next.inventories.buttons=next.inventories.buttons||{};
+    next.inventories.cats=next.inventories.cats||{};
+    let changed=false;
+    const awards=next.turnTokens.slice();
+    awards.forEach(label=>{
+      if(label==='무지개 단추'){
+        for(const cell of Object.values(p.board||{})){
+          const i=(cell.buttons||[]).indexOf('rainbow');
+          if(i>=0){cell.buttons.splice(i,1);next.inventories.rainbow=Number(next.inventories.rainbow||0)+1;changed=true;break;}
+        }
+        return;
+      }
+      const bm=label.match(/^(.+) 단추$/);
+      if(bm){
+        const color=COLORS.find(c=>c.ko===bm[1]||c.id===bm[1])?.id;
+        if(color){
+          for(const cell of Object.values(p.board||{})){
+            const i=(cell.buttons||[]).indexOf(color);
+            if(i>=0){cell.buttons.splice(i,1);next.inventories.buttons[color]=Number(next.inventories.buttons[color]||0)+1;changed=true;break;}
+          }
+        }
+        return;
+      }
+      const cm=label.match(/^(.+) 고양이$/);
+      if(cm){
+        const cat=next.cats?.find(c=>c.ko===cm[1]) || CATS.find(c=>c.ko===cm[1]);
+        if(cat){
+          for(const cell of Object.values(p.board||{})){
+            const i=(cell.cats||[]).indexOf(cat.id);
+            if(i>=0){cell.cats.splice(i,1);next.inventories.cats[cat.id]=Number(next.inventories.cats[cat.id]||0)+1;changed=true;break;}
+          }
+        }
+      }
+    });
+    if(!changed) return {changed:false};
+    const returnPhase = next.phase;
+    next.phase='token';
+    next._manualTokenPlacementV9=true;
+    next._legacyTokenMigration=true;
+    // 시장을 이미 가져간 구버전 상태라도 토큰 배치를 먼저 완료한 뒤 기존 phase로 복귀한다.
+    next._tokenReturnPhase = returnPhase==='turn-end' ? 'turn-end' : 'draft';
+    return {changed:true};
+  }
+
+  function buildLegacyPendingTokenChoices(p){
+    const choices=[];
+    const seenButton=new Set();
+    const seenCat=new Set();
+    for(const [key,cell] of Object.entries(p.board||{})){
+      if(!cell?.tile) continue;
+      const color=cell.tile.color;
+      const colorGroup=componentFor(p,key,'color',color);
+      if(colorGroup.length>=3 && !hasButtonInComponent(p,colorGroup,color) && Number(state.inventories.buttons[color]||0)>0 && !seenButton.has(color)){
+        seenButton.add(color);
+        choices.push({type:'button',id:color,label:`🔘 ${colorById(color)?.ko||color} 단추`,keys:colorGroup.slice()});
+      }
+      const pattern=cell.tile.pattern;
+      const patternGroup=componentFor(p,key,'pattern',pattern);
+      for(const cat of state.cats){
+        if(seenCat.has(cat.id)||Number(state.inventories.cats[cat.id]||0)<=0||!cat.preferred.includes(pattern)||hasCatInComponent(p,patternGroup)) continue;
+        const ok=cat.kind==='size'?patternGroup.length>=cat.size:!!componentHasShape(p,patternGroup,cat.shape);
+        if(ok){seenCat.add(cat.id);choices.push({type:'cat',id:cat.id,label:`🐈 ${cat.ko} 고양이`,keys:patternGroup.slice()});}
+      }
+    }
+    if(Number(state.inventories.rainbow||0)>0&&COLORS.every(c=>countButtonsByColor(p,c.id)>=1)&&!Object.values(p.board).some(c=>(c.buttons||[]).includes('rainbow'))){
+      choices.push({type:'rainbow',id:'rainbow',label:'🌈 무지개 단추',keys:Object.keys(p.board).filter(k=>p.board[k]?.type==='patch'&&p.board[k]?.tile)});
+    }
+    return choices;
+  }
+
   function placePendingToken(key){
     const choice=tokenPlacementMode,p=state.players[state.active],cell=p.board[key];
     if(!choice||!choice.keys.includes(key)||!cell?.tile)return;
@@ -1335,7 +1425,9 @@ if(roomId) window.addEventListener('DOMContentLoaded',()=>{
     tokenPlacementMode=null;
     if(!pendingTokenChoices.length){
       if(allBoardsFull()){state.phase='gameover';autoSave('tokens-complete');finishGame();return;}
-      state.phase='draft';autoSave('tokens-complete');renderGame();toast('토큰 배치가 완료되었습니다. 시장에서 타일을 가져오세요.');
+      state.phase=state._tokenReturnPhase||'draft';
+      delete state._tokenReturnPhase;
+      autoSave('tokens-complete');renderGame();toast('토큰 배치가 완료되었습니다.');
     }else{autoSave('token-placed');renderGame();toast('다음 획득 토큰을 선택하세요.');}
   }
 
