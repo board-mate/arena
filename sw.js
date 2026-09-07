@@ -1,6 +1,6 @@
-const CACHE='boardmate-shell-v11.4.11';
+const CACHE='boardmate-shell-v11.4.13';
 self.addEventListener('install',()=>self.skipWaiting());
-self.addEventListener('activate',event=>event.waitUntil(self.clients.claim()));
+self.addEventListener('activate',event=>event.waitUntil((async()=>{for(const key of await caches.keys())if(key.startsWith('boardmate-shell-')&&key!==CACHE)await caches.delete(key);await self.clients.claim();})()));
 self.addEventListener('fetch',event=>{
   const req=event.request;
   if(req.method!=='GET'||new URL(req.url).origin!==self.location.origin)return;

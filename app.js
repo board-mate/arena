@@ -66,17 +66,16 @@ window.addEventListener('appinstalled',()=>{deferredInstallPrompt=null;toast('Bo
 function ensureSiteFeatures(){
   if(document.getElementById('boardmate-site-style')) return;
   const st=document.createElement('style'); st.id='boardmate-site-style'; st.textContent=`
-    .site-info-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:16px}
-    .site-info-card{display:block;text-decoration:none;color:inherit;background:rgba(20,25,34,.72);border:1px solid var(--line,#2b3341);border-radius:14px;padding:16px;transition:.15s}
-    .site-info-card:hover{transform:translateY(-2px);border-color:#76839a}
-    .site-info-card .info-icon{font-size:28px;margin-bottom:9px}.site-info-card h3{margin:0 0 6px}.site-info-card p{margin:0;color:var(--muted);font-size:.88rem;line-height:1.55}
-    .info-panel{max-width:860px;margin:0 auto;background:rgba(20,25,34,.8);border:1px solid var(--line,#2b3341);border-radius:16px;padding:20px;line-height:1.7}
-    .info-panel h2{margin-top:22px}.info-panel h2:first-child{margin-top:0}.info-panel .notice{padding:12px 14px;border-radius:10px;background:rgba(68,85,110,.25);border:1px solid rgba(120,140,170,.24)}
-    .install-box{padding:16px;border-radius:14px;background:rgba(18,29,45,.9);border:1px solid var(--line,#2b3341);margin-top:14px}
+    /* v11.4.13: 안내 페이지는 사이트의 밝은 카드 톤으로 통일한다.
+       이전 버전의 어두운 패널 + 어두운 본문색 조합 때문에 글씨가 거의 보이지 않던 문제 수정. */
+    .info-panel{max-width:860px;margin:0 auto;background:#fff;color:#18202d;border:1px solid #ded9d0;border-radius:18px;padding:22px;line-height:1.75;box-shadow:0 10px 28px rgba(17,24,39,.06)}
+    .info-panel h2{margin:24px 0 8px;color:#18202d}.info-panel h2:first-child{margin-top:0}
+    .info-panel p,.info-panel li{color:#536273}
+    .info-panel .notice{padding:12px 14px;border-radius:11px;background:#fff5ce;border:1px solid #efd982;color:#6f5200}
+    .install-box{padding:16px;border-radius:14px;background:#f8fafc;color:#18202d;border:1px solid #dbe2ea;margin-top:14px}
+    .install-box p{color:#536273}
     .login-remember{display:flex;align-items:center;gap:8px;margin:12px 0;color:var(--muted);font-size:.86rem}.login-remember input{width:auto}
     .footer-text-btn{background:none;border:0;color:inherit;font:inherit;padding:0;cursor:pointer}.footer-text-btn:hover{text-decoration:underline}
-    .site-info-grid .site-info-card{min-height:132px}
-    @media(max-width:850px){.site-info-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:520px){.site-info-grid{grid-template-columns:1fr}}
   `; document.head.appendChild(st);
   if(!document.querySelector('link[rel="manifest"]')){const l=document.createElement('link');l.rel='manifest';l.href='./manifest.webmanifest';document.head.appendChild(l);}
   if(!document.querySelector('meta[name="theme-color"]')){const m=document.createElement('meta');m.name='theme-color';m.content='#141922';document.head.appendChild(m);}
@@ -128,9 +127,10 @@ function footer(){
 }
 function shell(content){
   ensureSiteFeatures();
-  app.innerHTML=`<div class="app-shell"><header class="topbar"><button class="brand-btn" id="homeBtn"><span class="brand-mark">●</span> BOARDMATE</button><nav class="topnav"><button data-nav="">미니게임</button><button data-nav="solo">1인플</button><button data-nav="multi">다인플</button><button data-nav="mypage">마이페이지</button></nav><div class="top-date">${formatDate(kstDate())}</div></header><main class="container">${content}${footer()}</main></div>`;
+  app.innerHTML=`<div class="app-shell"><header class="topbar"><button class="brand-btn" id="homeBtn"><span class="brand-mark">●</span> BOARDMATE</button><nav class="topnav"><button data-nav="">미니게임</button><button data-nav="solo">1인플</button><button data-nav="multi">다인플</button><button data-nav="mypage">마이페이지</button><button class="nav-install" id="topInstallBtn" type="button" title="BoardMate를 앱처럼 설치">📲 앱설치</button></nav><div class="top-date">${formatDate(kstDate())}</div></header><main class="container">${content}${footer()}</main></div>`;
   document.querySelector('#homeBtn')?.addEventListener('click',()=>location.hash='#/');
   document.querySelectorAll('[data-nav]').forEach(b=>b.onclick=()=>location.hash=`#/${b.dataset.nav}`);
+  document.querySelector('#topInstallBtn')?.addEventListener('click',installBoardMate);
   const route=(location.hash||'#/').slice(2).split('/')[0];
   document.querySelectorAll('[data-nav]').forEach(b=>b.classList.toggle('active',(b.dataset.nav===''&&route==='')||b.dataset.nav===route));
 }
@@ -254,7 +254,7 @@ async function renderHome(){
   shell(`<section class="hero"><div><h1><span>BoardMate</span> Arcade</h1><p>보드메이트에서 같이 즐기는 웹 보드게임 공간.<br>미니게임, AI 연습, 로그인 기반 온라인 방을 한 곳에 모았습니다.</p><div class="social-links"><a class="social-link" href="${LINKS.instagram}" target="_blank" rel="noreferrer">📷 Instagram</a><a class="social-link" href="${LINKS.somoim}" target="_blank" rel="noreferrer">👥 소모임</a><a class="social-link" href="${LINKS.shop}" target="_blank" rel="noreferrer">🛍 마플샵</a></div></div><div class="hero-badge">🎲</div></section>
   <section class="mode-grid"><button class="mode-card" data-go="solo"><span>🧠</span><b>1인플 · AI/솔로</b><small>마스크맨 / 어콰이어 / 캘리코 / 캐스캐디아 / 포켓몬 미니마 / 더 게임</small></button><button class="mode-card" data-go="multi"><span>🌐</span><b>다인플 · 온라인 방</b><small>자동 저장 · 재접속 · 게임별 티어</small></button></section>
   <div class="section-title"><h2>미니게임</h2><small>${formatDate(kstDate())} · KST</small></div><section class="game-grid daily-two">${homeCard('pensterdam','🧩','펜토리니','도움칸 적게 사용 → 동률이면 먼저 클리어')} ${homeCard('yahtzee','🎲','Yahtzee','언제든 플레이 · 올타임 최고 점수')}</section>
-  <section class="site-info-grid"><a class="site-info-card" href="#/install"><div class="info-icon">📲</div><h3>앱 설치</h3><p>휴대폰과 PC에서 BoardMate를 앱처럼 실행하는 방법을 안내합니다.</p></a><a class="site-info-card" href="#/usage"><div class="info-icon">📘</div><h3>이용안내</h3><p>회원가입, 자동 로그인, 다인플 방 만들기와 재접속 방법입니다.</p></a><a class="site-info-card" href="#/copyright"><div class="info-icon">©️</div><h3>저작권 안내</h3><p>비공식 커뮤니티 서비스와 각 게임 권리자에 관한 안내입니다.</p></a><a class="site-info-card" href="#/contact"><div class="info-icon">✉️</div><h3>문의 안내</h3><p>게임 오류와 서비스 문의, 콘텐츠 삭제 요청 방법을 확인합니다.</p></a></section><div id="connection"></div>`);
+  <div id="connection"></div>`);
   document.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>location.hash=`#/${b.dataset.go}`);
   for(const g of ['pensterdam','yahtzee']){const data=await loadLeaderboard(g,5);const el=document.querySelector(`#lb-${g}`);if(el)el.innerHTML=leaderboardHtml(g,data,false);}
   bindHome();
