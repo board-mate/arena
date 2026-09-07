@@ -45,3 +45,45 @@ export function openRoles(counts,title='이번 판 역할'){
 }
 export function namesBySeat(members){return Object.fromEntries((members||[]).map(m=>[Number(m.seat),m.nickname]));}
 export function seatName(members,seat){return members.find(m=>Number(m.seat)===Number(seat))?.nickname||`#${Number(seat)+1}`;}
+
+// ───────────────────── polished social-deduction results ─────────────────────
+const _finalizedRooms=new Set();
+export async function finalizeSeatWinners(ctx,winnerSeats){
+  if(!ctx?.isHost||!roomId||_finalizedRooms.has(roomId))return false;
+  const seats=[...new Set((winnerSeats||[]).map(Number).filter(Number.isInteger))];
+  const winners=(ctx.members||[]).filter(m=>seats.includes(Number(m.seat))).map(m=>m.user_id);
+  const losers=(ctx.members||[]).filter(m=>!seats.includes(Number(m.seat))).map(m=>m.user_id);
+  if(!winners.length||!losers.length)return false;
+  try{
+    await rpc('submit_boardmate_team_match',{p_token:token(),p_room_id:roomId,p_winners:winners,p_losers:losers});
+    _finalizedRooms.add(roomId);
+    return true;
+  }catch(e){
+    if(String(e?.message||e).toLowerCase().includes('already')){
+      _finalizedRooms.add(roomId);
+      return true;
+    }
+    console.warn('[BoardMate social finalize]',e);
+    return false;
+  }
+}
+export function socialEndScreen({win=false,draw=false,title='게임 종료',reason='',summary='',body='',badge='FINAL RESULT'}={}){
+  const accent=draw?'#a78bfa':win?'#4ade80':'#fb7185';
+  const bg=draw?'linear-gradient(145deg,#2e2450,#1c2027)':win?'linear-gradient(145deg,#173c2d,#1c2027)':'linear-gradient(145deg,#4a2028,#1c2027)';
+  const icon=draw?'🤝':win?'🏆':'🎯';
+  const headline=draw?'무승부':win?'승리!':'패배';
+  return `<section class="sd-final-card" style="--sd-final-accent:${accent};background:${bg}">
+    <div class="sd-final-icon">${icon}</div>
+    <div class="sd-final-badge">${esc(badge)}</div>
+    <div class="sd-final-headline">${headline}</div>
+    <h3 class="sd-final-title">${esc(title)}</h3>
+    ${reason?`<p class="sd-final-reason">${esc(reason)}</p>`:''}
+    ${summary?`<div class="sd-final-summary">${esc(summary)}</div>`:''}
+    ${body?`<div class="sd-final-body">${body}</div>`:''}
+    <div class="sd-final-actions">
+      <a class="sd-btn primary" href="./index.html#/multi">다인플 목록으로 나가기</a>
+      <a class="sd-btn" href="./index.html#/">홈으로</a>
+      <a class="sd-btn ghost" href="./index.html#/room/${encodeURIComponent(roomId)}">방 결과 보기</a>
+    </div>
+  </section>`;
+}

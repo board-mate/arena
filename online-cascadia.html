@@ -761,6 +761,8 @@ function computeScores(){
 function showScores(){
   const scores=computeScores();const max=Math.max(...scores.map(s=>s.total));let winners=scores.filter(s=>s.total===max);if(winners.length>1){const pine=Math.max(...winners.map(s=>s.nature));winners=winners.filter(s=>s.nature===pine)}
   const winnerNames=winners.map(s=>s.name).join(', ');
+  const ranked=scores.map((s,i)=>({i,s})).sort((a,b)=>b.s.total-a.s.total||b.s.nature-a.s.nature||a.i-b.i);
+  const mine=bmCtx?Number(bmCtx.playerIndex):Number(net.playerIndex??0),myPlace=ranked.findIndex(x=>x.i===mine)+1,winnerIdxs=ranked.filter(x=>winners.includes(x.s)).map(x=>x.i),myWin=winnerIdxs.includes(mine);
   const header=state.players.map(p=>`<th>${esc(p.name)}</th>`).join('');
   const rows=[];
   WILDS.forEach(w=>rows.push(`<tr><td>${WILDLIFE[w].icon} ${WILDLIFE[w].name}</td>${scores.map(s=>`<td>${s.wild[w]}</td>`).join('')}</tr>`));
@@ -769,8 +771,11 @@ function showScores(){
   rows.push(`<tr><td><b>서식지 소계</b></td>${scores.map(s=>`<td><b>${s.habTotal+s.bonusTotal}</b></td>`).join('')}</tr>`);
   rows.push(`<tr><td>남은 솔방울</td>${scores.map(s=>`<td>${s.nature}</td>`).join('')}</tr>`);
   rows.push(`<tr><td><b>최종 점수</b></td>${scores.map(s=>`<td class="${s.total===max?'winner':''}"><b>${s.total}</b></td>`).join('')}</tr>`);
-  showModal(`<h2>최종 점수</h2><div class="notice good"><b>승자: ${esc(winnerNames)}</b><br>동점이면 남은 솔방울이 많은 플레이어가 승리하고, 그래도 같으면 공동 승리입니다.</div><div class="score-scroll" style="margin-top:12px"><table class="score-table"><thead><tr><th>항목</th>${header}</tr></thead><tbody>${rows.join('')}</tbody></table></div><div class="footer-note">서식지 연결은 타일의 맞닿는 면에서 같은 지형이 이어질 때만 연결로 계산합니다. 본 구현은 A/초심자/중급 동물 점수를 자동 계산합니다.</div>`,`<button class="secondary" id="closeScore">닫기</button><button class="primary" id="restartScore">새 게임</button>`);
-  $('#closeScore').onclick=closeModal;$('#restartScore').textContent=bmCtx?'방으로 돌아가기':'새 게임';$('#restartScore').onclick=()=>{if(bmCtx){location.href=`./index.html#/room/${encodeURIComponent(bmCtx.roomId)}`;return;}closeModal();localStorage.removeItem(SAVE_KEY);cleanupNetwork(true);state=null;showSetup();};
+  const hero=`<div style="text-align:center;padding:4px 0 12px"><div style="font-size:48px">${myWin?'🏆':'🎯'}</div><div style="font-size:11px;letter-spacing:.18em;font-weight:900;color:#64748b">FINAL RESULT</div><h2 style="font-size:32px;margin:4px 0">${myWin?'승리!':`${myPlace}위`}</h2><div class="notice good"><b>승자: ${esc(winnerNames)}</b><br>내 점수 ${scores[mine]?.total??'-'}점 · 솔방울 ${scores[mine]?.nature??'-'}개</div></div>`;
+  const rankHtml=`<div style="display:grid;gap:6px;margin:12px 0">${ranked.map((x,n)=>`<div style="display:flex;justify-content:space-between;gap:10px;padding:9px 11px;border-radius:10px;background:${x.i===mine?'#e7f0e9':'#f6f4ed'};border:1px solid ${n===0?'#d5b96b':'#e0dccf'}"><b>${n+1}위 · ${esc(x.s.name)}${x.i===mine?' · 나':''}</b><span>${x.s.total}점 · 🌲 ${x.s.nature}</span></div>`).join('')}</div>`;
+  const actions=bmCtx?`<a class="primary" style="text-decoration:none" href="./index.html#/multi">다인플 목록으로 나가기</a><a class="secondary" style="text-decoration:none" href="./index.html#/">홈으로</a><a class="secondary" style="text-decoration:none" href="./index.html#/room/${encodeURIComponent(bmCtx.roomId)}">방 결과 보기</a><button class="secondary" id="closeScore">점수표 계속 보기</button>`:`<button class="secondary" id="closeScore">닫기</button><button class="primary" id="restartScore">새 게임</button>`;
+  showModal(`${hero}${rankHtml}<div class="score-scroll" style="margin-top:12px"><table class="score-table"><thead><tr><th>항목</th>${header}</tr></thead><tbody>${rows.join('')}</tbody></table></div><div class="footer-note">동점이면 남은 솔방울이 많은 플레이어가 승리하고, 그래도 같으면 공동 승리입니다.</div>`,actions);
+  $('#closeScore').onclick=closeModal;if(!bmCtx&&$('#restartScore'))$('#restartScore').onclick=()=>{closeModal();localStorage.removeItem(SAVE_KEY);cleanupNetwork(true);state=null;showSetup();};
 }
 
 function showRules(){

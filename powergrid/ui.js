@@ -37,7 +37,7 @@
     if (idx == null) return '<div class="pg-plant-img pg-plant-missing">'+esc(num)+'</div>';
     var x = (idx % 7) * 100, y = Math.floor(idx / 7) * 100;
     return '<svg class="pg-plant-img" viewBox="'+x+' '+y+' 100 100" role="img" aria-label="'+esc(num)+'번 발전소">'+
-      '<image href="./powergrid/assets/plants/plant_sheet.webp?v=6" x="0" y="0" width="700" height="700" preserveAspectRatio="none"></image></svg>';
+      '<image href="./powergrid/assets/plants/plant_sheet.webp?v=7" x="0" y="0" width="700" height="700" preserveAspectRatio="none"></image></svg>';
   }
 
   function renderMapFeatures(boardId, compact) {
@@ -357,7 +357,7 @@
     var acting = PG.actingSeats(state);
 
     var top = '<div class="pg-topbar">' +
-      '<div class="pg-title">🔌 파워그리드 독일 β6<br><small>' + esc(ctx.subtitle || '') + '</small></div>' +
+      '<div class="pg-title">🔌 파워그리드 독일<br><small>' + esc(ctx.subtitle || '') + '</small></div>' +
       '<div style="display:flex;gap:8px;flex-wrap:wrap">' +
       '<span class="pg-pill">Step <b>' + state.step + '</b></span>' +
       '<span class="pg-pill">라운드 <b>' + state.round + '</b></span>' +

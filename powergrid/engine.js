@@ -1,5 +1,5 @@
 /*!
- * BoardMate Power Grid Germany - Multiplayer Core Engine (beta v4)
+ * BoardMate Power Grid Germany - Multiplayer Core Engine
  * -----------------------------------------------------------------
  * 다인플 전용. 브라우저와 Node(CommonJS)에서 동일 규칙 엔진을 사용한다.
  * 독일 보드의 42개 도시 / 83개 연결비 그래프를 내장해 도시 건설 비용을
@@ -903,7 +903,7 @@
 
   function applyAction(state, action) {
     var next = clone(state);
-    if (next.kind !== STATE_KIND) throw new Error('이 방은 이전 파워그리드 β 상태입니다. 방장이 독일맵 v3로 다시 시작해야 합니다.');
+    if (next.kind !== STATE_KIND) throw new Error('이 방은 이전 형식의 파워그리드 상태입니다. 방장이 독일맵으로 다시 시작해야 합니다.');
     var fn = ACTIONS[action.type];
     if (!fn) throw new Error('알 수 없는 액션: ' + action.type);
     fn(next, action.seat, action.args || {});

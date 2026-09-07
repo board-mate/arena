@@ -79,7 +79,7 @@ if (!configured() || !roomId) {
 // ── 상태 ──────────────────────────────────────────────────────────
 let me, room, members, badges = {}, mySeat = -1;
 let revision = 0, state = null, frame = null;
-let saving = false, pending = null, submitted = false;
+let saving = false, pending = null, submitted = false, finalOrder = null;
 
 const sync  = document.getElementById('sync');
 const playersEl = document.getElementById('players');
@@ -193,12 +193,17 @@ async function submitResult(finalOrder) {
 // ── 종료 패널 ─────────────────────────────────────────────────────
 function showEnd() {
   if (!state || state.phase !== 'end') return;
-  if (!endEl.innerHTML) {
-    endEl.innerHTML = endPanel(
-      '포켓몬 미니마 종료',
-      '최종 점수를 확인한 뒤 홈이나 다인플 목록으로 돌아갈 수 있습니다.'
-    );
-  }
+  const order=Array.isArray(finalOrder)?finalOrder:[0,1];
+  const myPlace=order.indexOf(mySeat)+1;
+  endEl.innerHTML = endPanel(
+    '포켓몬 미니마 최종 결과',
+    '게임 화면의 최종 점수표와 함께 결과가 BoardMate에 저장됩니다.',
+    {
+      outcome:myPlace===1?'win':'lose',
+      headline:myPlace===1?'1위 · 승리!':`${myPlace}위`,
+      ranking:order.map((seat,n)=>({place:`${n+1}위`,name:members[seat]?.nickname||`플레이어 ${seat+1}`,value:'최종 점수표 확인',me:seat===mySeat,winner:n===0}))
+    }
+  );
 }
 
 // ── iframe 메시지 수신 ────────────────────────────────────────────
@@ -217,7 +222,9 @@ window.addEventListener('message', e => {
   }
   // 게임 종료 결과
   if (e.data?.type === 'game_result') {
-    submitResult(e.data.order);
+    finalOrder = Array.isArray(e.data.order) ? e.data.order.map(Number) : null;
+    submitResult(finalOrder);
+    showEnd();
     return;
   }
 });

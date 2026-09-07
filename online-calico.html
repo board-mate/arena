@@ -1360,13 +1360,13 @@ if(roomId) window.addEventListener('DOMContentLoaded',()=>{
 
   function showScoreModal(){
     if(!state) return;
-    const {rows,winners}=rankScores();
-    showModal(`<h2>최종 점수</h2>
-      <table class="score-table"><thead><tr><th>플레이어</th><th>디자인</th><th>고양이</th><th>단추</th><th>합계</th></tr></thead><tbody>
-      ${rows.map(x=>`<tr class="${winners.includes(x.i)?'winner':''}"><td>${escapeHtml(x.p.name)}</td><td>${x.s.goalPoints}</td><td>${x.s.catPoints}</td><td>${x.s.buttonPoints}</td><td><b>${x.s.total}</b></td></tr>`).join('')}</tbody></table>
-      <div class="score-detail">동점일 때는 룰북 순서대로 고양이 토큰 수 → 단추 토큰 수를 비교하고, 그래도 같으면 공동 승리로 표시합니다.</div>
+    const {rows,winners}=rankScores(),mine=myPlayerIndex(),myPlace=rows.findIndex(x=>x.i===mine)+1,myWin=winners.includes(mine),meRow=rows.find(x=>x.i===mine);
+    showModal(`<div style="text-align:center;padding:6px 0 14px"><div style="font-size:48px">${myWin?'🏆':'🎯'}</div><div style="font-size:11px;letter-spacing:.18em;font-weight:900;color:var(--muted)">FINAL RESULT</div><h2 style="font-size:34px;margin:4px 0">${myWin?'승리!':`${myPlace}위`}</h2><div class="score-detail" style="display:inline-block">내 점수 <b>${meRow?.s.total??'-'}점</b> · 고양이 ${meRow?.s.catTokens??'-'} · 단추 ${meRow?.s.buttonTokens??'-'}</div></div>
+      <table class="score-table"><thead><tr><th>순위 / 플레이어</th><th>디자인</th><th>고양이</th><th>단추</th><th>합계</th></tr></thead><tbody>
+      ${rows.map((x,n)=>`<tr class="${winners.includes(x.i)?'winner':''}" style="${x.i===mine?'outline:2px solid #7aa7d8;outline-offset:-2px':''}"><td>${n+1}위 · ${escapeHtml(x.p.name)}${x.i===mine?' · 나':''}</td><td>${x.s.goalPoints}</td><td>${x.s.catPoints}</td><td>${x.s.buttonPoints}</td><td><b>${x.s.total}</b></td></tr>`).join('')}</tbody></table>
+      <div class="score-detail">동점일 때는 고양이 토큰 수 → 단추 토큰 수를 비교하고, 그래도 같으면 공동 승리입니다.</div>
       ${rows.map(x=>`<h3>${escapeHtml(x.p.name)} 상세</h3><div class="score-detail">디자인: ${GOAL_POSITIONS.map((k,j)=>{const g=goalById(x.p.board[k].goalId),sg=x.s.goals[j];return `${g.formula} ${sg.total}점${sg.color&&sg.pattern?'(색+무늬)':sg.color?'(색)':sg.pattern?'(무늬)':''}`}).join(' · ')}<br>고양이: ${state.cats.map(c=>`${c.ko} ${x.s.catDetail[c.id]}개`).join(' · ')}<br>단추: 총 ${x.s.buttonTokens}개 × 3점</div>`).join('')}
-      <div class="modal-actions"><button class="btn" data-close-modal>닫기</button><button class="btn primary" id="exportScoreBtn">게임 상태 JSON 내보내기</button></div>`);
+      <div class="modal-actions">${isArenaMode()?`<a class="btn primary" style="text-decoration:none" href="./index.html#/multi">다인플 목록으로 나가기</a><a class="btn" style="text-decoration:none" href="./index.html#/">홈으로</a><a class="btn" style="text-decoration:none" href="./index.html#/room/${encodeURIComponent(roomId)}">방 결과 보기</a>`:''}<button class="btn" data-close-modal>점수표 계속 보기</button><button class="btn" id="exportScoreBtn">게임 상태 JSON 내보내기</button></div>`);
     setTimeout(()=>{const b=$('#exportScoreBtn'); if(b) b.onclick=exportGame;},0);
   }
 

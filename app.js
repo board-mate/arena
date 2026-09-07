@@ -40,7 +40,7 @@ function gameInfo(game){
     cascadia:{name:'캐스캐디아',icon:'🌲',min:2,max:4},
     pocketnova:{name:'포켓몬 미니마',icon:'🎮',min:2,max:2,page:'online-pokemon-minima.html'},
     fantasyrealms:{name:'판타지 왕국',icon:'🏰',min:3,max:6,page:'online-fantasy-realms.html'},
-    powergrid:{name:'파워그리드 독일 β',icon:'🔌',min:2,max:6,page:'online-powergrid.html'},
+    powergrid:{name:'파워그리드 독일',icon:'🔌',min:2,max:6,page:'online-powergrid.html'},
     avalon:{name:'레지스탕스 아발론',icon:'⚔️',min:5,max:10,page:'online-avalon.html',mode:'realtime'},
     secrethitler:{name:'시크릿 히틀러',icon:'🗳️',min:5,max:10,page:'online-secret-hitler.html',mode:'realtime'},
     onenightwerewolf:{name:'한밤의 늑대인간',icon:'🌕',min:3,max:10,page:'online-one-night-werewolf.html',mode:'realtime'}

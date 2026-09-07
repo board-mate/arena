@@ -3,16 +3,16 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>파워그리드 독일 β6 · BoardMate 온라인</title>
-  <link rel="stylesheet" href="./powergrid/pg-styles.css?v=6">
+  <title>파워그리드 독일 · BoardMate 온라인</title>
+  <link rel="stylesheet" href="./powergrid/pg-styles.css?v=7">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="./config.js"></script>
 </head>
 <body>
 <div class="pg-app" id="app">불러오는 중…</div>
-<script src="./powergrid/data/germany-map.js?v=6"></script>
-<script src="./powergrid/engine.js?v=6"></script>
-<script src="./powergrid/ui.js?v=6"></script>
+<script src="./powergrid/data/germany-map.js?v=7"></script>
+<script src="./powergrid/engine.js?v=7"></script>
+<script src="./powergrid/ui.js?v=7"></script>
 <script type="module">
 import {
   configured, roomId, getMe, loadRoom, loadState, saveState, startStatePoll,
@@ -33,12 +33,12 @@ function setupView(){
   }).join('');
   app.innerHTML=`
     <div class="pg-topbar">
-      <div class="pg-title">🔌 파워그리드 독일 β6<br><small>${esc(room.title||'BoardMate 온라인')} · ${members.length}인 · 다인플 전용</small></div>
+      <div class="pg-title">🔌 파워그리드 독일<br><small>${esc(room.title||'BoardMate 온라인')} · ${members.length}인 · 다인플 전용</small></div>
       <a class="pg-btn small" href="./index.html#/room/${encodeURIComponent(roomId)}">← 방으로</a>
     </div>
     <div class="pg-card">
       <h3>독일맵 게임 설정</h3>
-      ${legacyState?'<div class="pg-setup-warning">이 방에 이전 Power Grid β v2 상태가 남아 있습니다. 방장이 아래 설정으로 새 독일맵 게임을 시작하면 같은 방 state를 v3로 교체합니다.</div>':''}
+      ${legacyState?'<div class="pg-setup-warning">이 방에 이전 형식의 Power Grid 상태가 남아 있습니다. 방장이 아래 설정으로 새 독일맵 게임을 시작하면 현재 형식으로 교체합니다.</div>':''}
       <p>이 버전은 <b>독일맵 다인플만</b> 지원합니다. ${members.length}인 게임은 서로 이어진 지역 <b>${wanted}개</b>를 사용합니다.</p>
       <div class="pg-map-features"><b>🗺️ ${esc(PowerGrid.BOARD_DEFS.germany.featureTitle||'독일맵 특징')}</b><ul>${(PowerGrid.BOARD_DEFS.germany.features||[]).map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div>
       ${isHost?`<div class="pg-region-selector" id="regionSelector">${regionHtml}</div>
@@ -73,12 +73,15 @@ async function startGame(){
   }catch(e){alert(e.message||e)}finally{saving=false}
 }
 
-function rankingIds(){
+function rankingSeats(){
   return state.order.slice().sort((a,b)=>{
     const pa=state.players[a],pb=state.players[b];
     const d=(pb._finalPowered||0)-(pa._finalPowered||0);
     return d||pb.money-pa.money;
-  }).map(seat=>members.find(m=>Number(m.seat)===Number(seat))?.user_id).filter(Boolean);
+  });
+}
+function rankingIds(){
+  return rankingSeats().map(seat=>members.find(m=>Number(m.seat)===Number(seat))?.user_id).filter(Boolean);
 }
 async function maybeSubmit(){
   if(!state?.gameOver||state?.winner==null||!isHost||submitted)return;
@@ -103,11 +106,18 @@ async function action(a){
 function draw(){
   if(!state)return setupView();
   const regionNames=(state.map.regionIds||[]).map(r=>PowerGrid.GERMANY.REGIONS[r]?.shortName||r).join('·');
+  const ranks=state.gameOver?rankingSeats():[];
+  const myPlace=ranks.indexOf(mySeat)+1;
   PowerGridUI.render(app,{
     state,mySeat,allowAnySeat:false,
     subtitle:`BoardMate 공통 방 · Realtime · 독일맵 (${regionNames})`,
     extraTopHtml:`<a class="pg-btn small" href="./index.html#/room/${encodeURIComponent(roomId)}">← 방</a>`,
-    footerHtml:(state.gameOver&&state.winner!=null)?endPanel('파워그리드 종료','전력 공급 도시 수 → 보유 현금 순으로 순위를 저장합니다.'): '',
+    footerHtml:(state.gameOver&&state.winner!=null)?endPanel('파워그리드 최종 결과','최종 전력 공급 도시 수 → 보유 현금 순으로 순위를 확정합니다.',{
+      outcome:myPlace===1?'win':'lose',
+      headline:myPlace===1?'1위 · 승리!':`${myPlace}위`,
+      details:[`내 공급 도시 ${state.players[mySeat]._finalPowered||0}`,`내 현금 ${state.players[mySeat].money} Elektro`],
+      ranking:ranks.map((seat,n)=>({place:`${n+1}위`,name:state.players[seat].name,value:`⚡ ${state.players[seat]._finalPowered||0} · ${state.players[seat].money} Elektro`,me:seat===mySeat,winner:n===0}))
+    }): '',
     onAction:action
   });
 }
