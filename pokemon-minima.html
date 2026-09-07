@@ -1,0 +1,1868 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>포켓몬 미니마 ⚡</title>
+<style>
+/* ─── 토큰 시스템 ─── */
+:root {
+  --red:#e53e3e; --blue:#3182ce; --yellow:#d69e2e; --green:#38a169;
+  --purple:#805ad5; --teal:#319795; --orange:#dd6b20; --pink:#d53f8c;
+  --bg:#0f1923; --surface:#182230; --card:#1e2d3d; --border:#2d4158;
+  --text:#e8f0fe; --muted:#8a9bb8; --accent:#f6c90e;
+  --starter:#f6e05e; --shadow:0 4px 20px rgba(0,0,0,.45);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;font-family:'Noto Sans KR',system-ui,sans-serif;background:var(--bg);color:var(--text)}
+button{cursor:pointer;font-family:inherit}
+button:disabled{opacity:.4;cursor:not-allowed}
+
+/* ─── 레이아웃 ─── */
+#root{display:flex;flex-direction:column;min-height:100vh}
+.topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:10px 16px;display:flex;align-items:center;gap:12px;justify-content:space-between;flex-wrap:wrap}
+.brand{font-size:1.2rem;font-weight:900;letter-spacing:-.03em;color:var(--accent)}
+.brand span{color:var(--text);font-weight:400;font-size:.85rem;margin-left:6px}
+.round-badge{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:4px 12px;font-size:.8rem;font-weight:700;color:var(--muted)}
+.top-btns{display:flex;gap:6px}
+.btn{border:1px solid var(--border);background:var(--card);color:var(--text);border-radius:8px;padding:7px 14px;font-weight:700;font-size:.82rem;transition:background .12s,border-color .12s}
+.btn:hover:not(:disabled){background:var(--border)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#000}
+.btn.primary:hover:not(:disabled){opacity:.88}
+.btn.danger{background:rgba(229,62,62,.15);border-color:var(--red);color:#fc8181}
+.btn.small{padding:4px 9px;font-size:.75rem}
+
+/* ─── 메인 레이아웃 ─── */
+.game-area{display:grid;grid-template-columns:230px 1fr 230px;gap:12px;padding:12px;flex:1;min-height:0}
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:10px}
+.panel-title{font-size:.72rem;font-weight:800;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-bottom:2px}
+
+/* ─── 포켓몬 카드 ─── */
+.poke-card{background:var(--card);border:2px solid var(--border);border-radius:11px;padding:9px;position:relative;cursor:pointer;transition:border-color .12s,transform .08s}
+.poke-card:hover{border-color:var(--accent);transform:translateY(-1px)}
+.poke-card.selected{border-color:var(--accent);box-shadow:0 0 0 2px rgba(246,201,14,.3)}
+.poke-card.starter{border-color:var(--starter)}
+.poke-card.spent{opacity:.6}
+.poke-card.conserved{border-color:var(--green);background:rgba(56,161,105,.08)}
+.poke-card.exhausted{opacity:.5;outline:2px dashed var(--muted)}
+.card-header{display:flex;align-items:flex-start;justify-content:space-between;gap:4px;margin-bottom:5px}
+.card-name{font-weight:900;font-size:.9rem;line-height:1.1}
+.card-name small{display:block;font-size:.65rem;font-weight:400;color:var(--muted);font-style:italic}
+.card-stats{display:flex;gap:5px;align-items:center;flex-wrap:wrap;margin-bottom:4px}
+.stat-pill{display:inline-flex;align-items:center;gap:2px;background:rgba(255,255,255,.07);border-radius:5px;padding:2px 6px;font-size:.72rem;font-weight:700}
+.appeal-num{font-size:1rem;font-weight:900;color:var(--accent)}
+.cons-num{font-size:.85rem;font-weight:900;color:var(--green)}
+.size-badge{background:rgba(99,102,241,.2);color:#a5b4fc;border-radius:4px;padding:1px 5px;font-size:.68rem;font-weight:800}
+.icon-row{display:flex;gap:3px;flex-wrap:wrap;margin-bottom:4px}
+.icon{width:20px;height:20px;border-radius:4px;display:inline-flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:900}
+.card-ability{font-size:.7rem;color:var(--muted);line-height:1.35;border-top:1px solid var(--border);padding-top:4px;margin-top:2px}
+.sponsor-section{background:rgba(49,130,206,.1);border:1px solid rgba(49,130,206,.3);border-radius:6px;padding:5px 7px;margin-top:4px}
+.sponsor-label{font-size:.62rem;font-weight:800;color:#63b3ed;margin-bottom:2px}
+.sponsor-text{font-size:.68rem;color:#90cdf4;line-height:1.3}
+.cons-section{background:rgba(56,161,105,.1);border:1px solid rgba(56,161,105,.3);border-radius:6px;padding:5px 7px;margin-top:4px}
+.cons-label{font-size:.62rem;font-weight:800;color:#68d391;margin-bottom:2px}
+.cons-text{font-size:.68rem;color:#9ae6b4;line-height:1.3}
+.card-state-badge{position:absolute;top:5px;right:5px;font-size:.58rem;font-weight:900;padding:1px 5px;border-radius:3px}
+.state-ready{background:rgba(56,161,105,.2);color:#68d391}
+.state-spent{background:rgba(100,116,139,.2);color:#94a3b8}
+.state-conserved{background:rgba(56,161,105,.3);color:#68d391}
+
+/* ─── 동물원 그리드 ─── */
+.zoo-wrap{display:flex;flex-direction:column;gap:10px}
+.zoo-grid{display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,80px);gap:6px}
+.zoo-cell{background:var(--card);border:1.5px dashed var(--border);border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:.7rem;color:var(--muted);position:relative;transition:border-color .12s}
+.zoo-cell.occupied{border-style:solid;border-color:var(--border)}
+.zoo-cell.enclosure{border-color:rgba(99,102,241,.5)}
+.zoo-cell.has-pokemon{border-color:var(--accent);background:rgba(246,201,14,.05)}
+.zoo-cell.valid-target{border-color:var(--green);background:rgba(56,161,105,.08);cursor:pointer;animation:pulse-green 1.2s infinite}
+.zoo-cell.invalid-target{opacity:.3}
+@keyframes pulse-green{0%,100%{border-color:rgba(56,161,105,.5)}50%{border-color:#68d391}}
+.cell-content{text-align:center;padding:4px}
+.cell-poke{font-size:.75rem;font-weight:800;color:var(--text);line-height:1.2}
+.cell-poke small{display:block;font-size:.6rem;color:var(--muted);font-weight:400}
+.cell-size{position:absolute;bottom:3px;right:4px;font-size:.6rem;font-weight:900;color:#6b7280}
+.cell-icons{display:flex;gap:2px;position:absolute;top:3px;left:4px}
+.enc-num{font-size:1.2rem;font-weight:900;color:rgba(99,102,241,.4)}
+
+/* ─── 행동 카드 ─── */
+.action-card{background:var(--card);border:2px solid var(--border);border-radius:12px;padding:10px;margin-bottom:8px}
+.action-card-title{font-size:.75rem;font-weight:900;color:var(--muted);margin-bottom:8px;letter-spacing:.05em}
+.action-slots{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin-bottom:8px}
+.action-slot{border-radius:7px;padding:6px 4px;text-align:center;cursor:pointer;border:1.5px solid var(--border);transition:all .12s;position:relative}
+.action-slot:hover{border-color:var(--accent)}
+.action-slot.active-slot{border-color:var(--accent);background:rgba(246,201,14,.1)}
+.slot-num{font-size:1rem;font-weight:900;color:var(--accent);display:block}
+.slot-label{font-size:.58rem;font-weight:700;color:var(--muted);display:block}
+.slot-icon{font-size:1.1rem;display:block;margin-bottom:2px}
+.strength-display{text-align:center;margin-bottom:8px}
+.strength-num{font-size:2rem;font-weight:900;color:var(--accent);line-height:1}
+.strength-label{font-size:.7rem;color:var(--muted)}
+.pass-indicator{background:rgba(128,90,213,.15);border:1px solid rgba(128,90,213,.4);border-radius:7px;padding:5px 8px;font-size:.72rem;color:#b794f4;text-align:center}
+.token-count{display:flex;align-items:center;gap:4px;font-size:.8rem;font-weight:700}
+.x-token{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;background:var(--purple);border-radius:4px;font-size:.65rem;font-weight:900;color:#fff}
+
+/* ─── 점수 패널 ─── */
+.score-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--border)}
+.score-row:last-child{border-bottom:none}
+.score-label{font-size:.75rem;color:var(--muted)}
+.score-val{font-size:.95rem;font-weight:900}
+
+/* ─── 덱/버린패 ─── */
+.deck-area{display:flex;gap:8px;align-items:stretch}
+.deck-pile{flex:1;background:var(--card);border:1.5px solid var(--border);border-radius:9px;padding:8px;text-align:center;min-height:60px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer;transition:border-color .12s}
+.deck-pile:hover{border-color:var(--accent)}
+.deck-pile.valid{border-color:var(--green)}
+.deck-count{font-size:1.2rem;font-weight:900;color:var(--accent)}
+.deck-label{font-size:.65rem;color:var(--muted)}
+.display-cards{display:flex;gap:5px;flex-wrap:wrap}
+.display-mini{background:var(--card);border:1.5px solid var(--border);border-radius:7px;padding:5px 7px;font-size:.72rem;cursor:pointer;transition:border-color .12s;max-width:110px}
+.display-mini:hover{border-color:var(--accent)}
+.display-mini.valid{border-color:var(--green)}
+.display-mini strong{display:block;font-size:.75rem}
+
+/* ─── 손패 ─── */
+.hand-area{display:flex;gap:6px;flex-wrap:wrap}
+.hand-card{background:var(--card);border:2px solid var(--border);border-radius:9px;padding:6px 8px;font-size:.75rem;cursor:pointer;transition:all .12s;max-width:130px;position:relative}
+.hand-card:hover{border-color:var(--accent);transform:translateY(-2px)}
+.hand-card.selected{border-color:var(--accent);background:rgba(246,201,14,.08)}
+.hand-card.playable{border-color:var(--green)}
+.hand-card.not-playable{opacity:.45}
+.hand-count{font-size:.72rem;color:var(--muted);font-weight:700}
+.card-art-full{width:100%;aspect-ratio:441/626;object-fit:contain;border-radius:7px;margin:4px 0 7px;background:#0b1320}
+.draft-art{width:100%;aspect-ratio:441/626;object-fit:contain;border-radius:8px;background:#0b1320;margin-bottom:6px}
+.hand-art{width:100%;aspect-ratio:441/626;max-height:110px;object-fit:cover;object-position:top;border-radius:6px;margin-bottom:4px;background:#0b1320}
+.display-art{width:44px;height:62px;object-fit:cover;object-position:top;border-radius:5px;float:left;margin-right:6px}
+.zoo-art{width:44px;height:62px;object-fit:cover;object-position:top;border-radius:5px;margin:0 auto 3px;display:block}
+
+/* ─── 메시지/액션 선택 ─── */
+.action-bar{background:var(--surface);border-top:1px solid var(--border);padding:10px 16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.phase-msg{font-size:.82rem;font-weight:700;flex:1;color:var(--text)}
+.phase-hint{font-size:.72rem;color:var(--muted)}
+.action-btns{display:flex;gap:6px;flex-wrap:wrap}
+
+/* ─── 설정 화면 ─── */
+.setup-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px}
+.setup-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:32px;max-width:480px;width:100%}
+.setup-title{font-size:2rem;font-weight:900;text-align:center;margin-bottom:4px;color:var(--accent);letter-spacing:-.04em}
+.setup-sub{font-size:.82rem;text-align:center;color:var(--muted);margin-bottom:24px}
+.setup-field{margin-bottom:16px}
+.setup-label{font-size:.75rem;font-weight:800;color:var(--muted);margin-bottom:6px;display:block}
+.setup-input{width:100%;padding:10px 12px;background:var(--card);border:1.5px solid var(--border);border-radius:8px;color:var(--text);font-size:.9rem}
+.setup-input:focus{outline:2px solid var(--accent);border-color:transparent}
+.setup-options{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.setup-option{border:1.5px solid var(--border);background:var(--card);border-radius:9px;padding:12px;text-align:center;cursor:pointer;transition:all .12s}
+.setup-option:hover,.setup-option.active{border-color:var(--accent);background:rgba(246,201,14,.08)}
+.setup-option strong{display:block;font-size:.9rem;font-weight:900}
+.setup-option small{font-size:.72rem;color:var(--muted)}
+.setup-start{width:100%;margin-top:20px;padding:14px;font-size:1rem;font-weight:900;background:var(--accent);border:none;border-radius:10px;color:#000;cursor:pointer;transition:opacity .12s}
+.setup-start:hover{opacity:.88}
+
+/* ─── 로그 ─── */
+.log-area{background:var(--card);border-radius:8px;padding:8px;max-height:120px;overflow-y:auto;font-size:.68rem;line-height:1.6;color:var(--muted)}
+.log-area .entry{padding:1px 0}
+.log-area .entry.ok{color:#68d391}.log-area .entry.warn{color:#f6c90e}.log-area .entry.act{color:#90cdf4}
+
+/* ─── 종료 ─── */
+.end-screen{position:fixed;inset:0;background:rgba(0,0,0,.75);display:flex;align-items:center;justify-content:center;z-index:100}
+.end-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:32px;max-width:440px;width:90%;text-align:center}
+.end-title{font-size:1.8rem;font-weight:900;margin-bottom:8px;color:var(--accent)}
+.score-table{width:100%;border-collapse:collapse;margin:16px 0;font-size:.82rem}
+.score-table th{color:var(--muted);font-size:.7rem;padding:5px;border-bottom:1px solid var(--border)}
+.score-table td{padding:8px 5px;border-bottom:1px solid rgba(45,65,88,.5)}
+.score-table .total{font-weight:900;font-size:.95rem}
+.winner-row{background:rgba(246,201,14,.08)}
+
+/* ─── 툴팁 ─── */
+.tooltip{position:relative}
+.tooltip-body{display:none;position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);background:#0a1218;border:1px solid var(--border);border-radius:8px;padding:8px 10px;width:200px;font-size:.72rem;line-height:1.5;z-index:50;color:var(--text)}
+.tooltip:hover .tooltip-body{display:block}
+
+/* ─── ARMIN ─── */
+.armin-area{background:rgba(128,90,213,.07);border:1px solid rgba(128,90,213,.3);border-radius:10px;padding:10px}
+.armin-title{font-size:.7rem;font-weight:800;color:#b794f4;margin-bottom:6px}
+
+/* ─── 모바일 ─── */
+@media(max-width:900px){
+  .game-area{grid-template-columns:1fr;grid-template-rows:auto}
+  .zoo-grid{grid-template-rows:repeat(3,70px)}
+}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script>
+// ══════════════════════════════════════════════════════════════════
+// 데이터: 포켓몬 미니마 카드 16장 (아크 미니마 리테마)
+// ══════════════════════════════════════════════════════════════════
+const TYPES = {
+  flight:      {ko:'비행',      color:'#63b3ed', emoji:'🪽'},
+  checker:     {ko:'체커',      color:'#90cdf4', emoji:'◩'},
+  leaf:        {ko:'풀',        color:'#48bb78', emoji:'🌿'},
+  orangeBadge: {ko:'호연지방',  color:'#ed8936', emoji:'▣'},
+  pokeball:    {ko:'관동지방',  color:'#ecc94b', emoji:'◉'},
+  fire:        {ko:'불꽃',      color:'#ed8936', emoji:'🔥'},
+  device:      {ko:'기기',      color:'#4a5568', emoji:'▤'},
+  water:       {ko:'물',        color:'#4299e1', emoji:'💧'},
+  rock:        {ko:'바위',      color:'#a0aec0', emoji:'⛰'},
+};
+const REGION_ICONS = ['checker','orangeBadge','pokeball'];
+const PRIMARY_ICONS = ['flight','leaf','fire','device'];
+
+// 포켓몬 미니마 PDF 5쪽의 16장 카드 데이터를 그대로 옮긴 핵심 수치.
+// size=우리 크기 요구, cost=입주 비용, discardValue=손에서 버릴 때 돈,
+// moneyValue=준비된 동물원 카드를 소비할 때 돈, conVal=보존 저장값, appeal=최종 매력.
+const CARDS = [
+  {id:'c01',name:'워글',latin:'Braviary',starter:false,size:3,cost:20,discardValue:8,moneyValue:14,conVal:8,appeal:7,xIcon:true,coffee:false,
+    icons:['flight','checker'],req:[],terrainReq:'rock',terrainProvides:null,
+    ability:'자기 동물원에 있는 준비된 포켓몬마다 2점 획득.',abilityKind:'scoreReady2',
+    sponsor:{strength:3,name:'과학 실험실',text:'자기 동물원에 있는 카드 1장의 후원자 행동을 수행.'},
+    conservation:{type:'icon',icon:'orangeBadge',num:3,points:12}},
+  {id:'c02',name:'나무킹',latin:'Sceptile',starter:false,size:5,cost:18,discardValue:7,moneyValue:20,conVal:6,appeal:4,xIcon:false,coffee:false,
+    icons:['leaf','orangeBadge','orangeBadge'],req:['orangeBadge'],terrainReq:null,terrainProvides:null,
+    ability:'자기 동물원의 호연지방 아이콘당 2점, 상대 동물원의 호연지방 아이콘당 1점 획득(최대 12점).',abilityKind:'scoreOrangeBoth',
+    sponsor:{strength:4,name:'다양성 연구원',text:'우리 하나를 포켓몬 카드처럼 손에 들고, 그 우리 크기 이하 포켓몬 하나를 준비 또는 보존.'},
+    conservation:{type:'diverseRegions',num:3,points:11}},
+  {id:'c03',name:'피죤투',latin:'Pidgeot',starter:false,size:5,cost:20,discardValue:7,moneyValue:14,conVal:8,appeal:6,xIcon:true,coffee:false,
+    icons:['flight','pokeball'],req:[],terrainReq:'water',terrainProvides:null,
+    ability:'카드 1장을 뽑는다. 게임 종료 시 자기 동물원의 관동지방 아이콘당 2점.',abilityKind:'draw1ScorePokeball2',
+    sponsor:{strength:3,name:'엔지니어',text:'우리 하나를 배치 가능한 다른 칸으로 이동. 자기 행동 카드를 원하는 행동 쪽으로 회전.'},
+    conservation:{type:'terrain',terrain:'rock',num:3,points:12}},
+  {id:'c04',name:'번치코',latin:'Blaziken',starter:false,size:5,cost:22,discardValue:9,moneyValue:16,conVal:10,appeal:9,xIcon:true,coffee:false,
+    icons:['device','fire','orangeBadge'],req:['fire','fire'],terrainReq:'rock',terrainProvides:null,
+    ability:'인접한 빈 우리마다 4점 획득.',abilityKind:'scoreAdjacentEmpty4',
+    sponsor:{strength:4,name:'고고학자',text:'강도 5 건설 행동 1회 수행. 크기 5 우리를 두 개(합 5)로 나눠 건설할 수 있음.'},
+    conservation:{type:'diversePrimary',num:3,points:10}},
+
+  {id:'c05',name:'아차모',latin:'Torchic',starter:true,size:1,cost:11,discardValue:4,moneyValue:6,conVal:5,appeal:4,xIcon:false,coffee:true,
+    icons:['device','fire','orangeBadge'],req:[],terrainReq:null,terrainProvides:'rock',
+    ability:'X 토큰 1개 획득 또는 카드 1장 뽑음.',abilityKind:'xOrDraw',
+    sponsor:{strength:3,name:'과학 도서관',text:'손의 카드 1장을 버리고 공개열의 카드 2장을 가져옴.'},
+    conservation:{type:'terrain',terrain:'rock',num:2,points:7}},
+  {id:'c06',name:'망나뇽',latin:'Dragonite',starter:true,size:2,cost:15,discardValue:5,moneyValue:8,conVal:4,appeal:5,xIcon:false,coffee:true,
+    icons:['flight','pokeball'],req:[],terrainReq:null,terrainProvides:'rock',
+    ability:'보존 행동을 수행할 때 이 카드를 소비해 그 행동에 +3을 더할 수 있음.',abilityKind:'conservationBoost3',
+    sponsor:{strength:4,name:'다양성 연구원',text:'우리 하나를 포켓몬 카드처럼 손에 들고, 그 우리 크기 이하 포켓몬 하나를 준비 또는 보존.'},
+    conservation:{type:'terrain',terrain:'water',num:2,points:8}},
+  {id:'c07',name:'부스터',latin:'Flareon',starter:false,size:3,cost:10,discardValue:5,moneyValue:9,conVal:4,appeal:5,xIcon:true,coffee:true,
+    icons:['fire','orangeBadge'],req:[],terrainReq:'rock',terrainProvides:null,
+    ability:'즉시 인접한 포켓몬 하나의 능력을 활성화할 수 있음.',abilityKind:'activateAdjacent',
+    sponsor:{strength:4,name:'소형 포켓몬 프로그램',text:'대형 포켓몬 1장을 사용해 소형 포켓몬 2장을 준비 또는 보존하고 X 토큰 1개 획득.'},
+    conservation:{type:'icon',icon:'checker',num:2,points:7}},
+  {id:'c08',name:'불켜미',latin:'Litwick',starter:false,size:3,cost:11,discardValue:5,moneyValue:9,conVal:4,appeal:2,xIcon:true,coffee:true,
+    icons:['fire','checker'],req:['checker'],terrainReq:null,terrainProvides:'rock',
+    ability:'자기 동물원의 체커 아이콘당 2점, 상대 동물원의 체커 아이콘당 1점 획득(최대 8점).',abilityKind:'scoreCheckerBoth',
+    sponsor:{strength:2,name:'연방 정부 보조금',text:'우리 하나의 크기를 2만큼 늘리고 카드 1장 뽑음.'},
+    conservation:{type:'small',num:2,maxSize:3,points:6}},
+
+  {id:'c09',name:'켄호로우',latin:'Unfezant',starter:true,size:1,cost:12,discardValue:4,moneyValue:12,conVal:4,appeal:3,xIcon:false,coffee:true,
+    icons:['flight','checker'],req:[],terrainReq:null,terrainProvides:'water',
+    ability:'카드 2장을 뽑고 그중 1장을 손에 넣은 뒤 나머지는 반납.',abilityKind:'draw2Keep1',
+    sponsor:{strength:2,name:'연방 정부 보조금',text:'우리 하나의 크기를 2만큼 늘리고 카드 1장 뽑음.'},
+    conservation:{type:'icon',icon:'pokeball',num:2,points:7}},
+  {id:'c10',name:'샹델라',latin:'Chandelure',starter:true,size:4,cost:12,discardValue:6,moneyValue:7,conVal:6,appeal:4,xIcon:false,coffee:true,
+    icons:['fire','checker'],req:[],terrainReq:null,terrainProvides:'water',
+    ability:'샹델라와 인접한 비행 아이콘당 3점 획득.',abilityKind:'scoreAdjacentFlight3',
+    sponsor:{strength:4,name:'대형 포켓몬 프로그램',text:'소형 포켓몬 1장을 사용해 대형 포켓몬을 원하는 만큼 준비 또는 보존하고 X 토큰 1개 획득.'},
+    conservation:{type:'diversePrimary',num:2,points:6}},
+  {id:'c11',name:'야나프',latin:'Pansage',starter:true,size:1,cost:8,discardValue:3,moneyValue:4,conVal:2,appeal:3,xIcon:true,coffee:true,
+    icons:['leaf','checker'],req:[],terrainReq:null,terrainProvides:'rock',
+    ability:'손에 든 카드 1장을 반납하고 카드 1장을 뽑을 수 있음.',abilityKind:'return1Draw1',
+    sponsor:{strength:4,name:'현장 조사',text:'포켓몬 1장 플레이. 그 포켓몬의 우리 크기 요구는 -2.'},
+    conservation:{type:'diverseRegions',num:2,points:6}},
+  {id:'c12',name:'우츠보트',latin:'Victreebel',starter:true,size:3,cost:16,discardValue:6,moneyValue:8,conVal:6,appeal:7,xIcon:false,coffee:true,
+    icons:['leaf','pokeball'],req:[],terrainReq:null,terrainProvides:'water',
+    ability:'즉시 인접한 포켓몬 1장을 준비할 수 있음.',abilityKind:'readyAdjacent',
+    sponsor:{strength:4,name:'번식 프로그램',text:'자기 동물원에 있는 카드 1장의 보존 행동을 수행.'},
+    conservation:{type:'icon',icon:'orangeBadge',num:2,points:7}},
+
+  {id:'c13',name:'버드렉스',latin:'Calyrex',starter:false,size:4,cost:19,discardValue:7,moneyValue:11,conVal:7,appeal:7,xIcon:true,coffee:true,
+    icons:['leaf','checker'],req:['leaf'],terrainReq:'water',terrainProvides:null,
+    ability:'크기 3+인 불꽃 타입이 아닌 포켓몬과 기존 우리를 함께 쓸 수 있음.',abilityKind:'shareEnclosure',
+    sponsor:{strength:3,name:'과학 실험실',text:'자기 동물원에 있는 카드 1장의 후원자 행동을 수행.'},
+    conservation:{type:'terrain',terrain:'water',num:3,points:14}},
+  {id:'c14',name:'보만다',latin:'Salamence',starter:false,size:4,cost:23,discardValue:8,moneyValue:11,conVal:9,appeal:8,xIcon:true,coffee:true,
+    icons:['flight','orangeBadge'],req:['flight'],terrainReq:'water',terrainProvides:null,
+    ability:'이번 행동이 끝난 뒤 즉시 행동 1번을 추가로 수행.',abilityKind:'extraTurn',
+    sponsor:{strength:3,name:'엔지니어',text:'우리 하나를 배치 가능한 다른 칸으로 이동. 자기 행동 카드를 원하는 행동 쪽으로 회전.'},
+    conservation:{type:'icon',icon:'pokeball',num:3,points:12}},
+  {id:'c15',name:'이상해꽃',latin:'Venusaur',starter:false,size:5,cost:27,discardValue:9,moneyValue:19,conVal:10,appeal:11,xIcon:true,coffee:true,
+    icons:['leaf','pokeball','pokeball'],req:['pokeball'],terrainReq:null,terrainProvides:null,
+    ability:'자기 동물원에 있는 풀 아이콘당 2점 획득.',abilityKind:'scoreLeaf2',
+    sponsor:{strength:3,name:'탐험가',text:'바위와 물 요건을 무시하고 포켓몬 1장 플레이.'},
+    conservation:{type:'icon',icon:'checker',num:3,points:12}},
+  {id:'c16',name:'리자몽',latin:'Charizard',starter:false,size:4,cost:16,discardValue:8,moneyValue:15,conVal:6,appeal:8,xIcon:true,coffee:true,
+    icons:['fire','pokeball'],req:['fire'],terrainReq:'rock',terrainProvides:null,
+    ability:'자기 동물원에 있는 불꽃 아이콘당 2점 획득.',abilityKind:'scoreFire2',
+    sponsor:{strength:4,name:'번식 프로그램',text:'자기 동물원에 있는 카드 1장의 보존 행동을 수행.'},
+    conservation:{type:'large',num:2,minSize:4,points:8}},
+];
+
+const STARTER_IDS = ['c05','c06','c09','c10','c11','c12'];
+
+// ══════════════════════════════════════════════════════════════════
+// 게임 상태
+// ══════════════════════════════════════════════════════════════════
+let G = null; // 전체 게임 상태
+
+function cardById(id){ return CARDS.find(c=>c.id===id); }
+function cardArtPath(id){ return `./pokemon-minima-assets/cards/${id}.webp`; }
+
+function shuffleArr(arr){
+  const a=[...arr];
+  for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}
+  return a;
+}
+
+function newGame(opts={}){
+  const {p1name='트레이너1', p2name='트레이너2', mode='2p', difficulty='normal'} = opts;
+  const starters = shuffleArr(STARTER_IDS);
+  const nonStarters = shuffleArr(CARDS.filter(c=>!c.starter).map(c=>c.id));
+
+  // 드래프트 준비: 각 플레이어에게 시작카드2 + 일반카드2 = 4장 배분
+  const p1Draft = [starters[0], starters[1], nonStarters[0], nonStarters[1]];
+  const p2Draft = [starters[2], starters[3], nonStarters[2], nonStarters[3]];
+  const remainDeck = shuffleArr([
+    starters[4], starters[5],
+    ...nonStarters.slice(4)
+  ]);
+
+  const makePlayer = (name, draftCards, seat) => ({
+    name, seat,
+    hand: [],           // 현재 손패 (드래프트 완료 후 3장)
+    zoo: Array(9).fill(null), // 3x3 grid, 각 칸: null | {type:'enclosure'|'pokemon', cardId?, size?, state?}
+    money: 0,
+    xTokens: 0,
+    appealScore: 0,
+    conservationScore: 0,
+    draftPool: draftCards, // 드래프트 풀
+    draftKept: [],         // 드래프트에서 고른 카드
+    // 행동카드: 왼쪽 위치의 행동은 강도1. 아래/오른쪽/위는 각각 2/3/4.
+    // 시작 배치는 카드1 / 건설2 / 포켓몬3 / 후원보존4.
+    leftAction: 'cards',
+    isPurpleSide: false,
+    tempBoost: 0,
+    exhaustedCards: [], // 직렬화 가능한 배열
+    exhaustDir: null,          // 소진 방향 (left|right)
+    arminFacing: 'sponsor',   // 솔로 봇 전용: 현재 위를 향한 행동
+    arminPurple: false,
+    arminPurpleSponsorVisits: 0,
+  });
+
+  return {
+    phase: 'draft',  // draft | playing | break | end
+    round: 1,        // 1~4
+    turn: 0,
+    currentPlayer: 0,
+    mode,
+    difficulty,
+    players: [
+      makePlayer(p1name, p1Draft, 0),
+      makePlayer(mode==='solo' ? 'ARMIN' : p2name, p2Draft, 1),
+    ],
+    deck: remainDeck,
+    discard: [],     // 버린 카드 더미 (두 개, 인덱스 0,1)
+    discardPiles: [[], []],
+    log: [],
+    pendingAction: null, // 현재 진행 중인 행동
+    draftRound: 0,
+    draftPass: [],
+  };
+}
+
+// ─── 강도 계산 ───
+const ACTION_ORDER = ['cards','build','animal','sponsor']; // 왼쪽→아래→오른쪽→위
+function getStrength(player, actionType){
+  const left = ACTION_ORDER.includes(player.leftAction) ? player.leftAction : 'cards';
+  const action = ACTION_ORDER.includes(actionType) ? actionType : left;
+  const base = ((ACTION_ORDER.indexOf(action) - ACTION_ORDER.indexOf(left) + 4) % 4) + 1;
+  return base + Number(player.tempBoost||0);
+}
+function baseStrength(player, actionType){
+  const boost=Number(player.tempBoost||0); player.tempBoost=0;
+  const v=getStrength(player,actionType); player.tempBoost=boost; return v;
+}
+
+// 행동 수행 후, 방금 사용한 행동이 왼쪽(강도1)에 오도록 회전한다. 면은 유지된다.
+function rotateActionCard(player, actionType){
+  if(ACTION_ORDER.includes(actionType)) player.leftAction=actionType;
+  player.tempBoost=0;
+}
+
+// 패스: 행동 없이 반시계로 0~2칸 회전하고 보라색(X) 면으로 뒤집는다.
+function passAction(player, steps){
+  let idx=ACTION_ORDER.indexOf(ACTION_ORDER.includes(player.leftAction)?player.leftAction:'cards');
+  idx=(idx-Number(steps||0)+4)%4;
+  player.leftAction=ACTION_ORDER[idx];
+  player.isPurpleSide=true;
+  player.tempBoost=0;
+}
+
+// ─── 점수 계산 ───
+function zooPokemonCells(player){
+  return player.zoo.map((cell,idx)=>({cell,idx,card:cell?.type==='pokemon'?cardById(cell.cardId):null})).filter(x=>x.card);
+}
+function zooIconCount(player, iconId){
+  return zooPokemonCells(player).reduce((n,x)=>n+x.card.icons.filter(i=>i===iconId).length,0);
+}
+function terrainProviderCount(player, terrain){
+  return zooPokemonCells(player).filter(x=>x.card.terrainProvides===terrain).length;
+}
+function conservationRequirementText(c){
+  if(!c)return '';
+  if(c.type==='icon') return `${TYPES[c.icon]?.ko||c.icon} 아이콘 ${c.num}개`;
+  if(c.type==='terrain') return `${TYPES[c.terrain]?.ko||c.terrain} 제공 포켓몬 ${c.num}마리`;
+  if(c.type==='diverseRegions') return `서로 다른 지방 아이콘 ${c.num}종`;
+  if(c.type==='diversePrimary') return `서로 다른 포켓몬 타입 아이콘 ${c.num}종`;
+  if(c.type==='small') return `크기 ${c.maxSize} 이하 포켓몬 ${c.num}마리`;
+  if(c.type==='large') return `크기 ${c.minSize} 이상 포켓몬 ${c.num}마리`;
+  return `요구 ${c.num}`;
+}
+function conservationConditionMet(player,c){
+  if(!c)return false;
+  if(c.type==='icon') return zooIconCount(player,c.icon)>=c.num;
+  if(c.type==='terrain') return terrainProviderCount(player,c.terrain)>=c.num;
+  if(c.type==='diverseRegions'){
+    const got=new Set(); zooPokemonCells(player).forEach(x=>x.card.icons.forEach(i=>{if(REGION_ICONS.includes(i))got.add(i);}));
+    return got.size>=c.num;
+  }
+  if(c.type==='diversePrimary'){
+    const got=new Set(); zooPokemonCells(player).forEach(x=>x.card.icons.forEach(i=>{if(PRIMARY_ICONS.includes(i))got.add(i);}));
+    return got.size>=c.num;
+  }
+  if(c.type==='small') return zooPokemonCells(player).filter(x=>x.card.size<=c.maxSize).length>=c.num;
+  if(c.type==='large') return zooPokemonCells(player).filter(x=>x.card.size>=c.minSize).length>=c.num;
+  return false;
+}
+
+function calcScores(player){
+  let appeal=0,conservation=0,scoring=0,emptyEnc=0;
+  const pIdx=G?.players?.indexOf(player) ?? -1;
+  const opponent=pIdx>=0?G.players[1-pIdx]:null;
+  player.zoo.forEach((cell,idx)=>{
+    if(!cell)return;
+    if(cell.type==='enclosure')emptyEnc++;
+    if(cell.type!=='pokemon')return;
+    const card=cardById(cell.cardId); if(!card)return;
+    appeal+=card.appeal;
+    if(cell.state==='conserved')conservation+=card.conVal;
+    switch(card.abilityKind){
+      case 'scoreReady2': scoring+=zooPokemonCells(player).filter(x=>x.cell.state==='ready').length*2; break;
+      case 'scoreOrangeBoth': scoring+=Math.min(12,zooIconCount(player,'orangeBadge')*2+(opponent?zooIconCount(opponent,'orangeBadge'):0)); break;
+      case 'draw1ScorePokeball2': scoring+=zooIconCount(player,'pokeball')*2; break;
+      case 'scoreAdjacentEmpty4': scoring+=adjacentCells(idx).filter(i=>player.zoo[i]?.type==='enclosure').length*4; break;
+      case 'scoreCheckerBoth': scoring+=Math.min(8,zooIconCount(player,'checker')*2+(opponent?zooIconCount(opponent,'checker'):0)); break;
+      case 'scoreAdjacentFlight3': scoring+=adjacentCells(idx).reduce((n,i)=>{const c=player.zoo[i];if(c?.type!=='pokemon')return n;const cc=cardById(c.cardId);return n+(cc?.icons.filter(x=>x==='flight').length||0)*3;},0); break;
+      case 'scoreLeaf2': scoring+=zooIconCount(player,'leaf')*2; break;
+      case 'scoreFire2': scoring+=zooIconCount(player,'fire')*2; break;
+    }
+  });
+  return {appeal,conservation,emptyPenalty:emptyEnc*2,scoring,total:appeal+conservation+scoring-emptyEnc*2};
+}
+
+// ─── 인접 셀 ───
+function adjacentCells(idx){
+  const row = Math.floor(idx/3), col = idx%3, adj=[];
+  if(row>0) adj.push(idx-3);
+  if(row<2) adj.push(idx+3);
+  if(col>0) adj.push(idx-1);
+  if(col<2) adj.push(idx+1);
+  return adj;
+}
+
+// 첫 배치 가능 칸: 왼쪽 하단(인덱스 6) 또는 인접
+function validBuildPositions(zoo){
+  const occupied = zoo.map((c,i)=>c?i:-1).filter(i=>i>=0);
+  if(occupied.length===0) return [6]; // 첫 우리는 반드시 6번(좌측 하단)
+  const valid = new Set();
+  occupied.forEach(idx=>{
+    adjacentCells(idx).forEach(a=>{
+      if(!zoo[a]) valid.add(a);
+    });
+  });
+  return [...valid];
+}
+
+// ─── 돈 생성 ───
+function generateMoney(player, amount){
+  player.money += amount;
+}
+
+function spendMoney(player, amount){
+  if(player.money < amount) return false;
+  player.money -= amount;
+  return true;
+}
+
+// 카드 버리기 → 카드의 버리기 수입값
+function discardForMoney(G, playerIdx, cardId){
+  const p = G.players[playerIdx];
+  const hIdx = p.hand.indexOf(cardId);
+  if(hIdx<0) return;
+  const card = cardById(cardId);
+  p.hand.splice(hIdx,1);
+  // 버린 카드 더미에 추가
+  if(G.discardPiles[0].length===0) G.discardPiles[0].push(cardId);
+  else if(G.discardPiles[1].length===0) G.discardPiles[1].push(cardId);
+  else {
+    const pileIdx = Math.random()<0.5?0:1;
+    G.discardPiles[pileIdx].push(cardId);
+  }
+  generateMoney(p, card.discardValue);
+  addLog(G, `${p.name}: ${card.name} 버려서 ${card.discardValue}원 획득`, 'act');
+}
+
+// 동물원 카드 소비(ready→spent) → 수입 = 해당값
+function spendZooCard(G, playerIdx, cellIdx){
+  const p = G.players[playerIdx];
+  const cell = p.zoo[cellIdx];
+  if(!cell||cell.type!=='pokemon'||cell.state!=='ready') return;
+  const card = cardById(cell.cardId);
+  cell.state = 'spent';
+  generateMoney(p, card.moneyValue);
+  addLog(G, `${p.name}: ${card.name} 소비해 ${card.moneyValue}원 획득`, 'act');
+}
+
+function addLog(G, msg, cls='info'){
+  G.log.unshift({msg, cls, t:Date.now()});
+  if(G.log.length>50) G.log.pop();
+}
+
+// ══════════════════════════════════════════════════════════════════
+// ARMIN 봇 로직
+// ══════════════════════════════════════════════════════════════════
+function arminInterest(cardId, round, botZoo){
+  const card = cardById(cardId);
+  if(!card) return -99;
+  const botCounts={};
+  botZoo.forEach(cell=>{
+    if(cell?.type==='pokemon'){
+      const c=cardById(cell.cardId);
+      (c?.icons||[]).forEach(ic=>botCounts[ic]=(botCounts[ic]||0)+1);
+    }
+  });
+  const candCounts={}; (card.icons||[]).forEach(ic=>candCounts[ic]=(candCounts[ic]||0)+1);
+  const I=Object.entries(candCounts).reduce((n,[ic,cnt])=>n+Math.min(cnt,botCounts[ic]||0),0);
+  return I - Math.abs(Number(round||1)-Number(card.size||0));
+}
+
+function arminDisplayTops(G){
+  return [0,1].map(pileIdx=>({pileIdx,id:G.discardPiles[pileIdx]?.slice(-1)[0]})).filter(x=>x.id);
+}
+function arminPutTopDeckOnDisplay(G){
+  const id=takeTopCard(1); if(!id)return;
+  if(!G.discardPiles[0].length){G.discardPiles[0].push(id);return;}
+  if(!G.discardPiles[1].length){G.discardPiles[1].push(id);return;}
+  const bot=G.players[1];
+  const tops=arminDisplayTops(G).sort((a,b)=>{
+    const ia=arminInterest(a.id,G.round,bot.zoo), ib=arminInterest(b.id,G.round,bot.zoo);
+    if(ia!==ib)return ia-ib;
+    const aa=cardById(a.id)?.appeal||0, ab=cardById(b.id)?.appeal||0;
+    return aa-ab || a.pileIdx-b.pileIdx;
+  });
+  G.discardPiles[tops[0].pileIdx].push(id); // 낮은 관심도의 공개 카드 위를 덮는다.
+}
+function arminCriticalReached(G, justFlipped){
+  const bot=G.players[1], action=bot.arminFacing, purple=!!bot.arminPurple;
+  if(!purple)return false;
+  const d=String(G.difficulty||'normal').toLowerCase();
+  if(d==='veryhard')return action==='sponsor' && justFlipped;
+  if(d==='hard')return action==='animal';
+  if(d==='normal')return action==='build';
+  if(d==='easy')return action==='cards';
+  // casual: 보라 Sponsorvation으로 돌아온 두 번째 방문(뒤집힌 그 턴은 제외)
+  return action==='sponsor' && !justFlipped && Number(bot.arminPurpleSponsorVisits||0)>=2;
+}
+function arminTakeBestDisplay(G){
+  const bot=G.players[1], tops=arminDisplayTops(G);
+  if(!tops.length)return false;
+  tops.sort((a,b)=>{
+    const ia=arminInterest(a.id,G.round,bot.zoo), ib=arminInterest(b.id,G.round,bot.zoo);
+    if(ia!==ib)return ib-ia;
+    const aa=cardById(a.id)?.appeal||0, ab=cardById(b.id)?.appeal||0;
+    return ab-aa || a.pileIdx-b.pileIdx;
+  });
+  const pick=tops[0]; G.discardPiles[pick.pileIdx].pop();
+  const free=bot.zoo.findIndex(c=>!c);
+  if(free>=0){bot.zoo[free]={type:'pokemon',cardId:pick.id,state:'ready',enclosureSize:cardById(pick.id)?.size||1};}
+  else { bot.zoo.push({type:'pokemon',cardId:pick.id,state:'ready',enclosureSize:cardById(pick.id)?.size||1}); }
+  addLog(G,`ARMIN: ${cardById(pick.id)?.name} 획득 (관심도 ${arminInterest(pick.id,G.round,bot.zoo)})`,'ok');
+  bot.arminFacing='sponsor'; bot.arminPurple=false; bot.arminPurpleSponsorVisits=0;
+  bot.leftAction='cards'; // 화면상 시작 배치(후원=강도4)로 복귀
+  return true;
+}
+function arminTakeTurn(G){
+  const bot=G.players[1];
+  const seq=['sponsor','cards','build','animal'];
+  let idx=seq.indexOf(bot.arminFacing); if(idx<0)idx=0;
+  idx=(idx+1)%4;
+  let justFlipped=false;
+  bot.arminFacing=seq[idx];
+  if(bot.arminFacing==='sponsor'){
+    if(!bot.arminPurple){bot.arminPurple=true;justFlipped=true;bot.arminPurpleSponsorVisits=1;}
+    else bot.arminPurpleSponsorVisits=Number(bot.arminPurpleSponsorVisits||1)+1;
+  }
+  // 봇 카드의 시각적 방향도 대략 동기화한다.
+  bot.leftAction=bot.arminFacing;
+  bot.isPurpleSide=bot.arminPurple;
+  addLog(G,`ARMIN: ${actionLabel(bot.arminFacing)}${bot.arminPurple?' (보라)':' (파랑)'}`,'info');
+
+  // 가로 행동(카드/포켓몬)에서는 덱 맨 위 1장을 공개열에 버린다.
+  if(bot.arminFacing==='cards'||bot.arminFacing==='animal')arminPutTopDeckOnDisplay(G);
+
+  if(arminCriticalReached(G,justFlipped)){
+    arminTakeBestDisplay(G);
+  }
+}
+
+function bestConservationSubset(player, points){
+  const eligible=zooPokemonCells(player).filter(x=>x.cell.state!=='conserved');
+  let best=[],bestSum=0;
+  const n=eligible.length;
+  for(let mask=1;mask<(1<<Math.min(n,20));mask++){
+    let sum=0,arr=[];
+    for(let i=0;i<n;i++)if(mask&(1<<i)){sum+=eligible[i].card.conVal;arr.push(eligible[i]);}
+    if(sum<=points && (sum>bestSum || (sum===bestSum&&arr.length>best.length))){bestSum=sum;best=arr;}
+  }
+  return best;
+}
+function prepareArminEndScoring(G){
+  const bot=G.players[1];
+  // 봇 동물원에 있는 각 보존 프로젝트를 한 번씩, 조건을 만족할 때 최대한 효율적으로 사용한다.
+  const projectIds=zooPokemonCells(bot).map(x=>x.card.id);
+  projectIds.forEach(id=>{
+    const card=cardById(id); if(!card||!conservationConditionMet(bot,card.conservation))return;
+    const pick=bestConservationSubset(bot,card.conservation.points);
+    pick.forEach(x=>x.cell.state='conserved');
+  });
+}
+function calcArminScores(bot){
+  let appeal=0,conservation=0;
+  zooPokemonCells(bot).forEach(x=>{appeal+=x.card.appeal;if(x.cell.state==='conserved')conservation+=x.card.conVal;});
+  return {appeal,conservation,emptyPenalty:0,scoring:0,total:appeal+conservation};
+}
+
+// ══════════════════════════════════════════════════════════════════
+// 휴식 처리
+// ══════════════════════════════════════════════════════════════════
+function processBreak(G, triggerPlayer=G.currentPlayer){
+  addLog(G,`=== 휴식: 라운드 ${G.round} 덱 소진 ===`,'warn');
+  G.players.forEach(p=>{
+    p.zoo.forEach(cell=>{
+      if(cell?.type==='pokemon'){
+        const card=cardById(cell.cardId);
+        if(card?.coffee && cell.state==='spent')cell.state='ready';
+      }
+    });
+    p.exhaustedCards=[];
+  });
+  const allDiscard=[...G.discardPiles[0],...G.discardPiles[1]];
+  G.discardPiles=[[],[]];
+  G.deck=shuffleArr([...G.deck,...allDiscard]);
+  if(G.round<4){
+    G.round++;
+    addLog(G,`=== 라운드 ${G.round} 시작 ===`,'ok');
+  }else{
+    // 첫 플레이어(0)가 4R 덱을 소진하면 두 번째 플레이어가 마지막 한 턴,
+    // 두 번째 플레이어가 소진했다면 그 현재 턴이 마지막이다.
+    G.endAfterPlayer=1;
+    addLog(G,'4라운드 덱 소진 — 2번 플레이어의 차례 종료 후 최종 점수 계산','warn');
+  }
+}
+
+function takeTopCard(triggerPlayer=G.currentPlayer){
+  if(!G.deck.length)return null;
+  const id=G.deck.shift();
+  if(G.deck.length===0)processBreak(G,triggerPlayer);
+  return id;
+}
+
+function enforceHandLimit(player){
+  while(player.hand.length>3){
+    const menu=player.hand.map((id,i)=>`${i+1}:${cardById(id)?.name}`).join('  ');
+    let raw=prompt(`턴 종료 시 손패는 최대 3장입니다. 덱 맨 아래로 반납할 카드 번호를 고르세요.\n${menu}`,String(player.hand.length));
+    let i=Number(raw)-1; if(!(i>=0&&i<player.hand.length))i=player.hand.length-1;
+    const id=player.hand.splice(i,1)[0]; G.deck.push(id);
+    addLog(G,`${player.name}: ${cardById(id)?.name} 반납 (덱 맨 아래)`,'info');
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════
+// UI 렌더링
+// ══════════════════════════════════════════════════════════════════
+let uiState = {
+  selectedHandCard: null,   // 손패에서 선택된 카드
+  selectedZooCells: [],     // 동물원에서 선택된 칸
+  pendingAction: null,      // 현재 수행 중인 행동 타입
+  pendingCost: 0,
+  moneyCards: [],           // 돈 마련을 위해 선택한 카드/칸
+  viewPlayer: 0,            // 현재 보는 플레이어 (온라인 대비)
+  draftStep: 0,
+  draftCurrentPlayer: 0,
+  draftPassCards: [],
+};
+
+function icon(type){
+  const key = TYPES[type] ? type : Object.keys(TYPES).find(k=>TYPES[k].ko===type);
+  const t = TYPES[key] || {ko:String(type||'?'),color:'#718096',emoji:'●'};
+  return `<span class="icon tooltip" style="background:${t.color}22;border:1px solid ${t.color}66;color:${t.color}" title="${t.ko}">${t.emoji}</span>`;
+}
+
+function renderCard(cardId, opts={}){
+  const card = cardById(cardId);
+  if(!card) return '';
+  const {selected=false, state='ready', small=false, exhausted=false, inZoo=false} = opts;
+  const stateMap={ready:'준비됨',spent:'사용됨',conserved:'보존됨'};
+  const stateClass={ready:'state-ready',spent:'state-spent',conserved:'state-conserved'};
+  const cls = [
+    'poke-card',
+    card.starter?'starter':'',
+    selected?'selected':'',
+    state==='spent'?'spent':'',
+    state==='conserved'?'conserved':'',
+    exhausted?'exhausted':'',
+    small?'small-card':'',
+  ].filter(Boolean).join(' ');
+
+  return `<div class="${cls}" data-card-id="${cardId}">
+    <span class="card-state-badge ${stateClass[state]||'state-ready'}">${stateMap[state]||state}</span>
+    ${!small?`<img class="card-art-full" src="${cardArtPath(cardId)}" alt="${card.name} 카드 이미지" loading="lazy">`:''}
+    <div class="card-header">
+      <div class="card-name">${card.name}<small>${card.latin}</small></div>
+      ${card.starter?'<span title="시작 카드">⚡</span>':''}
+    </div>
+    <div class="card-stats">
+      <span class="appeal-num">${card.appeal}</span>
+      <span class="stat-pill">🎟 매력</span>
+      <span class="size-badge">크기 ${card.size}</span>
+      ${card.xIcon?'<span class="stat-pill" title="X아이콘">✕</span>':''}
+      ${card.coffee?'<span class="stat-pill" title="커피잔: 휴식 때 자동 준비">☕</span>':''}
+    </div>
+    <div class="icon-row">${card.icons.map(ic=>icon(ic)).join('')}</div>
+    ${card.req.length?`<div style="font-size:.68rem;color:var(--muted)">요건: ${card.req.map(ic=>icon(ic)).join('')}</div>`:''}
+    ${!small?`<div class="card-ability">${card.ability}</div>`:''}
+    ${!small&&!inZoo?`<div class="sponsor-section">
+      <div class="sponsor-label">후원 강도 ${card.sponsor.strength} · ${card.sponsor.name}</div>
+      <div class="sponsor-text">${card.sponsor.text}</div>
+    </div>`:''}
+    ${!small&&!inZoo?`<div class="cons-section">
+      <div class="cons-label">보존 프로젝트 · 요구 ${card.conservation.num} · 최대 ${card.conservation.points}점</div>
+      <div class="cons-text">${conservationRequirementText(card.conservation)}</div>
+    </div>`:''}
+    <div style="text-align:right;margin-top:4px;font-size:.68rem;color:var(--muted)">입주 ${card.cost}원 · 버림 ${card.discardValue}원 · 소비 ${card.moneyValue}원 · 보존값 ${card.conVal}</div>
+  </div>`;
+}
+
+function renderZoo(player, playerIdx, interactive=false){
+  const cells = player.zoo.map((cell,idx)=>{
+    if(!cell){
+      const validBuild = interactive && uiState.pendingAction==='build' && validBuildPositions(player.zoo).includes(idx);
+      const validAnimal = interactive && uiState.pendingAction==='animal' && uiState.selectedHandCard &&
+        player.zoo.some(c=>c?.type==='enclosure');
+      const cls = ['zoo-cell', validBuild?'valid-target':''].join(' ');
+      return `<div class="${cls}" data-cell="${idx}" data-player="${playerIdx}">
+        <span style="font-size:.55rem;color:var(--border)">비어있음</span>
+      </div>`;
+    }
+    if(cell.type==='enclosure'){
+      const validAnimal = interactive && uiState.pendingAction==='animal' && uiState.selectedHandCard;
+      const cls = ['zoo-cell','enclosure', validAnimal?'valid-target':''].join(' ');
+      return `<div class="${cls}" data-cell="${idx}" data-player="${playerIdx}">
+        <div class="cell-content">
+          <span class="enc-num">${cell.size}</span>
+          <div style="font-size:.6rem;color:var(--muted)">크기 ${cell.size} 우리</div>
+        </div>
+      </div>`;
+    }
+    if(cell.type==='pokemon'){
+      const card = cardById(cell.cardId);
+      const cls = ['zoo-cell','has-pokemon',cell.state==='conserved'?'conserved':''].join(' ');
+      return `<div class="${cls}" data-cell="${idx}" data-player="${playerIdx}">
+        <div class="cell-content">
+          <img class="zoo-art" src="${cardArtPath(cell.cardId)}" alt="${card?.name||'포켓몬'}" loading="lazy">
+          <div class="cell-poke">${card?.name||'?'}<small>${card?.latin||''}</small></div>
+          <div class="icon-row" style="justify-content:center">${(card?.icons||[]).map(ic=>icon(ic)).join('')}</div>
+          <div style="font-size:.62rem;color:var(--muted)">${cell.state==='conserved'?'🔒보존':'🎟'+card?.appeal}</div>
+        </div>
+      </div>`;
+    }
+    return `<div class="zoo-cell" data-cell="${idx}"></div>`;
+  });
+  return `<div class="zoo-grid">${cells.join('')}</div>`;
+}
+
+function renderActionCard(player, interactive=false){
+  const actions = [
+    {id:'cards',icon:'🃏',label:'카드'},
+    {id:'build',icon:'🏗',label:'건설'},
+    {id:'animal',icon:'🐾',label:'포켓몬'},
+    {id:'sponsor',icon:'🤝',label:'후원보존'},
+  ];
+  const slots=actions.map(a=>{
+    const st=getStrength(player,a.id);
+    return `<div class="action-slot ${player.leftAction===a.id?'active-slot':''}" data-action="${a.id}">
+      <span class="slot-icon">${a.icon}</span><span class="slot-num">${st}</span><span class="slot-label">${a.label}</span>
+    </div>`;
+  }).join('');
+  return `<div class="action-card">
+    <div class="action-card-title">행동 카드 · ${player.isPurpleSide?'보라(X) 면':'파란 면'}</div>
+    <div class="action-slots">${slots}</div>
+    <div class="strength-display"><div class="strength-num">1–4${player.tempBoost?` +${player.tempBoost}`:''}</div>
+      <div class="strength-label">왼쪽 행동이 강도1 · 사용한 행동은 왼쪽으로 회전</div></div>
+    ${player.isPurpleSide?`<div class="pass-indicator">⚡ 보라 면을 파란 면으로 뒤집으면 이번 행동 강도 +1</div>`:''}
+    <div class="token-count">${player.xTokens||0} <span class="x-token">X</span> 보너스 토큰</div>
+  </div>`;
+}
+
+function renderHandCard(cardId, opts={}){
+  const card = cardById(cardId);
+  if(!card) return '';
+  const {selected=false, playable=true} = opts;
+  return `<div class="hand-card ${selected?'selected':''} ${playable?'playable':'not-playable'}" data-card-id="${cardId}">
+    <div style="font-weight:900;font-size:.78rem">${card.name}</div>
+    <div style="font-size:.65rem;color:var(--muted)">${card.latin}</div>
+    <div class="icon-row" style="margin-top:3px">${card.icons.map(ic=>icon(ic)).join('')}</div>
+    <div style="font-size:.65rem;margin-top:2px">🎟${card.appeal} · 크기${card.size} · ${card.cost}원</div>
+  </div>`;
+}
+
+// ─── 메인 렌더 ───
+function render(){
+  if (typeof IS_SOLO_PARAM !== 'undefined' && IS_SOLO_PARAM && G) saveSoloState();
+  const root = document.getElementById('root');
+  if(!G){
+    root.innerHTML = renderSetup();
+    attachSetupEvents();
+    return;
+  }
+  if(G.phase==='draft'){
+    root.innerHTML = renderDraft();
+    attachDraftEvents();
+    return;
+  }
+  if(G.phase==='end'){
+    root.innerHTML = renderEnd();
+    attachEndEvents();
+    return;
+  }
+  root.innerHTML = renderGame();
+  attachGameEvents();
+}
+
+// ─── 설정 화면 ───
+function renderSetup(){
+  return `<div class="setup-screen">
+    <div class="setup-card">
+      <div class="setup-title">포켓몬 미니마⚡</div>
+      <div class="setup-sub">아크 미니마 × 포켓몬 리테마 · 18장의 카드로 펼치는 동물원 경영</div>
+      <div class="setup-field">
+        <label class="setup-label">1번 플레이어 이름</label>
+        <input class="setup-input" id="p1name" placeholder="트레이너1" value="트레이너1">
+      </div>
+      <div class="setup-field">
+        <label class="setup-label">게임 모드</label>
+        <div class="setup-options">
+          <div class="setup-option active" data-mode="2p" id="opt2p">
+            <strong>2인</strong><small>대인 대전 (베스트)</small>
+          </div>
+          <div class="setup-option" data-mode="solo" id="optsolo">
+            <strong>1인 솔로</strong><small>vs ARMIN 봇</small>
+          </div>
+        </div>
+      </div>
+      <div id="p2field" class="setup-field">
+        <label class="setup-label">2번 플레이어 이름</label>
+        <input class="setup-input" id="p2name" placeholder="트레이너2" value="트레이너2">
+      </div>
+      <div id="diffField" class="setup-field" style="display:none">
+        <label class="setup-label">ARMIN 난이도</label>
+        <div class="setup-options">
+          <div class="setup-option active" data-diff="casual" id="diff-casual"><strong>입문</strong><small>캐주얼</small></div>
+          <div class="setup-option" data-diff="easy" id="diff-easy"><strong>쉬움</strong></div>
+          <div class="setup-option" data-diff="normal" id="diff-normal"><strong>보통</strong></div>
+          <div class="setup-option" data-diff="hard" id="diff-hard"><strong>어려움</strong></div>
+        </div>
+      </div>
+      <button class="setup-start" id="startBtn">게임 시작 🚀</button>
+      <div style="margin-top:12px;font-size:.72rem;color:var(--muted);text-align:center;line-height:1.6">
+        아크 미니마 v1.1 규칙 기반 · 4라운드 · 매력 + 보존 - 빈우리×2 = 최종 점수
+      </div>
+    </div>
+  </div>`;
+}
+
+function attachSetupEvents(){
+  let mode='2p', diff='normal';
+  document.querySelectorAll('[data-mode]').forEach(el=>{
+    el.addEventListener('click',()=>{
+      mode=el.dataset.mode;
+      document.querySelectorAll('[data-mode]').forEach(e=>e.classList.remove('active'));
+      el.classList.add('active');
+      document.getElementById('p2field').style.display=mode==='solo'?'none':'';
+      document.getElementById('diffField').style.display=mode==='solo'?'':'none';
+    });
+  });
+  document.querySelectorAll('[data-diff]').forEach(el=>{
+    el.addEventListener('click',()=>{
+      diff=el.dataset.diff;
+      document.querySelectorAll('[data-diff]').forEach(e=>e.classList.remove('active'));
+      el.classList.add('active');
+    });
+  });
+  document.getElementById('startBtn').addEventListener('click',()=>{
+    const p1name = document.getElementById('p1name').value.trim()||'트레이너1';
+    const p2name = document.getElementById('p2name')?.value.trim()||'트레이너2';
+    G = newGame({p1name, p2name, mode, difficulty:diff});
+    uiState = {selectedHandCard:null,selectedZooCells:[],pendingAction:null,pendingCost:0,moneyCards:[],viewPlayer:0,draftStep:0,draftCurrentPlayer:0,draftPassCards:[]};
+    if(mode==='solo') setupArminSoloStart(); else startDraft();
+    render();
+  });
+}
+
+// ─── ARMIN 솔로 준비 ───
+function setupArminSoloStart(){
+  const human=G.players[0],bot=G.players[1];
+  const starters=shuffleArr(STARTER_IDS);
+  const others=shuffleArr(CARDS.filter(c=>!c.starter).map(c=>c.id));
+  const starterChoices=starters.slice(0,2), otherChoices=others.slice(0,3);
+  const sRaw=prompt('ARMIN 솔로 준비: 시작 포켓몬 1장을 고르세요.\n'+starterChoices.map((id,i)=>`${i+1}:${cardById(id)?.name}`).join('  '),'1');
+  const sPick=Math.max(0,Math.min(1,(Number(sRaw)||1)-1));
+  const keptStarter=starterChoices[sPick], botStarter=starterChoices[1-sPick];
+  const oRaw=prompt('일반 포켓몬 3장 중 손에 둘 2장을 쉼표로 고르세요.\n'+otherChoices.map((id,i)=>`${i+1}:${cardById(id)?.name}`).join('  '),'1,2');
+  let picks=[...new Set(String(oRaw||'1,2').split(',').map(x=>Number(x.trim())-1).filter(i=>i>=0&&i<3))];
+  if(picks.length!==2)picks=[0,1];
+  const keptOthers=picks.map(i=>otherChoices[i]), returned=otherChoices.find((_,i)=>!picks.includes(i));
+  human.hand=[keptStarter,...keptOthers]; human.draftPool=[];human.draftKept=[];
+  bot.hand=[];bot.draftPool=[];bot.draftKept=[];bot.zoo=Array(9).fill(null);
+  bot.zoo[0]={type:'pokemon',cardId:botStarter,state:'ready',enclosureSize:cardById(botStarter)?.size||1};
+  bot.arminFacing='sponsor';bot.arminPurple=false;bot.arminPurpleSponsorVisits=0;bot.leftAction='cards';bot.isPurpleSide=false;
+  const used=new Set([keptStarter,botStarter,...keptOthers]);
+  G.deck=shuffleArr(CARDS.map(c=>c.id).filter(id=>!used.has(id)));
+  // 선택하지 않은 일반 카드 1장은 위 필터에 의해 덱으로 되돌아간다.
+  G.discardPiles=[[],[]];G.phase='playing';G.round=1;G.turn=0;G.currentPlayer=0;
+  addLog(G,`ARMIN 솔로 시작 — ${human.name} 손 3장, ARMIN 시작 포켓몬 ${cardById(botStarter)?.name}`,'ok');
+}
+
+// ─── 드래프트 ───
+function startDraft(){
+  G.phase='draft';
+  G.draftStage=0;            // 0: 4장 중 1장, 1: 받은 3장 중 1장, 2: 받은 2장 중 1장
+  G.draftCurrentPlayer=0;
+  if (typeof emitOnlineState === 'function') setTimeout(emitOnlineState, 0);
+}
+
+function renderDraft(){
+  if (IS_ONLINE_PARAM && Number(G?.draftCurrentPlayer ?? -1) !== ONLINE_SEAT) {
+    const who = G.players[Number(G?.draftCurrentPlayer ?? 0)]?.name || '상대';
+    return `<div class="setup-screen"><div class="setup-card">
+      <div class="setup-title">드래프트 대기</div>
+      <div class="setup-sub">${who}님이 카드를 고르는 중입니다. 상대의 비공개 카드는 표시하지 않습니다.</div>
+    </div></div>`;
+  }
+
+  const pIdx=Number(G.draftCurrentPlayer||0);
+  const p=G.players[pIdx];
+  const pool=[...(p.draftPool||[])];
+  const kept=p.draftKept||[];
+  const stage=Number(G.draftStage||0);
+
+  return `<div style="min-height:100vh;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px">
+    <div style="max-width:800px;width:100%">
+      <div style="text-align:center;margin-bottom:16px">
+        <div style="font-size:1.4rem;font-weight:900;color:var(--accent)">드래프트 단계 ${stage+1}/3</div>
+        <div style="color:var(--muted);font-size:.82rem">${p.name} · 현재 ${pool.length}장 중 1장을 선택하세요 · 선택 후 나머지를 상대에게 전달합니다</div>
+      </div>
+      ${kept.length?`<div style="margin-bottom:12px;padding:10px;background:var(--surface);border-radius:8px;border:1px solid var(--border)">
+        <div style="font-size:.72rem;color:var(--muted);margin-bottom:6px">내가 확보한 카드 (${kept.length}/3)</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">${kept.map(id=>`<span class="stat-pill">${cardById(id)?.name||'?'}</span>`).join('')}</div>
+      </div>`:''}
+      <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center">
+        ${pool.map(id=>{
+          const card=cardById(id);
+          return `<div class="hand-card" style="width:190px;cursor:pointer">
+            <img class="draft-art" src="${cardArtPath(id)}" alt="${card?.name||'포켓몬'} 카드" loading="lazy">
+            <div style="font-weight:900;font-size:.85rem">${card?.name||'?'}</div>
+            <div style="font-size:.65rem;color:var(--muted)">${card?.latin||''} ${card?.starter?'⚡':''}</div>
+            <div class="icon-row">${(card?.icons||[]).map(ic=>icon(ic)).join('')}</div>
+            <div style="font-size:.68rem;margin-top:3px">매력 ${card?.appeal??0} · 크기 ${card?.size??0} · 비용 ${card?.cost??0}원</div>
+            <div style="font-size:.62rem;color:var(--muted);margin-top:2px">${String(card?.ability||'').slice(0,55)}${String(card?.ability||'').length>55?'…':''}</div>
+            <button class="btn primary" style="width:100%;margin-top:6px" data-draft-pick="${id}">선택하기</button>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>
+  </div>`;
+}
+
+function attachDraftEvents(){
+  if (IS_ONLINE_PARAM && Number(G?.draftCurrentPlayer ?? -1) !== ONLINE_SEAT) return;
+  document.querySelectorAll('[data-draft-pick]').forEach(btn=>{
+    btn.addEventListener('click',()=>draftPick(btn.dataset.draftPick));
+  });
+}
+
+function draftPick(cardId){
+  const pIdx=Number(G.draftCurrentPlayer||0);
+  const p=G.players[pIdx];
+  const pool=p.draftPool||[];
+  const at=pool.indexOf(cardId);
+  if(at<0 || (p.draftKept||[]).length>=3) return;
+
+  p.draftKept.push(cardId);
+  p.draftPool.splice(at,1);
+  addLog(G, `${p.name}: 드래프트 카드 1장 확보`, 'info');
+
+  if(pIdx===0){
+    G.draftCurrentPlayer=1;
+  }else if(Number(G.draftStage||0)<2){
+    // 두 플레이어가 같은 단계에서 1장씩 고른 뒤 남은 카드를 서로 교환한다.
+    const p0=[...G.players[0].draftPool];
+    const p1=[...G.players[1].draftPool];
+    G.players[0].draftPool=p1;
+    G.players[1].draftPool=p0;
+    G.draftStage=Number(G.draftStage||0)+1;
+    G.draftCurrentPlayer=0;
+  }else{
+    // 마지막 단계의 미선택 카드 1장씩을 덱으로 되돌린다.
+    const unchosen=[...G.players[0].draftPool,...G.players[1].draftPool];
+    G.players[0].draftPool=[];
+    G.players[1].draftPool=[];
+    G.deck=shuffleArr([...G.deck,...unchosen]);
+    finalizeDraft();
+  }
+
+  if (typeof emitOnlineState === 'function') setTimeout(emitOnlineState, 0);
+  render();
+}
+
+function finalizeDraft(){
+  G.players.forEach(p=>{
+    p.hand=[...(p.draftKept||[])];
+    p.money=0;
+  });
+  G.phase='playing';
+  G.round=1;
+  G.turn=0;
+  G.currentPlayer=0;
+  addLog(G, '=== 라운드 1 시작 ===', 'ok');
+  if (typeof emitOnlineState === 'function') setTimeout(emitOnlineState, 0);
+}
+
+// ─── 메인 게임 화면 ───
+function renderGame(){
+  const cp = G.currentPlayer;
+  const player = G.players[cp];
+  const other = G.players[1-cp];
+  const strength = uiState.pendingAction ? getStrength(player, uiState.pendingAction) : 0;
+  const actionStrengths = Object.fromEntries(ACTION_ORDER.map(a=>[a,getStrength(player,a)]));
+  const scores0 = calcScores(G.players[0]);
+  const scores1 = calcScores(G.players[1]);
+
+  // 손패 렌더
+  const handCards = player.hand.map(id=>{
+    const sel = uiState.selectedHandCard===id;
+    return `<div class="hand-card ${sel?'selected':''} playable" data-hand-card="${id}">
+      ${renderHandCardInner(id)}
+    </div>`;
+  }).join('');
+
+  // 디스플레이
+  const disp0 = G.discardPiles[0].slice(-1)[0];
+  const disp1 = G.discardPiles[1].slice(-1)[0];
+  const dispHTML = [disp0,disp1].filter(Boolean).map((id,i)=>{
+    const card=cardById(id);
+    return `<div class="display-mini ${uiState.pendingAction==='cards'?'valid':''}" data-disp-card="${id}" data-disp-pile="${i}">
+      <img class="display-art" src="${cardArtPath(id)}" alt="${card?.name||'포켓몬'}" loading="lazy">
+      <strong>${card?.name}</strong>
+      <span style="font-size:.62rem;color:var(--muted)">🎟${card?.appeal} · 크기${card?.size}</span>
+    </div>`;
+  }).join('');
+
+  // 상태 메시지
+  const phaseMsg = uiState.pendingAction
+    ? `행동 중: ${actionLabel(uiState.pendingAction)} (강도 ${strength})`
+    : `${player.name}의 차례 · 행동을 선택하세요`;
+
+  return `<div id="root">
+    <!-- 상단바 -->
+    <div class="topbar">
+      <div class="brand">포켓몬 미니마⚡<span>라운드 ${G.round}/4</span></div>
+      <div class="round-badge">현재 차례: ${player.name}</div>
+      <div class="top-btns">
+        <button class="btn small" id="btnPass">패스 ↺</button>
+        <button class="btn small danger" id="btnDiscard">카드 버리기</button>
+        ${IS_ONLINE_PARAM?'':`<button class="btn small" id="btnNewGame">새 게임</button>`}
+      </div>
+    </div>
+
+    <!-- 게임 영역 -->
+    <div class="game-area">
+      <!-- 왼쪽 패널: 플레이어1 정보 -->
+      <div class="panel">
+        <div class="panel-title">${G.players[0].name} ${cp===0?'● 차례':''}</div>
+        ${renderActionCard(G.players[0], cp===0)}
+        <div class="score-row"><span class="score-label">💰 돈</span><span class="score-val" style="color:var(--yellow)">${G.players[0].money}원</span></div>
+        <div class="score-row"><span class="score-label">🎟 매력</span><span class="score-val">${scores0.appeal}</span></div>
+        <div class="score-row"><span class="score-label">🛡 보존</span><span class="score-val" style="color:var(--green)">${scores0.conservation}</span></div>
+        <div class="score-row"><span class="score-label">빈 우리 감점</span><span class="score-val" style="color:var(--red)">-${scores0.emptyPenalty}</span></div>
+        <div class="score-row"><span class="score-label">예상 총점</span><span class="score-val" style="color:var(--accent)">${scores0.total}</span></div>
+        <div class="panel-title" style="margin-top:4px">동물원</div>
+        ${renderZoo(G.players[0], 0, cp===0)}
+        <div class="panel-title">손패 (${G.players[0].hand.length}/3)</div>
+        <div style="display:flex;gap:4px;flex-wrap:wrap">
+          ${(!IS_ONLINE_PARAM || ONLINE_SEAT===0)
+            ? G.players[0].hand.map(id=>`<span class="stat-pill" style="font-size:.7rem">${cardById(id)?.name}</span>`).join('')
+            : `<span class="stat-pill" style="font-size:.7rem">비공개 ${G.players[0].hand.length}장</span>`}
+        </div>
+      </div>
+
+      <!-- 중앙: 덱/디스플레이/행동 -->
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div class="panel">
+          <div class="panel-title">덱 & 디스플레이</div>
+          <div class="deck-area">
+            <div class="deck-pile" id="deckPile">
+              <div class="deck-count">${G.deck.length}</div>
+              <div class="deck-label">덱</div>
+            </div>
+            <div style="flex:2">
+              <div class="panel-title">디스플레이 (버린 카드 더미 상단)</div>
+              <div class="display-cards">${dispHTML||'<span style="font-size:.72rem;color:var(--muted)">없음</span>'}</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 현재 플레이어 메인 영역 -->
+        <div class="panel" style="flex:1">
+          <div class="panel-title">${player.name}의 동물원 (현재 차례)</div>
+          ${renderZoo(player, cp, true)}
+
+          <div style="margin-top:8px">
+            <div class="panel-title">손패 (${player.hand.length}/3)</div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap">
+              ${(!IS_ONLINE_PARAM || ONLINE_SEAT===cp) ? player.hand.map(id=>{
+                const card=cardById(id);
+                const sel=uiState.selectedHandCard===id;
+                return `<div class="hand-card ${sel?'selected':''} playable" data-hand-card="${id}">
+                  <div style="font-weight:900;font-size:.78rem">${card?.name}</div>
+                  <div class="icon-row">${(card?.icons||[]).map(ic=>icon(ic)).join('')}</div>
+                  <div style="font-size:.65rem;color:var(--muted)">🎟${card?.appeal}·크기${card?.size}·${card?.cost}원</div>
+                  ${sel?'<div style="font-size:.62rem;color:var(--accent);margin-top:2px">✓ 선택됨</div>':''}
+                </div>`;
+              }).join('') : `<span class="stat-pill">상대 손패 ${player.hand.length}장 · 비공개</span>`}
+            </div>
+          </div>
+
+          <div style="margin-top:8px">
+            <div class="panel-title">돈: ${player.money}원 · X보너스: ${player.xTokens||0}개 ${player.isPurpleSide?'· 보라 면':''}</div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px">
+              <button class="btn small" id="btnEarnMoney">+ 돈 벌기</button>
+              ${(player.isPurpleSide||player.xTokens>0)?`<button class="btn small" id="btnUseXToken">${player.isPurpleSide?'보라→파랑 (+1)':'X보너스 사용 (+1)'}</button>`:''}
+            </div>
+          </div>
+
+          <!-- 행동 버튼 -->
+          <div class="action-bar" style="margin:0;border-radius:8px;margin-top:8px">
+            <div class="phase-msg">${phaseMsg}</div>
+            <div class="action-btns">
+              ${uiState.pendingAction
+                ? `<button class="btn primary" id="btnConfirmAction">확인 ✓</button>
+                   <button class="btn" id="btnCancelAction">취소</button>`
+                : `<button class="btn" id="btnCards">🃏 카드 (강도${actionStrengths.cards})</button>
+                   <button class="btn" id="btnBuild">🏗 건설 (강도${actionStrengths.build})</button>
+                   <button class="btn" id="btnAnimal" ${actionStrengths.animal<2?'disabled':''}>🐾 포켓몬 (강도${actionStrengths.animal})</button>
+                   <button class="btn" id="btnSponsor">🤝 후원보존 (강도${actionStrengths.sponsor})</button>`
+              }
+            </div>
+          </div>
+        </div>
+
+        <!-- 로그 -->
+        <div class="panel">
+          <div class="panel-title">게임 로그</div>
+          <div class="log-area">
+            ${G.log.slice(0,15).map(e=>`<div class="entry ${e.cls||'info'}">${e.msg}</div>`).join('')}
+          </div>
+        </div>
+      </div>
+
+      <!-- 오른쪽 패널: 플레이어2 정보 -->
+      <div class="panel">
+        <div class="panel-title">${G.players[1].name} ${cp===1?'● 차례':''}</div>
+        ${renderActionCard(G.players[1], cp===1)}
+        <div class="score-row"><span class="score-label">💰 돈</span><span class="score-val" style="color:var(--yellow)">${G.players[1].money}원</span></div>
+        <div class="score-row"><span class="score-label">🎟 매력</span><span class="score-val">${scores1.appeal}</span></div>
+        <div class="score-row"><span class="score-label">🛡 보존</span><span class="score-val" style="color:var(--green)">${scores1.conservation}</span></div>
+        <div class="score-row"><span class="score-label">빈 우리 감점</span><span class="score-val" style="color:var(--red)">-${scores1.emptyPenalty}</span></div>
+        <div class="score-row"><span class="score-label">예상 총점</span><span class="score-val" style="color:var(--accent)">${scores1.total}</span></div>
+        <div class="panel-title" style="margin-top:4px">동물원</div>
+        ${renderZoo(G.players[1], 1, cp===1)}
+        <div class="panel-title">손패 (${G.players[1].hand.length}/3)</div>
+        <div style="display:flex;gap:4px;flex-wrap:wrap">
+          ${(!IS_ONLINE_PARAM || ONLINE_SEAT===1)
+            ? G.players[1].hand.map(id=>`<span class="stat-pill" style="font-size:.7rem">${cardById(id)?.name}</span>`).join('')
+            : `<span class="stat-pill" style="font-size:.7rem">비공개 ${G.players[1].hand.length}장</span>`}
+        </div>
+        ${G.mode==='solo'?`<div class="armin-area" style="margin-top:8px">
+          <div class="armin-title">A.R.M.I.N. 봇</div>
+          <div style="font-size:.72rem;color:var(--muted)">Artificial Mortal Intelligence Novation<br>라운드: ${G.round} · 카드 수: ${G.players[1].zoo.filter(c=>c?.type==='pokemon').length}마리</div>
+        </div>`:''}
+      </div>
+    </div>
+  </div>`;
+}
+
+function renderHandCardInner(id){
+  const card = cardById(id);
+  return `<img class="hand-art" src="${cardArtPath(id)}" alt="${card?.name||'포켓몬'} 카드" loading="lazy">
+  <div style="font-weight:900;font-size:.78rem">${card?.name}</div>
+  <div class="icon-row">${(card?.icons||[]).map(ic=>icon(ic)).join('')}</div>
+  <div style="font-size:.65rem;color:var(--muted)">🎟${card?.appeal}·크기${card?.size}·${card?.cost}원</div>`;
+}
+
+function actionLabel(a){
+  return {cards:'카드 뽑기',build:'우리 건설',animal:'포켓몬 배치',sponsor:'후원/보존'}[a]||a;
+}
+
+// ─── 게임 이벤트 ───
+function attachGameEvents(){
+  if (IS_ONLINE_PARAM && Number(G?.currentPlayer ?? -1) !== ONLINE_SEAT) return;
+  // 손패 카드 선택
+  document.querySelectorAll('[data-hand-card]').forEach(el=>{
+    el.addEventListener('click',()=>{
+      const id=el.dataset.handCard;
+      uiState.selectedHandCard = uiState.selectedHandCard===id ? null : id;
+      render();
+    });
+  });
+
+  // 동물원 셀 클릭
+  document.querySelectorAll('[data-cell]').forEach(el=>{
+    el.addEventListener('click',()=>{
+      const cellIdx=Number(el.dataset.cell);
+      const playerIdx=Number(el.dataset.player);
+      if(playerIdx!==G.currentPlayer) return;
+      handleCellClick(cellIdx, playerIdx);
+    });
+  });
+
+  // 디스플레이 카드 클릭 (스냅)
+  document.querySelectorAll('[data-disp-card]').forEach(el=>{
+    el.addEventListener('click',()=>{
+      if(uiState.pendingAction!=='cards') return;
+      const id=el.dataset.dispCard;
+      const pileIdx=Number(el.dataset.dispPile);
+      doSnapCard(id, pileIdx);
+    });
+  });
+
+  // 덱 클릭 (뽑기)
+  const deckPile=document.getElementById('deckPile');
+  if(deckPile) deckPile.addEventListener('click',()=>{
+    if(uiState.pendingAction==='cards') doDrawCards();
+  });
+
+  // 행동 버튼들
+  document.getElementById('btnCards')?.addEventListener('click',()=>startAction('cards'));
+  document.getElementById('btnBuild')?.addEventListener('click',()=>startAction('build'));
+  document.getElementById('btnAnimal')?.addEventListener('click',()=>startAction('animal'));
+  document.getElementById('btnSponsor')?.addEventListener('click',()=>startAction('sponsor'));
+  document.getElementById('btnConfirmAction')?.addEventListener('click',confirmAction);
+  document.getElementById('btnCancelAction')?.addEventListener('click',cancelAction);
+  document.getElementById('btnPass')?.addEventListener('click',doPass);
+  document.getElementById('btnDiscard')?.addEventListener('click',doDiscardCards);
+  document.getElementById('btnNewGame')?.addEventListener('click',()=>{G=null;render();});
+  document.getElementById('btnEarnMoney')?.addEventListener('click',showEarnMoneyUI);
+  document.getElementById('btnUseXToken')?.addEventListener('click',useXToken);
+}
+
+function startAction(actionType){
+  const cp=G.currentPlayer;
+  const player=G.players[cp];
+  const strength=getStrength(player, actionType);
+
+  if(actionType==='animal'&&strength<2){
+    addLog(G,'포켓몬 행동은 강도 2 이상 필요합니다.','warn');
+    render();return;
+  }
+  uiState.pendingAction=actionType;
+  uiState.selectedHandCard=null;
+  if(actionType==='animal'){uiState.animalRemaining=strength>=4?2:1;uiState.animalPlayed=0;}
+  addLog(G,`${player.name}: ${actionLabel(actionType)} 행동 시작 (강도 ${strength})`,'act');
+  render();
+}
+
+function confirmAction(){
+  const cp=G.currentPlayer;
+  const player=G.players[cp];
+  const strength=getStrength(player, uiState.pendingAction);
+
+  if(uiState.pendingAction==='cards'){
+    doDrawCards();return;
+  }
+  if(uiState.pendingAction==='build'){
+    if(uiState.selectedZooCells.length===0){addLog(G,'건설할 칸을 선택하세요.','warn');render();return;}
+    doBuild(uiState.selectedZooCells[0]);
+    return;
+  }
+  if(uiState.pendingAction==='animal'){
+    if(!uiState.selectedHandCard){addLog(G,'배치할 포켓몬을 선택하세요.','warn');render();return;}
+    if(uiState.selectedZooCells.length===0){addLog(G,'배치할 우리를 선택하세요.','warn');render();return;}
+    doPlayAnimal(uiState.selectedHandCard, uiState.selectedZooCells[0]);
+    return;
+  }
+  if(uiState.pendingAction==='sponsor'){
+    if(!uiState.selectedHandCard){addLog(G,'손의 카드를 선택해 후원/보존하거나, 동물원 카드를 클릭해 그 보존 프로젝트를 사용하세요.','warn');render();return;}
+    doSponsor(uiState.selectedHandCard);
+    return;
+  }
+  endTurn();
+}
+
+function cancelAction(){
+  if(uiState.pendingAction==='animal' && Number(uiState.animalPlayed||0)>0){
+    const p=G.players[G.currentPlayer]; rotateActionCard(p,'animal');
+    uiState.pendingAction=null;uiState.selectedHandCard=null;uiState.selectedZooCells=[];
+    nextTurn(); return;
+  }
+  uiState.pendingAction=null;
+  uiState.selectedHandCard=null;
+  uiState.selectedZooCells=[];
+  render();
+}
+
+function handleCellClick(cellIdx, playerIdx){
+  const player=G.players[playerIdx];
+  const cell=player.zoo[cellIdx];
+
+  if(uiState.pendingAction==='build'){
+    const valid=validBuildPositions(player.zoo);
+    if(!valid.includes(cellIdx)){addLog(G,'인접한 빈 칸에만 건설할 수 있습니다.','warn');return;}
+    uiState.selectedZooCells=[cellIdx];
+    doBuild(cellIdx);
+    return;
+  }
+  if(uiState.pendingAction==='animal'){
+    if(!uiState.selectedHandCard){addLog(G,'먼저 손패에서 포켓몬을 선택하세요.','warn');return;}
+    if(cell?.type!=='enclosure'){addLog(G,'빈 우리(enclosure)에만 배치할 수 있습니다.','warn');return;}
+    doPlayAnimal(uiState.selectedHandCard, cellIdx);
+    return;
+  }
+  if(uiState.pendingAction==='sponsor' && cell?.type==='pokemon'){
+    doConservationFromZoo(cellIdx); return;
+  }
+  // 동물원 카드 선택 (돈 마련용)
+  if(cell?.type==='pokemon'&&cell.state==='ready'){
+    addLog(G,`${cardById(cell.cardId)?.name} 소비 → 돈 획득`,'act');
+    spendZooCard(G, playerIdx, cellIdx);
+    render();
+  }
+}
+
+function doBuild(cellIdx){
+  const cp=G.currentPlayer,player=G.players[cp];
+  const strength=getStrength(player,'build');
+  let raw=prompt(`건설할 우리 크기를 고르세요. 최대 ${strength}, 크기당 2원`,String(Math.min(3,strength)));
+  if(raw===null)return;
+  const size=Math.max(1,Math.min(strength,Number(raw)||1));
+  const cost=size*2;
+  if(player.money<cost){addLog(G,`돈 부족! 필요 ${cost}원 / 보유 ${player.money}원`,'warn');render();return;}
+  const valid=validBuildPositions(player.zoo);
+  if(!valid.includes(cellIdx)){addLog(G,'인접한 빈 칸에만 건설할 수 있습니다.','warn');render();return;}
+  if(!G.deck.length){addLog(G,'덱에 우리로 사용할 카드가 없습니다.','warn');render();return;}
+  player.money-=cost;
+  const encCard=takeTopCard(cp);
+  player.zoo[cellIdx]={type:'enclosure',size,cardId:encCard};
+  rotateActionCard(player,'build');
+  addLog(G,`${player.name}: 크기 ${size} 우리 건설 (-${cost}원)`,'ok');
+  uiState.pendingAction=null;uiState.selectedZooCells=[];
+  nextTurn();
+}
+
+function hasRequiredIcons(player,card){
+  const counts={}; zooPokemonCells(player).forEach(x=>x.card.icons.forEach(i=>counts[i]=(counts[i]||0)+1));
+  const need={}; (card.req||[]).forEach(i=>need[i]=(need[i]||0)+1);
+  return Object.entries(need).every(([i,n])=>(counts[i]||0)>=n);
+}
+function hasTerrainAdjacent(player,cellIdx,terrain){
+  if(!terrain)return true;
+  return adjacentCells(cellIdx).some(i=>{const c=player.zoo[i];if(c?.type!=='pokemon')return false;return cardById(c.cardId)?.terrainProvides===terrain;});
+}
+function returnOneChoice(player,label='반납할 카드'){
+  if(!player.hand.length)return null;
+  const menu=player.hand.map((id,i)=>`${i+1}:${cardById(id)?.name}`).join('  ');
+  let raw=prompt(`${label}\n${menu}`,'1'); if(raw===null)return null;
+  let i=Number(raw)-1;if(!(i>=0&&i<player.hand.length))i=0;
+  const id=player.hand.splice(i,1)[0];G.deck.push(id);return id;
+}
+function drawOneToHand(player,triggerPlayer){
+  const id=takeTopCard(triggerPlayer);if(id)player.hand.push(id);return id;
+}
+function resolveAnimalAbility(playerIdx,cellIdx,depth=0){
+  if(depth>1)return;
+  const player=G.players[playerIdx],cell=player.zoo[cellIdx];if(cell?.type!=='pokemon')return;
+  const card=cardById(cell.cardId);if(!card)return;
+  switch(card.abilityKind){
+    case 'xOrDraw':
+      if(confirm(`${card.name}: 확인 = X 보너스 1개, 취소 = 카드 1장 뽑기`))player.xTokens++;
+      else drawOneToHand(player,playerIdx);
+      break;
+    case 'draw2Keep1': {
+      const drawn=[takeTopCard(playerIdx),takeTopCard(playerIdx)].filter(Boolean);
+      if(!drawn.length)break;
+      let keep=0;if(drawn.length>1){const raw=prompt(`가질 카드 선택: 1:${cardById(drawn[0])?.name}  2:${cardById(drawn[1])?.name}`,'1');keep=raw==='2'?1:0;}
+      player.hand.push(drawn[keep]);drawn.forEach((id,i)=>{if(i!==keep)G.deck.push(id);});break;
+    }
+    case 'return1Draw1':
+      if(player.hand.length&&confirm(`${card.name}: 손 카드 1장을 반납하고 1장을 뽑을까요?`)){returnOneChoice(player,'반납할 카드');drawOneToHand(player,playerIdx);} break;
+    case 'readyAdjacent': {
+      const opts=adjacentCells(cellIdx).filter(i=>player.zoo[i]?.type==='pokemon'&&player.zoo[i].state==='spent');
+      if(opts.length){const raw=prompt('준비할 인접 포켓몬: '+opts.map((i,k)=>`${k+1}:${cardById(player.zoo[i].cardId)?.name}`).join('  '),'1');const at=opts[(Number(raw)||1)-1];if(at!=null)player.zoo[at].state='ready';} break;
+    }
+    case 'activateAdjacent': {
+      const opts=adjacentCells(cellIdx).filter(i=>player.zoo[i]?.type==='pokemon');
+      if(opts.length&&confirm(`${card.name}: 인접 포켓몬 능력을 활성화할까요?`)){const raw=prompt(opts.map((i,k)=>`${k+1}:${cardById(player.zoo[i].cardId)?.name}`).join('  '),'1');const at=opts[(Number(raw)||1)-1];if(at!=null)resolveAnimalAbility(playerIdx,at,depth+1);} break;
+    }
+    case 'extraTurn': player.extraTurn=true; break;
+  }
+}
+
+function doPlayAnimal(cardId,cellIdx){
+  const cp=G.currentPlayer,player=G.players[cp],card=cardById(cardId);
+  const strength=getStrength(player,'animal');
+  if(!card){addLog(G,'카드를 찾을 수 없습니다.','warn');return;}
+  if(strength<2){addLog(G,'포켓몬 행동 강도 1에서는 포켓몬을 플레이할 수 없습니다.','warn');render();return;}
+  const cell=player.zoo[cellIdx];
+  if(!cell||cell.type!=='enclosure'){addLog(G,'빈 우리에만 배치 가능합니다.','warn');render();return;}
+  if(cell.size<card.size){addLog(G,`우리 크기 부족: 필요 ${card.size}, 현재 ${cell.size}`,'warn');render();return;}
+  if(!hasRequiredIcons(player,card)){addLog(G,'필요 아이콘 조건을 만족하지 못했습니다.','warn');render();return;}
+  if(!hasTerrainAdjacent(player,cellIdx,card.terrainReq)){addLog(G,`${TYPES[card.terrainReq]?.ko||card.terrainReq} 요건: 해당 지형을 제공하는 인접 포켓몬이 필요합니다.`,'warn');render();return;}
+  if(player.money<card.cost){addLog(G,`돈 부족! 필요 ${card.cost}원 / 보유 ${player.money}원`,'warn');render();return;}
+  player.money-=card.cost;
+  const h=player.hand.indexOf(cardId);if(h>=0)player.hand.splice(h,1);
+  if(cell.cardId)G.deck.push(cell.cardId);
+  player.zoo[cellIdx]={type:'pokemon',cardId,state:'ready',enclosureSize:cell.size};
+  addLog(G,`${player.name}: ${card.name} 배치 (매력 ${card.appeal})`,'ok');
+  resolveAnimalAbility(cp,cellIdx);
+  uiState.animalPlayed=Number(uiState.animalPlayed||0)+1;
+  uiState.animalRemaining=Math.max(0,Number(uiState.animalRemaining||1)-1);
+  uiState.selectedHandCard=null;uiState.selectedZooCells=[];
+  if(uiState.animalRemaining>0 && player.hand.length && player.zoo.some(c=>c?.type==='enclosure') && confirm('강도 4: 두 번째 포켓몬도 플레이할까요?')){
+    emitOnlineState();render();return;
+  }
+  rotateActionCard(player,'animal');uiState.pendingAction=null;
+  nextTurn();
+}
+
+function applyCardActionReturn(player,strength){
+  if(strength===1||strength===3){const id=returnOneChoice(player,'카드 행동: 손에서 1장을 덱 맨 아래로 반납하세요.');if(id)addLog(G,`${cardById(id)?.name} 반납`,'info');}
+}
+function doDrawCards(){
+  const cp=G.currentPlayer,player=G.players[cp],strength=getStrength(player,'cards');
+  const drawCount=strength>=3?2:1;
+  const drawn=[];
+  for(let i=0;i<drawCount;i++){const id=takeTopCard(cp);if(id){player.hand.push(id);drawn.push(id);}}
+  addLog(G,`${player.name}: 카드 ${drawn.length}장 뽑음`,'ok');
+  applyCardActionReturn(player,strength);
+  rotateActionCard(player,'cards');uiState.pendingAction=null;
+  nextTurn();
+}
+function doSnapCard(cardId,pileIdx){
+  const cp=G.currentPlayer,player=G.players[cp],strength=getStrength(player,'cards');
+  const top=G.discardPiles[pileIdx]?.slice(-1)[0];if(top!==cardId)return;
+  if((player.exhaustedCards||[]).includes(cardId)){addLog(G,'이번 라운드에 보존 행동으로 사용한 카드는 스냅으로 되가져올 수 없습니다.','warn');render();return;}
+  G.discardPiles[pileIdx].pop();player.hand.push(cardId);
+  addLog(G,`${player.name}: ${cardById(cardId)?.name} 스냅`,'ok');
+  applyCardActionReturn(player,strength);
+  rotateActionCard(player,'cards');uiState.pendingAction=null;
+  nextTurn();
+}
+
+function choosePokemonCells(player, filterFn, promptText, maxCount=1){
+  const opts=zooPokemonCells(player).filter(filterFn);
+  if(!opts.length)return [];
+  const raw=prompt(`${promptText}\n`+opts.map((x,i)=>`${i+1}:${x.card.name}(${x.cell.state})`).join('  '), maxCount===1?'1':'1');
+  if(raw===null)return [];
+  const picks=[...new Set(String(raw).split(',').map(x=>Number(x.trim())-1).filter(i=>i>=0&&i<opts.length))].slice(0,maxCount);
+  return picks.map(i=>opts[i]);
+}
+function conserveWithPoints(player, points, forcedCellIdx=null){
+  let remaining=Number(points||0), conserved=[];
+  if(forcedCellIdx!=null){
+    const cell=player.zoo[forcedCellIdx], c=cell?.type==='pokemon'?cardById(cell.cardId):null;
+    if(!c||cell.state==='conserved'||c.conVal>remaining)return {ok:false,remaining,conserved};
+    cell.state='conserved';remaining-=c.conVal;conserved.push(c.id);
+  }
+  while(remaining>0){
+    const opts=zooPokemonCells(player).filter(x=>x.cell.state!=='conserved'&&x.card.conVal<=remaining);
+    if(!opts.length||!confirm(`보존 포인트 ${remaining}점 남음. 다른 포켓몬을 보존할까요?`))break;
+    const raw=prompt(opts.map((x,i)=>`${i+1}:${x.card.name}(${x.card.conVal})`).join('  '),'1');
+    if(raw===null)break;const pick=opts[(Number(raw)||1)-1];if(!pick)continue;
+    pick.cell.state='conserved';remaining-=pick.card.conVal;conserved.push(pick.card.id);
+  }
+  return {ok:true,remaining,conserved};
+}
+function markConservationDiscard(player,cardId){
+  const pile=chooseDiscardPile();G.discardPiles[pile].push(cardId);
+  if(!player.exhaustedCards.includes(cardId))player.exhaustedCards.push(cardId);
+}
+function performConservationFromHand(cardId){
+  const cp=G.currentPlayer,player=G.players[cp],card=cardById(cardId);
+  if(!card||getStrength(player,'sponsor')<4)return false;
+  if(!conservationConditionMet(player,card.conservation)){
+    addLog(G,`보존 조건 불충족: ${conservationRequirementText(card.conservation)}`,'warn');return false;
+  }
+  const at=player.hand.indexOf(cardId);if(at<0)return false;
+  const result=conserveWithPoints(player,card.conservation.points);
+  player.hand.splice(at,1);markConservationDiscard(player,cardId);
+  addLog(G,`${player.name}: ${card.name} 보존 프로젝트 ${card.conservation.points}점 사용 · ${result.conserved.length}마리 보존`,'ok');
+  return true;
+}
+function performConservationFromZoo(cellIdx,{nested=false}={}){
+  const cp=G.currentPlayer,player=G.players[cp],cell=player.zoo[cellIdx];
+  if(!cell||cell.type!=='pokemon')return false;
+  const card=cardById(cell.cardId);if(!card||getStrength(player,'sponsor')<4)return false;
+  if(!conservationConditionMet(player,card.conservation)){
+    addLog(G,`보존 조건 불충족: ${conservationRequirementText(card.conservation)}`,'warn');return false;
+  }
+  let keep=false;
+  if(cell.state!=='conserved' && player.money>=card.cost){
+    keep=confirm(`${card.name}의 보존 프로젝트(${card.conservation.points}) 사용.\n확인: ${card.cost}원을 내고 이 포켓몬을 먼저 보존한 뒤 동물원에 유지\n취소: 포켓몬 카드를 버리고 프로젝트 사용`);
+    if(keep && card.conVal>card.conservation.points){addLog(G,'이 카드의 보존값이 프로젝트 제공점보다 커서 유지 방식으로 사용할 수 없습니다. 버림 방식으로 처리합니다.','warn');keep=false;}
+  }
+  let result;
+  if(keep){
+    player.money-=card.cost;
+    result=conserveWithPoints(player,card.conservation.points,cellIdx);
+    if(!result.ok){player.money+=card.cost;return false;}
+  }else{
+    const old={...cell};player.zoo[cellIdx]={type:'enclosure',size:old.enclosureSize||card.size,cardId:null};
+    markConservationDiscard(player,card.id);
+    result=conserveWithPoints(player,card.conservation.points);
+  }
+  addLog(G,`${player.name}: ${card.name} 동물원 보존 프로젝트 사용 · ${result.conserved.length}마리 보존`,'ok');
+  return true;
+}
+function doConservationFromZoo(cellIdx){
+  const player=G.players[G.currentPlayer];
+  if(getStrength(player,'sponsor')<4){addLog(G,'동물원 카드의 보존 행동은 후원/보존 강도 4 이상에서만 가능합니다.','warn');render();return;}
+  if(performConservationFromZoo(cellIdx)){
+    rotateActionCard(player,'sponsor');uiState.pendingAction=null;uiState.selectedHandCard=null;nextTurn();
+  }else render();
+}
+function specialPlayAnimal(playerIdx,{sizeReduction=0,ignoreTerrain=false}={}){
+  const player=G.players[playerIdx];
+  if(!player.hand.length)return false;
+  const menu=player.hand.map((id,i)=>`${i+1}:${cardById(id)?.name}`).join('  ');
+  const raw=prompt(`플레이할 포켓몬을 고르세요.\n${menu}`,'1');if(raw===null)return false;
+  const cardId=player.hand[(Number(raw)||1)-1],card=cardById(cardId);if(!card)return false;
+  const opts=player.zoo.map((cell,idx)=>({cell,idx})).filter(x=>x.cell?.type==='enclosure'&&x.cell.size>=Math.max(1,card.size-sizeReduction));
+  if(!opts.length){addLog(G,'조건에 맞는 빈 우리가 없습니다.','warn');return false;}
+  const cr=prompt(opts.map((x,i)=>`${i+1}:칸${x.idx+1}(크기${x.cell.size})`).join('  '),'1');if(cr===null)return false;
+  const target=opts[(Number(cr)||1)-1];if(!target)return false;
+  if(!hasRequiredIcons(player,card)){addLog(G,'필요 아이콘 조건 불충족','warn');return false;}
+  if(!ignoreTerrain&&!hasTerrainAdjacent(player,target.idx,card.terrainReq)){addLog(G,'물/바위 인접 요건 불충족','warn');return false;}
+  if(player.money<card.cost){addLog(G,`돈 부족: ${card.cost}원 필요`,'warn');return false;}
+  player.money-=card.cost;player.hand.splice(player.hand.indexOf(cardId),1);
+  const enc=target.cell; if(enc.cardId)G.deck.push(enc.cardId);
+  player.zoo[target.idx]={type:'pokemon',cardId,state:'ready',enclosureSize:enc.size};
+  resolveAnimalAbility(playerIdx,target.idx);addLog(G,`${card.name} 특수 후원 효과로 배치`,'ok');return true;
+}
+function performSponsorEffect(playerIdx,card,depth=0){
+  const player=G.players[playerIdx];if(!card||depth>2)return {};
+  const name=card.sponsor.name;
+  if(name==='과학 실험실'){
+    const opts=zooPokemonCells(player);if(!opts.length)return {};
+    const raw=prompt('후원 행동을 복사할 동물원 포켓몬: '+opts.map((x,i)=>`${i+1}:${x.card.name}/${x.card.sponsor.name}`).join('  '),'1');
+    const pick=opts[(Number(raw)||1)-1];if(pick)performSponsorEffect(playerIdx,pick.card,depth+1);
+  }else if(name==='다양성 연구원'){
+    const encs=player.zoo.map((c,i)=>({c,i})).filter(x=>x.c?.type==='enclosure');
+    if(encs.length){const raw=prompt(encs.map((x,i)=>`${i+1}:칸${x.i+1}/크기${x.c.size}`).join('  '),'1');const e=encs[(Number(raw)||1)-1];if(e){const size=e.c.size,id=e.c.cardId;player.zoo[e.i]=null;if(id)player.hand.push(id);const opts=zooPokemonCells(player).filter(x=>x.card.size<=size&&(x.cell.state==='spent'||x.cell.state!=='conserved'));if(opts.length){const rr=prompt(opts.map((x,i)=>`${i+1}:${x.card.name}/${x.cell.state}`).join('  '),'1');const t=opts[(Number(rr)||1)-1];if(t){if(t.cell.state==='spent'&&confirm('확인=준비, 취소=보존'))t.cell.state='ready';else t.cell.state='conserved';}}}}
+  }else if(name==='엔지니어'){
+    const encs=player.zoo.map((c,i)=>({c,i})).filter(x=>x.c?.type==='enclosure');
+    if(encs.length){const raw=prompt(encs.map((x,i)=>`${i+1}:칸${x.i+1}`).join('  '),'1');const e=encs[(Number(raw)||1)-1];if(e){const saved=e.c;player.zoo[e.i]=null;const valid=validBuildPositions(player.zoo);const tr=prompt('이동할 칸: '+valid.map(i=>i+1).join(', '),String((valid[0]??e.i)+1));const ti=Number(tr)-1;if(valid.includes(ti))player.zoo[ti]=saved;else player.zoo[e.i]=saved;}}
+    const a=prompt('다음에 원하는 행동 방향: cards / build / animal / sponsor','cards');if(ACTION_ORDER.includes(a))return {leftOverride:a};
+  }else if(name==='고고학자'){
+    const raw=prompt('강도5 건설: 우리 크기 하나(예:5) 또는 두 개 합계≤5(예:3,2)','5');
+    if(raw){const sizes=raw.split(',').map(x=>Math.max(1,Number(x)||0)).filter(Boolean).slice(0,2);if(sizes.reduce((a,b)=>a+b,0)<=5){for(const size of sizes){if(player.money<size*2)break;const valid=validBuildPositions(player.zoo);if(!valid.length||!G.deck.length)break;const pos=Number(prompt('건설 칸 번호: '+valid.map(i=>i+1).join(', '),String(valid[0]+1)))-1;if(!valid.includes(pos))break;player.money-=size*2;player.zoo[pos]={type:'enclosure',size,cardId:takeTopCard(playerIdx)};}}}
+  }else if(name==='과학 도서관'){
+    const other=player.hand.filter(id=>id!==card.id);if(other.length){const rr=prompt(other.map((id,i)=>`${i+1}:${cardById(id)?.name}`).join('  '),'1');const id=other[(Number(rr)||1)-1];const at=player.hand.indexOf(id);if(at>=0){player.hand.splice(at,1);G.discardPiles[chooseDiscardPile()].push(id);}}
+    [0,1].forEach(pi=>{const id=G.discardPiles[pi].pop();if(id)player.hand.push(id);});
+  }else if(name==='소형 포켓몬 프로그램'){
+    const spend=choosePokemonCells(player,x=>x.card.size>=4&&x.cell.state==='ready','소비할 대형 포켓몬',1)[0];if(spend){spend.cell.state='spent';const opts=choosePokemonCells(player,x=>x.card.size<=3&&x.cell.state!=='conserved','준비/보존할 소형 포켓몬(최대2, 쉼표)',2);opts.forEach(x=>{if(x.cell.state==='spent'&&confirm(`${x.card.name}: 확인=준비, 취소=보존`))x.cell.state='ready';else x.cell.state='conserved';});player.xTokens++;}
+  }else if(name==='연방 정부 보조금'){
+    const opts=player.zoo.map((c,i)=>({c,i})).filter(x=>x.c?.type==='enclosure'||x.c?.type==='pokemon');if(opts.length){const rr=prompt(opts.map((x,i)=>`${i+1}:칸${x.i+1}`).join('  '),'1');const x=opts[(Number(rr)||1)-1];if(x){if(x.c.type==='enclosure')x.c.size+=2;else x.c.enclosureSize=(x.c.enclosureSize||cardById(x.c.cardId)?.size||1)+2;drawOneToHand(player,playerIdx);}}
+  }else if(name==='대형 포켓몬 프로그램'){
+    const spend=choosePokemonCells(player,x=>x.card.size<=3&&x.cell.state==='ready','소비할 소형 포켓몬',1)[0];if(spend){spend.cell.state='spent';const opts=zooPokemonCells(player).filter(x=>x.card.size>=4&&x.cell.state!=='conserved');opts.forEach(x=>{if(confirm(`${x.card.name}을 준비/보존할까요?`)){if(x.cell.state==='spent'&&confirm('확인=준비, 취소=보존'))x.cell.state='ready';else x.cell.state='conserved';}});player.xTokens++;}
+  }else if(name==='현장 조사'){
+    specialPlayAnimal(playerIdx,{sizeReduction:2});
+  }else if(name==='번식 프로그램'){
+    const opts=zooPokemonCells(player);if(opts.length){const rr=prompt('보존 프로젝트를 사용할 포켓몬: '+opts.map((x,i)=>`${i+1}:${x.card.name}`).join('  '),'1');const x=opts[(Number(rr)||1)-1];if(x)performConservationFromZoo(x.idx,{nested:true});}
+  }else if(name==='탐험가'){
+    specialPlayAnimal(playerIdx,{ignoreTerrain:true});
+  }
+  return {};
+}
+function doSponsor(cardId){
+  const cp=G.currentPlayer,player=G.players[cp],strength=getStrength(player,'sponsor'),card=cardById(cardId);
+  if(!card||!player.hand.includes(cardId))return;
+  const canSponsor=strength>=card.sponsor.strength,canConserve=strength>=4;
+  if(!canSponsor&&!canConserve){addLog(G,'현재 강도로 이 카드의 후원/보존 행동을 할 수 없습니다.','warn');render();return;}
+  let mode='sponsor';
+  if(canSponsor&&canConserve){const raw=prompt(`1=후원(${card.sponsor.name}) / 2=보존(${conservationRequirementText(card.conservation)} → ${card.conservation.points})`,'1');if(raw===null)return;mode=raw==='2'?'conservation':'sponsor';}
+  else if(canConserve&&!canSponsor)mode='conservation';
+  let ok=false,override=null;
+  if(mode==='conservation')ok=performConservationFromHand(cardId);
+  else{
+    const result=performSponsorEffect(cp,card)||{};override=result.leftOverride;
+    const at=player.hand.indexOf(cardId);if(at>=0){player.hand.splice(at,1);G.discardPiles[chooseDiscardPile()].push(cardId);} 
+    addLog(G,`${player.name}: ${card.name} 후원 — ${card.sponsor.name}`,'ok');ok=true;
+  }
+  if(!ok){render();return;}
+  rotateActionCard(player,'sponsor');if(override&&ACTION_ORDER.includes(override))player.leftAction=override;
+  uiState.pendingAction=null;uiState.selectedHandCard=null;uiState.selectedZooCells=[];nextTurn();
+}
+
+function doPass(){
+  const cp=G.currentPlayer;
+  const player=G.players[cp];
+  let raw=prompt('패스: 행동 카드를 반시계 방향으로 몇 칸 돌릴까요? (0, 1, 2)', '1');
+  if(raw===null)return;
+  let steps=Math.max(0,Math.min(2,Number(raw)||0));
+  passAction(player,steps);
+  addLog(G,`${player.name}: 패스 → 반시계 ${steps}칸, 보라(X) 면으로 전환`,'info');
+  uiState.pendingAction=null;
+  nextTurn();
+}
+
+function chooseDiscardPile(){
+  if(G.discardPiles[0].length===0)return 0;
+  if(G.discardPiles[1].length===0)return 1;
+  const raw=prompt('버릴 더미를 선택하세요: 1 또는 2','1');
+  return raw==='2'?1:0;
+}
+function doDiscardCards(){
+  const cp=G.currentPlayer;
+  const player=G.players[cp];
+  if(player.hand.length===0){addLog(G,'버릴 카드가 없습니다.','warn');render();return;}
+  const menu=player.hand.map((id,i)=>`${i+1}:${cardById(id)?.name}`).join('  ');
+  const raw=prompt(`버릴 카드 번호를 쉼표로 입력하세요. 이 행동에서는 원하는 수만큼 버릴 수 있습니다.\n${menu}`,'1');
+  if(raw===null)return;
+  const picks=[...new Set(raw.split(',').map(x=>Number(x.trim())-1).filter(i=>i>=0&&i<player.hand.length))].sort((a,b)=>b-a);
+  if(!picks.length){addLog(G,'카드를 선택하지 않았습니다.','warn');render();return;}
+  picks.forEach(i=>{
+    const id=player.hand.splice(i,1)[0];
+    const pile=chooseDiscardPile(); G.discardPiles[pile].push(id);
+    addLog(G,`${player.name}: ${cardById(id)?.name} 버림`,'info');
+  });
+  addLog(G,'카드 버리기 행동 — 행동 카드는 회전하지 않음','warn');
+  nextTurn();
+}
+
+function showEarnMoneyUI(){
+  const cp=G.currentPlayer;
+  const player=G.players[cp];
+  const sources=[];
+  player.hand.forEach((id,i)=>sources.push({kind:'hand',i,id,label:`손 ${cardById(id)?.name} → ${cardById(id)?.discardValue}원`}));
+  player.zoo.forEach((cell,i)=>{if(cell?.type==='pokemon'&&cell.state==='ready'){const c=cardById(cell.cardId);sources.push({kind:'zoo',i,id:cell.cardId,label:`동물원 ${c?.name} 소비 → ${c?.moneyValue}원`});}});
+  if(!sources.length){addLog(G,'돈을 만들 수 있는 준비 카드가 없습니다.','warn');render();return;}
+  const raw=prompt('돈을 만들 카드 번호를 선택하세요.\n'+sources.map((x,i)=>`${i+1}:${x.label}`).join('\n'),'1');
+  if(raw===null)return; const src=sources[Number(raw)-1]; if(!src)return;
+  if(src.kind==='hand') discardForMoney(G,cp,src.id); else spendZooCard(G,cp,src.i);
+  emitOnlineState(); render();
+}
+
+function useXToken(){
+  const cp=G.currentPlayer;
+  const player=G.players[cp];
+  if(player.isPurpleSide){
+    player.isPurpleSide=false; player.tempBoost=(player.tempBoost||0)+1;
+    addLog(G,`${player.name}: 행동카드를 보라 면에서 파란 면으로 뒤집어 강도 +1`,'act');
+  }else if(player.xTokens>0){
+    player.xTokens--; player.tempBoost=(player.tempBoost||0)+1;
+    addLog(G,`${player.name}: X 보너스 1개 사용 → 강도 +1`,'act');
+  }else return;
+  emitOnlineState(); render();
+}
+
+function nextTurnCore(){
+  const cp=G.currentPlayer;
+  enforceHandLimit(G.players[cp]);
+
+  if(G.endAfterPlayer===cp){
+    G.phase='end';
+    addLog(G,'=== 게임 종료! 최종 점수 계산 ===','ok');
+    render();
+    return;
+  }
+
+  if(G.players[cp].extraTurn){
+    G.players[cp].extraTurn=false;
+    G.turn++;
+    addLog(G,`${G.players[cp].name}: 추가 행동 1회`,'ok');
+    render();
+    return;
+  }
+
+  G.currentPlayer=1-cp;
+  G.turn++;
+
+  if(G.mode==='solo'&&G.currentPlayer===1){
+    arminTakeTurn(G);
+    G.currentPlayer=0;
+    G.turn++;
+  }
+  render();
+}
+
+// ─── 종료 화면 ───
+function renderEnd(){
+  if(G.mode==='solo')prepareArminEndScoring(G);
+  const s0=calcScores(G.players[0]);
+  const s1=G.mode==='solo'?calcArminScores(G.players[1]):calcScores(G.players[1]);
+  const winner=s0.total>s1.total?0:s1.total>s0.total?1:-1;
+
+  const rows=[G.players[0],G.players[1]].map((p,i)=>{
+    const s=(G.mode==='solo'&&i===1)?calcArminScores(p):calcScores(p);
+    const isWin=i===winner;
+    return `<tr class="${isWin?'winner-row':''}">
+      <td>${isWin?'🏆 ':''}${p.name}</td>
+      <td>${s.appeal}</td>
+      <td>${s.conservation}</td>
+      <td>-${s.emptyPenalty}</td>
+      <td class="total" style="color:var(--accent)">${s.total}</td>
+    </tr>`;
+  }).join('');
+
+  return `<div class="end-screen">
+    <div class="end-card">
+      <div class="end-title">${winner===-1?'무승부!':G.players[winner].name+' 승리! 🎉'}</div>
+      <div style="color:var(--muted);font-size:.82rem;margin-bottom:12px">4라운드 종료 · 최종 점수</div>
+      <table class="score-table">
+        <thead><tr><th>이름</th><th>매력</th><th>보존</th><th>빈우리</th><th>합계</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+      <div style="font-size:.72rem;color:var(--muted);margin-bottom:16px;line-height:1.6">
+        매력 점수 + 보존 점수 - 빈 우리×2<br>
+        동점이면 매력 점수가 높은 쪽 승리
+      </div>
+      <button class="btn primary" style="width:100%" id="endNewGame">새 게임 시작</button>
+    </div>
+  </div>`;
+}
+
+function attachEndEvents(){
+  document.getElementById('endNewGame')?.addEventListener('click',()=>{ if (IS_SOLO_PARAM) clearSoloSave(); G=null; render(); });
+}
+
+// ══════════════════════════════════════════════════════════════════
+// URL 파라미터 처리 & 온라인/솔로 브리지
+// ══════════════════════════════════════════════════════════════════
+const _Q = new URLSearchParams(location.search);
+const IS_SOLO_PARAM    = _Q.get('solo')   === '1';
+const IS_ONLINE_PARAM  = _Q.get('online') === '1' && window.parent !== window;
+const ONLINE_SEAT      = Number.isFinite(Number(_Q.get('seat'))) ? Number(_Q.get('seat')) : 0;
+const ONLINE_IS_HOST   = _Q.get('host')   === '1';
+const IS_ONLINE_IS_HOST = IS_ONLINE_PARAM && ONLINE_IS_HOST;
+let   ONLINE_NAMES    = [];
+try { ONLINE_NAMES = JSON.parse(_Q.get('names') || '[]'); } catch {}
+
+// 솔로 자동 저장/이어하기. 온라인 상태는 Supabase가 담당하므로 로컬 저장하지 않는다.
+const SOLO_SAVE_KEY = 'boardmate:pokemon-minima:solo:v1';
+function saveSoloState(){
+  if(!IS_SOLO_PARAM || !G) return;
+  try{ localStorage.setItem(SOLO_SAVE_KEY, JSON.stringify(G)); }catch{}
+}
+function loadSoloState(){
+  if(!IS_SOLO_PARAM) return null;
+  try{
+    const raw=localStorage.getItem(SOLO_SAVE_KEY);
+    if(!raw) return null;
+    const parsed=JSON.parse(raw);
+    if(!parsed?.players || parsed.players.length!==2) return null;
+    return parsed;
+  }catch{ return null; }
+}
+function clearSoloSave(){ try{ localStorage.removeItem(SOLO_SAVE_KEY); }catch{} }
+
+// 온라인: 부모 창에 준비됨 알림
+if (IS_ONLINE_PARAM) {
+  setTimeout(() => window.parent.postMessage({ type: 'pokemon_minima_ready' }, '*'), 0);
+
+  // 부모 창에서 상태 수신
+  window.addEventListener('message', e => {
+    if (e.source !== window.parent) return;
+    if (e.data?.type === 'game_state' && e.data.state) {
+      try {
+        const incoming = typeof e.data.state === 'string'
+          ? JSON.parse(e.data.state) : e.data.state;
+        if (!incoming?.players?.length) return;
+        G = incoming;
+        // 내 차례가 아니면 읽기 전용
+        uiState.viewPlayer = ONLINE_SEAT;
+        render();
+      } catch(err) { console.warn('[pm-online] state parse failed', err); }
+    }
+  });
+}
+
+// 상태 저장: 온라인 모드일 때 부모에 postMessage
+function emitOnlineState() {
+  if (IS_ONLINE_PARAM && G) {
+    window.parent.postMessage({ type: 'game_state', state: JSON.stringify(G) }, '*');
+  }
+}
+function nextTurn() {
+  nextTurnCore();
+  emitOnlineState();
+  if (G?.phase === 'end') publishResult();
+}
+
+// 종료: 순위 전달
+function publishResult() {
+  if (!IS_ONLINE_PARAM || !G) return;
+  const s = G.players.map((p,i) => ({ i, total: calcScores(p).total }))
+    .sort((a,b) => b.total - a.total)
+    .map(x => x.i);
+  window.parent.postMessage({ type: 'game_result', order: s }, '*');
+}
+
+// ─── 초기 실행 ───
+// 솔로 파라미터: 이름/모드 자동 설정
+if (IS_SOLO_PARAM && !G) {
+  // 저장된 솔로 판이 있으면 자동으로 이어서 시작한다. 없으면 새 판을 만든다.
+  const saved = loadSoloState();
+  if(saved && saved.phase !== 'end') G = saved;
+  else {
+    if(saved?.phase === 'end') clearSoloSave();
+    G = newGame({ p1name: '트레이너', p2name: 'ARMIN', mode: 'solo', difficulty: 'normal' });
+    startDraft();
+  }
+  uiState = { selectedHandCard:null, selectedZooCells:[], pendingAction:null,
+    pendingCost:0, moneyCards:[], viewPlayer:0,
+    draftStep:0, draftCurrentPlayer:0, draftPassCards:[] };
+}
+
+// 온라인 파라미터: 방장이면 설정, 게스트면 대기
+if (IS_ONLINE_PARAM && !IS_ONLINE_IS_HOST) {
+  // 게스트: 부모에서 상태 오기 전까지 대기 화면
+  document.getElementById('root').innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:center;min-height:100vh;flex-direction:column;gap:12px;background:var(--bg)">
+      <div style="font-size:1.5rem">🎮</div>
+      <div style="color:var(--text);font-weight:900">포켓몬 미니마</div>
+      <div style="color:var(--muted);font-size:.85rem">방장이 게임을 시작하기를 기다리는 중…</div>
+    </div>`;
+} else if (IS_ONLINE_PARAM && ONLINE_IS_HOST && ONLINE_NAMES.length >= 2) {
+  // 방장: 이름 받아서 바로 게임 시작
+  G = newGame({ p1name: ONLINE_NAMES[0], p2name: ONLINE_NAMES[1], mode: '2p', difficulty: 'normal' });
+  uiState = { selectedHandCard:null, selectedZooCells:[], pendingAction:null,
+    pendingCost:0, moneyCards:[], viewPlayer:ONLINE_SEAT,
+    draftStep:0, draftCurrentPlayer:0, draftPassCards:[] };
+  startDraft();
+  render();
+} else {
+  render();
+}
+
+</script>
+</body>
+</html>

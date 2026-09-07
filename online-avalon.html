@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>레지스탕스 아발론 · BoardMate 온라인</title>
+<link rel="stylesheet" href="./social/social-deduction.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="./config.js"></script>
+</head>
+<body><main class="sd-shell" id="app">불러오는 중…</main>
+<script type="module">
+import {boot,getView,act,startPolling,fatal,esc,roleKo,openRoles,seatName,roomId} from './social/social-common.js';
+const GAME='avalon',app=document.querySelector('#app');let ctx,view=null,busy=false,stop=null;
+const phaseKo={team_build:'팀 구성',team_vote:'팀 찬반 투표',quest_vote:'임무 수행',assassination:'멀린 암살',over:'게임 종료'};
+const roleDesc={merlin:'모드레드를 제외한 악 진영을 알고 있습니다. 정체가 들키지 않게 선을 이끄세요.',percival:'멀린과 모르가나 후보를 봅니다. 두 사람 중 누가 멀린인지 구분할 수 없습니다.',loyal:'특수 능력이 없는 선 진영입니다.',assassin:'악 진영입니다. 선이 임무 3개를 성공하면 마지막으로 멀린을 지목합니다.',morgana:'악 진영입니다. 퍼시벌에게 멀린 후보처럼 보입니다.',mordred:'악 진영입니다. 멀린에게 보이지 않습니다.',oberon:'악 진영이지만 다른 악 진영과 서로 알지 못합니다.',minion_of_mordred:'특수 능력이 없는 악 진영입니다.'};
+function top(){return `<div class="sd-topbar"><div class="sd-title">⚔️ 레지스탕스 아발론<small>${esc(ctx.room.title||'BoardMate')} · ${ctx.members.length}인</small></div><div class="sd-actions"><button class="sd-btn" id="rolesBtn">🎭 이번 판 역할</button><a class="sd-btn ghost" href="./index.html#/room/${encodeURIComponent(roomId)}">← 방으로</a></div></div>`;}
+function playerList(st){return `<div class="sd-player-list">${ctx.members.map(m=>{const s=Number(m.seat),leader=Number(st.leader)===s,inTeam=(st.proposal||[]).map(Number).includes(s);return `<div class="sd-player ${leader?'active':''}"><span class="sd-seat">${s+1}</span><b>${esc(m.nickname)}</b>${leader?'<span class="sd-pill">👑 팀장</span>':''}${inTeam?'<span class="sd-pill">🛡️ 임무팀</span>':''}</div>`}).join('')}</div>`;}
+function myRole(v){const m=v.me||{},cls=m.team==='evil'?'evil':'good';return `<div class="sd-role-card ${cls}"><div class="sd-muted">나의 비밀 역할</div><div class="sd-role-name">${esc(roleKo(m.role))}</div><p>${esc(roleDesc[m.role]||'')}</p><div class="sd-muted">진영: ${m.team==='evil'?'악':'선'}</div></div>${(m.known||[]).length?`<div class="sd-notice"><b>내가 아는 정보</b>${m.known.map(k=>`<div>• ${esc(seatName(ctx.members,k.seat))}: ${esc(k.hint)}</div>`).join('')}</div>`:'<div class="sd-notice sd-muted">추가로 공개되는 비밀 정보가 없습니다.</div>'}`;}
+function tracks(st){const q=Number(st.quest||0),results=st.quest_results||[];return `<div class="sd-status-row"><span class="sd-pill">현재 ${Math.min(q+1,5)}번째 임무</span><span class="sd-pill">필요 ${Number(st.required||0)}명</span><span class="sd-pill">연속 부결 ${Number(st.rejects||0)}/5</span></div><div class="sd-status-row"><div><b>임무 결과</b><div class="sd-track">${Array.from({length:5},(_,i)=>{const r=results[i];const c=r?(r.failed?'on evil':'on good'):'';return `<span class="sd-dot ${c}">${i+1}</span>`}).join('')}</div></div></div>`;}
+function lastVote(st){const rows=st.last_vote||[];if(!rows.length)return '';return `<div class="sd-notice"><b>직전 팀 투표 공개</b><div class="sd-pills">${rows.map(v=>`<span class="sd-role-pill">${esc(seatName(ctx.members,v.seat))}: ${v.approve?'찬성':'반대'}</span>`).join('')}</div></div>`;}
+function lastQuest(st){const q=st.last_quest;if(!q)return '';return `<div class="sd-notice"><b>${Number(q.quest)}번째 임무 공개 카드</b> · 성공 ${Number(q.success_cards||0)}장 / 실패 ${Number(q.fail_cards||0)}장 ${q.failed?'→ 임무 실패':'→ 임무 성공'}</div>`;}
+function history(st){return `<div class="sd-history">${(st.history||[]).slice().reverse().map(h=>`<div class="sd-history-item">${esc(h.text||'')}</div>`).join('')||'<div class="sd-muted">아직 기록이 없습니다.</div>'}</div>`;}
+function targetSelect(id,filter=()=>true){return `<select class="sd-select" id="${id}"><option value="">선택</option>${ctx.members.filter(m=>filter(Number(m.seat))).map(m=>`<option value="${m.seat}">${Number(m.seat)+1}. ${esc(m.nickname)}</option>`).join('')}</select>`;}
+function control(v){const st=v.state,m=v.me||{},p=st.phase;if(st.over)return `<div class="sd-big-result">${st.winner==='good'?'🟦 선 진영 승리':'🟥 악 진영 승리'}</div><p>${esc(st.reason||'')}</p>${m.reveal_roles?`<div class="sd-player-list">${ctx.members.map(x=>`<div class="sd-player"><span class="sd-seat">${Number(x.seat)+1}</span><b>${esc(x.nickname)}</b><span class="sd-pill">${esc(roleKo(m.reveal_roles[String(x.seat)]))}</span></div>`).join('')}</div>`:''}`;
+if(p==='team_build'){
+ if(Number(st.leader)!==ctx.mySeat)return `<div class="sd-notice">👑 ${esc(seatName(ctx.members,st.leader))}님이 ${Number(st.required)}명의 임무 팀을 고르는 중입니다.</div>`;
+ return `<div class="sd-control"><b>${Number(st.required)}명을 선택하세요.</b><div class="sd-choice-grid" id="teamChoices">${ctx.members.map(x=>`<label class="sd-choice"><input type="checkbox" value="${x.seat}"><span>${Number(x.seat)+1}. ${esc(x.nickname)}</span></label>`).join('')}</div><button class="sd-btn primary" id="proposeBtn">이 팀 제안</button></div>`;
+}
+if(p==='team_vote')return m.team_voted?`<div class="sd-notice">투표 완료 · 다른 플레이어를 기다리는 중 (${Number(st.vote_count||0)}/${ctx.members.length})</div>`:`<div class="sd-control"><b>제안된 팀에 찬성합니까?</b><div class="sd-actions"><button class="sd-btn good" id="approveBtn">찬성</button><button class="sd-btn evil" id="rejectBtn">반대</button></div></div>`;
+if(p==='quest_vote'){
+ const inTeam=(st.proposal||[]).map(Number).includes(ctx.mySeat);if(!inTeam)return `<div class="sd-notice">임무 팀이 비밀 카드를 제출하는 중입니다. (${Number(st.mission_count||0)}/${(st.proposal||[]).length})</div>`;
+ if(m.mission_voted)return `<div class="sd-notice">임무 카드 제출 완료 · 다른 팀원을 기다립니다.</div>`;
+ return `<div class="sd-control"><b>임무 카드를 비밀리에 제출하세요.</b><button class="sd-btn good" id="successBtn">임무 성공</button>${m.can_fail?'<button class="sd-btn evil" id="failBtn">임무 실패</button>':''}</div>`;
+}
+if(p==='assassination'){
+ if(m.role!=='assassin')return `<div class="sd-notice">선 진영이 임무 3개를 성공했습니다. 암살자가 멀린을 지목하는 중입니다.</div>`;
+ return `<div class="sd-control"><b>멀린이라고 생각하는 플레이어를 지목하세요.</b>${targetSelect('assassinTarget',s=>s!==ctx.mySeat)}<button class="sd-btn danger" id="assassinateBtn">최종 지목</button></div>`;
+}
+return '<div class="sd-muted">상태를 불러오는 중입니다.</div>';}
+function bind(v){document.querySelector('#rolesBtn')?.addEventListener('click',()=>openRoles(v.state?.role_counts||{},'아발론 이번 판 역할'));
+ document.querySelector('#proposeBtn')?.addEventListener('click',()=>{const seats=[...document.querySelectorAll('#teamChoices input:checked')].map(x=>Number(x.value));doAct({type:'propose',seats});});
+ document.querySelector('#approveBtn')?.addEventListener('click',()=>doAct({type:'team_vote',approve:true}));document.querySelector('#rejectBtn')?.addEventListener('click',()=>doAct({type:'team_vote',approve:false}));
+ document.querySelector('#successBtn')?.addEventListener('click',()=>doAct({type:'quest_vote',success:true}));document.querySelector('#failBtn')?.addEventListener('click',()=>doAct({type:'quest_vote',success:false}));
+ document.querySelector('#assassinateBtn')?.addEventListener('click',()=>{const el=document.querySelector('#assassinTarget');if(!el?.value)return alert('암살 대상을 선택하세요.');const s=Number(el.value);if(Number.isInteger(s))doAct({type:'assassinate',seat:s});});}
+async function doAct(a){if(busy)return;busy=true;try{await act(a);view=await getView();draw(view);}catch(e){alert(e.message||e);}finally{busy=false;}}
+function setup(){app.innerHTML=top()+`<div class="sd-grid"><section class="sd-card sd-main"><h2>게임 설정</h2><p>멀린과 암살자는 항상 포함됩니다. 아래 특수 역할만 선택할 수 있습니다. 랜슬롯·엑스칼리버·호수의 여신은 사용하지 않습니다.</p>${ctx.isHost?`<div class="sd-choice-grid"><label class="sd-choice"><input type="checkbox" id="percival"><span>퍼시벌</span></label><label class="sd-choice"><input type="checkbox" id="morgana"><span>모르가나</span></label><label class="sd-choice"><input type="checkbox" id="mordred"><span>모드레드</span></label><label class="sd-choice"><input type="checkbox" id="oberon"><span>오베론</span></label></div><button class="sd-btn primary" id="initBtn" style="margin-top:12px">역할 섞고 시작</button>`:'<div class="sd-notice">방장이 역할 구성을 고르고 시작하기를 기다리고 있습니다.</div>'}</section><aside class="sd-card sd-side"><h3>참가자</h3>${playerList({leader:-1,proposal:[]})}</aside></div>`;document.querySelector('#rolesBtn')?.addEventListener('click',()=>openRoles({},'아발론 이번 판 역할'));document.querySelector('#initBtn')?.addEventListener('click',()=>doInit());}
+async function doInit(){if(busy)return;const percival=document.querySelector('#percival').checked,morgana=document.querySelector('#morgana').checked,mordred=document.querySelector('#mordred').checked,oberon=document.querySelector('#oberon').checked;if(ctx.members.length===5&&percival&&!morgana&&!mordred)return alert('5인 게임에서 퍼시벌을 사용하면 모르가나 또는 모드레드 중 하나를 함께 넣어주세요.');busy=true;try{const {rpc,token}=await import('./social/social-common.js');await rpc('boardmate_social_init',{p_token:token(),p_room_id:roomId,p_options:{percival,morgana,mordred,oberon}});view=await getView();draw(view);}catch(e){alert(e.message||e);}finally{busy=false;}}
+function draw(v){view=v;if(!v?.initialized)return setup();const st=v.state;app.innerHTML=top()+`<div class="sd-grid"><section class="sd-card sd-main"><h2>${esc(phaseKo[st.phase]||st.phase)}</h2>${tracks(st)}${lastVote(st)}${lastQuest(st)}${control(v)}</section><aside class="sd-card sd-side"><h3>내 역할</h3>${myRole(v)}</aside><section class="sd-card sd-main"><h3>참가자</h3>${playerList(st)}</section><aside class="sd-card sd-side"><h3>진행 기록</h3>${history(st)}</aside></div>`;bind(v);}
+try{ctx=await boot(GAME);if(ctx.members.length<5||ctx.members.length>10)fatal('아발론은 5~10인입니다.');const first=await getView();draw(first);stop=startPolling(v=>draw(v),{interval:900});window.addEventListener('beforeunload',()=>stop?.());}catch(e){console.error(e);fatal(e.message||'아발론을 열 수 없습니다.');}
+</script></body></html>
