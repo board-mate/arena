@@ -26,6 +26,17 @@
     purple: { id:'purple', name:'남동 · 보라', shortName:'보라', color:'#83718f' }
   };
 
+  // UI-only approximate polygons used to dim regions excluded from the current game.
+  // Coordinates match the 675x900 Germany board image.
+  var REGION_SHADE_POLYGONS = {
+    green:  [[170,15],[350,15],[370,130],[365,240],[325,350],[190,330],[115,250],[110,160]],
+    brown:  [[335,45],[660,65],[660,370],[570,400],[445,385],[360,320],[345,220]],
+    red:    [[65,250],[315,250],[340,395],[300,500],[220,520],[45,485],[15,365]],
+    yellow: [[330,330],[655,320],[660,660],[600,690],[410,690],[325,590],[300,430]],
+    blue:   [[15,430],[320,420],[355,565],[330,670],[280,720],[165,710],[35,660],[10,530]],
+    purple: [[145,635],[600,625],[635,760],[600,875],[135,875],[110,790]]
+  };
+
   // Index order intentionally follows the source dataset so that EDGE_INDEXES
   // can be compared against the published GEXF/YAML without name translation.
   var CITIES = [
@@ -163,6 +174,7 @@
     REGIONS:REGIONS,
     REGION_ORDER:['green','brown','red','yellow','blue','purple'],
     REGION_ADJ:REGION_ADJ,
+    REGION_SHADE_POLYGONS:REGION_SHADE_POLYGONS,
     CITIES:CITIES,
     CITY_BY_ID:CITY_BY_ID,
     EDGES:EDGES,

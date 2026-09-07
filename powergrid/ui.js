@@ -1,5 +1,5 @@
 /*!
- * BoardMate Power Grid Germany - Multiplayer UI Layer v5
+ * BoardMate Power Grid Germany - Multiplayer UI Layer v6
  * 순수 DOM/SVG 렌더링. React 등 프레임워크 없이 동작.
  * window.PowerGrid (engine.js) 를 사용한다.
  */
@@ -37,7 +37,7 @@
     if (idx == null) return '<div class="pg-plant-img pg-plant-missing">'+esc(num)+'</div>';
     var x = (idx % 7) * 100, y = Math.floor(idx / 7) * 100;
     return '<svg class="pg-plant-img" viewBox="'+x+' '+y+' 100 100" role="img" aria-label="'+esc(num)+'번 발전소">'+
-      '<image href="./powergrid/assets/plants/plant_sheet.webp?v=5" x="0" y="0" width="700" height="700" preserveAspectRatio="none"></image></svg>';
+      '<image href="./powergrid/assets/plants/plant_sheet.webp?v=6" x="0" y="0" width="700" height="700" preserveAspectRatio="none"></image></svg>';
   }
 
   function renderMapFeatures(boardId, compact) {
@@ -52,6 +52,24 @@
   // ------------------------------------------------------------
   // 지도 SVG
   // ------------------------------------------------------------
+  function renderExcludedRegionShade(G, selectedRegions) {
+    var selected = {};
+    (selectedRegions || []).forEach(function (rid) { selected[rid] = true; });
+    var polys = G.REGION_SHADE_POLYGONS || {};
+    var parts = [];
+    (G.REGION_ORDER || Object.keys(G.REGIONS || {})).forEach(function (rid) {
+      if (selected[rid] || !polys[rid]) return;
+      var points = polys[rid].map(function (p) { return p[0] + ',' + p[1]; }).join(' ');
+      var labelPoints = polys[rid];
+      var cx = labelPoints.reduce(function (sum,p) { return sum+p[0]; },0)/labelPoints.length;
+      var cy = labelPoints.reduce(function (sum,p) { return sum+p[1]; },0)/labelPoints.length;
+      parts.push('<polygon points="'+points+'" class="pg-excluded-region-shape"></polygon>');
+      parts.push('<text x="'+cx.toFixed(1)+'" y="'+cy.toFixed(1)+'" class="pg-excluded-region-label">제외</text>');
+    });
+    if (!parts.length) return '';
+    return '<svg class="pg-excluded-region-overlay" viewBox="0 0 '+G.BOARD_WIDTH+' '+G.BOARD_HEIGHT+'" preserveAspectRatio="none" aria-hidden="true">'+parts.join('')+'</svg>';
+  }
+
   function renderMap(state, mySeat, allowAct, actingSeats) {
     var G=PG.GERMANY;
     var selected={};
@@ -65,6 +83,7 @@
       var r=G.REGIONS[rid];
       return '<span class="pg-region-chip" style="--region:'+esc(r.color)+'">'+esc(r.shortName)+'</span>';
     }).join('');
+    var excludedShade=renderExcludedRegionShade(G, selectedRegions);
 
     var markers='';
     G.CITIES.forEach(function(city){
@@ -110,7 +129,7 @@
       '선택 지역 안에서만 최단 연결비를 계산합니다. 다른 플레이어의 도시를 경유하는 경로도 연결선 비용 계산에는 사용할 수 있습니다.';
     return '<div class="pg-real-map pg-germany-map"><div class="pg-real-map-head"><div><b>독일 보드</b><div class="pg-region-chips">'+regionChips+'</div></div><span class="pg-tag">42도시 · 83연결 자동 계산</span></div>'+
       renderMapFeatures(state.map.boardId || 'germany', true)+
-      '<div class="pg-germany-board"><img src="'+esc(PG.BOARD_DEFS.germany.image)+'" alt="Power Grid Germany board" loading="eager">'+markers+'</div>'+
+      '<div class="pg-germany-board"><img src="'+esc(PG.BOARD_DEFS.germany.image)+'" alt="Power Grid Germany board" loading="eager">'+excludedShade+markers+'</div>'+
       '<div class="pg-map-note">'+note+'</div>'+
       '<details class="pg-city-picker"'+(canBuild?' open':'')+'><summary>도시 목록'+(canBuild?' · 건설 가능 비용 보기':'')+'</summary>'+cityGroups+'</details></div>';
   }
@@ -338,7 +357,7 @@
     var acting = PG.actingSeats(state);
 
     var top = '<div class="pg-topbar">' +
-      '<div class="pg-title">🔌 파워그리드 독일 β5<br><small>' + esc(ctx.subtitle || '') + '</small></div>' +
+      '<div class="pg-title">🔌 파워그리드 독일 β6<br><small>' + esc(ctx.subtitle || '') + '</small></div>' +
       '<div style="display:flex;gap:8px;flex-wrap:wrap">' +
       '<span class="pg-pill">Step <b>' + state.step + '</b></span>' +
       '<span class="pg-pill">라운드 <b>' + state.round + '</b></span>' +

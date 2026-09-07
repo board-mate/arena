@@ -3,16 +3,16 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>파워그리드 독일 β5 · BoardMate 온라인</title>
-  <link rel="stylesheet" href="./powergrid/pg-styles.css?v=5">
+  <title>파워그리드 독일 β6 · BoardMate 온라인</title>
+  <link rel="stylesheet" href="./powergrid/pg-styles.css?v=6">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="./config.js"></script>
 </head>
 <body>
 <div class="pg-app" id="app">불러오는 중…</div>
-<script src="./powergrid/data/germany-map.js?v=5"></script>
-<script src="./powergrid/engine.js?v=5"></script>
-<script src="./powergrid/ui.js?v=5"></script>
+<script src="./powergrid/data/germany-map.js?v=6"></script>
+<script src="./powergrid/engine.js?v=6"></script>
+<script src="./powergrid/ui.js?v=6"></script>
 <script type="module">
 import {
   configured, roomId, getMe, loadRoom, loadState, saveState, startStatePoll,
@@ -33,7 +33,7 @@ function setupView(){
   }).join('');
   app.innerHTML=`
     <div class="pg-topbar">
-      <div class="pg-title">🔌 파워그리드 독일 β5<br><small>${esc(room.title||'BoardMate 온라인')} · ${members.length}인 · 다인플 전용</small></div>
+      <div class="pg-title">🔌 파워그리드 독일 β6<br><small>${esc(room.title||'BoardMate 온라인')} · ${members.length}인 · 다인플 전용</small></div>
       <a class="pg-btn small" href="./index.html#/room/${encodeURIComponent(roomId)}">← 방으로</a>
     </div>
     <div class="pg-card">

@@ -377,6 +377,51 @@
     justify-content: space-between;
   }
 
+  /* Round transition */
+  .round-transition-overlay {
+    z-index: 1200;
+    background: rgba(3, 10, 20, 0.88);
+  }
+  .round-transition-box {
+    width: min(92vw, 520px);
+    border-radius: 18px;
+    padding: 26px 22px;
+    text-align: center;
+    background:
+      radial-gradient(circle at 50% 0%, rgba(0,180,216,.22), transparent 48%),
+      linear-gradient(180deg, #17283f, #101a2a);
+    border: 1px solid #2a6f97;
+    box-shadow: 0 18px 60px rgba(0,0,0,.65), 0 0 30px rgba(0,180,216,.12);
+  }
+  .round-transition-kicker {
+    color: #90e0ef;
+    font-size: .78rem;
+    font-weight: 900;
+    letter-spacing: .16em;
+    margin-bottom: 8px;
+  }
+  .round-transition-title {
+    font-size: clamp(1.7rem, 6vw, 2.5rem);
+    font-weight: 1000;
+    color: #fff;
+    margin-bottom: 8px;
+  }
+  .round-transition-next {
+    display: inline-block;
+    margin: 8px 0 14px;
+    padding: 7px 13px;
+    border-radius: 999px;
+    background: rgba(244,162,97,.16);
+    border: 1px solid rgba(244,162,97,.55);
+    color: #ffd7b0;
+    font-weight: 900;
+  }
+  .round-transition-copy {
+    color: #c8d7e8;
+    line-height: 1.65;
+    font-size: .92rem;
+    margin-bottom: 16px;
+  }
   /* Game Over Modal Styling */
   .game-over-banner {
     font-size: 1.6rem;
@@ -463,6 +508,20 @@
 
   <div style="text-align:center; margin-top: 10px;">
     <button class="btn-sm" style="padding: 8px 16px; background:#4a5568;" onclick="confirmReset()">새 게임 설정으로 돌아가기</button>
+  </div>
+</div>
+
+<!-- ROUND TRANSITION MODAL -->
+<div class="modal-overlay round-transition-overlay" id="round-transition-modal">
+  <div class="round-transition-box">
+    <div class="round-transition-kicker">ROUND COMPLETE</div>
+    <div class="round-transition-title"><span id="round-ended-num">1</span>라운드 종료</div>
+    <div class="round-transition-next">➡️ <span id="round-next-num">2</span>라운드 시작</div>
+    <div class="round-transition-copy" id="round-transition-copy">
+      남은 카드를 모두 모아 다시 섞고 골고루 나누었습니다.<br>
+      새 라운드의 내 카드 구성을 다시 확인하세요.
+    </div>
+    <button class="btn-primary" onclick="closeRoundTransition()">다음 라운드 시작</button>
   </div>
 </div>
 
@@ -753,6 +812,7 @@ function performAction(targetPlayerIdx, cardIdx) {
 }
 
 function nextRound() {
+  const endedRound = G.round;
   G.round++;
   G.actionsLeftInRound = G.playerCount;
 
@@ -772,10 +832,21 @@ function nextRound() {
     p.secretKnowledge = countComposition(newHand); // 새 라운드에 확인한 패 구성 [cite: 2]
   });
 
-  alert(`🔔 ${G.round - 1}라운드가 끝났습니다!
-남은 카드들을 모두 모아 다시 골고루 나누었습니다.
-각 플레이어는 자신의 새 카드 구성을 확인하세요!`);
   renderUI();
+  showRoundTransition(endedRound, G.round, G.players[0]?.hand?.length || 0);
+}
+
+function showRoundTransition(endedRound, nextRound, cardsEach) {
+  document.getElementById('round-ended-num').innerText = endedRound;
+  document.getElementById('round-next-num').innerText = nextRound;
+  document.getElementById('round-transition-copy').innerHTML =
+    `남은 카드를 모두 모아 다시 섞고 <b>각 ${cardsEach}장</b>씩 나누었습니다.<br>` +
+    `새 라운드의 내 카드 구성을 다시 확인하세요.`;
+  document.getElementById('round-transition-modal').classList.add('open');
+}
+
+function closeRoundTransition() {
+  document.getElementById('round-transition-modal').classList.remove('open');
 }
 
 function showPlayerSecret(playerIdx) {

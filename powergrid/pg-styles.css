@@ -244,3 +244,9 @@ a { color: var(--accent2); }
   .pg-player-plants.mine .pg-player-plant-card{width:60px;flex-basis:60px}
   .pg-map-features{font-size:11px;padding:8px}
 }
+
+/* v6: excluded-map-region shading */
+.pg-excluded-region-overlay{position:absolute;inset:0;width:100%;height:100%;z-index:2;pointer-events:none}
+.pg-excluded-region-shape{fill:rgba(0,0,0,.34);stroke:rgba(0,0,0,.18);stroke-width:4}
+.pg-excluded-region-label{fill:rgba(255,255,255,.7);font-size:20px;font-weight:900;text-anchor:middle;dominant-baseline:middle;paint-order:stroke;stroke:rgba(0,0,0,.5);stroke-width:4;letter-spacing:2px}
+@media(max-width:620px){.pg-excluded-region-label{font-size:17px}}
