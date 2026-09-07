@@ -4,15 +4,15 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>파워그리드 · BoardMate 온라인</title>
-  <link rel="stylesheet" href="./powergrid/pg-styles.css?v=16">
+  <link rel="stylesheet" href="./powergrid/pg-styles.css?v=17">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="./config.js"></script>
 </head>
 <body>
 <div class="pg-app" id="app">불러오는 중…</div>
-<script src="./powergrid/data/germany-map.js?v=16"></script>
-<script src="./powergrid/engine.js?v=16"></script>
-<script src="./powergrid/ui.js?v=16"></script>
+<script src="./powergrid/data/germany-map.js?v=17"></script>
+<script src="./powergrid/engine.js?v=17"></script>
+<script src="./powergrid/ui.js?v=17"></script>
 <script type="module">
 import {
   configured, roomId, getMe, loadRoom, loadState, saveState, startStatePoll,
@@ -27,7 +27,19 @@ const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 function setupMapPreview(boardId){
   const def=PowerGrid.BOARD_DEFS[boardId] || PowerGrid.BOARD_DEFS.germany;
   const G=PowerGrid.mapData(boardId);
-  const src=`./powergrid/assets/map-previews/${boardId}.png?v=16`;
+
+  // Original board artwork is preferred whenever the project has a supplied source image.
+  // Germany uses the existing project board image; Korea uses the user-supplied Korea board photo.
+  if(boardId==='germany'){
+    return `<div class="pg-map-choice-real pg-map-choice-original"><img src="./powergrid/assets/maps/germany.webp?v=17" alt="${esc(def.name)} 원본 보드"><span>원본 보드</span></div>`;
+  }
+  if(boardId==='korea'){
+    return `<div class="pg-map-choice-real pg-map-choice-original"><img src="./powergrid/assets/maps/korea-original.png?v=17" alt="${esc(def.name)} 원본 보드"><span>원본 보드 · 제공 이미지</span></div>`;
+  }
+
+  // USA: no original board image has been supplied to this project yet.
+  // Keep the current data preview instead of inventing an "official-looking" board.
+  const src=`./powergrid/assets/map-previews/${boardId}.png?v=17`;
   let shapes='';
   const ids=G.REGION_ORDER||Object.keys(G.REGIONS||{});
   ids.forEach(rid=>{
@@ -49,9 +61,8 @@ function setupMapPreview(boardId){
   (G.EDGES||[]).forEach(e=>{const a=G.CITY_BY_ID[e.a],b=G.CITY_BY_ID[e.b];if(a&&b)routes+=`<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" class="pg-preview-edge"></line>`;});
   let cities='';
   (G.CITIES||[]).forEach(c=>{cities+=`<circle cx="${c.x}" cy="${c.y}" r="7" class="pg-preview-city"></circle>`;});
-  return `<div class="pg-map-choice-real"><img src="${src}" alt="${esc(def.name)} 게임 보드용 클린 베이스맵"><svg class="pg-map-choice-data" viewBox="0 0 ${G.BOARD_WIDTH} ${G.BOARD_HEIGHT}" preserveAspectRatio="none" aria-hidden="true">${shapes}${routes}${cities}</svg><span>권역 색상 + 게임 데이터 미리보기</span></div>`;
+  return `<div class="pg-map-choice-real"><img src="${src}" alt="${esc(def.name)} 데이터 지도 미리보기"><svg class="pg-map-choice-data" viewBox="0 0 ${G.BOARD_WIDTH} ${G.BOARD_HEIGHT}" preserveAspectRatio="none" aria-hidden="true">${shapes}${routes}${cities}</svg><span>게임 데이터 미리보기</span></div>`;
 }
-
 function setupView(){
   const boardId=document.querySelector('#boardSelect')?.value || 'germany';
   const boardDef=PowerGrid.BOARD_DEFS[boardId] || PowerGrid.BOARD_DEFS.germany;

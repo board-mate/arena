@@ -37,7 +37,7 @@
     if (idx == null) return '<div class="pg-plant-img pg-plant-missing">'+esc(num)+'</div>';
     var x = (idx % 7) * 100, y = Math.floor(idx / 7) * 100;
     return '<svg class="pg-plant-img" viewBox="'+x+' '+y+' 100 100" role="img" aria-label="'+esc(num)+'번 발전소">'+
-      '<image href="./powergrid/assets/plants/plant_sheet.webp?v=16" x="0" y="0" width="700" height="700" preserveAspectRatio="none"></image></svg>';
+      '<image href="./powergrid/assets/plants/plant_sheet.webp?v=17" x="0" y="0" width="700" height="700" preserveAspectRatio="none"></image></svg>';
   }
 
   function renderMapFeatures(boardId, compact) {
@@ -199,9 +199,20 @@
         'title="'+esc(title)+'" aria-label="'+esc(title)+'" '+attrs+'>'+ownerDots+(cost!=null?'<b>'+cost+'</b>':'')+'</button>';
     });
 
-    var baseSrc='./powergrid/assets/map-previews/'+boardId+'.png?v=16';
-    var boardInner='<div class="pg-germany-board pg-abstract-board"><img class="pg-map-base" src="'+baseSrc+'" alt="" aria-hidden="true"><svg class="pg-abstract-map" viewBox="0 0 '+G.BOARD_WIDTH+' '+G.BOARD_HEIGHT+'" preserveAspectRatio="none">'+edgeSvg+'</svg>'+excludedShade+markers+'</div>';
-    var note='보드 느낌을 살린 클린 베이스맵 위에 권역 색상·도시·연결선·연결비·클릭 영역을 같은 좌표계로 겹쳐 표시합니다. 배경에 인쇄된 원래 게임 요소는 흐리게 제거해 데이터가 우선 보이도록 했습니다.';
+    var boardInner='', note='';
+    if(boardId==='korea'){
+      // Use the supplied original Korea board as-is. Do not paint a made-up Korea basemap over it.
+      // Until the Korea city/edge dataset is transcribed against a high-resolution board source,
+      // building controls remain in the city list below instead of placing misleading markers on the photo.
+      boardInner='<div class="pg-germany-board pg-original-board"><img class="pg-map-base pg-map-base-original" src="./powergrid/assets/maps/korea-original.png?v=17" alt="파워그리드 한국 원본 보드"></div>';
+      note='한국은 제공받은 원본 보드 이미지를 그대로 표시합니다. 임의로 만든 지형·권역 디자인은 제거했습니다. 현재 자동 건설 조작은 아래 도시 목록을 사용하며, 원본 보드 위 도시/연결비 좌표 자동화는 고해상도 원본 기준으로 별도 검수합니다.';
+    }else{
+      var baseSrc=boardId==='germany' ? './powergrid/assets/maps/germany.webp?v=17' : './powergrid/assets/map-previews/'+boardId+'.png?v=17';
+      boardInner='<div class="pg-germany-board pg-abstract-board"><img class="pg-map-base'+(boardId==='germany'?' pg-map-base-original':'')+'" src="'+baseSrc+'" alt="" aria-hidden="true"><svg class="pg-abstract-map" viewBox="0 0 '+G.BOARD_WIDTH+' '+G.BOARD_HEIGHT+'" preserveAspectRatio="none">'+edgeSvg+'</svg>'+excludedShade+markers+'</div>';
+      note=boardId==='germany'
+        ? '독일은 기존 원본 보드 이미지를 배경으로 사용하고, BoardMate 도시·연결비·건설 표시를 데이터 레이어로 겹쳐 표시합니다.'
+        : '미국 원본 보드 이미지는 현재 프로젝트에 제공되지 않아 데이터 지도 미리보기를 사용합니다. 원본 이미지를 받으면 같은 방식으로 교체할 수 있습니다.';
+    }
     return '<div class="pg-real-map pg-germany-map"><div class="pg-real-map-head"><div><b>'+esc(def.name)+' 보드</b><div class="pg-region-chips">'+regionChips+'</div></div><span class="pg-tag">'+G.CITIES.length+'도시 · '+(state.map.edges||G.EDGES).length+'연결 자동 계산</span></div>'+boardInner+
       '<div class="pg-map-note">'+note+'</div></div>';
   }

@@ -449,3 +449,9 @@ a { color: var(--accent2); }
   .pg-map-choice-preview{aspect-ratio:3 / 4}
   .pg-preview-region-label{font-size:28px}
 }
+
+/* v17: supplied/original board artwork should be shown intact, never cropped or recolored. */
+.pg-map-choice-original{background:#0b0f14}
+.pg-map-choice-original img{object-fit:contain!important;filter:none!important;background:#0b0f14}
+.pg-original-board{background:#0b0f14}
+.pg-map-base-original{object-fit:contain!important;opacity:1!important;filter:none!important;background:#0b0f14}
