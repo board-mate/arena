@@ -5,16 +5,16 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>파워그리드 · BoardMate 온라인</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-  <link rel="stylesheet" href="./powergrid/pg-styles.css?v=20">
+  <link rel="stylesheet" href="./powergrid/pg-styles.css?v=22">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="./config.js"></script>
 </head>
 <body>
 <div class="pg-app" id="app">불러오는 중…</div>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="./powergrid/data/germany-map.js?v=20"></script>
-<script src="./powergrid/engine.js?v=20"></script>
-<script src="./powergrid/ui.js?v=20"></script>
+<script src="./powergrid/data/germany-map.js?v=22"></script>
+<script src="./powergrid/engine.js?v=22"></script>
+<script src="./powergrid/ui.js?v=22"></script>
 <script type="module">
 import {
   configured, roomId, getMe, loadRoom, loadState, saveState, startStatePoll,
@@ -23,8 +23,35 @@ import {
 
 const GAME='powergrid';
 const app=document.querySelector('#app');
-let me,room,members,mySeat,isHost,state=null,revision=0,stopPoll=null,submitted=false,saving=false,legacyState=false;
+let me,room,members,mySeat,isHost,state=null,revision=0,stopPoll=null,submitted=false,saving=false,legacyState=false,legacyBoardId=null;
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+// Undo 히스토리: 이 브라우저에서 성공한 내 액션만 최대 10상태까지 되돌립니다.
+// 다른 플레이어/기기에서 revision이 바뀌면 히스토리를 초기화해 타인의 액션을 되감지 않습니다.
+const MAX_UNDO = 10;
+let undoStack = []; // [{revision, state}, ...] — 마지막 항목은 현재 상태
+function pushUndoSnapshot(rev, st) {
+  undoStack.push({revision:Number(rev), state:PowerGrid.clone(st)});
+  if (undoStack.length > MAX_UNDO) undoStack.shift();
+}
+async function undo() {
+  if (saving || undoStack.length < 2) return alert('더 이상 되돌릴 수 없습니다.');
+  const prev = undoStack[undoStack.length - 2];
+  try {
+    saving = true;
+    const nr = await saveState(revision, prev.state);
+    undoStack.pop();
+    revision = Number(nr);
+    state = PowerGrid.clone(prev.state);
+    undoStack[undoStack.length - 1] = {revision, state:PowerGrid.clone(state)};
+    draw();
+  } catch(e) {
+    if(/revision|conflict|expected/i.test(String(e.message||e))){
+      const row=await loadState(); if(row)await onRow(row);
+      alert('다른 기기에서 먼저 상태가 갱신되어 되돌리기 대신 최신 상태를 불러왔습니다.');
+    }else alert(e.message||e);
+  } finally { saving = false; }
+}
 
 let setupPreviewMaps=[];
 function destroySetupPreviews(){
@@ -65,7 +92,7 @@ function mountSetupMapPreviews(){
 
 function setupView(){
   destroySetupPreviews();
-  const boardId=document.querySelector('#boardSelect')?.value || 'germany';
+  const boardId=document.querySelector('#boardSelect')?.value || legacyBoardId || 'germany';
   const boardDef=PowerGrid.BOARD_DEFS[boardId] || PowerGrid.BOARD_DEFS.germany;
   const boardMap=PowerGrid.mapData(boardId);
   const wanted=PowerGrid.defaultRegions(members.length,boardId).length;
@@ -118,7 +145,9 @@ async function startGame(){
     PowerGrid.validateRegionSelection(names.length,regionIds,boardId);
     const s=PowerGrid.newGame({numPlayers:names.length,seatNames:names,regionIds,boardId});
     const nr=await saveState(revision,s);
-    revision=Number(nr); state=s; legacyState=false; draw();
+    revision=Number(nr); state=s; legacyState=false; legacyBoardId=null;
+    undoStack=[]; pushUndoSnapshot(revision,state);
+    draw();
   }catch(e){alert(e.message||e)}finally{saving=false}
 }
 
@@ -144,7 +173,9 @@ async function action(a){
   try{
     saving=true;
     const next=PowerGrid.applyAction(state,a),nr=await saveState(revision,next);
-    revision=Number(nr);state=next;draw();await maybeSubmit();
+    revision=Number(nr);state=next;
+    pushUndoSnapshot(revision,state);
+    draw();await maybeSubmit();
   }catch(e){
     if(/revision|conflict|expected/i.test(String(e.message||e))){
       const row=await loadState(); if(row)await onRow(row);
@@ -160,10 +191,12 @@ function draw(){
   const regionNames=(state.map.regionIds||[]).map(r=>boardMap.REGIONS[r]?.shortName||r).join('·');
   const ranks=state.gameOver?rankingSeats():[];
   const myPlace=ranks.indexOf(mySeat)+1;
+  const canUndo = undoStack.length >= 2 && !state.gameOver;
   PowerGridUI.render(app,{
     state,mySeat,allowAnySeat:false,
     subtitle:`BoardMate 공통 방 · Realtime · ${boardName}맵 (${regionNames})`,
-    extraTopHtml:`<a class="pg-btn small" href="./index.html#/room/${encodeURIComponent(roomId)}">← 방</a>`,
+    extraTopHtml:`<a class="pg-btn small" href="./index.html#/room/${encodeURIComponent(roomId)}">← 방</a>`
+      + `<button class="pg-btn small" id="pg-undo-btn" ${canUndo?'':'disabled'} title="이전 상태로 되돌리기">↩ 되돌리기</button>`,
     footerHtml:(state.gameOver&&state.winner!=null)?endPanel('파워그리드 최종 결과','최종 전력 공급 도시 수 → 보유 현금 순으로 순위를 확정합니다.',{
       outcome:myPlace===1?'win':'lose',
       headline:myPlace===1?'1위 · 승리!':`${myPlace}위`,
@@ -172,15 +205,26 @@ function draw(){
     }): '',
     onAction:action
   });
+  document.querySelector('#pg-undo-btn')?.addEventListener('click', ()=>undo());
 }
 async function onRow(row){
   if(!row)return;
-  revision=Number(row.revision||0);
+  const newRevision=Number(row.revision||0);
   const incoming=row.state||null;
-  if(incoming && incoming.kind!==PowerGrid.STATE_KIND){
-    legacyState=true;state=null;setupView();return;
+  const incomingBoard=incoming?.map?.boardId||null;
+  const staleExactMap=!!incoming && (incomingBoard==='usa'||incomingBoard==='korea')
+    && incoming.map?.dataRev!==PowerGrid.MAP_DATA_REV;
+  if(incoming && (incoming.kind!==PowerGrid.STATE_KIND || staleExactMap)){
+    revision=newRevision;
+    legacyState=true; legacyBoardId=incomingBoard||'germany'; state=null; undoStack=[];
+    setupView();return;
   }
-  legacyState=false;state=incoming;draw();await maybeSubmit();
+  // 폴링으로 다른 플레이어/기기의 액션이 들어오면 로컬 Undo 히스토리를 리셋합니다.
+  if(newRevision !== revision) undoStack=[];
+  revision=newRevision;
+  legacyState=false; legacyBoardId=null; state=incoming;
+  if(state && undoStack.length===0) pushUndoSnapshot(revision,state);
+  draw();await maybeSubmit();
 }
 async function boot(){
   if(!configured()||!roomId)showFatal('BoardMate 다인플 방에서 파워그리드를 열어주세요.');

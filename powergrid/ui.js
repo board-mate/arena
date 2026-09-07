@@ -1,5 +1,5 @@
 /*!
- * BoardMate Power Grid - Multiplayer UI Layer v19
+ * BoardMate Power Grid - Multiplayer UI Layer v22
  * 순수 DOM/SVG 렌더링. React 등 프레임워크 없이 동작.
  * window.PowerGrid (engine.js) 를 사용한다.
  */
@@ -474,13 +474,19 @@
       var p=state.players[mySeat];
       html5+='<p><b>가동할 발전소</b>를 고르고, 실제로 전력을 공급할 <b>도시 개수</b>만 정하면 됩니다. 어느 도시를 활성화할지는 더 이상 고르지 않습니다.</p>';
       html5+='<div class="pg-power-summary" id="pg-power-summary">발전소와 도시 개수를 선택하세요.</div>';
+      var myCityCount = p.cities.length;
       html5+='<h4>① 가동할 발전소</h4><div class="pg-power-plant-grid">';
       p.plants.forEach(function(n){
         html5+='<label class="pg-power-plant-choice"><input type="checkbox" class="pg-power-plant-check" value="'+n+'">'+plantSprite(n)+'<span><b>'+n+'번</b><small>'+plantLabel(n)+'</small></span></label>';
       });
       if(!p.plants.length) html5+='<span class="pg-map-note">보유 발전소가 없습니다.</span>';
       html5+='</div><h4>② 공급할 도시 개수</h4>';
-      html5+='<div class="pg-form-row"><input class="pg-input" id="pg-power-city-count" type="number" min="0" max="'+p.cities.length+'" value="0" style="width:110px"><span class="pg-map-note">내 도시 '+p.cities.length+'개 중 몇 개에 공급할지 입력</span></div>';
+      html5+='<div class="pg-form-row pg-power-city-row">' +
+        '<button class="pg-btn pg-city-count-btn" id="pg-power-city-minus" type="button" aria-label="감소">▼</button>' +
+        '<input class="pg-input" id="pg-power-city-count" type="number" min="0" max="'+myCityCount+'" step="1" inputmode="numeric" value="'+myCityCount+'" style="width:80px;text-align:center" aria-label="공급할 도시 수">' +
+        '<button class="pg-btn pg-city-count-btn" id="pg-power-city-plus" type="button" aria-label="증가">▲</button>' +
+        '<span class="pg-map-note">내 도시 '+myCityCount+'개</span>' +
+      '</div>';
       html5+='<div class="pg-form-row"><button class="pg-btn primary" id="pg-power-confirm" data-action="powerCities">⚡ 발전/수입 확정</button></div>';
       html5+='<div class="pg-map-note">0개 공급은 발전소를 선택하지 않고 확정하세요. 수입은 위의 전력 생산량별 수입표와 동일하게 지급됩니다.</div>';
       return html5+'</div>';
@@ -590,6 +596,10 @@
       summary.classList.toggle('invalid',!ok);
       var confirm=container.querySelector('#pg-power-confirm');
       if(confirm) confirm.disabled=!ok;
+      var minus=container.querySelector('#pg-power-city-minus');
+      var plus=container.querySelector('#pg-power-city-plus');
+      if(minus) minus.disabled=cityCount<=0;
+      if(plus) plus.disabled=cityCount>=maxCities;
     }
 
 
@@ -601,6 +611,23 @@
         if(check){check.checked=!check.checked;updatePowerSelectionUI();}
       });
     });
+    // 모바일용 ▲▼ 버튼
+    var cityPlusBtn = container.querySelector('#pg-power-city-plus');
+    var cityMinusBtn = container.querySelector('#pg-power-city-minus');
+    var cityCountInput = container.querySelector('#pg-power-city-count');
+    if(cityPlusBtn && cityCountInput){
+      cityPlusBtn.addEventListener('click',function(){
+        var max = parseInt(cityCountInput.max,10)||0;
+        var cur = parseInt(cityCountInput.value,10)||0;
+        if(cur < max){ cityCountInput.value = cur+1; updatePowerSelectionUI(); }
+      });
+    }
+    if(cityMinusBtn && cityCountInput){
+      cityMinusBtn.addEventListener('click',function(){
+        var cur = parseInt(cityCountInput.value,10)||0;
+        if(cur > 0){ cityCountInput.value = cur-1; updatePowerSelectionUI(); }
+      });
+    }
     updatePowerSelectionUI();
   }
 

@@ -1,9 +1,9 @@
 /*!
- * BoardMate Power Grid Germany - Multiplayer Core Engine
+ * BoardMate Power Grid - Multiplayer Core Engine v22
  * -----------------------------------------------------------------
  * 다인플 전용. 브라우저와 Node(CommonJS)에서 동일 규칙 엔진을 사용한다.
- * 독일 보드의 42개 도시 / 83개 연결비 그래프를 내장해 도시 건설 비용을
- * 자동 계산한다. 솔로/AI/미국/한국 지도 코드는 이 체크포인트에서 제외했다.
+ * 독일/미국/한국의 도시·연결비 그래프로 도시 건설 비용을 자동 계산한다.
+ * v22는 미국 42도시/87연결, 한국 42도시/81연결을 실물 보드 기준으로 교정했다.
  *
  * Germany network data attribution is documented in
  * powergrid/data/germany-map.js and POWERGRID_GERMANY_DATA_AUDIT.md.
@@ -19,6 +19,9 @@
   if (!GERMANY) throw new Error('PowerGridGermanyMap 데이터가 필요합니다.');
 
   var STATE_KIND = 'powergrid-v11-maps-boardmate';
+  // USA/Korea topology revision. Old USA/Korea rooms are intentionally restarted
+  // because v20/v21 used different city IDs/graphs.
+  var MAP_DATA_REV = 'powergrid-map-v22-physical';
 
   // ============================================================
   // 상수 데이터
@@ -176,11 +179,10 @@
       featureTitle:'미국맵 특징',
       rules:{ uraniumStopOnPlant39:false, usaCoalStorage:true, koreaSplitMarkets:false },
       features:[
-        '실제 미국 지도를 배경으로 Power Grid 도시·연결 데이터를 표시합니다. 지역은 도시 마커 색으로 구분합니다.',
-        '미국 석탄 저장고: 석탄을 발전에 사용하면 사용한 석탄은 시장 옆 저장고로 이동합니다. 석탄 시장이 완전히 비었을 때 저장고에 석탄이 남아 있으면 1개당 8 Elektro로 구매할 수 있습니다.',
-        '정리 단계의 석탄 보충은 저장고의 석탄을 시장으로 되돌립니다. 따라서 저장고까지 비면 석탄은 다음 사용분이 저장고로 돌아오기 전까지 살 수 없습니다.',
-        '경매·건설·자원·전력 공급은 공통 Power Grid Recharged 엔진을 사용합니다.',
-        '연결비는 지도 선 위의 숫자 배지와 화면 아래 연결비 표에서 함께 확인할 수 있습니다.'
+        '실물 Power Grid 미국판 기준 42개 도시 · 87개 연결비 그래프를 사용합니다. 6개 색상 권역: 보라/청록/노랑/빨강/갈색/초록.',
+        '미국 석탄 저장고: 석탄을 발전에 사용하면 시장 옆 저장고로 이동합니다. 시장이 완전히 비었을 때 저장고의 석탄을 1개당 8 Elektro로 구매할 수 있습니다.',
+        '정리 단계의 석탄 보충은 저장고의 석탄을 시장으로 되돌립니다.',
+        '연결비는 지도 선 위 숫자 배지와 화면 아래 연결비 표에서 확인할 수 있습니다.'
       ]
     },
     korea: {
@@ -188,11 +190,10 @@
       featureTitle:'한국맵 특징',
       rules:{ uraniumStopOnPlant39:false, usaCoalStorage:false, koreaSplitMarkets:true },
       features:[
-        '실제 한반도 지도를 배경으로 Power Grid 도시·연결 데이터를 표시합니다. 지역은 도시 마커 색으로 구분합니다.',
-        '북/남 자원 시장 분리 규칙을 인게임 설명과 구매 단계에 표시합니다.',
-        '한 라운드에는 북부 시장 또는 남부 시장 중 하나만 골라 구매하는 규칙을 사용합니다.',
-        '자원 보충은 북부 시장을 먼저 채우고, 남은 만큼 남부 시장을 채우는 규칙을 안내합니다.',
-        '연결비는 지도 선 위의 숫자 배지와 화면 아래 연결비 표에서 함께 확인할 수 있습니다.'
+        '실물 Power Grid 한국판 기준 42개 도시 · 81개 연결비 그래프를 사용합니다. 6개 색상 권역: 분홍/빨강/보라/갈색/초록/노랑.',
+        '실제 한국 지도를 배경으로 각 도시의 위경도 좌표에 마커를 표시합니다.',
+        '한국판의 북부/남부 자원 시장 구분을 도시 메타데이터에 보존하며, 제주는 나주와 19 Elektro로 연결됩니다.',
+        '연결비는 지도 선 위 숫자 배지와 화면 아래 연결비 표에서 확인할 수 있습니다.'
       ]
     }
   };
@@ -237,18 +238,331 @@
     return e.slice(0,target||e.length);
   }
 
-  var USA_MAP = makeGeneratedMap('usa','미국',
-    ['서북 · 초록','북중부 · 갈색','북동 · 빨강','서남 · 노랑','중남부 · 파랑','동남 · 보라'],
-    ['Seattle','Portland','Boise','Billings','Salt Lake City','Denver','Omaha','Fargo','Duluth','Minneapolis','Chicago','Detroit','Cleveland','Pittsburgh','Boston','New York','Philadelphia','Washington','Norfolk','Raleigh','Cincinnati','San Francisco','Los Angeles','Las Vegas','Phoenix','Santa Fe','Kansas City','St. Louis','Oklahoma City','Dallas','Houston','New Orleans','Memphis','Atlanta','Nashville','Birmingham','Jacksonville','Tampa','Miami','Savannah','Charleston','Knoxville'],
-    generatedEdges(87));
-  var KOREA_MAP = makeGeneratedMap('korea','한국',
-    ['북서 · 초록','북동 · 갈색','수도권 · 빨강','충청 · 노랑','호남 · 파랑','영남 · 보라'],
-    ['신의주','평양','남포','개성','해주','사리원','원산','청진','함흥','혜산','강계','안주','나진','금강산','서울','인천','수원','춘천','원주','강릉','속초','대전','청주','천안','세종','공주','충주','제천','광주','전주','목포','여수','순천','군산','제주','부산','대구','울산','포항','창원','진주','안동'],
-    generatedEdges(81));
+  // ============================================================
+  // v22: 미국/한국 실제 보드 토폴로지
+  // 도시 소속 색상과 연결 비용은 첨부된 실물 보드 사진과
+  // Board game networks의 Power Grid USA/Korea 데이터(CC BY 4.0)를 교차 확인했다.
+  // 위경도는 Leaflet 배치를 위한 표시용 좌표이며 게임 규칙은 EDGES의 비용을 사용한다.
+  // ============================================================
+  function makeExactGeoMap(boardName, regionIds, REGIONS, cityDefs, edgeDefs, geo) {
+    var CITY_BY_ID={};
+    cityDefs.forEach(function(c){CITY_BY_ID[c.id]=c;});
+    function regionAdjacency(){
+      var out={};regionIds.forEach(function(r){out[r]=[];});
+      edgeDefs.forEach(function(e){
+        var a=CITY_BY_ID[e.a],b=CITY_BY_ID[e.b]; if(!a||!b)return;
+        var ra=a.region,rb=b.region;if(ra===rb)return;
+        if(out[ra].indexOf(rb)<0)out[ra].push(rb);
+        if(out[rb].indexOf(ra)<0)out[rb].push(ra);
+      });
+      return out;
+    }
+    var REGION_ADJ=regionAdjacency();
+    function regionsConnected(ids){
+      ids=(ids||[]).filter(function(r,i,a){return REGIONS[r]&&a.indexOf(r)===i;});
+      if(!ids.length)return false;
+      var allow={},seen={},q=[ids[0]];
+      ids.forEach(function(r){allow[r]=true;});seen[ids[0]]=true;
+      while(q.length){var r=q.shift();(REGION_ADJ[r]||[]).forEach(function(n){if(allow[n]&&!seen[n]){seen[n]=true;q.push(n);}});}
+      return ids.every(function(r){return seen[r];});
+    }
+    function citiesForRegions(ids){
+      var set={};(ids||[]).forEach(function(r){set[r]=true;});
+      return cityDefs.filter(function(c){return set[c.region];}).map(function(c){return c.id;});
+    }
+    function normalizeCity(v){
+      var raw=String(v||'').trim().toUpperCase();
+      for(var i=0;i<cityDefs.length;i++){
+        if(cityDefs[i].id.toUpperCase()===raw || String(cityDefs[i].name).toUpperCase()===raw)return cityDefs[i].id;
+      }
+      return null;
+    }
+    return {
+      BOARD_WIDTH:geo.width||675,BOARD_HEIGHT:geo.height||900,
+      REGIONS:REGIONS,REGION_ORDER:regionIds,REGION_ADJ:REGION_ADJ,
+      REGION_SHADE_POLYGONS:null,
+      CITIES:cityDefs,CITY_BY_ID:CITY_BY_ID,EDGES:edgeDefs,
+      citiesForRegions:citiesForRegions,regionsConnected:regionsConnected,normalizeCity:normalizeCity,
+      abstract:false,boardName:boardName,
+      GEO_CENTER:geo.center,GEO_ZOOM:geo.zoom,GEO_BOUNDS:geo.bounds
+    };
+  }
 
+  var USA_MAP = makeExactGeoMap('미국',['r0','r1','r2','r3','r4','r5'],{
+      r0:{id:"r0",name:"북서 · 보라",shortName:"북서",color:"#8f6aa8"},
+      r1:{id:"r1",name:"서남 · 청록",shortName:"서남",color:"#4fa9b8"},
+      r2:{id:"r2",name:"북중부 · 노랑",shortName:"북중부",color:"#d0b34d"},
+      r3:{id:"r3",name:"남중부 · 빨강",shortName:"남중부",color:"#b85b62"},
+      r4:{id:"r4",name:"북동부 · 갈색",shortName:"북동부",color:"#8f7356"},
+      r5:{id:"r5",name:"남동부 · 초록",shortName:"남동부",color:"#69a05d"}
+    },[
+      {id:"USA_SEATTLE",name:"Seattle",lat:47.6062,lng:-122.3321,region:"r0"},
+      {id:"USA_PORTLAND",name:"Portland",lat:45.5152,lng:-122.6784,region:"r0"},
+      {id:"USA_BOISE",name:"Boise",lat:43.6150,lng:-116.2023,region:"r0"},
+      {id:"USA_BILLINGS",name:"Billings",lat:45.7833,lng:-108.5007,region:"r0"},
+      {id:"USA_CHEYENNE",name:"Cheyenne",lat:41.1400,lng:-104.8202,region:"r0"},
+      {id:"USA_OMAHA",name:"Omaha",lat:41.2565,lng:-95.9345,region:"r0"},
+      {id:"USA_DENVER",name:"Denver",lat:39.7392,lng:-104.9903,region:"r0"},
+      {id:"USA_SALT_LAKE_CITY",name:"Salt Lake City",lat:40.7608,lng:-111.8910,region:"r1"},
+      {id:"USA_SAN_FRANCISCO",name:"San Francisco",lat:37.7749,lng:-122.4194,region:"r1"},
+      {id:"USA_LAS_VEGAS",name:"Las Vegas",lat:36.1699,lng:-115.1398,region:"r1"},
+      {id:"USA_SANTA_FE",name:"Santa Fe",lat:35.6870,lng:-105.9378,region:"r1"},
+      {id:"USA_LOS_ANGELES",name:"Los Angeles",lat:34.0522,lng:-118.2437,region:"r1"},
+      {id:"USA_PHOENIX",name:"Phoenix",lat:33.4484,lng:-112.0740,region:"r1"},
+      {id:"USA_SAN_DIEGO",name:"San Diego",lat:32.7157,lng:-117.1611,region:"r1"},
+      {id:"USA_DULUTH",name:"Duluth",lat:46.7867,lng:-92.1005,region:"r2"},
+      {id:"USA_FARGO",name:"Fargo",lat:46.8772,lng:-96.7898,region:"r2"},
+      {id:"USA_MINNEAPOLIS",name:"Minneapolis",lat:44.9778,lng:-93.2650,region:"r2"},
+      {id:"USA_CHICAGO",name:"Chicago",lat:41.8781,lng:-87.6298,region:"r2"},
+      {id:"USA_ST_LOUIS",name:"St. Louis",lat:38.6270,lng:-90.1994,region:"r2"},
+      {id:"USA_CINCINNATI",name:"Cincinnati",lat:39.1031,lng:-84.5120,region:"r2"},
+      {id:"USA_KNOXVILLE",name:"Knoxville",lat:35.9606,lng:-83.9207,region:"r2"},
+      {id:"USA_KANSAS_CITY",name:"Kansas City",lat:39.0997,lng:-94.5786,region:"r3"},
+      {id:"USA_OKLAHOMA_CITY",name:"Oklahoma City",lat:35.4676,lng:-97.5164,region:"r3"},
+      {id:"USA_MEMPHIS",name:"Memphis",lat:35.1495,lng:-90.0490,region:"r3"},
+      {id:"USA_DALLAS",name:"Dallas",lat:32.7767,lng:-96.7970,region:"r3"},
+      {id:"USA_BIRMINGHAM",name:"Birmingham",lat:33.5186,lng:-86.8104,region:"r3"},
+      {id:"USA_HOUSTON",name:"Houston",lat:29.7604,lng:-95.3698,region:"r3"},
+      {id:"USA_NEW_ORLEANS",name:"New Orleans",lat:29.9511,lng:-90.0715,region:"r3"},
+      {id:"USA_DETROIT",name:"Detroit",lat:42.3314,lng:-83.0458,region:"r4"},
+      {id:"USA_BUFFALO",name:"Buffalo",lat:42.8864,lng:-78.8784,region:"r4"},
+      {id:"USA_PITTSBURGH",name:"Pittsburgh",lat:40.4406,lng:-79.9959,region:"r4"},
+      {id:"USA_WASHINGTON",name:"Washington",lat:38.9072,lng:-77.0369,region:"r4"},
+      {id:"USA_PHILADELPHIA",name:"Philadelphia",lat:39.9526,lng:-75.1652,region:"r4"},
+      {id:"USA_NEW_YORK",name:"New York",lat:40.7128,lng:-74.0060,region:"r4"},
+      {id:"USA_BOSTON",name:"Boston",lat:42.3601,lng:-71.0589,region:"r4"},
+      {id:"USA_NORFOLK",name:"Norfolk",lat:36.8508,lng:-76.2859,region:"r5"},
+      {id:"USA_RALEIGH",name:"Raleigh",lat:35.7796,lng:-78.6382,region:"r5"},
+      {id:"USA_ATLANTA",name:"Atlanta",lat:33.7490,lng:-84.3880,region:"r5"},
+      {id:"USA_SAVANNAH",name:"Savannah",lat:32.0809,lng:-81.0912,region:"r5"},
+      {id:"USA_JACKSONVILLE",name:"Jacksonville",lat:30.3322,lng:-81.6557,region:"r5"},
+      {id:"USA_TAMPA",name:"Tampa",lat:27.9506,lng:-82.4572,region:"r5"},
+      {id:"USA_MIAMI",name:"Miami",lat:25.7617,lng:-80.1918,region:"r5"}
+    ],[
+      {a:"USA_SEATTLE",b:"USA_PORTLAND",cost:3},
+      {a:"USA_SEATTLE",b:"USA_BOISE",cost:12},
+      {a:"USA_SEATTLE",b:"USA_BILLINGS",cost:9},
+      {a:"USA_PORTLAND",b:"USA_BOISE",cost:13},
+      {a:"USA_PORTLAND",b:"USA_SAN_FRANCISCO",cost:24},
+      {a:"USA_BILLINGS",b:"USA_FARGO",cost:17},
+      {a:"USA_BILLINGS",b:"USA_MINNEAPOLIS",cost:18},
+      {a:"USA_BILLINGS",b:"USA_CHEYENNE",cost:9},
+      {a:"USA_BILLINGS",b:"USA_BOISE",cost:12},
+      {a:"USA_BOISE",b:"USA_CHEYENNE",cost:24},
+      {a:"USA_BOISE",b:"USA_SALT_LAKE_CITY",cost:8},
+      {a:"USA_BOISE",b:"USA_SAN_FRANCISCO",cost:23},
+      {a:"USA_CHEYENNE",b:"USA_MINNEAPOLIS",cost:18},
+      {a:"USA_CHEYENNE",b:"USA_OMAHA",cost:14},
+      {a:"USA_CHEYENNE",b:"USA_DENVER",cost:0},
+      {a:"USA_OMAHA",b:"USA_MINNEAPOLIS",cost:8},
+      {a:"USA_OMAHA",b:"USA_CHICAGO",cost:13},
+      {a:"USA_OMAHA",b:"USA_KANSAS_CITY",cost:5},
+      {a:"USA_DENVER",b:"USA_SALT_LAKE_CITY",cost:21},
+      {a:"USA_DENVER",b:"USA_KANSAS_CITY",cost:16},
+      {a:"USA_DENVER",b:"USA_SANTA_FE",cost:13},
+      {a:"USA_SAN_FRANCISCO",b:"USA_SALT_LAKE_CITY",cost:27},
+      {a:"USA_SAN_FRANCISCO",b:"USA_LAS_VEGAS",cost:14},
+      {a:"USA_SAN_FRANCISCO",b:"USA_LOS_ANGELES",cost:9},
+      {a:"USA_SALT_LAKE_CITY",b:"USA_SANTA_FE",cost:28},
+      {a:"USA_SALT_LAKE_CITY",b:"USA_LAS_VEGAS",cost:18},
+      {a:"USA_LAS_VEGAS",b:"USA_SANTA_FE",cost:27},
+      {a:"USA_LAS_VEGAS",b:"USA_PHOENIX",cost:15},
+      {a:"USA_LAS_VEGAS",b:"USA_SAN_DIEGO",cost:9},
+      {a:"USA_LAS_VEGAS",b:"USA_LOS_ANGELES",cost:9},
+      {a:"USA_SANTA_FE",b:"USA_KANSAS_CITY",cost:16},
+      {a:"USA_SANTA_FE",b:"USA_OKLAHOMA_CITY",cost:15},
+      {a:"USA_SANTA_FE",b:"USA_DALLAS",cost:16},
+      {a:"USA_SANTA_FE",b:"USA_HOUSTON",cost:21},
+      {a:"USA_SANTA_FE",b:"USA_PHOENIX",cost:18},
+      {a:"USA_LOS_ANGELES",b:"USA_SAN_DIEGO",cost:3},
+      {a:"USA_PHOENIX",b:"USA_SAN_DIEGO",cost:14},
+      {a:"USA_DULUTH",b:"USA_FARGO",cost:6},
+      {a:"USA_DULUTH",b:"USA_MINNEAPOLIS",cost:5},
+      {a:"USA_DULUTH",b:"USA_CHICAGO",cost:12},
+      {a:"USA_DULUTH",b:"USA_DETROIT",cost:15},
+      {a:"USA_FARGO",b:"USA_MINNEAPOLIS",cost:6},
+      {a:"USA_MINNEAPOLIS",b:"USA_CHICAGO",cost:8},
+      {a:"USA_CHICAGO",b:"USA_DETROIT",cost:7},
+      {a:"USA_CHICAGO",b:"USA_CINCINNATI",cost:7},
+      {a:"USA_CHICAGO",b:"USA_ST_LOUIS",cost:10},
+      {a:"USA_CHICAGO",b:"USA_KANSAS_CITY",cost:8},
+      {a:"USA_ST_LOUIS",b:"USA_KANSAS_CITY",cost:6},
+      {a:"USA_ST_LOUIS",b:"USA_CINCINNATI",cost:12},
+      {a:"USA_ST_LOUIS",b:"USA_ATLANTA",cost:12},
+      {a:"USA_ST_LOUIS",b:"USA_MEMPHIS",cost:7},
+      {a:"USA_CINCINNATI",b:"USA_DETROIT",cost:4},
+      {a:"USA_CINCINNATI",b:"USA_PITTSBURGH",cost:7},
+      {a:"USA_CINCINNATI",b:"USA_RALEIGH",cost:15},
+      {a:"USA_CINCINNATI",b:"USA_KNOXVILLE",cost:6},
+      {a:"USA_KNOXVILLE",b:"USA_ATLANTA",cost:5},
+      {a:"USA_KANSAS_CITY",b:"USA_MEMPHIS",cost:12},
+      {a:"USA_KANSAS_CITY",b:"USA_OKLAHOMA_CITY",cost:8},
+      {a:"USA_OKLAHOMA_CITY",b:"USA_MEMPHIS",cost:14},
+      {a:"USA_OKLAHOMA_CITY",b:"USA_DALLAS",cost:3},
+      {a:"USA_MEMPHIS",b:"USA_BIRMINGHAM",cost:6},
+      {a:"USA_MEMPHIS",b:"USA_NEW_ORLEANS",cost:7},
+      {a:"USA_MEMPHIS",b:"USA_DALLAS",cost:12},
+      {a:"USA_BIRMINGHAM",b:"USA_ATLANTA",cost:3},
+      {a:"USA_BIRMINGHAM",b:"USA_JACKSONVILLE",cost:9},
+      {a:"USA_BIRMINGHAM",b:"USA_NEW_ORLEANS",cost:11},
+      {a:"USA_DALLAS",b:"USA_NEW_ORLEANS",cost:12},
+      {a:"USA_DALLAS",b:"USA_HOUSTON",cost:5},
+      {a:"USA_HOUSTON",b:"USA_NEW_ORLEANS",cost:8},
+      {a:"USA_BUFFALO",b:"USA_DETROIT",cost:7},
+      {a:"USA_BUFFALO",b:"USA_NEW_YORK",cost:8},
+      {a:"USA_BUFFALO",b:"USA_PITTSBURGH",cost:7},
+      {a:"USA_DETROIT",b:"USA_PITTSBURGH",cost:6},
+      {a:"USA_BOSTON",b:"USA_NEW_YORK",cost:3},
+      {a:"USA_NEW_YORK",b:"USA_PHILADELPHIA",cost:0},
+      {a:"USA_PITTSBURGH",b:"USA_WASHINGTON",cost:6},
+      {a:"USA_PITTSBURGH",b:"USA_RALEIGH",cost:7},
+      {a:"USA_PHILADELPHIA",b:"USA_WASHINGTON",cost:3},
+      {a:"USA_WASHINGTON",b:"USA_NORFOLK",cost:5},
+      {a:"USA_NORFOLK",b:"USA_RALEIGH",cost:3},
+      {a:"USA_RALEIGH",b:"USA_SAVANNAH",cost:7},
+      {a:"USA_RALEIGH",b:"USA_ATLANTA",cost:7},
+      {a:"USA_ATLANTA",b:"USA_SAVANNAH",cost:7},
+      {a:"USA_SAVANNAH",b:"USA_JACKSONVILLE",cost:0},
+      {a:"USA_JACKSONVILLE",b:"USA_NEW_ORLEANS",cost:16},
+      {a:"USA_JACKSONVILLE",b:"USA_TAMPA",cost:4},
+      {a:"USA_TAMPA",b:"USA_MIAMI",cost:4}
+    ],{width:900,height:675,center:[38.5,-96.5],zoom:4,bounds:[[24.0,-125.5],[50.0,-66.0]]});
 
-  // v19 geographic rendering metadata. The game graph/costs remain the same;
-  // these coordinates are only for placing the existing BoardMate city graph on a real map.
+  var KOREA_MAP = makeExactGeoMap('한국',['r0','r1','r2','r3','r4','r5'],{
+      r0:{id:"r0",name:"북서 · 분홍",shortName:"북서",color:"#c8799f"},
+      r1:{id:"r1",name:"북동 · 빨강",shortName:"북동",color:"#b75a62"},
+      r2:{id:"r2",name:"수도권 · 보라",shortName:"수도권",color:"#8870ad"},
+      r3:{id:"r3",name:"강원 · 갈색",shortName:"강원",color:"#94785b"},
+      r4:{id:"r4",name:"충청·호남 · 초록",shortName:"충청·호남",color:"#6f9c5e"},
+      r5:{id:"r5",name:"영남 · 노랑",shortName:"영남",color:"#c6ad45"}
+    },[
+      {id:"KR_GANGGYE",name:"강계",lat:40.9695,lng:126.5850,region:"r0",market:"north"},
+      {id:"KR_SINUIJU",name:"신의주",lat:40.1006,lng:124.3981,region:"r0",market:"north"},
+      {id:"KR_ANJU",name:"안주",lat:39.6178,lng:125.6647,region:"r0",market:"north"},
+      {id:"KR_PYEONGYANG",name:"평양",lat:39.0392,lng:125.7625,region:"r0",market:"north"},
+      {id:"KR_NAMPO",name:"남포",lat:38.7375,lng:125.4078,region:"r0",market:"north"},
+      {id:"KR_HWANGJU",name:"황주",lat:38.6700,lng:125.7760,region:"r0",market:"north"},
+      {id:"KR_HAEJU",name:"해주",lat:38.0406,lng:125.7147,region:"r0",market:"north"},
+      {id:"KR_RASON",name:"라선",lat:42.3414,lng:130.3944,region:"r1",market:"north"},
+      {id:"KR_CHEONGJIN",name:"청진",lat:41.7956,lng:129.7758,region:"r1",market:"north"},
+      {id:"KR_GYEONGSEONG",name:"경성",lat:41.5878,lng:129.6061,region:"r1",market:"north"},
+      {id:"KR_HYESAN",name:"혜산",lat:41.4017,lng:128.1770,region:"r1",market:"north"},
+      {id:"KR_KIMCHAEK",name:"김책",lat:40.6680,lng:129.1890,region:"r1",market:"north"},
+      {id:"KR_HAMHEUNG",name:"함흥",lat:39.9183,lng:127.5364,region:"r1",market:"north"},
+      {id:"KR_WONSAN",name:"원산",lat:39.1539,lng:127.4461,region:"r1",market:"north"},
+      {id:"KR_GAESUNG",name:"개성",lat:37.9708,lng:126.5544,region:"r2",market:"north"},
+      {id:"KR_SEOUL",name:"서울",lat:37.5665,lng:126.9780,region:"r2",market:"south"},
+      {id:"KR_GOYANG",name:"고양",lat:37.6584,lng:126.8320,region:"r2",market:"south"},
+      {id:"KR_INCHEON",name:"인천",lat:37.4563,lng:126.7052,region:"r2",market:"south"},
+      {id:"KR_YONGIN",name:"용인",lat:37.2411,lng:127.1776,region:"r2",market:"south"},
+      {id:"KR_ANYANG",name:"안양",lat:37.3943,lng:126.9568,region:"r2",market:"south"},
+      {id:"KR_SUWON",name:"수원",lat:37.2636,lng:127.0286,region:"r2",market:"south"},
+      {id:"KR_SOKCHO",name:"속초",lat:38.2070,lng:128.5918,region:"r3",market:"south"},
+      {id:"KR_CHUNCHEON",name:"춘천",lat:37.8813,lng:127.7298,region:"r3",market:"south"},
+      {id:"KR_GANGNEUNG",name:"강릉",lat:37.7519,lng:128.8761,region:"r3",market:"south"},
+      {id:"KR_WONJU",name:"원주",lat:37.3422,lng:127.9202,region:"r3",market:"south"},
+      {id:"KR_DONGHAE",name:"동해",lat:37.5247,lng:129.1143,region:"r3",market:"south"},
+      {id:"KR_SAMCHEOK",name:"삼척",lat:37.4499,lng:129.1652,region:"r3",market:"south"},
+      {id:"KR_TAEBAEK",name:"태백",lat:37.1641,lng:128.9856,region:"r3",market:"south"},
+      {id:"KR_CHUNGJU",name:"충주",lat:36.9910,lng:127.9259,region:"r4",market:"south"},
+      {id:"KR_CHEONGJU",name:"청주",lat:36.6424,lng:127.4890,region:"r4",market:"south"},
+      {id:"KR_DAEJEON",name:"대전",lat:36.3504,lng:127.3845,region:"r4",market:"south"},
+      {id:"KR_JEONJU",name:"전주",lat:35.8242,lng:127.1480,region:"r4",market:"south"},
+      {id:"KR_GWANGJU",name:"광주",lat:35.1595,lng:126.8526,region:"r4",market:"south"},
+      {id:"KR_NAJU",name:"나주",lat:35.0159,lng:126.7108,region:"r4",market:"south"},
+      {id:"KR_JEJU",name:"제주",lat:33.4996,lng:126.5312,region:"r4",market:"south"},
+      {id:"KR_ANDONG",name:"안동",lat:36.5684,lng:128.7294,region:"r5",market:"south"},
+      {id:"KR_SANGJU",name:"상주",lat:36.4109,lng:128.1592,region:"r5",market:"south"},
+      {id:"KR_GYEONGJU",name:"경주",lat:35.8562,lng:129.2247,region:"r5",market:"south"},
+      {id:"KR_DAEGU",name:"대구",lat:35.8714,lng:128.6014,region:"r5",market:"south"},
+      {id:"KR_ULSAN",name:"울산",lat:35.5384,lng:129.3114,region:"r5",market:"south"},
+      {id:"KR_JINJU",name:"진주",lat:35.1799,lng:128.1076,region:"r5",market:"south"},
+      {id:"KR_BUSAN",name:"부산",lat:35.1796,lng:129.0756,region:"r5",market:"south"}
+    ],[
+      {a:"KR_GANGGYE",b:"KR_HYESAN",cost:20},
+      {a:"KR_GANGGYE",b:"KR_HAMHEUNG",cost:19},
+      {a:"KR_GANGGYE",b:"KR_ANJU",cost:22},
+      {a:"KR_GANGGYE",b:"KR_SINUIJU",cost:25},
+      {a:"KR_SINUIJU",b:"KR_ANJU",cost:13},
+      {a:"KR_ANJU",b:"KR_HAMHEUNG",cost:20},
+      {a:"KR_ANJU",b:"KR_PYEONGYANG",cost:7},
+      {a:"KR_ANJU",b:"KR_NAMPO",cost:10},
+      {a:"KR_PYEONGYANG",b:"KR_HAMHEUNG",cost:23},
+      {a:"KR_PYEONGYANG",b:"KR_WONSAN",cost:18},
+      {a:"KR_PYEONGYANG",b:"KR_GAESUNG",cost:14},
+      {a:"KR_PYEONGYANG",b:"KR_HWANGJU",cost:4},
+      {a:"KR_PYEONGYANG",b:"KR_NAMPO",cost:5},
+      {a:"KR_NAMPO",b:"KR_HWANGJU",cost:4},
+      {a:"KR_HWANGJU",b:"KR_HAEJU",cost:8},
+      {a:"KR_HAEJU",b:"KR_GAESUNG",cost:8},
+      {a:"KR_RASON",b:"KR_CHEONGJIN",cost:8},
+      {a:"KR_CHEONGJIN",b:"KR_GYEONGSEONG",cost:4},
+      {a:"KR_GYEONGSEONG",b:"KR_KIMCHAEK",cost:16},
+      {a:"KR_GYEONGSEONG",b:"KR_HYESAN",cost:18},
+      {a:"KR_HYESAN",b:"KR_KIMCHAEK",cost:14},
+      {a:"KR_HYESAN",b:"KR_HAMHEUNG",cost:23},
+      {a:"KR_KIMCHAEK",b:"KR_HAMHEUNG",cost:17},
+      {a:"KR_HAMHEUNG",b:"KR_WONSAN",cost:11},
+      {a:"KR_WONSAN",b:"KR_SOKCHO",cost:18},
+      {a:"KR_WONSAN",b:"KR_CHUNCHEON",cost:19},
+      {a:"KR_WONSAN",b:"KR_GAESUNG",cost:18},
+      {a:"KR_GAESUNG",b:"KR_CHUNCHEON",cost:13},
+      {a:"KR_GAESUNG",b:"KR_GOYANG",cost:7},
+      {a:"KR_SEOUL",b:"KR_CHUNCHEON",cost:8},
+      {a:"KR_SEOUL",b:"KR_YONGIN",cost:2},
+      {a:"KR_SEOUL",b:"KR_GOYANG",cost:0},
+      {a:"KR_GOYANG",b:"KR_ANYANG",cost:0},
+      {a:"KR_GOYANG",b:"KR_INCHEON",cost:0},
+      {a:"KR_INCHEON",b:"KR_ANYANG",cost:0},
+      {a:"KR_YONGIN",b:"KR_CHUNCHEON",cost:9},
+      {a:"KR_YONGIN",b:"KR_WONJU",cost:8},
+      {a:"KR_YONGIN",b:"KR_CHUNGJU",cost:10},
+      {a:"KR_YONGIN",b:"KR_CHEONGJU",cost:10},
+      {a:"KR_YONGIN",b:"KR_SUWON",cost:2},
+      {a:"KR_ANYANG",b:"KR_SUWON",cost:3},
+      {a:"KR_SUWON",b:"KR_CHEONGJU",cost:10},
+      {a:"KR_SOKCHO",b:"KR_GANGNEUNG",cost:6},
+      {a:"KR_SOKCHO",b:"KR_WONJU",cost:15},
+      {a:"KR_SOKCHO",b:"KR_CHUNCHEON",cost:10},
+      {a:"KR_CHUNCHEON",b:"KR_WONJU",cost:7},
+      {a:"KR_GANGNEUNG",b:"KR_DONGHAE",cost:4},
+      {a:"KR_GANGNEUNG",b:"KR_WONJU",cost:12},
+      {a:"KR_WONJU",b:"KR_DONGHAE",cost:14},
+      {a:"KR_WONJU",b:"KR_TAEBAEK",cost:13},
+      {a:"KR_WONJU",b:"KR_CHUNGJU",cost:5},
+      {a:"KR_DONGHAE",b:"KR_SAMCHEOK",cost:0},
+      {a:"KR_SAMCHEOK",b:"KR_TAEBAEK",cost:5},
+      {a:"KR_TAEBAEK",b:"KR_ANDONG",cost:8},
+      {a:"KR_TAEBAEK",b:"KR_CHUNGJU",cost:13},
+      {a:"KR_CHUNGJU",b:"KR_ANDONG",cost:11},
+      {a:"KR_CHUNGJU",b:"KR_SANGJU",cost:9},
+      {a:"KR_CHUNGJU",b:"KR_CHEONGJU",cost:7},
+      {a:"KR_CHEONGJU",b:"KR_SANGJU",cost:8},
+      {a:"KR_CHEONGJU",b:"KR_DAEJEON",cost:4},
+      {a:"KR_DAEJEON",b:"KR_SANGJU",cost:8},
+      {a:"KR_DAEJEON",b:"KR_DAEGU",cost:15},
+      {a:"KR_DAEJEON",b:"KR_JEONJU",cost:9},
+      {a:"KR_JEONJU",b:"KR_DAEGU",cost:16},
+      {a:"KR_JEONJU",b:"KR_JINJU",cost:15},
+      {a:"KR_JEONJU",b:"KR_GWANGJU",cost:11},
+      {a:"KR_GWANGJU",b:"KR_JINJU",cost:14},
+      {a:"KR_GWANGJU",b:"KR_NAJU",cost:2},
+      {a:"KR_NAJU",b:"KR_JINJU",cost:15},
+      {a:"KR_NAJU",b:"KR_JEJU",cost:19},
+      {a:"KR_ANDONG",b:"KR_GYEONGJU",cost:11},
+      {a:"KR_ANDONG",b:"KR_DAEGU",cost:10},
+      {a:"KR_ANDONG",b:"KR_SANGJU",cost:6},
+      {a:"KR_SANGJU",b:"KR_DAEGU",cost:9},
+      {a:"KR_GYEONGJU",b:"KR_ULSAN",cost:3},
+      {a:"KR_GYEONGJU",b:"KR_DAEGU",cost:7},
+      {a:"KR_DAEGU",b:"KR_ULSAN",cost:10},
+      {a:"KR_DAEGU",b:"KR_BUSAN",cost:12},
+      {a:"KR_DAEGU",b:"KR_JINJU",cost:11},
+      {a:"KR_ULSAN",b:"KR_BUSAN",cost:7},
+      {a:"KR_JINJU",b:"KR_BUSAN",cost:11}
+    ],{width:675,height:900,center:[38.0,127.6],zoom:6,bounds:[[32.7,123.8],[43.1,131.2]]});
+
+  // v19 geographic rendering metadata. Germany still uses attachGeo.
   function attachGeo(map, coordByName, opts) {
     map.CITIES.forEach(function(c){
       var p=coordByName[c.name];
@@ -276,40 +590,6 @@
     'Augsburg':[48.3705,10.8978],'Regensburg':[49.0134,12.1016],'Freiburg':[47.9990,7.8421],
     'Konstanz':[47.6779,9.1732],'München':[48.1351,11.5820],'Passau':[48.5667,13.4319]
   }, {center:[51.2,10.4],zoom:6,bounds:[[47.2,5.5],[55.3,15.6]]});
-
-  attachGeo(USA_MAP, {
-    'Seattle':[47.608,-122.335],'Portland':[45.523,-122.676],'Boise':[43.615,-116.202],
-    'Billings':[45.783,-108.500],'Salt Lake City':[40.761,-111.891],'Denver':[39.739,-104.984],
-    'Omaha':[41.257,-95.994],'Fargo':[46.877,-96.789],'Duluth':[46.786,-92.100],
-    'Minneapolis':[44.979,-93.265],'Chicago':[41.878,-87.630],'Detroit':[42.331,-83.046],
-    'Cleveland':[41.499,-81.695],'Pittsburgh':[40.441,-79.996],'Boston':[42.360,-71.059],
-    'New York':[40.713,-74.006],'Philadelphia':[39.952,-75.164],'Washington':[38.907,-77.037],
-    'Norfolk':[36.851,-76.286],'Raleigh':[35.779,-78.638],'Cincinnati':[39.103,-84.512],
-    'San Francisco':[37.774,-122.419],'Los Angeles':[34.052,-118.244],'Las Vegas':[36.170,-115.140],
-    'Phoenix':[33.448,-112.074],'Santa Fe':[35.687,-105.944],'Kansas City':[39.099,-94.578],
-    'St. Louis':[38.627,-90.198],'Oklahoma City':[35.467,-97.516],'Dallas':[32.776,-96.797],
-    'Houston':[29.760,-95.369],'New Orleans':[29.951,-90.071],'Memphis':[35.149,-90.048],
-    'Atlanta':[33.749,-84.388],'Nashville':[36.162,-86.781],'Birmingham':[33.520,-86.802],
-    'Jacksonville':[30.332,-81.656],'Tampa':[27.950,-82.457],'Miami':[25.775,-80.209],
-    'Savannah':[32.080,-81.100],'Charleston':[32.776,-79.932],'Knoxville':[35.961,-83.921]
-  }, {center:[38.5,-96.5],zoom:4,bounds:[[24.0,-125.5],[50.5,-66.0]]});
-
-  attachGeo(KOREA_MAP, {
-    '신의주':[40.100,124.400],'평양':[39.039,125.763],'남포':[38.738,125.408],
-    '개성':[37.971,126.554],'해주':[38.041,125.715],'사리원':[38.507,125.756],
-    '원산':[39.153,127.444],'청진':[41.796,129.776],'함흥':[39.918,127.536],
-    '혜산':[41.392,128.180],'강계':[40.970,126.585],'안주':[39.618,125.665],
-    '나진':[42.249,130.300],'금강산':[38.658,128.105],'서울':[37.5665,126.9780],
-    '인천':[37.4563,126.7052],'수원':[37.2636,127.0286],'춘천':[37.8813,127.7298],
-    '원주':[37.3422,127.9202],'강릉':[37.7519,128.8761],'속초':[38.2070,128.5918],
-    '대전':[36.3504,127.3845],'청주':[36.6424,127.4890],'천안':[36.8151,127.1139],
-    '세종':[36.4800,127.2890],'공주':[36.4466,127.1190],'충주':[36.9910,127.9259],
-    '제천':[37.1326,128.1909],'광주':[35.1595,126.8526],'전주':[35.8242,127.1480],
-    '목포':[34.8118,126.3922],'여수':[34.7604,127.6622],'순천':[34.9506,127.4872],
-    '군산':[35.9677,126.7366],'제주':[33.4996,126.5312],'부산':[35.1796,129.0756],
-    '대구':[35.8714,128.6014],'울산':[35.5384,129.3114],'포항':[36.0190,129.3435],
-    '창원':[35.2279,128.6811],'진주':[35.1800,128.1076],'안동':[36.5684,128.7294]
-  }, {center:[38.2,127.4],zoom:6,bounds:[[33.0,123.5],[43.0,131.5]]});
   var BOARD_MAPS = { germany: GERMANY, usa: USA_MAP, korea: KOREA_MAP };
   function mapData(boardId){ return BOARD_MAPS[boardId || 'germany'] || GERMANY; }
 
@@ -429,7 +709,7 @@
       v: 4,
       kind: STATE_KIND,
       numPlayers: numPlayers,
-      map: { mode:boardDef.mode||'auto', boardId:boardId, regionIds:zone.regionIds, cityNames:zone.cityNames, edges:zone.edges },
+      map: { mode:boardDef.mode||'auto', boardId:boardId, dataRev:MAP_DATA_REV, regionIds:zone.regionIds, cityNames:zone.cityNames, edges:zone.edges },
       step: 1,
       round: 1,
       phase: 1, // 1..5
@@ -1096,6 +1376,7 @@
   // ============================================================
   return {
     STATE_KIND: STATE_KIND,
+    MAP_DATA_REV: MAP_DATA_REV,
     MAP: MAP,
     GERMANY: GERMANY,
     BOARD_MAPS: BOARD_MAPS,
