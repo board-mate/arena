@@ -1,5 +1,5 @@
 /*!
- * BoardMate Power Grid Germany - Multiplayer UI Layer v9
+ * BoardMate Power Grid Germany - Multiplayer UI Layer v10
  * 순수 DOM/SVG 렌더링. React 등 프레임워크 없이 동작.
  * window.PowerGrid (engine.js) 를 사용한다.
  */
@@ -178,7 +178,6 @@
     var note=canPower ? '⚡ 관료 단계: 지도에서 내가 건설한 도시를 눌러 공급 대상을 선택할 수 있습니다. 선택 후 오른쪽 패널에서 발전소와 함께 확정하세요.' :
       '선택 지역 안에서만 최단 연결비를 계산합니다. 다른 플레이어의 도시를 경유하는 경로도 연결선 비용 계산에는 사용할 수 있습니다.';
     return '<div class="pg-real-map pg-germany-map"><div class="pg-real-map-head"><div><b>독일 보드</b><div class="pg-region-chips">'+regionChips+'</div></div><span class="pg-tag">42도시 · 83연결 자동 계산</span></div>'+
-      renderMapFeatures(state.map.boardId || 'germany', true)+
       renderBoardTracks(state)+
       '<div class="pg-germany-board"><img src="'+esc(PG.BOARD_DEFS.germany.image)+'" alt="Power Grid Germany board" loading="eager">'+excludedShade+markers+'</div>'+
       '<div class="pg-map-note">'+note+'</div>'+
@@ -432,7 +431,7 @@
       renderLog(state) +
       '</div>';
 
-    container.innerHTML = top + '<div class="pg-layout">' + left + right + '</div>' + (ctx.footerHtml || '');
+    container.innerHTML = top + '<div class="pg-layout">' + left + right + '</div>' + renderMapFeatures(state.map.boardId || 'germany', true) + (ctx.footerHtml || '');
 
     container.querySelectorAll('[data-action]').forEach(function (el) {
       el.addEventListener('click', function () {

@@ -292,3 +292,45 @@ a { color: var(--accent2); }
   .pg-city-track-name{font-size:9px}
   .pg-resource-track-cells{gap:1px}
 }
+
+
+/* v10: smaller hollow city markers so printed city/build costs remain readable */
+.pg-germany-city-marker{
+  width:14px;height:14px;border-width:1.5px;
+  background:rgba(8,11,16,.06);
+  box-shadow:0 1px 2px rgba(0,0,0,.55);
+}
+.pg-germany-city-marker::after{
+  content:"";position:absolute;inset:-7px;border-radius:50%;
+}
+.pg-germany-city-marker.occupied{
+  width:18px;height:18px;border-width:1.5px;
+  background:rgba(8,11,16,.12);z-index:5;
+}
+.pg-germany-city-marker.can-build{
+  background:rgba(245,166,35,.05);
+  box-shadow:0 0 0 1px rgba(245,166,35,.30),0 1px 2px rgba(0,0,0,.55);
+}
+.pg-germany-city-marker.can-power{
+  box-shadow:0 0 0 1.5px rgba(110,231,255,.20),0 1px 3px rgba(0,0,0,.65);
+}
+.pg-germany-city-marker.selected-power{
+  background:rgba(30,110,145,.22);
+  box-shadow:0 0 0 2px rgba(110,231,255,.30),0 0 8px rgba(110,231,255,.45);
+}
+.pg-city-marker-core{
+  width:4px;height:4px;font-size:5px;background:rgba(255,255,255,.90);
+}
+.pg-city-marker-owners{bottom:-6px;gap:1px}
+.pg-city-marker-owners i{width:6px;height:6px;border-width:1px}
+.pg-city-marker-owners i.powered{outline:1px solid #ffe45c;outline-offset:1px}
+.pg-germany-city-marker>b{top:-14px;font-size:8px;line-height:10px;min-width:21px;padding:1px 3px}
+@media(max-width:640px){
+  .pg-germany-city-marker{width:12px;height:12px;border-width:1px}
+  .pg-germany-city-marker.occupied{width:16px;height:16px;border-width:1.5px}
+  .pg-germany-city-marker::after{inset:-6px}
+  .pg-city-marker-core{width:3px;height:3px;font-size:4px}
+  .pg-city-marker-owners{bottom:-5px}
+  .pg-city-marker-owners i{width:5px;height:5px}
+  .pg-germany-city-marker>b{top:-12px;font-size:7px;line-height:9px;min-width:19px;padding:1px 2px}
+}
