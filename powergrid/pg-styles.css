@@ -430,3 +430,22 @@ a { color: var(--accent2); }
   .pg-map-choice-copy b{font-size:13px}
   .pg-map-choice-copy span{font-size:10px;-webkit-line-clamp:4}
 }
+
+/* v16: clean board-style basemap under live game data */
+.pg-map-base{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;opacity:.78;filter:saturate(.9) contrast(.92)}
+.pg-abstract-board .pg-abstract-map{z-index:1}
+.pg-abstract-board .pg-region-land{fill:var(--region);fill-opacity:.30;stroke:color-mix(in srgb,var(--region) 80%,#fff 20%);stroke-width:2.4;opacity:1}
+.pg-abstract-board .pg-region-land.excluded{fill:#030609;fill-opacity:.68;stroke:#454c58;opacity:1}
+.pg-abstract-board .pg-region-land-label{fill:rgba(255,255,255,.34);font-size:26px;text-shadow:0 2px 5px #000}
+.pg-map-choice-preview{aspect-ratio:3 / 4}
+.pg-map-choice-real img{object-fit:cover;filter:saturate(.92) contrast(.95)}
+.pg-map-choice-data{position:absolute;inset:0;width:100%;height:100%;z-index:1;pointer-events:none}
+.pg-preview-edge{stroke:rgba(255,255,255,.42);stroke-width:3;stroke-linecap:round}
+.pg-preview-city{fill:#f8fafc;stroke:#0a0f16;stroke-width:2.6}
+.pg-preview-region-label{fill:#fff;font-size:31px;font-weight:950;text-anchor:middle;dominant-baseline:middle;paint-order:stroke;stroke:#0a0f16;stroke-width:6px;stroke-linejoin:round}
+.pg-map-choice-real span{z-index:3}
+@media(max-width:640px){
+  .pg-map-choice{grid-template-columns:96px 1fr}
+  .pg-map-choice-preview{aspect-ratio:3 / 4}
+  .pg-preview-region-label{font-size:28px}
+}

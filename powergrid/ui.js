@@ -1,5 +1,5 @@
 /*!
- * BoardMate Power Grid - Multiplayer UI Layer v11
+ * BoardMate Power Grid - Multiplayer UI Layer v16
  * 순수 DOM/SVG 렌더링. React 등 프레임워크 없이 동작.
  * window.PowerGrid (engine.js) 를 사용한다.
  */
@@ -37,7 +37,7 @@
     if (idx == null) return '<div class="pg-plant-img pg-plant-missing">'+esc(num)+'</div>';
     var x = (idx % 7) * 100, y = Math.floor(idx / 7) * 100;
     return '<svg class="pg-plant-img" viewBox="'+x+' '+y+' 100 100" role="img" aria-label="'+esc(num)+'번 발전소">'+
-      '<image href="./powergrid/assets/plants/plant_sheet.webp?v=11" x="0" y="0" width="700" height="700" preserveAspectRatio="none"></image></svg>';
+      '<image href="./powergrid/assets/plants/plant_sheet.webp?v=16" x="0" y="0" width="700" height="700" preserveAspectRatio="none"></image></svg>';
   }
 
   function renderMapFeatures(boardId, compact) {
@@ -199,8 +199,9 @@
         'title="'+esc(title)+'" aria-label="'+esc(title)+'" '+attrs+'>'+ownerDots+(cost!=null?'<b>'+cost+'</b>':'')+'</button>';
     });
 
-    var boardInner='<div class="pg-germany-board pg-abstract-board"><svg class="pg-abstract-map" viewBox="0 0 '+G.BOARD_WIDTH+' '+G.BOARD_HEIGHT+'" preserveAspectRatio="none">'+edgeSvg+'</svg>'+excludedShade+markers+'</div>';
-    var note='도시·연결선·연결비·클릭 영역을 같은 좌표계로 그리는 BoardMate 전용 지도입니다. 건설 단계에서는 원형 마커 또는 아래 도시 목록을 눌러 건설합니다.';
+    var baseSrc='./powergrid/assets/map-previews/'+boardId+'.png?v=16';
+    var boardInner='<div class="pg-germany-board pg-abstract-board"><img class="pg-map-base" src="'+baseSrc+'" alt="" aria-hidden="true"><svg class="pg-abstract-map" viewBox="0 0 '+G.BOARD_WIDTH+' '+G.BOARD_HEIGHT+'" preserveAspectRatio="none">'+edgeSvg+'</svg>'+excludedShade+markers+'</div>';
+    var note='보드 느낌을 살린 클린 베이스맵 위에 권역 색상·도시·연결선·연결비·클릭 영역을 같은 좌표계로 겹쳐 표시합니다. 배경에 인쇄된 원래 게임 요소는 흐리게 제거해 데이터가 우선 보이도록 했습니다.';
     return '<div class="pg-real-map pg-germany-map"><div class="pg-real-map-head"><div><b>'+esc(def.name)+' 보드</b><div class="pg-region-chips">'+regionChips+'</div></div><span class="pg-tag">'+G.CITIES.length+'도시 · '+(state.map.edges||G.EDGES).length+'연결 자동 계산</span></div>'+boardInner+
       '<div class="pg-map-note">'+note+'</div></div>';
   }
