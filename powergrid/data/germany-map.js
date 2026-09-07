@@ -7,9 +7,9 @@
  * networks are community-entered and unverified; BoardMate therefore keeps
  * explicit regression tests and a visual audit checklist in the handoff docs.
  *
- * City x/y values below are BoardMate overlay coordinates measured against
- * powergrid/assets/maps/germany.webp (675 x 900). They are UI-only and do not
- * affect route-cost calculations.
+ * City x/y values below use BoardMate's 675 x 900 schematic coordinate system.
+ * The same coordinates drive city markers, connection lines, labels and click targets,
+ * so the visual board cannot drift out of sync with the route graph.
  */
 (function (root, factory) {
   if (typeof module === 'object' && module.exports) module.exports = factory();
@@ -26,8 +26,8 @@
     purple: { id:'purple', name:'남동 · 보라', shortName:'보라', color:'#83718f' }
   };
 
-  // UI-only approximate polygons used to dim regions excluded from the current game.
-  // Coordinates match the 675x900 Germany board image.
+  // UI-only approximate region polygons used by BoardMate's schematic board.
+  // Cities, connections, costs, region fills, and click targets all share this 675x900 coordinate system.
   var REGION_SHADE_POLYGONS = {
     green:  [[170,15],[350,15],[370,130],[365,240],[325,350],[190,330],[115,250],[110,160]],
     brown:  [[335,45],[660,65],[660,370],[570,400],[445,385],[360,320],[345,220]],

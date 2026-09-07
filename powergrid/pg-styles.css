@@ -363,3 +363,47 @@ a { color: var(--accent2); }
 .pg-edge-overlay{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:2}
 .pg-map-edge{stroke:rgba(255,255,255,.58);stroke-width:2.4;stroke-linecap:round;filter:drop-shadow(0 1px 2px rgba(0,0,0,.8))}
 .pg-map-edge-cost{font-weight:950;font-size:18px;fill:#fff;paint-order:stroke;stroke:rgba(0,0,0,.86);stroke-width:5px;stroke-linejoin:round;text-anchor:middle;dominant-baseline:middle;filter:drop-shadow(0 1px 2px rgba(0,0,0,.9))}
+
+
+/* v12: unified schematic maps — one coordinate system for regions, edges, costs and cities */
+.pg-abstract-board{
+  width:min(100%,675px);
+  aspect-ratio:675 / 900;
+  min-height:0!important;
+  background:radial-gradient(circle at 50% 42%,rgba(37,55,78,.68),rgba(9,14,22,.96) 72%),linear-gradient(135deg,#162538,#080d15);
+  border:1px solid #3a465a;
+  overflow:hidden;
+}
+.pg-abstract-board::before{inset:10px;border-color:rgba(255,255,255,.07);z-index:0}
+.pg-region-land{fill:color-mix(in srgb,var(--region) 27%,#18212d 73%);stroke:color-mix(in srgb,var(--region) 62%,#dbeafe 10%);stroke-width:2.2;opacity:.88}
+.pg-region-land.excluded{fill:#080b10;stroke:#303744;opacity:.82}
+.pg-region-land-label{fill:rgba(255,255,255,.19);font-size:27px;font-weight:950;text-anchor:middle;dominant-baseline:middle;letter-spacing:2px;pointer-events:none}
+.pg-region-land-label.excluded{fill:rgba(255,255,255,.10)}
+.pg-map-edge{stroke:rgba(226,232,240,.58);stroke-width:3;stroke-linecap:round;filter:none}
+.pg-edge-cost-badge rect{fill:rgba(7,10,15,.90);stroke:rgba(255,255,255,.72);stroke-width:1.4}
+.pg-map-edge-cost{font-size:15px;fill:#fff;stroke:none;filter:none;font-weight:950;text-anchor:middle;dominant-baseline:middle}
+.pg-map-city-name{font-size:10.5px;fill:#e9f0fb;font-weight:800;text-anchor:middle;paint-order:stroke;stroke:rgba(5,8,13,.96);stroke-width:4px;stroke-linejoin:round}
+
+/* Power Grid v9 city-marker scale restored. */
+.pg-germany-city-marker{width:28px;height:28px;border-width:2px;background:rgba(12,18,26,.78);box-shadow:0 2px 7px rgba(0,0,0,.82);z-index:4}
+.pg-germany-city-marker.occupied{width:36px;height:36px;border-width:3px;background:rgba(13,18,27,.88);z-index:5}
+.pg-germany-city-marker::after{inset:-7px}
+.pg-germany-city-marker.can-build{border-color:#ffd166;background:rgba(245,166,35,.32);box-shadow:0 0 0 2px rgba(245,166,35,.22),0 2px 8px rgba(0,0,0,.86)}
+.pg-germany-city-marker.can-build:hover,.pg-germany-city-marker.can-build:focus-visible{transform:translate(-50%,-50%) scale(1.12);z-index:9;outline:2px solid #fff;outline-offset:1px}
+.pg-city-marker-owners{left:50%;top:auto;bottom:-7px;transform:translateX(-50%);display:flex;flex-wrap:nowrap;gap:2px;max-width:none}
+.pg-city-marker-owners i,.pg-germany-city-marker>i{width:10px;height:10px;border:1.5px solid #070a0f;box-shadow:0 1px 2px #000}
+.pg-germany-city-marker>b{top:-18px;font-size:10px;line-height:13px;min-width:29px;padding:2px 5px;background:rgba(8,10,14,.94)}
+@media(max-width:640px){
+  .pg-abstract-board{min-height:0!important;aspect-ratio:675 / 900}
+  .pg-region-land-label{font-size:20px}
+  .pg-map-city-name{font-size:9px;stroke-width:3px}
+  .pg-map-edge{stroke-width:2.5}
+  .pg-edge-cost-badge rect{stroke-width:1.2}
+  .pg-map-edge-cost{font-size:13px}
+  .pg-germany-city-marker{width:24px;height:24px;border-width:2px}
+  .pg-germany-city-marker.occupied{width:31px;height:31px;border-width:2.5px}
+  .pg-germany-city-marker::after{inset:-6px}
+  .pg-city-marker-owners{bottom:-6px}
+  .pg-city-marker-owners i,.pg-germany-city-marker>i{width:8px;height:8px}
+  .pg-germany-city-marker>b{top:-16px;font-size:9px;line-height:11px;min-width:25px;padding:2px 4px}
+}

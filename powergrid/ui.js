@@ -121,6 +121,33 @@
     return '<svg class="pg-excluded-region-overlay" viewBox="0 0 '+G.BOARD_WIDTH+' '+G.BOARD_HEIGHT+'" preserveAspectRatio="none" aria-hidden="true">'+parts.join('')+'</svg>';
   }
 
+  function renderSchematicBackground(G, selectedRegions) {
+    var selected={}; (selectedRegions||[]).forEach(function(r){selected[r]=true;});
+    var parts=[];
+    if (G.REGION_SHADE_POLYGONS) {
+      (G.REGION_ORDER||Object.keys(G.REGIONS||{})).forEach(function(rid){
+        var poly=G.REGION_SHADE_POLYGONS[rid], r=G.REGIONS[rid];
+        if(!poly||!r)return;
+        var pts=poly.map(function(p){return p[0]+','+p[1];}).join(' ');
+        var cx=poly.reduce(function(a,p){return a+p[0];},0)/poly.length;
+        var cy=poly.reduce(function(a,p){return a+p[1];},0)/poly.length;
+        parts.push('<polygon points="'+pts+'" class="pg-region-land'+(selected[rid]?' selected':' excluded')+'" style="--region:'+esc(r.color)+'"></polygon>');
+        parts.push('<text x="'+cx.toFixed(1)+'" y="'+cy.toFixed(1)+'" class="pg-region-land-label'+(selected[rid]?'':' excluded')+'">'+esc(r.shortName||r.name)+'</text>');
+      });
+    } else {
+      (G.REGION_ORDER||Object.keys(G.REGIONS||{})).forEach(function(rid){
+        var r=G.REGIONS[rid]; if(!r)return;
+        var cities=G.CITIES.filter(function(c){return c.region===rid;}); if(!cities.length)return;
+        var xs=cities.map(function(c){return c.x;}), ys=cities.map(function(c){return c.y;});
+        var minx=Math.max(18,Math.min.apply(null,xs)-58), maxx=Math.min(G.BOARD_WIDTH-18,Math.max.apply(null,xs)+58);
+        var miny=Math.max(18,Math.min.apply(null,ys)-52), maxy=Math.min(G.BOARD_HEIGHT-18,Math.max.apply(null,ys)+52);
+        parts.push('<rect x="'+minx+'" y="'+miny+'" width="'+(maxx-minx)+'" height="'+(maxy-miny)+'" rx="28" class="pg-region-land'+(selected[rid]?' selected':' excluded')+'" style="--region:'+esc(r.color)+'"></rect>');
+        parts.push('<text x="'+((minx+maxx)/2).toFixed(1)+'" y="'+(miny+22).toFixed(1)+'" class="pg-region-land-label'+(selected[rid]?'':' excluded')+'">'+esc(r.shortName||r.name)+'</text>');
+      });
+    }
+    return parts.join('');
+  }
+
   function renderMap(state, mySeat, allowAct, actingSeats) {
     var boardId=(state.map && state.map.boardId) || 'germany';
     var G=PG.mapData ? PG.mapData(boardId) : PG.GERMANY;
@@ -137,14 +164,22 @@
     }).join('');
     var excludedShade=renderExcludedRegionShade(G, selectedRegions);
 
-    var edgeSvg='';
+    var edgeSvg=renderSchematicBackground(G, selectedRegions);
     var edgeRows=[];
     (state.map.edges||G.EDGES||[]).forEach(function(e){
       var a=G.CITY_BY_ID[e.a], b=G.CITY_BY_ID[e.b];
       if(!a||!b||!selected[e.a]||!selected[e.b])return;
+      var mx=((a.x+b.x)/2), my=((a.y+b.y)/2);
+      var bw=(String(e.cost).length>1?28:22);
       edgeSvg+='<line class="pg-map-edge" x1="'+a.x+'" y1="'+a.y+'" x2="'+b.x+'" y2="'+b.y+'"></line>'+
-        '<text class="pg-map-edge-cost" x="'+((a.x+b.x)/2).toFixed(1)+'" y="'+((a.y+b.y)/2).toFixed(1)+'">'+e.cost+'</text>';
+        '<g class="pg-edge-cost-badge"><rect x="'+(mx-bw/2).toFixed(1)+'" y="'+(my-10).toFixed(1)+'" width="'+bw+'" height="20" rx="7"></rect><text class="pg-map-edge-cost" x="'+mx.toFixed(1)+'" y="'+my.toFixed(1)+'">'+e.cost+'</text></g>';
       edgeRows.push({a:a.name,b:b.name,cost:e.cost});
+    });
+    G.CITIES.forEach(function(city){
+      if(!selected[city.id])return;
+      var labelY=city.y+24;
+      if(labelY>G.BOARD_HEIGHT-8) labelY=city.y-22;
+      edgeSvg+='<text class="pg-map-city-name" x="'+city.x+'" y="'+labelY+'">'+esc(city.name)+'</text>';
     });
 
     var markers='';
@@ -181,13 +216,8 @@
     });
 
     var edgeTable=edgeRows.sort(function(a,b){return a.cost-b.cost;}).slice(0,120).map(function(e){return '<tr><td>'+esc(e.a)+'</td><td>'+esc(e.b)+'</td><td>'+e.cost+'€</td></tr>';}).join('');
-    var boardInner='';
-    if(def.image){
-      boardInner='<div class="pg-germany-board"><img src="'+esc(def.image)+'" alt="Power Grid '+esc(def.name)+' board" loading="eager"><svg class="pg-abstract-map pg-edge-overlay" viewBox="0 0 '+G.BOARD_WIDTH+' '+G.BOARD_HEIGHT+'" preserveAspectRatio="none">'+edgeSvg+'</svg>'+excludedShade+markers+'</div>';
-    }else{
-      boardInner='<div class="pg-germany-board pg-abstract-board"><svg class="pg-abstract-map" viewBox="0 0 '+G.BOARD_WIDTH+' '+G.BOARD_HEIGHT+'" preserveAspectRatio="xMidYMid meet">'+edgeSvg+'</svg>'+markers+'</div>';
-    }
-    var note='건설 단계에서는 원형 마커 또는 도시 목록을 눌러 건설합니다. 연결비는 지도 선 위 숫자와 아래 연결비 표에서 확인할 수 있습니다.';
+    var boardInner='<div class="pg-germany-board pg-abstract-board"><svg class="pg-abstract-map" viewBox="0 0 '+G.BOARD_WIDTH+' '+G.BOARD_HEIGHT+'" preserveAspectRatio="none">'+edgeSvg+'</svg>'+excludedShade+markers+'</div>';
+    var note='도시·연결선·연결비·클릭 영역을 같은 좌표계로 그리는 BoardMate 전용 지도입니다. 건설 단계에서는 원형 마커 또는 도시 목록을 눌러 건설합니다.';
     return '<div class="pg-real-map pg-germany-map"><div class="pg-real-map-head"><div><b>'+esc(def.name)+' 보드</b><div class="pg-region-chips">'+regionChips+'</div></div><span class="pg-tag">'+G.CITIES.length+'도시 · '+(state.map.edges||G.EDGES).length+'연결 자동 계산</span></div>'+renderBoardTracks(state)+boardInner+
       '<div class="pg-map-note">'+note+'</div>'+renderIncomeTable()+
       '<details class="pg-city-picker"'+(canBuild?' open':'')+'><summary>도시 목록'+(canBuild?' · 건설 가능 비용 보기':'')+'</summary>'+cityGroups+'</details>'+ 

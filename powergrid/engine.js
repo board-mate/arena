@@ -160,7 +160,7 @@
 
   var BOARD_DEFS = {
     germany: {
-      id:'germany', name:'독일', mode:'auto', image:'./powergrid/assets/maps/germany.webp',
+      id:'germany', name:'독일', mode:'schematic', image:null,
       featureTitle:'독일맵 특징',
       rules:{ uraniumStopOnPlant39:true, usaCoalStorage:false, koreaSplitMarkets:false },
       features:[
@@ -168,7 +168,7 @@
         '39번 발전소가 팔리지 않거나 등장하지 않으면 우라늄 보충 중단은 적용되지 않습니다.',
         '6개 권역 중 플레이 인원에 따라 서로 연결된 3~5개 권역만 사용합니다.',
         '선택하지 않은 권역의 도시는 건설할 수 없고 연결 경로 계산에도 사용하지 않습니다.',
-        '독일 보드의 42개 도시와 83개 연결을 사용하며, 선택 지역 안에서 최단 연결비를 자동 계산합니다.'
+        '독일 보드는 42개 도시와 83개 연결을 데이터 좌표로 직접 그려 도시·연결선·연결비가 항상 같은 좌표계에 맞습니다.'
       ]
     },
     usa: {
@@ -203,7 +203,7 @@
     cityNames.forEach(function(name,i){
       var region=Math.floor(i/7), pos=i%7;
       var col=region%3, row=Math.floor(region/3);
-      var x=85+col*250+(pos%2)*90+Math.floor(pos/2)*20;
+      var x=75+col*215+(pos%2)*72+Math.floor(pos/2)*18;
       var y=85+row*360+Math.floor(pos/2)*72+(pos%2)*24;
       var id=(boardId+'_'+name).toUpperCase().replace(/[^A-Z0-9가-힣]+/g,'_');
       var c={id:id,name:name,region:regionIds[region],x:x,y:y}; CITIES.push(c); CITY_BY_ID[id]=c;
@@ -384,7 +384,7 @@
     };
     var _startMap = mapData(boardId);
     pushLog(state, '게임을 시작합니다. ('+numPlayers+'인, '+boardDef.name+'맵 / 지역 '+zone.regionIds.map(function(r){return (_startMap.REGIONS[r]&&_startMap.REGIONS[r].shortName)||r;}).join('·')+' / 도시 '+zone.cityNames.length+'개)');
-    pushLog(state, '독일 42도시 연결 그래프로 건설 연결비를 자동 계산합니다.');
+    pushLog(state, boardDef.name+' '+_startMap.CITIES.length+'도시 연결 그래프로 건설 연결비를 자동 계산합니다.');
     beginPhase2(state);
     syncDerivedTurn(state);
     return state;
