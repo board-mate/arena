@@ -1,67 +1,47 @@
-# GitHub 업로드 방법
+# BoardMate Arena FINAL — GitHub 업로드 방법
 
-대상 저장소: `https://github.com/board-mate/arena`
+대상: `https://github.com/board-mate/arena`
 
-## 권장: Git 사용
+## 가장 안전한 방법
 
-이 ZIP을 푼 뒤 통합본 폴더 안에서 기존 저장소에 파일을 복사하거나,
-기존 repo root를 이 통합본 내용으로 갱신합니다.
-
-```bash
-git checkout -b integrated-v11.4.8
-# 통합본 파일/폴더를 repo root에 덮어쓰기
-git add -A
-git commit -m "BoardMate v11.4.8: Calico mobile fit + Porknova v11.7"
-git push -u origin integrated-v11.4.8
-```
-
-브랜치에서 확인 후 `main`으로 merge하는 방식을 권장합니다.
-
-바로 main에 올릴 경우:
+현재 저장소를 백업 브랜치로 남긴 뒤 최종본으로 교체하세요.
 
 ```bash
+git checkout -b backup-before-20260907
+git push -u origin backup-before-20260907
+git checkout main
+# 이 최종본의 내용물 전체로 repo root 갱신
 git add -A
-git commit -m "BoardMate v11.4.8: Calico mobile fit + Porknova v11.7"
+git commit -m "BoardMate: Pokemon Minima + social deduction games"
 git push origin main
 ```
 
-## GitHub 웹에서 올리는 경우
+GitHub 웹 UI만 사용할 경우에도 가능합니다.
 
-1. ZIP을 먼저 PC에서 압축 해제합니다.
-2. ZIP 파일 자체를 저장소에 올리지 말고 **통합본 내부 파일/폴더**를 repo root에 업로드합니다.
-3. 기존 파일 덮어쓰기를 확인합니다.
-4. Pages 배포 완료를 기다립니다.
+1. 이 ZIP을 PC에서 풉니다.
+2. 기존 저장소 파일을 삭제합니다. 백업 브랜치를 먼저 만들어 두는 것을 권장합니다.
+3. 압축을 푼 `BoardMate_Arena_FINAL_20260907` 폴더 **안의 내용물 전체**를 저장소 root에 올립니다.
+4. ZIP 자체를 저장소에 넣지는 않습니다.
+5. Pages 배포 완료 후 `Ctrl+F5` 또는 새 시크릿 탭으로 확인합니다.
 
-## 배포 후 확인 URL
+## 중요: 포크노바 관련
 
-- 메인: `https://board-mate.github.io/arena/index.html#/`
-- 캘리코: 메인 → 다인플 → 새 캘리코 방
-- 포크노바: 메인 → 다인플 → 새 포크노바 방
-- 포크노바 단독 UI 확인: `/arena/pocketnova/index.html`
+구 `pocketnova/`, `online-pocketnova.html`, `solo-pocketnova.html`은 최종본에 없습니다.
+SQL과 `app.js`에 남은 `pocketnova`는 **포켓몬 미니마의 내부 호환 ID**이므로 지우지 마세요.
 
-## 캐시 주의
+## Supabase
 
-GitHub Pages가 새 파일을 배포한 직후 브라우저 캐시에 이전 HTML/JS가 남을 수 있습니다.
+소셜 3종을 처음 배포하는 경우 SQL Editor에서 순서대로 실행:
 
-- PC Chrome: `Ctrl + F5`
-- 모바일 Chrome: 사이트 데이터/캐시 삭제 후 재접속 또는 새 시크릿 탭
+1. `SUPABASE_SOCIAL_DEDUCTION_V1.sql`
+2. `SUPABASE_VERIFY_SOCIAL_DEDUCTION.sql`
 
-## 배포 후 최소 E2E
+기존 파워그리드가 정상이라면 `SUPABASE_POWERGRID_UNIFIED.sql`을 다시 실행할 필요는 없습니다.
 
-### 캘리코
-- 모바일 세로폭 320~430px에서 보드 전체가 좌우 스크롤 없이 보이는지
-- 보드의 빈 육각 칸 터치가 되는지
-- 시장 선택 → 턴 종료 동작
-- 2브라우저 Realtime 반영
-- 회전(세로↔가로) 후 보드가 다시 맞춰지는지
+## 배포 후 빠른 확인
 
-### 포크노바
-- 새 방에서 v11.7 이미지 레이어가 로드되는지
-- 상대 브라우저와 state 동기화되는지
-- 기존 v3 state kind `pocketnova-v3-boardmate` 유지 확인
-- 포크노바는 아직 rules-complete가 아니므로 룰 정확성 완주 테스트는 별도 진행
-
-### 판타지 왕국
-- 3인 이상 방 생성
-- 참가자 손패가 다른 참가자 public state에 노출되지 않는지
-- 새로고침 후 private hand 복구
+- 홈/1인플에 `포켓몬 미니마` 표시
+- 다인플 방 생성에서 포켓몬 미니마 `2명부터 · 최대 2명`
+- 아발론 / 시크릿 히틀러 / 한밤의 늑대인간 방 생성 카드 표시
+- 포켓몬 미니마 2인 새 방 생성 및 드래프트
+- 기존 캘리코/캐스캐디아/판타지 왕국/파워그리드 페이지 정상 진입

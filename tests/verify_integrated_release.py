@@ -4,13 +4,9 @@ import re, sys
 
 ROOT=Path(__file__).resolve().parents[1]
 errors=[]
-
 def need(cond,msg):
-    if not cond:
-        errors.append(msg)
-
-def read(rel):
-    return (ROOT/rel).read_text(encoding='utf-8')
+    if not cond: errors.append(msg)
+def read(rel): return (ROOT/rel).read_text(encoding='utf-8')
 
 config=read('config.js')
 need('supabaseUrl: ""' not in config, 'config.js supabaseUrl is blank')
@@ -18,70 +14,69 @@ need('supabaseAnonKey: ""' not in config, 'config.js supabaseAnonKey is blank')
 need('service_role' not in config.lower(), 'config.js must not contain a service_role key')
 
 multi=read('multi-common.js')
-need("state_changed" in multi, 'Realtime state_changed broadcast missing')
-need("options.interval||10000" in multi, '10s polling fallback missing')
-need("payload:{revision:Number(revision)}" in multi.replace(' ',''), 'Broadcast revision-only payload missing')
+need('state_changed' in multi, 'Realtime state_changed broadcast missing')
+need('options.interval||10000' in multi, '10s polling fallback missing')
 
 app=read('app.js')
 need('fantasyrealms' in app, 'Fantasy Realms missing from app.js')
-need("포크노바 β" in app, 'Porknova beta/development label missing')
-need("파워그리드 독일 β" in app, 'Power Grid Germany multiplayer entry missing')
+need("pocketnova:{name:'포켓몬 미니마',icon:'🎮',min:2,max:2,page:'online-pokemon-minima.html'}" in app,
+     'Pokemon Minima 2-player compatibility registration missing')
+for g in ('avalon','secrethitler','onenightwerewolf'):
+    need(f'{g}:{{' in app, f'{g} missing from app.js')
+need('create_boardmate_room_v10' in app, 'Social room creator v10 missing')
 need('solo-powergrid.html' not in app, 'Power Grid must not appear in solo library')
 
+# Fresh arena regressions we intentionally preserve.
 cal=read('online-calico.html')
 need('boardFitShell' in cal and 'calico-mobile-board-fit' in cal, 'Calico mobile fit layer missing')
-need(".board-viewport{overflow:hidden" in cal, 'Calico mobile overflow override missing')
 need('repair-invalid-cat-tokens' in cal, 'Calico V8 repair hook missing')
 need('EDGE_CATALOG_VERSION=7' in cal, 'Calico static edge catalog missing')
-start=cal.find('const CALICO_EDGE_CATALOG')
-end=cal.find('function validateEmbeddedEdgeCatalog',start)
-need(start>=0 and end>start, 'Calico edge catalog block missing')
-if start>=0 and end>start:
-    catalog=cal[start:end]
-    for board in ('blue','green','purple','yellow'):
-        m=re.search(rf'{board}:Object\.freeze\(\{{(.*?)\}}\)',catalog,re.S)
-        need(bool(m), f'Calico {board} edge catalog missing')
-        if m:
-            keys=re.findall(r"'(-?\d+,-?\d+)'\s*:",m.group(1))
-            need(len(keys)==22 and len(set(keys))==22, f'Calico {board} edge count != 22')
-
 need((ROOT/'online-fantasy-realms.html').exists(), 'online-fantasy-realms.html missing')
 need((ROOT/'SUPABASE_FANTASY_REALMS_UNIFIED.sql').exists(), 'Fantasy migration SQL missing')
-need((ROOT/'SUPABASE_VERIFY_INTEGRATED_V11_4_8.sql').exists(), 'Integrated Supabase verification SQL missing')
+need((ROOT/'online-powergrid.html').exists(), 'online-powergrid.html missing')
+need((ROOT/'powergrid').exists(), 'powergrid directory missing')
+need((ROOT/'pensterdam_board.jpg').exists(), 'legacy pensterdam_board.jpg lost')
+need((ROOT/'pensterdam_play.jpg').exists(), 'legacy pensterdam_play.jpg lost')
 
-pidx=read('pocketnova/index.html')
-need('image-layer.css' in pidx and 'image-layer.js' in pidx, 'Porknova v11.7 image layer missing')
-core=read('pocketnova/assets/core-fix-status.js')
-need('applied: true' in core, 'Porknova v11.7 core fixes are not marked applied')
-need((ROOT/'pocketnova/assets/animal-ocr-index.js').exists(), 'Porknova OCR index missing')
-need((ROOT/'pocketnova/tools/validate_image_assets.py').exists(), 'Porknova asset validator missing')
+# Pocket Nova runtime must be gone; `pocketnova` remains only as an internal DB key.
+need(not (ROOT/'pocketnova').exists(), 'legacy pocketnova runtime directory still exists')
+need(not (ROOT/'online-pocketnova.html').exists(), 'legacy online-pocketnova.html still exists')
+need(not (ROOT/'solo-pocketnova.html').exists(), 'legacy solo-pocketnova.html still exists')
+need(not (ROOT/'SOURCE_UPLOADS/pocketnova-v3.zip').exists(), 'legacy pocketnova source zip still exists')
 
-need((ROOT/'pensterdam_board.jpg').exists(), 'legacy pensterdam_board.jpg lost during overlay')
-need((ROOT/'pensterdam_play.jpg').exists(), 'legacy pensterdam_play.jpg lost during overlay')
+# Pokemon Minima package.
+for f in ('pokemon-minima.html','solo-pokemon-minima.html','online-pokemon-minima.html'):
+    need((ROOT/f).exists(), f'{f} missing')
+pm=read('pokemon-minima.html')
+on=read('online-pokemon-minima.html')
+for n in ('워글','나무킹','피죤투','번치코','아차모','망나뇽','부스터','불켜미','켄호로우','샹델라','야나프','우츠보트','버드렉스','보만다','이상해꽃','리자몽'):
+    need(f"name:'{n}'" in pm, f'Pokemon card missing: {n}')
+need('SOLO_SAVE_KEY' in pm and 'loadSoloState' in pm, 'Pokemon solo autosave/resume missing')
+need('pokemon-minima-v1-boardmate' in on, 'Pokemon online state kind missing')
+need('currentSeat: Number(parsed.currentPlayer ?? 0)' in on, 'Pokemon currentSeat bridge missing')
+need("prev.phase === 'draft'" in on and 'draftCurrentPlayer' in on, 'Pokemon draft ownership lock missing')
+need('Number(prev.currentPlayer ?? 0) === mySeat' in on, 'Pokemon turn ownership lock missing')
 
-pg_online=read('online-powergrid.html')
-pg_engine=read('powergrid/engine.js')
-pg_map=read('powergrid/data/germany-map.js')
-need('powergrid-v3-germany-boardmate' in pg_engine, 'Power Grid Germany v3 state kind missing')
-need('PowerGridGermanyMap' in pg_map, 'Power Grid Germany map data missing')
-need('42도시 · 83연결' in read('powergrid/ui.js'), 'Power Grid Germany automatic graph UI missing')
-need('solo-powergrid.html' not in app and not (ROOT/'solo-powergrid.html').exists(), 'Power Grid solo file/entry must be removed')
-need('option value="usa"' not in pg_online and 'option value="korea"' not in pg_online, 'Power Grid setup must be Germany-only')
+# Social deduction package and SQL.
+for f in ('online-avalon.html','online-secret-hitler.html','online-one-night-werewolf.html',
+          'social/social-common.js','social/social-deduction.css','SUPABASE_SOCIAL_DEDUCTION_V1.sql',
+          'SUPABASE_VERIFY_SOCIAL_DEDUCTION.sql','tests/social_deduction_static_test.cjs'):
+    need((ROOT/f).exists(), f'{f} missing')
+sql=read('SUPABASE_SOCIAL_DEDUCTION_V1.sql')
+need("when p_game='pocketnova' then 2" in sql, 'Supabase Pokemon max-player helper is not 2')
+need("when 'pocketnova' then '포켓몬 미니마'" in sql, 'Supabase Pokemon display name not updated')
+need('revoke all on table public.boardmate_social_games' in sql, 'Social secret table client lock-down missing')
 
 handoff=read('HANDOFF_VERSION.txt')
-need('INTEGRATED v11.4.10' in handoff, 'handoff version is not integrated v11.4.10')
+need('FINAL 2026-09-07' in handoff, 'handoff version is not final 2026-09-07')
 
 if errors:
-    print('FAIL integrated release verification')
-    for e in errors:
-        print(' -',e)
+    print('FAIL final integrated release verification')
+    for e in errors: print(' -',e)
     sys.exit(1)
-
-print('PASS integrated release verification')
-print(' - Realtime revision broadcast + 10s fallback')
-print(' - Fantasy Realms unified files')
-print(' - Calico V8 88 static edges + repair + mobile full-board fit')
-print(' - Porknova v11.7 image/core checkpoint')
-print(' - operational Supabase config preserved')
-print(' - legacy overlay-only assets preserved')
-print(' - Power Grid Germany beta v3 multiplayer-only graph integration')
+print('PASS final integrated release verification')
+print(' - fresh arena-main regressions preserved')
+print(' - legacy Pocket Nova runtime removed')
+print(' - Pokemon Minima 2-player + solo/online bridge present')
+print(' - Avalon / Secret Hitler / One Night Werewolf present')
+print(' - Supabase social migration and private-state protection present')

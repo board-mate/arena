@@ -1,19 +1,28 @@
 {
-  "release": "BoardMate Arcade INTEGRATED v11.4.8",
-  "date": "2026-09-06",
-  "base": "BoardMate Arcade FINAL v11.4.7",
+  "release": "BoardMate Arena FINAL 2026-09-07",
+  "date": "2026-09-07",
+  "base": "fresh arena-main downloaded by user; HANDOFF_VERSION previously v11.4.10",
   "components": {
-    "realtime": "v11.4 revision-only Broadcast + 10s polling fallback",
-    "fantasy_realms": "v11.4.7 unified Supabase room/private state",
-    "calico": "V8 + mobile full-board fit",
-    "porknova": "v11.7 development checkpoint, core fixes applied"
+    "realtime": "existing v11.4 revision-only Broadcast + polling fallback preserved",
+    "fantasy_realms": "existing unified Supabase room/private state preserved",
+    "calico": "existing V8/mobile-fit file preserved byte-for-byte",
+    "powergrid": "existing Germany beta runtime preserved; unified migration made social-compatible",
+    "pokemon_minima": "replaces legacy Pocket Nova runtime; legacy DB key pocketnova retained; online 2-player",
+    "social_deduction": "Avalon + Secret Hitler base + One Night Werewolf"
   },
-  "porknova_status": [
-    "PLAYABLE_PROTOTYPE",
-    "NOT_RULES_COMPLETE",
-    "ONLINE_E2E_UNVERIFIED"
+  "removed_runtime": [
+    "pocketnova/",
+    "online-pocketnova.html",
+    "solo-pocketnova.html",
+    "SOURCE_UPLOADS/pocketnova-v3.zip",
+    "docs/porknova-v11.7-handoff/"
   ],
-  "supabase_new_migration_in_v11_4_8": false,
-  "existing_db_required_migration_if_missing": "SUPABASE_FANTASY_REALMS_UNIFIED.sql",
-  "validation_command": "python tests/verify_integrated_release.py"
+  "pokemon_minima_state_kind": "pokemon-minima-v1-boardmate",
+  "pokemon_minima_db_key": "pocketnova",
+  "supabase_migration_required_for_social_games": "SUPABASE_SOCIAL_DEDUCTION_V1.sql",
+  "validation_commands": [
+    "python tests/verify_integrated_release.py",
+    "node tests/social_deduction_static_test.cjs"
+  ],
+  "live_e2e": "required after deployment on the user's Supabase project"
 }

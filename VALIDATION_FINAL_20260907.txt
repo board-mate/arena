@@ -1,0 +1,39 @@
+PASS: legacy pocketnova directory removed
+PASS: legacy online-pocketnova removed
+PASS: legacy solo-pocketnova removed
+PASS: legacy pocketnova source ZIP removed
+PASS: Pokemon Minima core exists
+PASS: Pokemon Minima solo exists
+PASS: Pokemon Minima online exists
+PASS: app registers Pokemon Minima max 2
+PASS: app registers all social games
+PASS: app registers avalon
+PASS: app registers secrethitler
+PASS: app registers onenightwerewolf
+PASS: app uses room creator v10
+PASS: online wrapper state kind v1
+PASS: online wrapper stores currentSeat
+PASS: online draft ownership lock
+PASS: online turn ownership lock
+PASS: online rejects non-2-player game state
+PASS: Pokemon solo autosave/resume exists
+PASS: Social SQL Pokemon max 2
+PASS: Social SQL Pokemon display name
+PASS: Social SQL private secret table locked down
+PASS: Pokemon expected 16 card names
+PASS: Pokemon card ids c01-c16 — ['c01', 'c02', 'c03', 'c04', 'c05', 'c06', 'c07', 'c08', 'c09', 'c10', 'c11', 'c12', 'c13', 'c14', 'c15', 'c16']
+PASS: preserved fresh arena online-calico.html
+PASS: preserved fresh arena online-fantasy-realms.html
+PASS: preserved fresh arena online-powergrid.html
+PASS: preserved fresh arena multi-common.js
+PASS: preserved fresh arena config.js
+PASS: preserved fresh arena styles.css
+
+ALL CHECKS PASSED
+PASS: Pokemon card artwork assets — 16 WebP files (c01-c16)
+PASS: node --check app.js / multi-common.js / social-common.js
+PASS: inline JavaScript syntax — Pokemon Minima + 3 social game pages
+PASS: tests/verify_integrated_release.py
+PASS: tests/social_deduction_static_test.cjs
+
+NOTE: Static/code validation passed. Live multi-browser Supabase E2E was not run in this environment.

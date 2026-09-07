@@ -1,87 +1,49 @@
-# Supabase 적용 순서 — BoardMate Arcade 통합 v11.4.8
+# Supabase 적용 순서 — BoardMate Arena FINAL 2026-09-07
 
-## 가장 먼저 판단할 것
+## 기존 운영 DB가 현재 arena-main에서 정상 동작 중인 경우
 
-### A. 현재 `board-mate.github.io/arena`에서 방 만들기와 v11.4.7 기능이 이미 동작하는 운영 DB
-먼저 `SUPABASE_VERIFY_INTEGRATED_V11_4_8.sql`만 실행하세요.
+이번 최종 통합에서 새로 필요한 DB 작업은 소셜 디덕션 3종입니다.
 
-검증 결과에서 Fantasy private state/RPC까지 모두 존재하면 **추가 migration은 필요 없습니다.**
+1. `SUPABASE_SOCIAL_DEDUCTION_V1.sql`
+2. `SUPABASE_VERIFY_SOCIAL_DEDUCTION.sql`
 
-### B. v11.3 DB에서 v11.4.7 Fantasy 통합 SQL을 아직 실행하지 않은 경우
-다음 순서로 실행하세요.
+이 migration은 다음을 함께 처리합니다.
 
-1. `SUPABASE_FANTASY_REALMS_UNIFIED.sql`
-2. `SUPABASE_VERIFY_INTEGRATED_V11_4_8.sql`
-3. 필요하면 `SUPABASE_REALTIME_V11_4.sql`로 Realtime 의존 RPC 상태 추가 확인
+- `avalon`, `secrethitler`, `onenightwerewolf` 등록
+- 소셜 게임 방 생성 RPC `create_boardmate_room_v10`
+- 실시간 소셜 게임용 private state/RPC
+- 포켓몬 미니마의 호환 game key `pocketnova`를 최소/최대 2인으로 맞춤
+- `boardmate_game_ko('pocketnova')` 표시명을 `포켓몬 미니마`로 갱신
 
-### C. 완전히 새 Supabase 프로젝트
-1. `supabase.sql` 전체를 한 번 실행
-2. `SUPABASE_VERIFY_INTEGRATED_V11_4_8.sql` 실행
-3. `config.js`의 URL / anon publishable key를 새 프로젝트 값으로 변경
+## Power Grid migration을 아직 적용하지 않은 DB
 
-## v11.4 Realtime에서 하지 말아야 할 것
+1. `SUPABASE_POWERGRID_UNIFIED.sql`
+2. `SUPABASE_VERIFY_POWERGRID.sql`
+3. `SUPABASE_SOCIAL_DEDUCTION_V1.sql`
+4. `SUPABASE_VERIFY_SOCIAL_DEDUCTION.sql`
 
-BoardMate v11.4는 **Postgres Changes가 아니라 Realtime Broadcast**를 사용합니다.
+소셜 SQL을 마지막에 실행하는 순서를 권장합니다.
 
-따라서:
+## Fantasy Realms migration도 아직 없는 더 오래된 DB
 
-- `boardmate_room_state`를 `supabase_realtime` publication에 추가할 필요 없음
-- Broadcast payload에 게임 state/손패를 넣지 않음
-- payload는 revision 신호만 사용
-- state는 기존 보호 RPC로 재조회
+먼저 기존 버전의 필수 migration을 순서대로 적용한 뒤 위 소셜 SQL을 마지막에 실행하세요.
 
-즉 `SUPABASE_REALTIME_V11_4.sql`은 migration 파일이 아니라 **검증용 SQL**입니다.
+- `SUPABASE_FANTASY_REALMS_UNIFIED.sql`
+- 필요 시 `SUPABASE_POWERGRID_UNIFIED.sql`
+- 마지막에 `SUPABASE_SOCIAL_DEDUCTION_V1.sql`
 
-## v11.4.7 Fantasy에서 추가되는 DB 요소
+## 완전히 새 Supabase 프로젝트
 
-`SUPABASE_FANTASY_REALMS_UNIFIED.sql`이 추가/갱신하는 핵심:
+현재 `supabase.sql`은 역사적으로 누적된 BoardMate 기준 스키마이며 소셜 디덕션 V1은 별도 migration입니다.
 
-- `fantasyrealms` 게임 constraint 등록
-- 3~6인 min/max
-- `create_boardmate_room_v8` Fantasy 지원
-- `boardmate_turn_seat` Fantasy 지원
-- `boardmate_game_private_states`
-- `get_boardmate_fantasy_state`
-- `put_boardmate_fantasy_state`
+1. `supabase.sql`
+2. 필요한 기존 통합 migration (`SUPABASE_FANTASY_REALMS_UNIFIED.sql`, `SUPABASE_POWERGRID_UNIFIED.sql`)
+3. `SUPABASE_SOCIAL_DEDUCTION_V1.sql`
+4. 각 VERIFY SQL
+5. `config.js`에 새 프로젝트 URL + anon/publishable key 설정
 
-`boardmate_game_private_states`는 직접 브라우저 CRUD를 허용하지 않고,
-security definer RPC를 통해 좌석에 맞는 private state만 반환하도록 설계되어 있습니다.
+## 주의
 
-## 이번 v11.4.8 추가 변경의 DB 영향
-
-### 캘리코 모바일 전체 맞춤
-DB 변경 **없음**.
-
-### 포크노바 v11.7 이미지/코어 수정
-DB 변경 **없음**.
-
-포크노바 이미지 매핑은 게임 state/Supabase state와 분리되어 있으며
-브라우저 localStorage/BroadcastChannel 계층에서 관리됩니다.
-
-## `SUPABASE_RPC_FIX_v11_1.sql`은 언제 쓰나
-
-정상 운영 DB에는 다시 실행할 필요가 없습니다.
-
-다음 오류가 실제로 발생할 때만 복구용으로 사용하세요.
-
-- 방 생성 RPC가 schema cache에서 없음
-- 게임 취소 RPC가 없음
-
-그 뒤 verify SQL을 다시 실행하세요.
-
-## config.js
-
-현재 통합 ZIP은 기존 운영 `config.js` 값을 보존합니다.
-
-Supabase 프로젝트를 바꾸는 경우에만:
-
-```js
-window.BOARDMATE_CONFIG = {
-  supabaseUrl: "https://<project>.supabase.co",
-  supabaseAnonKey: "<anon publishable key>"
-};
-```
-
-로 변경합니다.
-
-**service_role key는 절대 넣지 마세요.**
+- 정상 운영 DB에 `SUPABASE_RPC_FIX_v11_1.sql` 같은 과거 복구용 SQL을 임의로 다시 실행하지 마세요.
+- 과거 migration은 최신 게임 constraint를 다시 좁힐 수 있습니다. 꼭 필요하면 최종적으로 `SUPABASE_SOCIAL_DEDUCTION_V1.sql`을 다시 실행해 현재 게임 목록/helper를 복구하세요.
+- `service_role` 키를 브라우저 `config.js`에 넣지 마세요.

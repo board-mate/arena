@@ -26,7 +26,7 @@ Realtime 메시지에는 **게임 상태/손패/비밀정보를 넣지 않고 re
 - `online-cascadia.html`
 - `online-kraken.html`
 - `online-maskmen.html`
-- `online-pocketnova.html`
+- `online-pokemon-minima.html`
 - `online-thegame.html`
 
 추가 파일:
@@ -150,7 +150,7 @@ BoardMate는 Supabase Auth가 아니라 자체 닉네임+PIN 세션을 사용합
 - 캐스캐디아
 - 크라켄
 - 마스크맨
-- 포크노바
+- 포켓몬 미니마
 - 더 게임
 
 Realtime이 정상이라면 평상시 게임 행동은 Broadcast로 즉시 전달됩니다.

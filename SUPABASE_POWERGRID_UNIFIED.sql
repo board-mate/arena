@@ -4,19 +4,21 @@
 
 alter table public.boardmate_rooms drop constraint if exists boardmate_rooms_game_check;
 alter table public.boardmate_rooms add constraint boardmate_rooms_game_check
-  check (game in ('maskmen','acquire','calico','cascadia','pocketnova','thegame','kraken','fantasyrealms','powergrid'));
+  check (game in ('maskmen','acquire','calico','cascadia','pocketnova','thegame','kraken','fantasyrealms','powergrid','avalon','secrethitler','onenightwerewolf'));
 
 alter table public.boardmate_ratings drop constraint if exists boardmate_ratings_game_check;
 alter table public.boardmate_ratings add constraint boardmate_ratings_game_check
-  check (game in ('maskmen','acquire','calico','cascadia','pocketnova','thegame','kraken','fantasyrealms','powergrid'));
+  check (game in ('maskmen','acquire','calico','cascadia','pocketnova','thegame','kraken','fantasyrealms','powergrid','avalon','secrethitler','onenightwerewolf'));
 
 create or replace function public.boardmate_game_max(p_game text)
 returns integer language sql immutable as $$
   select case
-    when p_game in ('calico','cascadia','pocketnova') then 4
+    when p_game in ('calico','cascadia') then 4
+    when p_game='pocketnova' then 2
     when p_game='thegame' then 5
     when p_game='kraken' then 8
     when p_game in ('fantasyrealms','powergrid') then 6
+    when p_game in ('avalon','secrethitler','onenightwerewolf') then 10
     else 6 end;
 $$;
 revoke all on function public.boardmate_game_max(text) from public, anon, authenticated;
@@ -25,7 +27,8 @@ create or replace function public.boardmate_game_min(p_game text)
 returns integer language sql immutable as $$
   select case
     when p_game in ('calico','cascadia','pocketnova','thegame','powergrid') then 2
-    when p_game='fantasyrealms' then 3
+    when p_game in ('fantasyrealms','onenightwerewolf') then 3
+    when p_game in ('avalon','secrethitler') then 5
     else 3 end;
 $$;
 revoke all on function public.boardmate_game_min(text) from public, anon, authenticated;
@@ -37,11 +40,14 @@ returns text language sql immutable as $$
     when 'acquire' then '어콰이어'
     when 'calico' then '캘리코'
     when 'cascadia' then '캐스캐디아'
-    when 'pocketnova' then '포크노바'
+    when 'pocketnova' then '포켓몬 미니마'
     when 'thegame' then '더 게임'
     when 'kraken' then '노터치 크라켄'
     when 'fantasyrealms' then '판타지 왕국'
     when 'powergrid' then '파워그리드'
+    when 'avalon' then '레지스탕스 아발론'
+    when 'secrethitler' then '시크릿 히틀러'
+    when 'onenightwerewolf' then '한밤의 늑대인간'
     else '보드게임' end;
 $$;
 revoke all on function public.boardmate_game_ko(text) from public, anon, authenticated;
