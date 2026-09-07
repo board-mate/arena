@@ -73,7 +73,10 @@
       var cap = PG.RESOURCE_CAPACITY[r];
       var filled = state.resourceMarket[r];
       var emptyCount = cap - filled;
-      var price = filled > 0 ? PG.LADDERS[r][emptyCount] : null;
+      var boardId=(state.map && state.map.boardId) || 'germany';
+      var boardRules=(PG.BOARD_DEFS[boardId] || PG.BOARD_DEFS.germany).rules || {};
+      var usaStorage=(r==='coal' && boardRules.usaCoalStorage && PG.usaCoalStorageCount) ? PG.usaCoalStorageCount(state) : 0;
+      var price = filled > 0 ? PG.LADDERS[r][emptyCount] : (usaStorage>0 ? 8 : null);
       var refillTable = PG.RESOURCE_REPLENISH && PG.RESOURCE_REPLENISH[state.numPlayers];
       var refill = refillTable && refillTable[r] ? refillTable[r][Math.max(0, Math.min(2, state.step-1))] : null;
       if (r === 'uranium' && state.flags && state.flags.uraniumResupplyStopped) refill = 0;
@@ -82,7 +85,7 @@
         cells += '<i class="'+(i>=emptyCount?'filled':'')+'"></i>';
       }
       return '<div class="pg-resource-track-row">' +
-        '<div class="pg-resource-track-head"><b>'+esc(resLabel(r))+'</b><span>'+filled+'/'+cap+' · '+(price!=null?('최저 '+price+'€'):'품절')+(refill!=null?(' · 보충 +'+refill):'')+'</span></div>' +
+        '<div class="pg-resource-track-head"><b>'+esc(resLabel(r))+'</b><span>'+filled+'/'+cap+' · '+(price!=null?((filled>0?'최저 ':'저장고 ')+price+'€'):'품절')+(usaStorage>0?(' · 저장고 '+usaStorage):'')+(refill!=null?(' · 보충 +'+refill):'')+'</span></div>' +
         '<div class="pg-resource-track-cells '+esc(r)+'">'+cells+'</div>' +
       '</div>';
     }).join('');
@@ -307,34 +310,40 @@
   // ------------------------------------------------------------
   function renderResourceMarket(state, mySeat, canBuy) {
     var p = mySeat != null ? state.players[mySeat] : null;
+    var boardId=(state.map && state.map.boardId) || 'germany';
+    var rules=(PG.BOARD_DEFS[boardId] || PG.BOARD_DEFS.germany).rules || {};
+    var usaStorage = rules.usaCoalStorage && PG.usaCoalStorageCount ? PG.usaCoalStorageCount(state) : 0;
     var html = '<div class="pg-resource-grid">';
     ['coal', 'oil', 'garbage', 'uranium'].forEach(function (r) {
       var filled = state.resourceMarket[r];
       var cap = PG.RESOURCE_CAPACITY[r];
       var emptyCount = cap - filled;
-      var price = filled > 0 ? PG.LADDERS[r][emptyCount] : null;
+      var usaCoalFallback = r === 'coal' && rules.usaCoalStorage && filled <= 0 && usaStorage > 0;
+      var price = filled > 0 ? PG.LADDERS[r][emptyCount] : (usaCoalFallback ? 8 : null);
       html += '<div class="pg-res-box">';
       html += '<div class="name">' + resLabel(r) + '</div>';
       html += '<div class="amt">' + filled + '</div>';
-      html += '<div class="price">' + (price != null ? price + '€' : '품절') + '</div>';
-      if (canBuy && filled > 0 && p) {
+      html += '<div class="price">' + (price != null ? price + '€' + (usaCoalFallback ? ' 저장고' : '') : '품절') + '</div>';
+      if (r === 'coal' && rules.usaCoalStorage) html += '<div style="margin-top:4px;font-size:10px;color:var(--muted)">저장고 '+usaStorage+'개 · 시장 품절 시 8€/개</div>';
+      if (canBuy && price != null && p) {
         var room = 0;
         while (room < 12 && PG.canStoreResource(p.plants, p.stock, r, room + 1)) room += 1;
+        var available = filled > 0 ? filled : (usaCoalFallback ? usaStorage : 0);
+        room=Math.min(room,available);
         if (room > 0) {
           var canAfford1 = p.money >= price;
           html += '<div style="margin-top:6px;display:flex;gap:4px;justify-content:center">';
           html += '<button class="pg-btn small" data-action="buyResource" data-resource="' + r + '" data-qty="1"' + (canAfford1 ? '' : ' disabled') + '>+1</button>';
-          if (room >= 3) {
-            html += '<button class="pg-btn small" data-action="buyResource" data-resource="' + r + '" data-qty="3"' + (canAfford1 ? '' : ' disabled') + '>+3</button>';
-          }
+          if (room >= 3 && p.money >= price*3) html += '<button class="pg-btn small" data-action="buyResource" data-resource="' + r + '" data-qty="3">+3</button>';
           html += '</div>';
         } else {
-          html += '<div style="margin-top:6px;font-size:11px;color:var(--muted)">저장 공간 가득참</div>';
+          html += '<div style="margin-top:6px;font-size:11px;color:var(--muted)">' + (available<=0?'구매 가능한 자원 없음':'저장 공간 가득참') + '</div>';
         }
       }
       html += '</div>';
     });
     html += '</div>';
+    if (rules.usaCoalStorage) html += '<div class="pg-setup-warning" style="margin-top:8px">🇺🇸 석탄 저장고: 시장의 석탄이 0개일 때만 저장고에서 1개당 8€로 구매할 수 있습니다. 발전에 사용한 석탄은 저장고로 가고, 정리 단계의 석탄 보충은 그 저장고에서 시장으로 돌아옵니다.</div>';
     return html;
   }
 

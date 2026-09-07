@@ -4,15 +4,15 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>파워그리드 · BoardMate 온라인</title>
-  <link rel="stylesheet" href="./powergrid/pg-styles.css?v=14">
+  <link rel="stylesheet" href="./powergrid/pg-styles.css?v=15">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="./config.js"></script>
 </head>
 <body>
 <div class="pg-app" id="app">불러오는 중…</div>
-<script src="./powergrid/data/germany-map.js?v=14"></script>
-<script src="./powergrid/engine.js?v=14"></script>
-<script src="./powergrid/ui.js?v=14"></script>
+<script src="./powergrid/data/germany-map.js?v=15"></script>
+<script src="./powergrid/engine.js?v=15"></script>
+<script src="./powergrid/ui.js?v=15"></script>
 <script type="module">
 import {
   configured, roomId, getMe, loadRoom, loadState, saveState, startStatePoll,
@@ -25,36 +25,9 @@ let me,room,members,mySeat,isHost,state=null,revision=0,stopPoll=null,submitted=
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
 function setupMapPreview(boardId){
-  const G=PowerGrid.mapData(boardId), def=PowerGrid.BOARD_DEFS[boardId];
-  const selectedRegions=new Set(PowerGrid.defaultRegions(members.length,boardId));
-  let bg='';
-  if(G.REGION_SHADE_POLYGONS){
-    for(const rid of G.REGION_ORDER){
-      const r=G.REGIONS[rid], poly=G.REGION_SHADE_POLYGONS[rid]; if(!r||!poly)continue;
-      const pts=poly.map(p=>p.join(',')).join(' ');
-      bg+=`<polygon points="${pts}" fill="${r.color}" fill-opacity="${selectedRegions.has(rid)?0.42:0.13}" stroke="${r.color}" stroke-opacity=".55" stroke-width="2"></polygon>`;
-    }
-  }else{
-    for(const rid of G.REGION_ORDER){
-      const r=G.REGIONS[rid]; if(!r)continue;
-      const cities=G.CITIES.filter(c=>c.region===rid); if(!cities.length)continue;
-      const xs=cities.map(c=>c.x), ys=cities.map(c=>c.y);
-      const minx=Math.max(10,Math.min(...xs)-48), maxx=Math.min(G.BOARD_WIDTH-10,Math.max(...xs)+48);
-      const miny=Math.max(10,Math.min(...ys)-42), maxy=Math.min(G.BOARD_HEIGHT-10,Math.max(...ys)+42);
-      bg+=`<rect x="${minx}" y="${miny}" width="${maxx-minx}" height="${maxy-miny}" rx="24" fill="${r.color}" fill-opacity="${selectedRegions.has(rid)?0.38:0.12}" stroke="${r.color}" stroke-opacity=".48" stroke-width="2"></rect>`;
-    }
-  }
-  let edges='';
-  for(const e of G.EDGES){
-    const a=G.CITY_BY_ID[e.a],b=G.CITY_BY_ID[e.b]; if(!a||!b)continue;
-    edges+=`<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" stroke="rgba(226,232,240,.48)" stroke-width="2"></line>`;
-  }
-  let cities='';
-  for(const c of G.CITIES){
-    const on=selectedRegions.has(c.region);
-    cities+=`<circle cx="${c.x}" cy="${c.y}" r="${on?7:5}" fill="${on?'#f8fafc':'#64748b'}" stroke="#0f172a" stroke-width="2"></circle>`;
-  }
-  return `<svg class="pg-map-choice-svg" viewBox="0 0 ${G.BOARD_WIDTH} ${G.BOARD_HEIGHT}" preserveAspectRatio="xMidYMid meet" aria-label="${esc(def.name)} 지도 미리보기">${bg}${edges}${cities}</svg>`;
+  const def=PowerGrid.BOARD_DEFS[boardId] || PowerGrid.BOARD_DEFS.germany;
+  const src=`./powergrid/assets/map-previews/${boardId}.png?v=15`;
+  return `<div class="pg-map-choice-real"><img src="${src}" alt="${esc(def.name)} 실제 지형 기반 지도 미리보기"><span>실제 지형 기반 미리보기</span></div>`;
 }
 
 function setupView(){

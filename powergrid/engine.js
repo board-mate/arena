@@ -177,7 +177,8 @@
       rules:{ uraniumStopOnPlant39:false, usaCoalStorage:true, koreaSplitMarkets:false },
       features:[
         '미국맵은 동부/서부 연결비 차이가 큰 확장형 지형으로 표시됩니다.',
-        '재충전 규칙: 기본 자원 보충표를 사용하고, 석탄 시장이 비면 8 Elektro의 석탄 저장고 구매 규칙을 표시합니다.',
+        '미국 석탄 저장고: 석탄을 발전에 사용하면 사용한 석탄은 시장 옆 저장고로 이동합니다. 석탄 시장이 완전히 비었을 때 저장고에 석탄이 남아 있으면 1개당 8 Elektro로 구매할 수 있습니다.',
+        '정리 단계의 석탄 보충은 저장고의 석탄을 시장으로 되돌립니다. 따라서 저장고까지 비면 석탄은 다음 사용분이 저장고로 돌아오기 전까지 살 수 없습니다.',
         '경매·건설·자원·전력 공급은 공통 Power Grid Recharged 엔진을 사용합니다.',
         '지도 해상도 대신 별도 연결비 오버레이와 연결비 표를 제공해 지역 간 연결 통로 비용을 확인합니다.'
       ]
@@ -706,12 +707,32 @@
     return state.order[idx];
   }
 
+  function usaCoalStorageCount(state) {
+    var boardId=(state.map && state.map.boardId) || 'germany';
+    var rules=(BOARD_DEFS[boardId] || BOARD_DEFS.germany).rules || {};
+    if (!rules.usaCoalStorage) return 0;
+    // 미국에서는 24개 석탄이 시장·플레이어 발전소·저장고 사이를 순환합니다.
+    // 시작 시 24개 모두 시장에 있으므로 저장고는 0개입니다.
+    return Math.max(0, RESOURCE_CAPACITY.coal - (state.resourceMarket.coal || 0) - totalHeldByPlayers(state, 'coal'));
+  }
+
   function actionBuyResource(state, seat, resource, qty) {
     if (resourceTurnSeat(state) !== seat) throw new Error('지금은 당신의 자원 구매 차례가 아닙니다.');
     var p = state.players[seat];
+    var boardId=(state.map && state.map.boardId) || 'germany';
+    var rules=(BOARD_DEFS[boardId] || BOARD_DEFS.germany).rules || {};
     for (var i = 0; i < qty; i++) {
       if (!canStoreResource(p.plants, p.stock, resource, 1)) throw new Error('더 이상 저장할 공간이 없습니다.');
       var filled = state.resourceMarket[resource];
+      var fromUsaCoalStorage = resource === 'coal' && rules.usaCoalStorage && filled <= 0;
+      if (fromUsaCoalStorage) {
+        var stored = usaCoalStorageCount(state);
+        if (stored <= 0) throw new Error('석탄 시장과 8€ 석탄 저장고가 모두 비었습니다.');
+        if (p.money < 8) throw new Error('8€ 석탄 저장고에서 구매할 돈이 부족합니다.');
+        p.money -= 8;
+        p.stock.coal += 1;
+        continue;
+      }
       if (filled <= 0) throw new Error('시장에 남은 ' + resource + '가 없습니다.');
       var emptyCount = RESOURCE_CAPACITY[resource] - filled;
       var price = LADDERS[resource][emptyCount];
@@ -720,7 +741,8 @@
       state.resourceMarket[resource] -= 1;
       p.stock[resource] += 1;
     }
-    pushLog(state, state.players[seat].name + '님이 ' + resource + ' ' + qty + '개를 구매했습니다.');
+    var extra=(resource==='coal' && rules.usaCoalStorage && state.resourceMarket.coal<=0) ? ' (시장 소진 시 저장고 8€ 규칙 적용)' : '';
+    pushLog(state, state.players[seat].name + '님이 ' + resource + ' ' + qty + '개를 구매했습니다.' + extra);
   }
 
   function actionEndResourceTurn(state, seat) {
@@ -1036,6 +1058,7 @@
     storageProfile: storageProfile,
     fuelUseForPlants: fuelUseForPlants,
     resourceTurnSeat: resourceTurnSeat,
+    usaCoalStorageCount: usaCoalStorageCount,
     buildTurnSeat: buildTurnSeat,
     powerTurnSeat: powerTurnSeat,
     currentOfferer: currentOfferer,
