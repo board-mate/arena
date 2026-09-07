@@ -1,72 +1,429 @@
 <!doctype html>
 <html lang="ko">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>프라코로 · BoardMate 온라인</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>BoardMate · 프라코로 배틀</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="./config.js"></script>
 <style>
 :root{--bg:#0b1220;--panel:#172033;--panel2:#101827;--text:#f8fafc;--muted:#a7b3c7;--line:#2b3950;--gold:#f4c95d;--ok:#22c55e;--danger:#ef4444;--accent:#6ea8fe}
-*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at top,#283a59,#0b1220 58%);color:var(--text);font-family:system-ui,-apple-system,"Noto Sans KR",sans-serif;min-height:100vh}.app{max-width:1280px;margin:auto;padding:14px}.top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}.brand h1{margin:0;color:var(--gold);font-size:clamp(24px,4vw,38px)}.brand p{margin:5px 0;color:var(--muted);font-size:13px}.badge{border:1px solid var(--line);background:#0e1626;border-radius:999px;padding:7px 11px;font-size:12px}.panel{background:rgba(23,32,51,.96);border:1px solid var(--line);border-radius:16px;padding:14px;margin-top:12px;box-shadow:0 10px 30px rgba(0,0,0,.18)}.toolbar{display:flex;gap:8px;justify-content:space-between;align-items:center;flex-wrap:wrap}.btn{border:0;border-radius:10px;padding:10px 13px;font-weight:800;color:white;background:#41516b;cursor:pointer}.btn.primary{background:#b8830a}.btn.good{background:#15803d}.btn.danger{background:#b91c1c}.btn:disabled{opacity:.4;cursor:not-allowed}.setup-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.player-card{background:#0f1727;border:1px solid var(--line);border-radius:14px;padding:12px}.player-card h2{margin:0 0 8px}.pokemon-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.pkm{border:1px solid var(--line);background:#18243a;border-radius:10px;padding:10px;cursor:pointer;color:#fff;text-align:left}.pkm.selected{outline:2px solid var(--gold);background:#243653}.pkm .type{font-size:12px;color:var(--muted)}.attacks{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:10px}.attack{border:1px solid var(--line);border-radius:10px;padding:9px;background:#151f33;cursor:pointer;text-align:left;color:#fff}.attack.selected{outline:2px solid var(--accent);background:#1d2b46}.attack:disabled{opacity:.45;cursor:not-allowed}.attack strong{display:block}.attack small{color:var(--muted);line-height:1.4}.battle-head{display:grid;grid-template-columns:1fr auto 1fr;gap:12px;align-items:center}.fighter{text-align:center}.fighter .name{font-size:18px;font-weight:900}.hp{font-size:36px;font-weight:900;color:var(--gold);line-height:1}.hpbar{height:9px;background:#273244;border-radius:999px;overflow:hidden;margin:7px 0}.hpbar i{display:block;height:100%;background:#22c55e}.versus{font-size:24px;font-weight:900;color:#fca5a5;text-align:center}.turn-note{color:var(--muted);font-size:13px;text-align:center}.cards-row{display:flex;gap:8px;overflow-x:auto;padding:8px 1px}.battle-card{flex:0 0 190px;border:1px solid var(--line);border-radius:12px;padding:10px;background:#18243a;cursor:pointer;text-align:left;color:#fff}.battle-card.active{outline:2px solid var(--gold)}.battle-card:disabled{opacity:.4;cursor:not-allowed}.result{padding:12px;border-radius:12px;background:#0e1626;border:1px solid var(--line);line-height:1.55}.log{max-height:260px;overflow:auto;font-size:13px;line-height:1.6;color:#cbd5e1}.choice-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:10px}.footer-note{font-size:11px;color:#8ea0ba;line-height:1.55}@media(max-width:760px){.setup-grid{grid-template-columns:1fr}.battle-head{grid-template-columns:1fr}.versus{font-size:18px}.pokemon-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.attacks{grid-template-columns:1fr}.battle-card{flex-basis:165px}.app{padding:9px}}
-</style></head><body>
+*{box-sizing:border-box}html,body{margin:0;min-height:100%;font-family:system-ui,-apple-system,"Noto Sans KR",sans-serif;background:radial-gradient(circle at top,#283a59,#0b1220 58%);color:var(--text)}body{min-height:100vh}.app{max-width:1280px;margin:auto;padding:12px 14px 28px}
+.top{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}.brand h1{margin:0;color:var(--gold);font-size:clamp(24px,4vw,36px)}.brand p{margin:4px 0;color:var(--muted);font-size:12px}
+.badge{border:1px solid var(--line);background:#0e1626;border-radius:999px;padding:7px 11px;font-size:12px}.toolbar{display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.panel{background:rgba(23,32,51,.97);border:1px solid var(--line);border-radius:16px;padding:14px;margin-top:12px;box-shadow:0 10px 30px rgba(0,0,0,.18)}
+.btn{border:0;border-radius:10px;padding:10px 13px;font-weight:800;color:#fff;background:#41516b;cursor:pointer;font-family:inherit}.btn.primary{background:#b8830a}.btn.good{background:#15803d}.btn.danger{background:#b91c1c}.btn:disabled{opacity:.4;cursor:not-allowed}
+.turn-note,.small{font-size:12px;color:var(--muted);line-height:1.45}.setup-grid{display:grid;grid-template-columns:1.15fr .85fr;gap:12px}.player-card{background:#0f1727;border:1px solid var(--line);border-radius:14px;padding:12px}.player-card h2{margin:.1em 0 .5em;font-size:18px}
+.pokemon-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.pkm{border:1px solid var(--line);background:#18243a;border-radius:10px;padding:10px;cursor:pointer;color:#fff;text-align:left;min-height:82px}.pkm.selected{outline:2px solid var(--gold);background:#243653}.pkm .type{font-size:12px;color:var(--muted);margin-top:3px}.pkm img{width:56px;height:56px;object-fit:contain;float:right}
+.attacks{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}.attack{border:1px solid var(--line);border-radius:10px;padding:9px;background:#151f33;cursor:pointer;text-align:left;color:#fff}.attack.selected{outline:2px solid var(--accent);background:#1d2b46}.attack:disabled{opacity:.45;cursor:not-allowed}.attack strong{display:block;font-size:13px}.attack small{display:block;color:var(--muted);line-height:1.4;margin-top:3px}
+.ene-config{overflow:auto}.ene-row{display:grid;grid-template-columns:54px repeat(6,64px);gap:5px;align-items:center;margin-bottom:7px;min-width:440px}.ene-label{font-size:11px;color:var(--muted)}.ene-select{width:64px;background:#0d1117;border:1px solid #334155;border-radius:8px;color:#fff;padding:6px 2px;text-align:center}
+.battle-head{display:grid;grid-template-columns:1fr auto 1fr;gap:12px;align-items:center}.fighter{text-align:center;background:#0f1727;border:1px solid var(--line);border-radius:14px;padding:11px}.fighter.me{border-color:var(--accent)}.fighter.active{box-shadow:0 0 0 3px rgba(110,168,254,.18)}.fighter .name{font-size:16px;font-weight:900}.fighter .pkname{font-size:12px;color:var(--muted);margin-top:4px}.hp{font-size:34px;font-weight:900;color:var(--gold);line-height:1;margin-top:7px}
+.hpbar{height:9px;background:#273244;border-radius:999px;overflow:hidden;margin:7px 0}.hpbar i{display:block;height:100%;background:#22c55e}.versus{font-size:22px;font-weight:900;color:#fca5a5;text-align:center}
+.dice-row{display:flex;gap:7px;justify-content:center;flex-wrap:wrap;margin-top:7px}.die{width:42px;height:42px;border-radius:9px;border:2px solid #334155;background:#0d1117;display:flex;align-items:center;justify-content:center;font-size:16px;padding:2px;text-align:center}.die.chara{width:48px;height:48px;border-color:#7c3aed;font-size:21px}.roll-shake{animation:shake .38s ease-in-out}@keyframes shake{0%,100%{transform:translate(0)}20%{transform:translate(-4px,-2px) rotate(-5deg)}40%{transform:translate(4px,2px) rotate(5deg)}60%{transform:translate(-3px,1px) rotate(-3deg)}80%{transform:translate(3px,-1px) rotate(3deg)}}
+.cards-row{display:flex;gap:8px;overflow-x:auto;padding:8px 1px}.battle-card{flex:0 0 190px;border:1px solid var(--line);border-radius:12px;padding:10px;background:#18243a;cursor:pointer;text-align:left;color:#fff}.battle-card.active{outline:2px solid var(--gold)}.battle-card:disabled{opacity:.4;cursor:not-allowed}
+.result{padding:12px;border-radius:12px;background:#0e1626;border:1px solid var(--line);line-height:1.55;margin-top:10px}.result.ok{border-color:#166534;background:#052e16}.result.bad{border-color:#991b1b;background:#1c0101}
+.log{max-height:220px;overflow:auto;font-size:12px;line-height:1.6;color:#cbd5e1}.footer-note{font-size:11px;color:#8ea0ba;line-height:1.55}.choice-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:10px}
+@media(max-width:860px){.setup-grid{grid-template-columns:1fr}.battle-head{grid-template-columns:1fr}.versus{font-size:18px}.pokemon-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:520px){.app{padding:8px}.panel{padding:10px}.attacks{grid-template-columns:1fr}.battle-card{flex-basis:170px}.fighter .name{font-size:14px}.hp{font-size:30px}}
+</style>
+</head>
+<body>
 <div class="app" id="app">불러오는 중…</div>
+
 <script type="module">
 import {configured,roomId,getMe,loadRoom,loadState,saveState,subscribeRoomBroadcast,sendRoomBroadcast,touchPresence,submitMatch,showFatal} from './multi-common.js';
+
 (()=>{
 'use strict';
-const GAME='plakoro',VERSION=2,MAX_HP=120;
-const TYPES={grass:'풀',fire:'불꽃',water:'물',lightning:'번개',psychic:'초',fight:'격투',dark:'악',steel:'강철',dragon:'드래곤',flying:'비행',colorless:'무색'};
-const DIRS=['up','down','front','back','left','right'],DIR_KO={up:'상',down:'하',front:'앞',back:'뒤',left:'왼쪽',right:'오른쪽'};
-const ENERGY_LABEL_TO_KEY={'풀':'grass','불꽃':'fire','물':'water','번개':'lightning','초':'psychic','격투':'fight','악':'dark','강철':'steel','드래곤':'dragon','비행':'flying','무색':'colorless'};
-const STARTERS={
- bulbasaur:{name:'이상해씨',type:'grass',weak:'fire',faces:[['풀','악'],['불꽃','격투'],['번개','초'],['풀','악'],['풀','풀'],['불꽃','격투']],attacks:[
-  ['whip','덩굴채찍','grass',['grass'],10,['up','front','back'],20],['leaf','잎날가르기','grass',['grass','grass'],20,['up','left','right'],20],['seed','씨뿌리기','grass',['grass','grass'],10,['up','front','left','right'],0,'energy-1-then+1'],['knot','풀묶기','grass',['grass','grass','grass'],30,['up','front','back'],0,'forbid'],['tackle','돌진','grass',['grass','grass','grass'],30,['up','front'],'self30',40],['giga','기가드레인','grass',['grass','grass','grass','grass'],40,['up','left','right'],0,'heal40'],['acid','애시드봄','dark',['dark','colorless','colorless'],10,['up','left','right'],20]
- ]},
- charmander:{name:'파이리',type:'fire',weak:'water',faces:[['불꽃','격투'],['번개','비행'],['강철','초'],['불꽃','격투'],['불꽃','불꽃'],['번개','비행']],attacks:[
-  ['ember','불씨','fire',['fire','fire'],20,['up','front'],30],['heat','히트업','fire',['fire','fire'],10,['up','front'],0,'energy+2'],['flame','화염방사','fire',['fire','fire','fire'],40,['up','front'],'energy-1',20],['fang','불꽃엄니','fire',['fire','fire','fire','fire'],30,['up','front'],30],['storm','플레어스톰','fire',['colorless','colorless','colorless','colorless','colorless'],20,['up','left','right'],0,'count-fire*10'],['punch','번개펀치','lightning',['lightning','colorless','colorless'],10,['up','front','left','right'],20],['metal','메탈클로','steel',['steel','colorless','colorless'],20,['up'],40]
- ]},
- squirtle:{name:'꼬부기',type:'water',weak:'lightning',faces:[['풀','격투'],['물','비행'],['번개','악'],['풀','격투'],['물','물'],['번개','악']],attacks:[
-  ['water','물대포','water',['water'],10,['up','back'],20],['shell','껍질에숨기','water',['water'],0,['back'],0,'reduce20'],['wave','물의파동','water',['water','water'],20,['up','left','right'],20],['shellatk','셸어택','water',['water','water','water'],30,['up','front','back'],0,'reduce20'],['bubble','버블광선','water',['water','water','water'],30,['up','front','back'],0,'energy-1'],['anger','하이드로앤거','water',['water','water','water','water'],40,['up','front','back'],0,'lastHp40+60'],['mud','머드숏','fight',['fight','colorless','colorless','colorless'],30,['up','left','right'],30]
- ]},
- pikachu:{name:'피카츄',type:'lightning',weak:'fight',faces:[['강철','격투'],['物','비행'],['번개','악'],['강철','격투'],['번개','번개'],['물','비행']],attacks:[
-  ['bite','물기','lightning',['lightning'],10,['up','front'],30],['shock','전기쇼크','lightning',['lightning','lightning'],10,['up','down','left','right'],20],['rush','일렉러시','lightning',['lightning','lightning'],20,['up','front'],0,'extra-rush'],['thunder10','10만볼트','lightning',['lightning','lightning','lightning'],30,['up','left','right'],'energy-2',30],['thunder','번개','lightning',['lightning','lightning','lightning'],20,['up'],60],['volttackle','볼트태클','lightning',['lightning','lightning','lightning','lightning'],40,['up','front','back'],'self30',40],['iron','아이언테일','steel',['steel'],20,['up','front','back'],0,'reduce10']
- ]},
- eevee:{name:'이브이',type:'colorless',weak:'fight',faces:[['불꽃','비행'],['풀','초'],['물','악'],['불꽃','비행'],['무색','무색'],['풀','초']],attacks:[
-  ['tail','꼬리치기','colorless',['flying'],10,['up','left','right'],10],['tackle','몸통박치기','colorless',['flying','flying'],10,['up','front','left','right'],20],['rush','돌진','colorless',['flying','flying'],30,['up','front'],'self20',20],['bounce','바운스','colorless',['flying','flying','flying'],0,['up'],70],['dash','전력대시','colorless',['colorless','colorless','colorless','colorless','colorless'],40,['up','front','back'],40],['charm','애교부리기','psychic',['psychic'],20,['up','front','left','right'],0,'energy-2'],['bite','물어뜯기','dark',['dark','colorless','colorless'],10,['up','left','right'],20]
- ]},
- mew:{name:'뮤',type:'psychic',weak:'dark',faces:[['불꽃','초'],['물','격투'],['풀','악'],['불꽃','초'],['초','초'],['물','격투']],attacks:[
-  ['psy','염동력','psychic',['psychic'],10,['up','left','right'],20],['beam','사이코광선','psychic',['psychic','psychic'],20,['up','down'],30],['barrier','배리어','psychic',['psychic','psychic'],0,['up','front'],0,'reduce50'],['skip','메모리 스킵','psychic',['psychic','psychic'],20,['up','left','right'],0,'forbid'],['shot','사이코숏','psychic',['psychic','psychic','psychic'],30,['up','down','front','back'],20],['kinetic','사이코키네시스','psychic',['psychic','psychic','psychic'],20,['up','front','back'],0,'mostEnergy10'],['reflection','리플렉션','psychic',['psychic','psychic','psychic','psychic'],0,['up','left','right'],0,'reflect']
- ]}
-};
-// The 2026 starter dice faces are displayed in Korean above; the one accidental non-Korean
-// label is normalized below so it cannot break energy matching.
-STARTERS.pikachu.faces[1][0]='물';
-const allStarter=Object.entries(STARTERS).map(([id,x])=>({id,...x}));
+
+const GAME='plakoro';
+const VERSION=3;
+const MAX_HP=120;
+const STARTERS={"bulbasaur":{"name":"🌿 이상해씨","jp":"フシギダネ","type":"grass","typeLabel":"풀","color":"#22c55e","bg":"#052e16","border":"#16a34a","img":"https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/1.png","weak":"fire","energyFaces":[["grass","grass","grass","grass","colorless","colorless"],["grass","grass","grass","dark","colorless","colorless"],["grass","grass","grass","grass","grass","colorless"]],"waza":[{"name":"기가드레인","type":"grass","cost":[["grass",4]],"dmg":40,"effect":"서기/옆누움: 자신 HP 40 회복","id":"bulbasaur-0","effectCode":"heal40","bonusFaces":[],"bonus":0},{"name":"덩굴채찍","type":"grass","cost":[["grass",1]],"dmg":10,"effect":"서기/앞누움/뒷누움: +20 데미지","id":"bulbasaur-1","effectCode":"bonus_whip","bonusFaces":["front","upside"],"bonus":20},{"name":"잎날가르기","type":"grass","cost":[["grass",2]],"dmg":20,"effect":"서기/옆누움: +20 데미지","id":"bulbasaur-2","effectCode":"bonus_leaf","bonusFaces":["front","side"],"bonus":20},{"name":"돌진","type":"grass","cost":[["grass",3]],"dmg":30,"effect":"서기/앞누움: +40 데미지 / 역방향/뒷누움: 자신도 30 데미지","id":"bulbasaur-3","effectCode":"tackle_self30","bonusFaces":["front"],"bonus":40}]},"charmander":{"name":"🔥 파이리","jp":"ヒトカゲ","type":"fire","typeLabel":"불꽃","color":"#ef4444","bg":"#1c0101","border":"#dc2626","img":"https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/4.png","weak":"water","energyFaces":[["fire","fire","fire","fire","colorless","colorless"],["fire","fire","fire","colorless","colorless","colorless"],["fire","fire","fire","fire","fire","colorless"]],"waza":[{"name":"화염방사","type":"fire","cost":[["fire",3]],"dmg":40,"effect":"서기/앞누움: +20 / 역방향/뒷누움/옆누움: 다음 턴 에너지 -1","id":"charmander-0","effectCode":"flame","bonusFaces":["front"],"bonus":20},{"name":"불꽃이빨","type":"fire","cost":[["fire",4]],"dmg":30,"effect":"서기/앞누움/뒷누움: +30 데미지","id":"charmander-1","effectCode":null,"bonusFaces":[],"bonus":0},{"name":"불꽃쐐기","type":"fire","cost":[["fire",2]],"dmg":20,"effect":"서기/앞누움: 다음 턴 에너지 2개 증가","id":"charmander-2","effectCode":null,"bonusFaces":[],"bonus":0},{"name":"천둥펀치","type":"lightning","cost":[["lightning",1],["colorless",2]],"dmg":10,"effect":"서기/앞누움/옆누움: +20 데미지","id":"charmander-3","effectCode":null,"bonusFaces":[],"bonus":0}]},"squirtle":{"name":"💧 꼬부기","jp":"ゼニガメ","type":"water","typeLabel":"물","color":"#3b82f6","bg":"#0c1a36","border":"#2563eb","img":"https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/7.png","weak":"lightning","energyFaces":[["water","water","water","water","colorless","colorless"],["water","water","water","fighting","colorless","colorless"],["water","water","water","water","water","colorless"]],"waza":[{"name":"하이드로어","type":"water","cost":[["water",4]],"dmg":40,"effect":"서기/앞누움/뒷누움: HP 40 이하라면 +60 데미지","id":"squirtle-0","effectCode":"hydro_lowhp","bonusFaces":[],"bonus":0},{"name":"쉘어택","type":"water","cost":[["water",3]],"dmg":30,"effect":"서기/앞누움/뒷누움: 다음 턴 받는 데미지 -30","id":"squirtle-1","effectCode":"shell_shield30","bonusFaces":[],"bonus":0},{"name":"거품광선","type":"water","cost":[["water",3]],"dmg":30,"effect":"서기/앞누움/뒷누움: 다음 턴 상대 에너지 -1","id":"squirtle-2","effectCode":"bubble_energy_minus","bonusFaces":[],"bonus":0},{"name":"물의파동","type":"water","cost":[["water",2]],"dmg":20,"effect":"서기/옆누움: +20 데미지","id":"squirtle-3","effectCode":null,"bonusFaces":[],"bonus":0}]},"pikachu":{"name":"⚡ 피카츄","jp":"ピカチュウ","type":"lightning","typeLabel":"전기","color":"#eab308","bg":"#1a1200","border":"#ca8a04","img":"https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/25.png","weak":"fighting","energyFaces":[["lightning","lightning","lightning","lightning","colorless","colorless"],["lightning","lightning","lightning","colorless","colorless","colorless"],["lightning","lightning","lightning","lightning","lightning","colorless"]],"waza":[{"name":"볼트태클","type":"lightning","cost":[["lightning",4]],"dmg":40,"effect":"자신도 30 데미지 / 서기/앞누움/뒷누움: +30 데미지","id":"pikachu-0","effectCode":"volt_self30","bonusFaces":["front","upside"],"bonus":30},{"name":"10만볼트","type":"lightning","cost":[["lightning",3]],"dmg":30,"effect":"서기/옆누움: +30 데미지 / 역방향/앞누움/뒷누움: 자신도 30 데미지","id":"pikachu-1","effectCode":"thunder10","bonusFaces":["front","side"],"bonus":30},{"name":"번개","type":"lightning","cost":[["lightning",3]],"dmg":20,"effect":"서기: +60 데미지","id":"pikachu-2","effectCode":"thunder","bonusFaces":["front"],"bonus":60},{"name":"전기쇼크","type":"lightning","cost":[["lightning",2]],"dmg":10,"effect":"서기/옆누움/역방향: +20 데미지","id":"pikachu-3","effectCode":null,"bonusFaces":[],"bonus":0}]},"eevee":{"name":"🌀 이브이","jp":"イーブイ","type":"colorless","typeLabel":"무색","color":"#a8a29e","bg":"#1c1917","border":"#78716c","img":"https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/133.png","weak":"fighting","energyFaces":[["colorless","colorless","colorless","colorless","dark","psychic"],["colorless","colorless","colorless","colorless","colorless","dark"],["colorless","colorless","colorless","colorless","colorless","colorless"]],"waza":[{"name":"전력질주","type":"colorless","cost":[["colorless",5]],"dmg":40,"effect":"서기/앞누움/뒷누움: +40 데미지","id":"eevee-0","effectCode":"dash_bonus","bonusFaces":["front","upside"],"bonus":40},{"name":"물기","type":"dark","cost":[["dark",1],["colorless",2]],"dmg":10,"effect":"서기/옆누움: +20 데미지","id":"eevee-1","effectCode":null,"bonusFaces":[],"bonus":0},{"name":"몸통박치기","type":"colorless","cost":[["colorless",2]],"dmg":30,"effect":"서기/앞누움: +20 / 역방향/뒷누움: 자신도 20 데미지","id":"eevee-2","effectCode":"tackle_self20","bonusFaces":["front"],"bonus":20},{"name":"꼬리치기","type":"colorless","cost":[["colorless",1]],"dmg":10,"effect":"서기/옆누움: +10 데미지","id":"eevee-3","effectCode":null,"bonusFaces":[],"bonus":0}]},"mew":{"name":"🔮 뮤","jp":"ミュウ","type":"psychic","typeLabel":"에스퍼","color":"#d946ef","bg":"#2d0033","border":"#a21caf","img":"https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/151.png","weak":"dark","energyFaces":[["psychic","psychic","psychic","psychic","colorless","colorless"],["psychic","psychic","psychic","colorless","colorless","colorless"],["psychic","psychic","psychic","psychic","psychic","colorless"]],"waza":[{"name":"리플렉션","type":"psychic","cost":[["psychic",4]],"dmg":-1,"effect":"상대가 마지막에 쓴 기술의 데미지를 준다 (캐릭터코로 효과 무시) / 서기/옆누움: 위력 2배","id":"mew-0","effectCode":"reflection","bonusFaces":["front","side"],"bonus":0},{"name":"사이코키네시스","type":"psychic","cost":[["psychic",3]],"dmg":20,"effect":"서기/앞누움/뒷누움: 상대가 에너지코로 3개 굴려 가장 많이 나온 에너지 수×10 추가 데미지","id":"mew-1","effectCode":"kinetic","bonusFaces":[],"bonus":0},{"name":"기억지우기","type":"psychic","cost":[["psychic",2]],"dmg":20,"effect":"서기/옆누움: 상대 기술 1개 선택 → 다음 턴 사용 불가","id":"mew-2","effectCode":"memory_block","bonusFaces":[],"bonus":0},{"name":"배리어","type":"psychic","cost":[["psychic",2]],"dmg":-1,"effect":"다음 턴 받는 데미지 -20 / 서기/앞누움: 추가로 -30","id":"mew-3","effectCode":"barrier","bonusFaces":[],"bonus":0}]}};
+const TYPE={grass:'풀🌿',fire:'불꽃🔥',water:'물💧',lightning:'전기⚡',psychic:'에스퍼🔮',fight:'격투👊',dark:'악🌑',steel:'강철🔩',dragon:'드래곤🐉',flying:'비행🌬',colorless:'무색⬜'};
+const FACE_LABEL={front:'서기 ⬆️',back:'역방향 🔄',side:'옆누움 ↔️',upside:'앞/뒷누움 ⬇️'};
+const DIR_POOL=['front','back','side','side','upside','upside'];
+const ENERGY_KEYS=Object.keys(TYPE);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const faceToLabel=f=>DIR_KO[f]||f;
-let me=null,room=null,members=[],mySeat=null,isHost=false,full=null,view=null,revision=0,saveBusy=false,subscribed=false,setupChoice=null,readyLocal=false,log=[],pollTimer=null,matchSubmitted=false;
 const token=()=>localStorage.getItem('boardmate:member_session')||sessionStorage.getItem('boardmate:member_session')||'';
-async function setupRpc(name,args={}){const sb=window.supabase?.createClient?.(window.BOARDMATE_CONFIG.supabaseUrl,window.BOARDMATE_CONFIG.supabaseAnonKey);if(!sb)throw new Error('Supabase 설정이 필요합니다.');const {data,error}=await sb.rpc(name,args);if(error)throw error;return data;}
-const addLog=t=>{log=[t,...log].slice(0,80);const el=document.querySelector('#log');if(el)el.innerHTML=log.map(x=>`<div>• ${esc(x)}</div>`).join('');};
-function attackSpec(a){return{effect:typeof a?.[6]==='string'?a[6]:null,charBonus:typeof a?.[6]==='number'?a[6]:(typeof a?.[7]==='number'?a[7]:0)};}
-function energyCount(results){const c={};for(const pair of results||[]){for(const e of pair)c[e]=(c[e]||0)+1;}return c;}
-function canPay(cost,count){const need={};cost.forEach(e=>need[e]=(need[e]||0)+1);let wild=count.colorless||0,def=0;for(const [e,n] of Object.entries(need)){const have=count[e]||0;def+=Math.max(0,n-have);}return def<=wild;}
-function rollEnergy(pokemon,count){const faces=STARTERS[pokemon].faces;return Array.from({length:count},()=>faces[Math.floor(Math.random()*faces.length)].map(x=>ENERGY_LABEL_TO_KEY[x]||x));}
-function rollDir(){return DIRS[Math.floor(Math.random()*DIRS.length)];}
+
+let me=null,room=null,members=[],mySeat=null,isHost=false;
+let full=null,revision=0,saveBusy=false,subscribed=false,matchSubmitted=false;
+let setupChoice=null,readyLocal=false,localSelectedAttack=null;
+let actionPollTimer=null,statePollTimer=null;
+
+function pokemon(id){return STARTERS[id]||null;}
 function hpBar(hp){return `<div class="hpbar"><i style="width:${Math.max(0,Math.min(100,hp/MAX_HP*100))}%"></i></div>`;}
-function buildShell(){document.querySelector('#app').innerHTML=`<div class="top"><div class="brand"><h1>🎲 프라코로</h1><p>BoardMate 공통 방 · 2인 온라인 · 주사위 포켓몬 배틀</p></div><div class="toolbar"><span class="badge" id="net">연결 확인 중…</span><a class="btn" href="./index.html#/room/${encodeURIComponent(room.id)}">← 방으로</a></div></div><section class="panel" id="main"></section><section class="panel"><div class="toolbar"><b>전투 로그</b><span class="small">공개된 전투 결과만 기록합니다.</span></div><div class="log" id="log"></div></section><section class="panel footer-note">프라코로는 BANDAI SPIRITS의 Pokémon 관련 공식 게임을 참고한 비공식 커뮤니티용 디지털 구현입니다. 본 BoardMate 버전은 2026 스타터 세트의 기본 전투 흐름을 중심으로 구현한 β 기능이며, 확장 세트와 커스텀 칩 편집은 포함하지 않습니다.</section>`;}
-function renderSetup(){const mine=setupChoice||{pokemon:'pikachu',attacks:[]},ready=full?.setupReady||{};document.querySelector('#main').innerHTML=`<div class="toolbar"><div><h2 style="margin:.2em 0">게임 준비</h2><div class="turn-note">포켓몬 1마리 + 해당 포켓몬의 기술 카드 7장 중 4장을 선택하세요.</div></div><span class="badge">내 자리 ${mySeat+1}</span></div><div class="setup-grid"><section class="player-card"><h2>내 포켓몬</h2><div class="pokemon-grid">${allStarter.map(x=>`<button class="pkm ${mine.pokemon===x.id?'selected':''}" data-pkm="${x.id}"><b>${x.name}</b><div class="type">${TYPES[x.type]} · 약점 ${TYPES[x.weak]}</div></button>`).join('')}</div><h3>기술 카드 4장 선택</h3><div class="attacks">${STARTERS[mine.pokemon].attacks.map(a=>`<button class="attack ${mine.attacks.includes(a[0])?'selected':''}" data-atk="${a[0]}"><strong>${a[1]}</strong><small>${TYPES[a[2]]} · ${a[3].map(e=>TYPES[e]).join(' ')} · 기본 ${a[4]}점${a[5].length?' · 캐라코로 '+a[5].map(faceToLabel).join('/'):' '}</small></button>`).join('')}</div><div class="toolbar" style="margin-top:10px"><span class="badge">선택 ${mine.attacks.length}/4</span><button class="btn primary" id="readyBtn" ${mine.attacks.length!==4||readyLocal?'disabled':''}>${readyLocal?'준비 완료':'준비 완료'}</button></div></section><section class="player-card"><h2>상대 준비 상태</h2><div class="result"><div>상대: ${esc(members.find(m=>Number(m.seat)!==mySeat)?.nickname||'상대')}</div><div style="margin-top:8px">${ready[1-mySeat]?'✅ 준비 완료':'⏳ 준비 중'}</div><div style="margin-top:8px;color:var(--muted)">두 사람의 준비가 끝나면 포켓몬과 기술 구성이 공개되고 선공을 정합니다.</div></div></section></div>`;document.querySelectorAll('[data-pkm]').forEach(b=>b.onclick=()=>{setupChoice={pokemon:b.dataset.pkm,attacks:[]};readyLocal=false;renderSetup();});document.querySelectorAll('[data-atk]').forEach(b=>b.onclick=()=>{const id=b.dataset.atk;if(!setupChoice)return;readyLocal=false;setupChoice.attacks=setupChoice.attacks.includes(id)?setupChoice.attacks.filter(x=>x!==id):(setupChoice.attacks.length<4?[...setupChoice.attacks,id]:setupChoice.attacks);renderSetup();});document.querySelector('#readyBtn')?.addEventListener('click',async()=>{try{if(setupChoice.attacks.length!==4)throw new Error('기술 카드 4장을 선택하세요.');await setupRpc('boardmate_plakoro_set_setup',{p_token:token(),p_room_id:room.id,p_pokemon:setupChoice.pokemon,p_attacks:setupChoice.attacks,p_ready:true});readyLocal=true;full=full||{};full.setupReady={...(full.setupReady||{}),[mySeat]:true};await sendRoomBroadcast('plakoro_setup_ready',{seat:mySeat});renderSetup();if(isHost)await maybeStartFromSetup();}catch(e){alert(e.message||e);}});}
-async function maybeStartFromSetup(){if(!isHost||full?.players)return;const status=await setupRpc('boardmate_plakoro_get_setup_status',{p_token:token(),p_room_id:room.id});if(!status||status.length<2||!status.every(x=>x.ready))return;const pair=await setupRpc('boardmate_plakoro_get_setup_pair',{p_token:token(),p_room_id:room.id});if(!pair||pair.length<2)return;const sorted=pair.slice().sort((a,b)=>Number(a.seat)-Number(b.seat)),first=Math.floor(Math.random()*2);const players=sorted.map(x=>({seat:Number(x.seat),name:members.find(m=>Number(m.seat)===Number(x.seat))?.nickname||`플레이어 ${Number(x.seat)+1}`,pokemon:x.payload.pokemon,weak:STARTERS[x.payload.pokemon].weak,hp:MAX_HP}));full={version:VERSION,gameId:GAME,players,current:first,selectedAttack:{},lastAttack:[null,null],turn:0,phase:'battle',setupReady:{0:true,1:true},attacks:[sorted[0].payload.attacks.map(id=>STARTERS[sorted[0].payload.pokemon].attacks.find(a=>a[0]===id)).filter(Boolean),sorted[1].payload.attacks.map(id=>STARTERS[sorted[1].payload.pokemon].attacks.find(a=>a[0]===id)).filter(Boolean)],statuses:[{energyPenalty:0,energyBonus:0,reduction:0,forbid:null},{energyPenalty:0,energyBonus:0,reduction:0,forbid:null}],pendingChoice:null,lastResult:null};await persist('setup-complete');}
-async function persist(reason){if(!isHost||!full||saveBusy)return;saveBusy=true;try{const nr=await saveState(revision,full);revision=Number(nr);view=structuredClone(full);document.querySelector('#net').textContent='BoardMate Realtime · 연결됨';renderBattle();if(full.gameOver&&!matchSubmitted){matchSubmitted=true;const order=[full.winner===0?0:1,full.winner===0?1:0].map(i=>members[i]?.user_id).filter(Boolean);if(order.length===members.length)try{await submitMatch(order);}catch(e){matchSubmitted=false;console.warn(e);}}}catch(e){console.warn(e);document.querySelector('#net').textContent='저장 실패 · 재시도';}finally{saveBusy=false;}}
-function selectedAttackForSeat(seat){const id=full?.selectedAttack?.[seat];return full?.attacks?.[seat]?.find(a=>a[0]===id)||null;}
-function applyEffect(state,seat,attack,dir,energyPairs){const opp=1-seat,p=state.players[seat],st=state.statuses[seat],ost=state.statuses[opp],spec=attackSpec(attack);let bonus=attack[5].includes(dir)?spec.charBonus:0,msg=[];switch(spec.effect){case'heal40':p.hp=Math.min(MAX_HP,p.hp+40);msg.push('자신 HP 40 회복');break;case'self30':p.hp-=30;msg.push('자신에게 30 데미지');break;case'self20':p.hp-=20;msg.push('자신에게 20 데미지');break;case'reduce20':st.reduction=20;msg.push('다음 상대 턴 받는 피해 -20');break;case'reduce50':st.reduction=50;msg.push('다음 상대 턴 받는 피해 -50');break;case'reduce10':ost.reduction=10;msg.push('다음 상대 턴 받는 피해 -10');break;case'energy-1':ost.energyPenalty=Math.max(0,ost.energyPenalty+1);msg.push('상대 다음 턴 에네코로 -1');break;case'energy-1-then+1':ost.energyPenalty=Math.max(0,ost.energyPenalty+1);st.energyBonus+=1;msg.push('상대 다음 턴 -1 / 다음 내 턴 +1');break;case'energy+2':st.energyBonus+=2;msg.push('다음 내 턴 에네코로 +2');break;case'energy-2':ost.energyPenalty=Math.max(0,ost.energyPenalty+2);msg.push('상대 다음 턴 에네코로 -2');break;case'count-fire*10':{const n=energyPairs.flat().filter(e=>e==='fire').length;bonus+=n*10;msg.push(`불꽃 에너지 ${n}개로 추가 +${n*10}`);break;}case'lastHp40+60':if(p.hp<=40){bonus+=60;msg.push('잔여 HP 40 이하 추가 +60');}break;case'mostEnergy10':{const c=energyCount(energyPairs),types=Object.entries(c).filter(([k])=>k!=='colorless').sort((a,b)=>b[1]-a[1]);if(types[0]){bonus+=types[0][1]*10;msg.push(`${TYPES[types[0][0]]} 최다 ${types[0][1]}개 · +${types[0][1]*10}`);}break;}case'reflect':{const last=state.lastAttack[opp];if(last){bonus=last.damageBase||0;if(attack[5].includes(dir))bonus*=2;msg.push(`마지막 기술 ${last.name}의 기본 피해 반사${attack[5].includes(dir)?' ×2':''}`);}break;}case'extra-rush':msg.push('특수 성공: 같은 기술을 한 번 더 시도할 수 있습니다.');break;}return{bonus,msg,effect:spec.effect};}
-async function hostAction(seat,action,payload={}){if(!isHost||!full||full.gameOver)return;if(action==='CHOOSE_FORBID'){const pc=full.pendingChoice;if(!pc||pc.type!=='forbid'||pc.by!==seat)return;const id=String(payload.id||'');if(!full.attacks[pc.target]?.some(a=>a[0]===id))return;full.statuses[pc.target].forbid=id;full.pendingChoice=null;full.current=pc.target;full.turn++;await persist('forbid-choice');return;}if(seat!==full.current)return;if(action==='SELECT_ATTACK'){const a=full.attacks[seat]?.find(x=>x[0]===payload.id);if(!a)return;if(full.lastAttack[seat]===a[0]||full.statuses[seat].forbid===a[0])return;full.selectedAttack[seat]=a[0];await persist('select');return;}if(action==='ROLL'){const a=selectedAttackForSeat(seat);if(!a)return;const spec=attackSpec(a),st=full.statuses[seat],other=1-seat;const diceN=Math.max(1,Math.min(5,(full.turn===0?2:3)+st.energyBonus-st.energyPenalty));st.energyBonus=0;st.energyPenalty=0;const pairs=rollEnergy(full.players[seat].pokemon,diceN),energy=energyCount(pairs),charDir=rollDir(),success=canPay(a[3],energy);let damage=0,msg=[];if(success){damage=a[4];const eff=applyEffect(full,seat,a,charDir,pairs);damage+=eff.bonus;msg.push(...eff.msg);if(full.players[other].weak===a[2]){damage+=20;msg.push('약점 +20');}const reduction=full.statuses[other].reduction||0;if(reduction){damage=Math.max(0,damage-reduction);msg.push(`상대 피해 감소 -${reduction}`);full.statuses[other].reduction=0;}full.players[other].hp-=damage;}const last={name:a[1],damageBase:a[4],damage,success,dir:charDir,energy:pairs.flat(),turn:full.turn};full.lastResult={seat,attack:a[0],name:a[1],success,damage,charDir,energy:pairs.flat(),msg,at:new Date().toISOString()};full.selectedAttack[seat]=null;if(full.players[0].hp<=0&&full.players[1].hp<=0){full.gameOver=true;full.winner=other;msg.push('동시에 0 HP가 되어 공격한 플레이어가 패배합니다.');}else if(full.players[other].hp<=0){full.gameOver=true;full.winner=seat;msg.push(`${full.players[seat].name} 승리`);}else if(success&&spec.effect==='forbid'){full.pendingChoice={type:'forbid',by:seat,target:other,options:full.attacks[other].map(x=>x[0])};}else{const extraTurn=success&&spec.effect==='extra-rush'&&a[5].includes(charDir);full.lastAttack[seat]=extraTurn?null:a[0];full.current=extraTurn?seat:other;full.turn+=extraTurn?0:1;}addLog(`${full.players[seat].name}의 ${a[1]}: ${success?'성공':'실패'} · ${damage} 피해 · 캐라코로 ${faceToLabel(charDir)} · ${msg.join(', ')}`);await persist('roll');return;}}
-function renderBattle(){if(!full){renderSetup();return;}view=full;const myTurn=full.current===mySeat&&!full.gameOver,pc=full.pendingChoice,myChoice=pc&&pc.type==='forbid'&&pc.by===mySeat;document.querySelector('#main').innerHTML=`<div class="battle-head"><div class="fighter"><div class="name">${esc(full.players[0].name)}${mySeat===0?' · 나':''}</div><div class="hp">${Math.max(0,full.players[0].hp)}</div>${hpBar(full.players[0].hp)}<div class="small">${STARTERS[full.players[0].pokemon].name} · 약점 ${TYPES[full.players[0].weak]}</div></div><div class="versus">VS<br><span class="turn-note">${full.gameOver?'게임 종료':myChoice?'봉인할 기술을 선택':myTurn?'내 차례':`${esc(full.players[full.current].name)} 차례`}</span></div><div class="fighter"><div class="name">${esc(full.players[1].name)}${mySeat===1?' · 나':''}</div><div class="hp">${Math.max(0,full.players[1].hp)}</div>${hpBar(full.players[1].hp)}<div class="small">${STARTERS[full.players[1].pokemon].name} · 약점 ${TYPES[full.players[1].weak]}</div></div></div>
- <div class="panel"><div class="toolbar"><div><b>1. 기술 선택</b><div class="turn-note">이전 턴에 쓴 기술은 연속 사용하지 않습니다.${full.statuses[mySeat].forbid?` · ${esc(full.attacks[mySeat].find(a=>a[0]===full.statuses[mySeat].forbid)?.[1]||'기술')} 봉인됨`:''}</div></div><span class="badge">턴 ${full.turn+1}</span></div><div class="cards-row">${full.attacks[mySeat].map(a=>`<button class="battle-card ${full.selectedAttack?.[mySeat]===a[0]?'active':''}" data-battle-atk="${a[0]}" ${!myTurn||full.lastAttack[mySeat]===a[0]||full.statuses[mySeat].forbid===a[0]||myChoice?'disabled':''}><b>${esc(a[1])}</b><div class="small">${TYPES[a[2]]} · ${a[3].map(e=>TYPES[e]).join(' ')} · 기본 ${a[4]}</div><div class="small">캐라코로: ${a[5].map(faceToLabel).join(', ')}</div></button>`).join('')}</div><div class="toolbar"><button class="btn primary" id="rollBtn" ${!myTurn||!full.selectedAttack?.[mySeat]||myChoice?'disabled':''}>2. 캐라코로 + 에네코로 굴리기</button><span class="turn-note">첫 선공 턴 에네코로 2개 · 이후 3개</span></div></div>
- ${myChoice?`<div class="result"><b>상대가 사용할 수 없게 만들 기술을 선택하세요.</b><div class="choice-grid">${full.attacks[pc.target].map(a=>`<button class="btn danger" data-forbid="${a[0]}">${esc(a[1])}</button>`).join('')}</div></div>`:''}
- ${full.lastResult?`<div class="result"><b>${esc(full.players[full.lastResult.seat].name)} · ${esc(full.lastResult.name)}</b><br>${full.lastResult.success?'✅ 성공':'❌ 실패'} · ${full.lastResult.damage} 피해 · 캐라코로 ${faceToLabel(full.lastResult.charDir)}<br>에너지: ${full.lastResult.energy.map(e=>TYPES[e]).join(' · ')}${full.lastResult.msg?.length?`<br>${full.lastResult.msg.map(esc).join(' · ')}`:''}</div>`:''}
- ${full.gameOver?`<div class="result"><div style="font-size:24px;font-weight:900;color:var(--gold)">${full.winner===mySeat?'🎉 승리!':'💥 패배'}</div><a class="btn" href="./index.html#/room/${encodeURIComponent(room.id)}">방으로 돌아가기</a></div>`:''}`;document.querySelectorAll('[data-battle-atk]').forEach(b=>b.onclick=()=>{const id=b.dataset.battleAtk;if(isHost)void hostAction(mySeat,'SELECT_ATTACK',{id});else void sendRoomBroadcast('plakoro_action',{seat:mySeat,action:'SELECT_ATTACK',payload:{id}});});document.querySelector('#rollBtn')?.addEventListener('click',()=>{if(isHost)void hostAction(mySeat,'ROLL');else void sendRoomBroadcast('plakoro_action',{seat:mySeat,action:'ROLL'});});document.querySelectorAll('[data-forbid]').forEach(b=>b.onclick=()=>{const id=b.dataset.forbid;if(isHost)void hostAction(mySeat,'CHOOSE_FORBID',{id});else void sendRoomBroadcast('plakoro_action',{seat:mySeat,action:'CHOOSE_FORBID',payload:{id}});});document.querySelector('#net').textContent='BoardMate Realtime · 연결됨';}
-async function sync(){try{const r=await loadState();revision=Number(r?.revision||0);if(!r?.state){const status=await setupRpc('boardmate_plakoro_get_setup_status',{p_token:token(),p_room_id:room.id}).catch(()=>[]),readyMap=Object.fromEntries((status||[]).map(x=>[Number(x.seat),Boolean(x.ready)]));full={setupReady:readyMap};renderSetup();if(readyMap[mySeat]){const meSetup=await setupRpc('boardmate_plakoro_get_setup_self',{p_token:token(),p_room_id:room.id}).catch(()=>null);if(meSetup?.payload){setupChoice={pokemon:meSetup.payload.pokemon,attacks:meSetup.payload.attacks||[]};readyLocal=Boolean(meSetup.ready);renderSetup();}}if(isHost&&readyMap[0]&&readyMap[1])await maybeStartFromSetup();return;}full=r.state;renderBattle();if(isHost&&full.phase==='setup'&&full.setupReady?.[0]&&full.setupReady?.[1])await maybeStartFromSetup();}catch(e){console.warn('plakoro sync',e);document.querySelector('#net').textContent='동기화 오류 · 재시도';}}
-async function boot(){if(!configured()||!roomId)throw new Error('BoardMate 다인플 방에서 프라코로를 열어주세요.');me=await getMe();if(!me)throw new Error('로그인이 필요합니다.');({room,members}=await loadRoom());if(room.game!==GAME)throw new Error('프라코로 방이 아닙니다.');if(members.length!==2)throw new Error('프라코로는 온라인 2인 플레이입니다.');const found=members.find(m=>m.user_id===me.user_id);if(!found)throw new Error('이 방의 참가자가 아닙니다.');mySeat=Number(found.seat);isHost=room.host_id===me.user_id;buildShell();if(!subscribed){subscribed=true;await subscribeRoomBroadcast('plakoro_setup_ready',msg=>{if(msg?.seat!==undefined){full=full||{setupReady:{}};full.setupReady={...(full.setupReady||{}),[Number(msg.seat)]:true};renderSetup();if(isHost)void maybeStartFromSetup();}});await subscribeRoomBroadcast('plakoro_action',msg=>{if(msg?.seat===undefined||!isHost)return;void hostAction(Number(msg.seat),msg.action,msg.payload||{});});await subscribeRoomBroadcast('state_changed',msg=>{if(Number(msg?.revision||0)>revision)void sync();});}await sync();pollTimer=setInterval(()=>void sync(),10000);setInterval(()=>void touchPresence(true),15000);}boot().catch(e=>{console.error(e);showFatal(e.message||'프라코로를 열 수 없습니다.');});
+function faceLabel(f){return FACE_LABEL[f]||f;}
+
+async function rpc(name,args={}){
+  if(!configured()) throw new Error('Supabase 설정이 필요합니다.');
+  const sb=window.supabase?.createClient?.(window.BOARDMATE_CONFIG.supabaseUrl,window.BOARDMATE_CONFIG.supabaseAnonKey);
+  if(!sb) throw new Error('Supabase 설정이 필요합니다.');
+  const {data,error}=await sb.rpc(name,args);
+  if(error) throw error;
+  return data;
+}
+function addLog(msg){
+  if(!full)return;
+  full.logs=Array.isArray(full.logs)?full.logs:[];
+  full.logs=[msg,...full.logs].slice(0,40);
+  const el=document.querySelector('#log'); if(el)el.innerHTML=full.logs.map(x=>`<div>• ${esc(x)}</div>`).join('');
+}
+function blockedBy(state,seat,w){
+  const b=state.statuses?.[seat]?.blocked;
+  return typeof b==='string' && b===w.id;
+}
+
+function renderSetup(){
+  const pid=setupChoice?.pokemon||Object.keys(STARTERS)[0];
+  const p=STARTERS[pid];
+  const mine=setupChoice||{pokemon:pid,attacks:[],energyFaces:structuredClone(p.energyFaces)};
+  if(!mine.energyFaces)mine.energyFaces=structuredClone(p.energyFaces);
+  const selected=new Set(mine.attacks||[]);
+  const oppSeat=mySeat===0?1:0;
+  const opp=members.find(m=>Number(m.seat)===oppSeat);
+  const readyMap=full?.setupReady||{};
+  document.querySelector('#main').innerHTML=`
+    <div class="toolbar"><div><h2 style="margin:.2em 0">게임 준비</h2>
+      <div class="turn-note">제공해준 HTML의 포켓몬/에너지코로 데이터를 사용합니다. 포켓몬 1마리 + 기술 4장을 선택하고 에너지코로 3개의 6면을 설정하세요.</div>
+    </div><span class="badge">내 자리 ${mySeat+1}</span></div>
+    <div class="setup-grid">
+      <section class="player-card">
+        <h2>1. 포켓몬 선택</h2>
+        <div class="pokemon-grid">${Object.entries(STARTERS).map(([id,x])=>`
+          <button class="pkm ${mine.pokemon===id?'selected':''}" data-pkm="${id}">
+            <img src="${x.img}" alt="">
+            <b>${esc(x.name)}</b><div class="type">${esc(x.typeLabel)} · 약점 ${esc(STARTERS[x.weak]?.typeLabel||TYPE[x.weak]||x.weak)}</div>
+          </button>`).join('')}</div>
+        <h2 style="margin-top:16px">2. 기술 카드 선택</h2>
+        <div class="attacks">${p.waza.map(w=>`
+          <button class="attack ${selected.has(w.id)?'selected':''}" data-atk="${w.id}">
+            <strong>${esc(w.name)} · ${w.dmg===0?'특수/0':w.dmg}</strong>
+            <small>${TYPE[w.type]||w.type} · 비용 ${w.cost.map(([t,n])=>`${TYPE[t]||t}×${n}`).join(' ')}<br>${esc(w.effect)}</small>
+          </button>`).join('')}</div>
+        <div class="toolbar" style="margin-top:10px"><span class="badge">선택 ${selected.size}/4</span>
+          <button class="btn primary" id="readyBtn" ${selected.size!==4||readyLocal?'disabled':''}>${readyLocal?'✅ 준비 완료':'준비 완료'}</button></div>
+      </section>
+      <section class="player-card">
+        <h2>3. 에너지코로 3개</h2>
+        <div class="small" style="margin-bottom:8px">각 코로의 6면을 설정합니다. 기본값은 업로드된 HTML과 동일합니다.</div>
+        <div class="ene-config">${mine.energyFaces.map((die,di)=>`
+          <div class="ene-row"><span class="ene-label">코로 ${di+1}</span>
+            ${die.map((face,fi)=>`<select class="ene-select" data-ene="${di}-${fi}">
+              ${ENERGY_KEYS.map(t=>`<option value="${t}" ${face===t?'selected':''}>${TYPE[t]||t}</option>`).join('')}
+            </select>`).join('')}
+          </div>`).join('')}</div>
+        <div class="result"><b>${esc(opp?.nickname||'상대')}</b><div style="margin-top:6px">${readyMap[oppSeat]?'✅ 상대 준비 완료':'⏳ 상대 준비 중'}</div>
+          <div class="footer-note" style="margin-top:6px">준비가 끝나면 방장이 양쪽 설정을 불러와 게임을 시작합니다.</div></div>
+      </section>
+    </div>`;
+  document.querySelectorAll('[data-pkm]').forEach(b=>b.onclick=()=>{
+    setupChoice={pokemon:b.dataset.pkm,attacks:[],energyFaces:structuredClone(STARTERS[b.dataset.pkm].energyFaces)};
+    readyLocal=false; localSelectedAttack=null; renderSetup();
+  });
+  document.querySelectorAll('[data-atk]').forEach(b=>b.onclick=()=>{
+    if(!setupChoice)return;
+    const id=b.dataset.atk; const s=new Set(setupChoice.attacks||[]);
+    if(s.has(id))s.delete(id); else if(s.size<4)s.add(id);
+    setupChoice.attacks=[...s]; readyLocal=false; renderSetup();
+  });
+  document.querySelectorAll('[data-ene]').forEach(s=>s.onchange=()=>{
+    const [di,fi]=s.dataset.ene.split('-').map(Number);
+    setupChoice.energyFaces[di][fi]=s.value;
+    readyLocal=false;
+  });
+  document.querySelector('#readyBtn')?.addEventListener('click',async()=>{
+    try{
+      if((setupChoice?.attacks||[]).length!==4)throw new Error('기술 카드 4장을 선택하세요.');
+      await rpc('boardmate_plakoro_set_setup_v2',{
+        p_token:token(),p_room_id:room.id,p_pokemon:setupChoice.pokemon,
+        p_attacks:setupChoice.attacks,p_energy:setupChoice.energyFaces,p_ready:true
+      });
+      readyLocal=true; full=full||{}; full.setupReady={...(full.setupReady||{}),[mySeat]:true};
+      await sendRoomBroadcast('plakoro_setup_ready',{seat:mySeat}); renderSetup();
+      if(isHost)await maybeStart();
+    }catch(e){alert(e.message||e);}
+  });
+}
+
+async function maybeStart(){
+  if(!isHost||full?.players)return;
+  const status=await rpc('boardmate_plakoro_get_setup_status_v2',{p_token:token(),p_room_id:room.id});
+  if(!status||status.length<2||!status.every(x=>x.ready))return;
+  const pair=await rpc('boardmate_plakoro_get_setup_pair_v2',{p_token:token(),p_room_id:room.id});
+  if(!pair||pair.length<2)return;
+  const sorted=pair.slice().sort((a,b)=>Number(a.seat)-Number(b.seat));
+  const players=sorted.map(x=>{
+    const p=STARTERS[x.payload.pokemon],m=members.find(v=>Number(v.seat)===Number(x.seat));
+    return {seat:Number(x.seat),name:m?.nickname||`플레이어 ${Number(x.seat)+1}`,pokemon:x.payload.pokemon,weak:p.weak,hp:MAX_HP};
+  });
+  const energyFaces=sorted.map(x=>x.payload.energyFaces);
+  const attacks=sorted.map(x=>x.payload.attacks.map(id=>STARTERS[x.payload.pokemon].waza.find(w=>w.id===id)).filter(Boolean));
+  if(attacks.some(a=>a.length!==4))throw new Error('기술 데이터가 올바르지 않습니다.');
+  full={version:VERSION,gameId:GAME,players,current:0,turn:0,phase:'battle',
+    energyFaces,attacks,lastAttack:[null,null],lastDamage:[0,0],
+    statuses:[{energyPenalty:0,energyBonus:0,shield:0,blocked:null},{energyPenalty:0,energyBonus:0,shield:0,blocked:null}],
+    pendingChoice:null,lastResult:null,gameOver:false,winner:null,logs:[]};
+  localSelectedAttack=null;
+  await persist('setup-complete');
+}
+
+async function persist(reason){
+  if(!isHost||!full||saveBusy)return;
+  saveBusy=true;
+  try{
+    full.lastSyncReason=reason;
+    const nr=await saveState(revision,full); revision=Number(nr); renderBattle();
+    if(full.gameOver&&!matchSubmitted){
+      matchSubmitted=true;
+      const winnerSeat=Number(full.winner);
+      if(Number.isFinite(winnerSeat)){
+        const order=[winnerSeat,winnerSeat===0?1:0].map(seat=>members.find(m=>Number(m.seat)===seat)?.user_id).filter(Boolean);
+        if(order.length===2){try{await submitMatch(order);}catch(e){matchSubmitted=false;console.warn('rating submit',e);}}
+      }
+    }
+  }catch(e){console.warn('plakoro persist',e);document.querySelector('#net').textContent='저장 실패 · 재시도';}
+  finally{saveBusy=false;}
+}
+
+function energyCounts(results){
+  const c={}; for(const e of results||[])c[e]=(c[e]||0)+1; return c;
+}
+function canPay(cost,results){
+  const need={}; for(const [t,n] of cost)need[t]=(need[t]||0)+n;
+  const wild=results.filter(e=>e==='colorless').length;
+  let missing=0;
+  for(const [t,n] of Object.entries(need)){
+    if(t==='colorless')missing+=Math.max(0,n-results.filter(e=>e!=='none').length);
+    else missing+=Math.max(0,n-results.filter(e=>e===t||e==='colorless').length);
+  }
+  return missing<=wild;
+}
+function rollEnergy(seat,n){
+  const sets=full.energyFaces[seat]||[];
+  return Array.from({length:n},(_,i)=>{
+    const die=sets[i%3]||Array(6).fill('colorless');
+    return die[Math.floor(Math.random()*6)];
+  });
+}
+function rollDir(){return DIR_POOL[Math.floor(Math.random()*DIR_POOL.length)];}
+
+function extraForAttack(state,seat,w,dir,energy){
+  const opp=seat===0?1:0,p=state.players[seat],o=state.players[opp],st=state.statuses[seat],ost=state.statuses[opp];
+  let bonus=Number(w.bonus||0)&&(w.bonusFaces||[]).includes(dir)?Number(w.bonus):0,msg=[];
+  switch(w.effectCode){
+    case 'heal40': p.hp=Math.min(MAX_HP,p.hp+40); msg.push('자신 HP 40 회복'); break;
+    case 'bonus_whip':
+    case 'bonus_leaf':
+      break;
+    case 'tackle_self30':
+      if(dir==='back'||dir==='upside'){p.hp=Math.max(0,p.hp-30);msg.push('자신도 30 데미지');}
+      if(dir==='front')bonus+=40;
+      break;
+    case 'flame':
+      if(dir!=='front'){ost.energyPenalty=(ost.energyPenalty||0)+1;msg.push('상대 다음 턴 에너지 -1');}
+      break;
+    case 'hydro_lowhp':
+      if(p.hp<=40&&(dir==='front'||dir==='upside')){bonus+=60;msg.push('HP 40 이하 추가 +60');}
+      break;
+    case 'bubble_energy_minus':
+      if(dir==='front'||dir==='upside'){ost.energyPenalty=(ost.energyPenalty||0)+1;msg.push('상대 다음 턴 에너지 -1');}
+      break;
+    case 'shell_shield30':
+      if(dir==='front'||dir==='upside'){st.shield=(st.shield||0)+30;msg.push('다음 턴 받는 데미지 -30');}
+      break;
+    case 'volt_self30':
+      p.hp=Math.max(0,p.hp-30);msg.push('자신도 30 데미지');
+      break;
+    case 'thunder10':
+      if(dir!=='front'&&dir!=='side'){p.hp=Math.max(0,p.hp-30);msg.push('자신도 30 데미지');}
+      break;
+    case 'thunder':
+      break;
+    case 'dash_bonus':
+      break;
+    case 'tackle_self20':
+      if(dir==='back'||dir==='upside'){p.hp=Math.max(0,p.hp-20);msg.push('자신도 20 데미지');}
+      break;
+    case 'reflection':{
+      let dmg=state.lastDamage[opp]||0; if(dir==='front'||dir==='side')dmg*=2;
+      bonus+=dmg; msg.push(`마지막 기술의 피해 ${dmg} 반사`); break;
+    }
+    case 'kinetic':{
+      const c=energyCounts(energy),types=Object.entries(c).filter(([k])=>k!=='colorless').sort((a,b)=>b[1]-a[1]);
+      if(types[0]){bonus+=Number(types[0][1])*10;msg.push(`${TYPE[types[0][0]]||types[0][0]} 최다 ${types[0][1]}개 · +${Number(types[0][1])*10}`);}
+      break;
+    }
+    case 'memory_block':{
+      const cand=state.attacks[opp]||[]; if(cand.length){const idx=Math.floor(Math.random()*cand.length);state.statuses[opp].blocked=cand[idx].id;msg.push(`상대 기술 봉인: ${cand[idx].name}`);}
+      break;
+    }
+    case 'barrier':
+      st.shield=20;if(dir==='front'||dir==='upside')st.shield+=30;msg.push(`다음 턴 받는 데미지 -${st.shield}`);break;
+  }
+  // Source HTML explicit directional bonuses.
+  if(w.effectCode==='thunder'&&dir==='front')bonus+=60;
+  if(w.effectCode==='thunder10'&&(dir==='front'||dir==='side'))bonus+=30;
+  return {bonus,msg};
+}
+
+async function hostAction(seat,action,payload={}){
+  if(!isHost||!full||full.gameOver)return;
+  if(action==='CHOOSE_FORBID'){
+    const pc=full.pendingChoice; if(!pc||pc.type!=='forbid'||pc.by!==seat)return;
+    const id=String(payload.id||''); if(!(full.attacks[pc.target]||[]).some(x=>x.id===id))return;
+    full.statuses[pc.target].blocked=id; full.pendingChoice=null; full.current=pc.target; full.turn++;
+    localSelectedAttack=null; await persist('forbid-choice'); return;
+  }
+  if(action==='ROLL'){
+    if(seat!==full.current)return;
+    const id=String(payload.id||''); if(!id)return;
+    const w=(full.attacks[seat]||[]).find(x=>x.id===id); if(!w||blockedBy(full,seat,w)||full.lastAttack[seat]===w.id)return;
+    if(seat===mySeat)localSelectedAttack=null;
+    const st=full.statuses[seat],opp=seat===0?1:0;
+    let n=3+(st.energyBonus||0)-(st.energyPenalty||0); if(full.turn===0&&seat===0)n-=1; n=Math.max(1,Math.min(5,n));
+    st.energyBonus=0;st.energyPenalty=0;
+    const energy=rollEnergy(seat,n),dir=rollDir(); const success=canPay(w.cost,energy);
+    let damage=0,msg=[];
+    if(success){
+      damage=Number(w.dmg)||0;
+      const ex=extraForAttack(full,seat,w,dir,energy); damage+=ex.bonus; msg.push(...ex.msg);
+      if(w.type===full.players[opp].weak&&damage>0){damage+=20;msg.push('약점 +20');}
+      const shield=full.statuses[opp].shield||0;
+      if(shield&&damage>0){damage=Math.max(0,damage-shield);msg.push(`피해 감소 -${shield}`);full.statuses[opp].shield=0;}
+      full.players[opp].hp=Math.max(0,full.players[opp].hp-damage);
+    }else msg.push('에너지 조건 불충족 · 턴 종료');
+    full.lastDamage[seat]=damage;
+    full.lastResult={seat,attackId:w.id,name:w.name,success,damage,charDir:dir,energy,msg,turn:full.turn,at:new Date().toISOString()};
+    full.lastAttack[seat]=w.id;
+    full.statuses[seat].blocked=null;
+    if(full.players[0].hp<=0&&full.players[1].hp<=0){full.gameOver=true;full.winner=opp;msg.push('동시에 0 HP → 공격한 플레이어가 패배합니다.');}
+    else if(full.players[opp].hp<=0){full.gameOver=true;full.winner=seat;}
+    else if(w.effectCode==='memory_block'&&success){full.pendingChoice={type:'forbid',by:seat,target:opp,options:(full.attacks[opp]||[]).map(x=>x.id)};}
+    else{full.current=opp;full.turn++;}
+    addLog(`${full.players[seat].name} · ${w.name} · ${success?'성공':'실패'} · ${damage} 피해 · 캐라코로 ${faceLabel(dir)}${msg.length?' · '+msg.join(' · '):''}`);
+    await persist('roll');
+  }
+}
+
+async function sendPrivateAction(action,payload={}){
+  try{
+    await rpc('boardmate_plakoro_put_action',{p_token:token(),p_room_id:room.id,p_action:action,p_payload:payload});
+    await sendRoomBroadcast('plakoro_action_ready',{seat:mySeat});
+    if(isHost)await drainSeat(mySeat);
+  }catch(e){alert(e.message||e);}
+}
+async function drainSeat(seat){
+  if(!isHost)return;
+  try{
+    const a=await rpc('boardmate_plakoro_take_action',{p_token:token(),p_room_id:room.id,p_seat:Number(seat)});
+    if(a?.action)await hostAction(Number(seat),String(a.action),a.payload||{});
+  }catch(e){console.warn('plakoro action drain',e);}
+}
+
+function playDiceAnimation(result){
+  const row=document.querySelector('#resultDice'); if(!row||!result)return;
+  row.innerHTML=`<div class="die chara roll-shake">🎲</div>${(result.energy||[]).map(()=>'<div class="die roll-shake">🎲</div>').join('')}`;
+  setTimeout(()=>{
+    if(!document.querySelector('#resultDice'))return;
+    const em=t=>TYPE[t]||t||'?';
+    document.querySelector('#resultDice').innerHTML=`<div class="die chara" title="${esc(faceLabel(result.charDir))}">${result.charDir==='front'?'⬆️':result.charDir==='back'?'🔄':result.charDir==='side'?'↔️':'⬇️'}</div>${(result.energy||[]).map(e=>`<div class="die">${esc(em(e))}</div>`).join('')}`;
+  },260);
+}
+
+function renderBattle(){
+  if(!full||!full.players){renderSetup();return;}
+  const meP=full.players[mySeat],oppSeat=mySeat===0?1:0;
+  const myTurn=full.current===mySeat&&!full.gameOver;
+  const myChoice=full.pendingChoice?.type==='forbid'&&full.pendingChoice.by===mySeat;
+  const myW=full.attacks?.[mySeat]||[];
+  document.querySelector('#main').innerHTML=`
+    <div class="battle-head">
+      <div class="fighter ${mySeat===0?'me':''} ${full.current===0&&!full.gameOver?'active':''}">
+        <div class="name">${esc(full.players[0].name)}${mySeat===0?' · 나':''}</div>
+        <div class="pkname">${esc(STARTERS[full.players[0].pokemon].name)}</div>
+        <div class="hp">${Math.max(0,full.players[0].hp)}</div>${hpBar(full.players[0].hp)}
+        <div class="small">약점 · ${esc(TYPE[full.players[0].weak]||full.players[0].weak)}</div>
+      </div>
+      <div class="versus">VS<div class="turn-note">${full.gameOver?'게임 종료':myChoice?'봉인할 기술 선택':myTurn?'내 차례':`${esc(full.players[full.current].name)} 차례`}</div></div>
+      <div class="fighter ${mySeat===1?'me':''} ${full.current===1&&!full.gameOver?'active':''}">
+        <div class="name">${esc(full.players[1].name)}${mySeat===1?' · 나':''}</div>
+        <div class="pkname">${esc(STARTERS[full.players[1].pokemon].name)}</div>
+        <div class="hp">${Math.max(0,full.players[1].hp)}</div>${hpBar(full.players[1].hp)}
+        <div class="small">약점 · ${esc(TYPE[full.players[1].weak]||full.players[1].weak)}</div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="toolbar"><div><b>내 기술 카드</b><div class="turn-note">직전 사용 기술은 연속으로 사용할 수 없습니다.</div></div><span class="badge">턴 ${full.turn+1}</span></div>
+      <div class="cards-row">${myW.map(w=>`
+        <button class="battle-card ${localSelectedAttack===w.id?'active':''}" data-atk="${w.id}"
+          ${!myTurn||blockedBy(full,mySeat,w)||full.lastAttack[mySeat]===w.id||myChoice?'disabled':''}>
+          <b>${esc(w.name)}</b><div class="small">${esc(TYPE[w.type]||w.type)} · ${w.cost.map(([t,n])=>`${TYPE[t]||t}×${n}`).join(' ')} · 기본 ${w.dmg}</div>
+          <div class="small">${esc(w.effect)}</div>
+        </button>`).join('')}</div>
+      <div class="toolbar" style="margin-top:6px"><button class="btn primary" id="rollBtn" ${!myTurn||!localSelectedAttack||myChoice?'disabled':''}>🎲 캐라코로 + 에네코로 굴리기</button>
+        <span class="turn-note">P1 첫 턴 에네코로 2개 · 이후 3개</span></div>
+      <div id="resultDice" class="dice-row"></div>
+    </div>
+    ${myChoice?`<div class="result"><b>상대가 사용할 수 없게 할 기술을 선택하세요.</b><div class="choice-grid">${(full.attacks[oppSeat]||[]).map(w=>`<button class="btn danger" data-forbid="${w.id}">${esc(w.name)}</button>`).join('')}</div></div>`:''}
+    ${full.lastResult?`<div class="result ${full.lastResult.success?'ok':'bad'}"><b>${esc(full.players[full.lastResult.seat].name)} · ${esc(full.lastResult.name)}</b><br>${full.lastResult.success?'✅ 성공':'❌ 실패'} · ${full.lastResult.damage} 피해 · 캐라코로 ${esc(faceLabel(full.lastResult.charDir))}<br>에너지: ${(full.lastResult.energy||[]).map(e=>TYPE[e]||e).join(' · ')}${full.lastResult.msg?.length?`<br>${full.lastResult.msg.map(x=>esc(x)).join(' · ')}`:''}</div>`:''}
+    ${full.gameOver?`<div class="result"><div style="font-size:24px;font-weight:900;color:var(--gold)">${full.winner===mySeat?'🎉 승리!':'💥 패배'}</div><div class="toolbar" style="margin-top:8px"><a class="btn" href="./index.html#/room/${encodeURIComponent(room.id)}">방으로 돌아가기</a></div></div>`:''}`;
+  document.querySelectorAll('[data-atk]').forEach(b=>b.onclick=()=>{
+    if(!myTurn)return;
+    localSelectedAttack=b.dataset.atk; renderBattle();
+  });
+  document.querySelector('#rollBtn')?.addEventListener('click',()=>{
+    if(!localSelectedAttack||!myTurn)return; void sendPrivateAction('ROLL',{id:localSelectedAttack});
+  });
+  document.querySelectorAll('[data-forbid]').forEach(b=>b.onclick=()=>void sendPrivateAction('CHOOSE_FORBID',{id:b.dataset.forbid}));
+  document.querySelector('#net').textContent='BoardMate Realtime · 연결됨';
+  if(full.lastResult)playDiceAnimation(full.lastResult);
+  if(full.lastResult?.attackId===localSelectedAttack)localSelectedAttack=null;
+}
+
+async function sync(){
+  try{
+    const r=await loadState(); revision=Number(r?.revision||0);
+    if(r?.state?.players)full=r.state;
+    else{
+      const status=await rpc('boardmate_plakoro_get_setup_status_v2',{p_token:token(),p_room_id:room.id}).catch(()=>[]);
+      full={setupReady:Object.fromEntries((status||[]).map(x=>[Number(x.seat),Boolean(x.ready)]))};
+    }
+    if(full?.players)renderBattle();else renderSetup();
+    if(isHost){await drainSeat(0);await drainSeat(1);await maybeStart();}
+  }catch(e){console.warn('plakoro sync',e);const n=document.querySelector('#net');if(n)n.textContent='동기화 오류 · 재시도';}
+}
+
+async function boot(){
+  if(!configured()||!roomId)throw new Error('BoardMate 다인플 방에서 프라코로를 열어주세요.');
+  me=await getMe(); if(!me)throw new Error('로그인이 필요합니다.');
+  ({room,members}=await loadRoom());
+  if(room.game!==GAME)throw new Error('프라코로 방이 아닙니다.');
+  if(Number(members.length)!==2)throw new Error('프라코로는 온라인 2인 플레이입니다.');
+  const found=members.find(m=>m.user_id===me.user_id); if(!found)throw new Error('이 방의 참가자가 아닙니다.');
+  mySeat=Number(found.seat); isHost=room.host_id===me.user_id;
+  document.querySelector('#app').innerHTML=`
+    <div class="top"><div class="brand"><h1>🎲 프라코로</h1><p>BoardMate 공통 방 · 2인 PvP · 제공 HTML 기반</p></div>
+      <div class="toolbar"><span class="badge" id="net">연결 확인 중…</span><a class="btn" href="./index.html#/room/${encodeURIComponent(room.id)}">← 방으로</a></div></div>
+    <section class="panel" id="main"></section>
+    <section class="panel"><div class="toolbar"><b>전투 로그</b><span class="small">공개된 전투 결과만 기록합니다.</span></div><div class="log" id="log"></div></section>
+    <section class="panel footer-note">이 페이지는 업로드된 프라코로 HTML을 BoardMate 2인 PvP에 연결한 버전입니다. 게임 상태의 최종 판정은 방장 브라우저에서 수행하며, 액션 원문은 전용 RPC 저장 후 Realtime 신호로 전달합니다.</section>`;
+  if(!subscribed){
+    subscribed=true;
+    await subscribeRoomBroadcast('plakoro_setup_ready',msg=>{
+      if(msg?.seat!==undefined){full=full||{setupReady:{}};full.setupReady={...(full.setupReady||{}),[Number(msg.seat)]:true};renderSetup();if(isHost)void maybeStart();}
+    });
+    await subscribeRoomBroadcast('plakoro_action_ready',msg=>{if(isHost&&msg?.seat!==undefined)void drainSeat(Number(msg.seat));});
+    await subscribeRoomBroadcast('state_changed',msg=>{if(Number(msg?.revision||0)>revision)void sync();});
+  }
+  await sync();
+  statePollTimer=setInterval(()=>void sync(),10000);
+  actionPollTimer=setInterval(()=>{if(isHost){void drainSeat(0);void drainSeat(1);}},1500);
+  setInterval(()=>void touchPresence(true),15000);
+}
+boot().catch(e=>{console.error(e);showFatal(e.message||'프라코로를 열 수 없습니다.');});
 })();
-</script></body></html>
+</script>
+</body>
+</html>
