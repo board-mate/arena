@@ -159,7 +159,19 @@
   });
 
   var BOARD_DEFS = {
-    germany: { id:'germany', name:'독일', mode:'auto', image:'./powergrid/assets/maps/germany.webp' }
+    germany: {
+      id:'germany',
+      name:'독일',
+      mode:'auto',
+      image:'./powergrid/assets/maps/germany.webp',
+      featureTitle:'독일맵 특징',
+      features:[
+        '6개 권역 중 플레이 인원에 따라 서로 연결된 3~5개 권역만 사용합니다.',
+        '선택하지 않은 권역의 도시는 건설할 수 없고 연결 경로 계산에도 사용하지 않습니다.',
+        '독일 보드의 42개 도시와 83개 연결을 사용하며, 선택 지역 안에서 최단 연결비를 자동 계산합니다.',
+        '경매·자원 구매·도시 건설·전력 공급의 기본 진행은 공통 Power Grid 엔진을 사용합니다.'
+      ]
+    }
   };
 
   function adjacency() {

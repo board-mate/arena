@@ -220,3 +220,27 @@ a { color: var(--accent2); }
   .pg-city-marker-owners i{width:8px;height:8px}
   .pg-germany-city-marker>b{top:-16px;font-size:9px;line-height:11px;min-width:25px;padding:2px 4px}
 }
+
+
+/* v5: in-game map characteristics + purchased plant image gallery */
+.pg-map-features{margin:9px 0 10px;padding:9px 11px;border:1px solid #3b465c;border-radius:10px;background:#111823;color:#dbe5f5;font-size:12px;line-height:1.45}
+.pg-map-features>b{display:block;color:#f1f5f9;margin-bottom:5px;font-size:12px}
+.pg-map-features ul{margin:5px 0 0;padding-left:18px}
+.pg-map-features li{margin:3px 0;color:#aeb9cc}
+.pg-map-features.compact{padding:7px 9px;margin:7px 0 9px}
+.pg-map-features.compact>summary{cursor:pointer;font-weight:800;color:#e8eef9;list-style-position:inside}
+.pg-map-features.compact[open]>summary{margin-bottom:5px}
+.pg-player-row.mine{background:#1d2735;border-color:#455b79}
+.pg-player-main{min-width:0}
+.pg-me-badge{display:inline-block;margin-left:4px;padding:1px 5px;border-radius:999px;background:#35506d;color:#dff3ff;font-size:9px;vertical-align:1px}
+.pg-player-plants{display:flex;gap:5px;flex-wrap:wrap;margin:6px 0 7px}
+.pg-player-plant-card{width:54px;flex:0 0 54px;border:1px solid #3b455a;border-radius:7px;padding:2px;background:#090d13;box-shadow:0 1px 4px rgba(0,0,0,.35)}
+.pg-player-plants.mine .pg-player-plant-card{width:70px;flex-basis:70px;border-color:#55769a}
+.pg-player-plant-card .pg-plant-img{width:100%;border-radius:5px}
+.pg-player-no-plants{font-size:10px;color:var(--muted);margin:5px 0}
+
+@media(max-width:640px){
+  .pg-player-plant-card{width:48px;flex-basis:48px}
+  .pg-player-plants.mine .pg-player-plant-card{width:60px;flex-basis:60px}
+  .pg-map-features{font-size:11px;padding:8px}
+}

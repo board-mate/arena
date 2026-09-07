@@ -3,16 +3,16 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>파워그리드 독일 β4 · BoardMate 온라인</title>
-  <link rel="stylesheet" href="./powergrid/pg-styles.css?v=4">
+  <title>파워그리드 독일 β5 · BoardMate 온라인</title>
+  <link rel="stylesheet" href="./powergrid/pg-styles.css?v=5">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="./config.js"></script>
 </head>
 <body>
 <div class="pg-app" id="app">불러오는 중…</div>
-<script src="./powergrid/data/germany-map.js?v=4"></script>
-<script src="./powergrid/engine.js?v=4"></script>
-<script src="./powergrid/ui.js?v=4"></script>
+<script src="./powergrid/data/germany-map.js?v=5"></script>
+<script src="./powergrid/engine.js?v=5"></script>
+<script src="./powergrid/ui.js?v=5"></script>
 <script type="module">
 import {
   configured, roomId, getMe, loadRoom, loadState, saveState, startStatePoll,
@@ -33,13 +33,14 @@ function setupView(){
   }).join('');
   app.innerHTML=`
     <div class="pg-topbar">
-      <div class="pg-title">🔌 파워그리드 독일 β4<br><small>${esc(room.title||'BoardMate 온라인')} · ${members.length}인 · 다인플 전용</small></div>
+      <div class="pg-title">🔌 파워그리드 독일 β5<br><small>${esc(room.title||'BoardMate 온라인')} · ${members.length}인 · 다인플 전용</small></div>
       <a class="pg-btn small" href="./index.html#/room/${encodeURIComponent(roomId)}">← 방으로</a>
     </div>
     <div class="pg-card">
       <h3>독일맵 게임 설정</h3>
       ${legacyState?'<div class="pg-setup-warning">이 방에 이전 Power Grid β v2 상태가 남아 있습니다. 방장이 아래 설정으로 새 독일맵 게임을 시작하면 같은 방 state를 v3로 교체합니다.</div>':''}
       <p>이 버전은 <b>독일맵 다인플만</b> 지원합니다. ${members.length}인 게임은 서로 이어진 지역 <b>${wanted}개</b>를 사용합니다.</p>
+      <div class="pg-map-features"><b>🗺️ ${esc(PowerGrid.BOARD_DEFS.germany.featureTitle||'독일맵 특징')}</b><ul>${(PowerGrid.BOARD_DEFS.germany.features||[]).map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div>
       ${isHost?`<div class="pg-region-selector" id="regionSelector">${regionHtml}</div>
       <div class="pg-setup-warning" id="regionStatus">지역 ${wanted}개를 선택하세요. 선택 지역들은 하나의 연결된 영역이어야 합니다.</div>
       <button class="pg-btn primary" id="start">독일맵 게임 시작</button>`:'<p>방장이 사용할 지역을 선택하고 게임을 초기화하면 자동으로 시작됩니다.</p>'}

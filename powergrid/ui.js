@@ -1,5 +1,5 @@
 /*!
- * BoardMate Power Grid Germany - Multiplayer UI Layer v4
+ * BoardMate Power Grid Germany - Multiplayer UI Layer v5
  * 순수 DOM/SVG 렌더링. React 등 프레임워크 없이 동작.
  * window.PowerGrid (engine.js) 를 사용한다.
  */
@@ -37,7 +37,16 @@
     if (idx == null) return '<div class="pg-plant-img pg-plant-missing">'+esc(num)+'</div>';
     var x = (idx % 7) * 100, y = Math.floor(idx / 7) * 100;
     return '<svg class="pg-plant-img" viewBox="'+x+' '+y+' 100 100" role="img" aria-label="'+esc(num)+'번 발전소">'+
-      '<image href="./powergrid/assets/plants/plant_sheet.webp?v=4" x="0" y="0" width="700" height="700" preserveAspectRatio="none"></image></svg>';
+      '<image href="./powergrid/assets/plants/plant_sheet.webp?v=5" x="0" y="0" width="700" height="700" preserveAspectRatio="none"></image></svg>';
+  }
+
+  function renderMapFeatures(boardId, compact) {
+    var def = PG.BOARD_DEFS[boardId] || PG.BOARD_DEFS.germany;
+    var features = def && def.features || [];
+    if (!features.length) return '';
+    var items = features.map(function (x) { return '<li>'+esc(x)+'</li>'; }).join('');
+    if (compact) return '<details class="pg-map-features compact" open><summary>🗺️ '+esc(def.featureTitle || (def.name+'맵 특징'))+'</summary><ul>'+items+'</ul></details>';
+    return '<div class="pg-map-features"><b>🗺️ '+esc(def.featureTitle || (def.name+'맵 특징'))+'</b><ul>'+items+'</ul></div>';
   }
 
   // ------------------------------------------------------------
@@ -100,6 +109,7 @@
     var note=canPower ? '⚡ 관료 단계: 지도에서 내가 건설한 도시를 눌러 공급 대상을 선택할 수 있습니다. 선택 후 오른쪽 패널에서 발전소와 함께 확정하세요.' :
       '선택 지역 안에서만 최단 연결비를 계산합니다. 다른 플레이어의 도시를 경유하는 경로도 연결선 비용 계산에는 사용할 수 있습니다.';
     return '<div class="pg-real-map pg-germany-map"><div class="pg-real-map-head"><div><b>독일 보드</b><div class="pg-region-chips">'+regionChips+'</div></div><span class="pg-tag">42도시 · 83연결 자동 계산</span></div>'+
+      renderMapFeatures(state.map.boardId || 'germany', true)+
       '<div class="pg-germany-board"><img src="'+esc(PG.BOARD_DEFS.germany.image)+'" alt="Power Grid Germany board" loading="eager">'+markers+'</div>'+
       '<div class="pg-map-note">'+note+'</div>'+
       '<details class="pg-city-picker"'+(canBuild?' open':'')+'><summary>도시 목록'+(canBuild?' · 건설 가능 비용 보기':'')+'</summary>'+cityGroups+'</details></div>';
@@ -108,15 +118,25 @@
   // ------------------------------------------------------------
   // 플레이어 패널
   // ------------------------------------------------------------
-  function renderPlayers(state, actingSeats) {
+  function renderPlayers(state, actingSeats, mySeat) {
     var html = '<div class="pg-players">';
     state.order.forEach(function (seat) {
       var p = state.players[seat];
       var active = actingSeats.indexOf(seat) !== -1;
-      html += '<div class="pg-player-row' + (active ? ' active' : '') + '">';
+      var mine = Number(seat) === Number(mySeat);
+      html += '<div class="pg-player-row' + (active ? ' active' : '') + (mine ? ' mine' : '') + '">';
       html += '<span class="pg-swatch" style="background:' + SEAT_COLORS[seat % 6] + '"></span>';
-      html += '<div><div class="pg-player-name">' + esc(p.name) + '</div>';
-      html += '<div class="pg-player-meta">💰' + p.money + '€ · 🏙️' + p.cities.length + ' · 🔌' + (p.plants.length ? p.plants.join(',') : '-') + ((p._lastPoweredCities||[]).length ? ' · ⚡' + p._lastPoweredCities.length : '') + '</div>';
+      html += '<div class="pg-player-main"><div class="pg-player-name">' + esc(p.name) + (mine ? ' <span class="pg-me-badge">나</span>' : '') + '</div>';
+      html += '<div class="pg-player-meta">💰' + p.money + '€ · 🏙️' + p.cities.length + ' · 🔌' + p.plants.length + '장' + ((p._lastPoweredCities||[]).length ? ' · ⚡' + p._lastPoweredCities.length : '') + '</div>';
+      if (p.plants.length) {
+        html += '<div class="pg-player-plants' + (mine ? ' mine' : '') + '">';
+        p.plants.forEach(function(n){
+          html += '<div class="pg-player-plant-card" title="'+esc(n+'번 · '+plantLabel(n))+'">'+plantSprite(n)+'</div>';
+        });
+        html += '</div>';
+      } else {
+        html += '<div class="pg-player-no-plants">보유 발전소 없음</div>';
+      }
       html += '<div class="pg-stock"><span>석탄 ' + p.stock.coal + '</span><span>석유 ' + p.stock.oil + '</span><span>쓰레기 ' + p.stock.garbage + '</span><span>우라늄 ' + p.stock.uranium + '</span></div>';
       html += '</div>';
       html += '<div>' + (active ? '▶️' : '') + '</div>';
@@ -318,7 +338,7 @@
     var acting = PG.actingSeats(state);
 
     var top = '<div class="pg-topbar">' +
-      '<div class="pg-title">🔌 파워그리드 독일 β4<br><small>' + esc(ctx.subtitle || '') + '</small></div>' +
+      '<div class="pg-title">🔌 파워그리드 독일 β5<br><small>' + esc(ctx.subtitle || '') + '</small></div>' +
       '<div style="display:flex;gap:8px;flex-wrap:wrap">' +
       '<span class="pg-pill">Step <b>' + state.step + '</b></span>' +
       '<span class="pg-pill">라운드 <b>' + state.round + '</b></span>' +
@@ -337,7 +357,7 @@
 
     var right = '<div>' +
       renderGameOverBanner(state) +
-      '<div class="pg-card"><h3>플레이어</h3>' + renderPlayers(state, acting) + '</div>' +
+      '<div class="pg-card"><h3>플레이어</h3>' + renderPlayers(state, acting, mySeat) + '</div>' +
       renderContextPanel(state, mySeat, allowAct) +
       renderLog(state) +
       '</div>';
