@@ -48,24 +48,40 @@ export function seatName(members,seat){return members.find(m=>Number(m.seat)===N
 
 // ───────────────────── polished social-deduction results ─────────────────────
 const _finalizedRooms=new Set();
+const _finalizingRooms=new Map();
 export async function finalizeSeatWinners(ctx,winnerSeats){
-  if(!ctx?.isHost||!roomId||_finalizedRooms.has(roomId))return false;
-  const seats=[...new Set((winnerSeats||[]).map(Number).filter(Number.isInteger))];
-  const winners=(ctx.members||[]).filter(m=>seats.includes(Number(m.seat))).map(m=>m.user_id);
-  const losers=(ctx.members||[]).filter(m=>!seats.includes(Number(m.seat))).map(m=>m.user_id);
-  if(!winners.length||!losers.length)return false;
-  try{
-    await rpc('submit_boardmate_team_match',{p_token:token(),p_room_id:roomId,p_winners:winners,p_losers:losers});
-    _finalizedRooms.add(roomId);
-    return true;
-  }catch(e){
-    if(String(e?.message||e).toLowerCase().includes('already')){
+  if(!ctx?.isHost||!roomId)return false;
+  if(_finalizedRooms.has(roomId))return true;
+  if(_finalizingRooms.has(roomId))return await _finalizingRooms.get(roomId);
+  const task=(async()=>{
+    const seats=[...new Set((winnerSeats||[]).map(Number).filter(Number.isInteger))];
+    const winners=(ctx.members||[]).filter(m=>seats.includes(Number(m.seat))).map(m=>m.user_id);
+    const losers=(ctx.members||[]).filter(m=>!seats.includes(Number(m.seat))).map(m=>m.user_id);
+    if(!winners.length||!losers.length)return false;
+    try{
+      await rpc('submit_boardmate_team_match',{p_token:token(),p_room_id:roomId,p_winners:winners,p_losers:losers});
       _finalizedRooms.add(roomId);
       return true;
+    }catch(e){
+      const msg=String(e?.message||e).toLowerCase();
+      if(msg.includes('already')){
+        _finalizedRooms.add(roomId);
+        return true;
+      }
+      // 결과 RPC가 네트워크 중단 직전에 실제로 반영됐을 수 있으므로 방 상태를 재확인한다.
+      try{
+        const data=await rpc('boardmate_get_room',{p_token:token(),p_room_id:roomId});
+        if(data?.room?.status==='finished'){
+          _finalizedRooms.add(roomId);
+          return true;
+        }
+      }catch{}
+      console.warn('[BoardMate social finalize]',e);
+      return false;
     }
-    console.warn('[BoardMate social finalize]',e);
-    return false;
-  }
+  })();
+  _finalizingRooms.set(roomId,task);
+  try{return await task;}finally{_finalizingRooms.delete(roomId);}
 }
 export function socialEndScreen({win=false,draw=false,title='게임 종료',reason='',summary='',body='',badge='FINAL RESULT'}={}){
   const accent=draw?'#a78bfa':win?'#4ade80':'#fb7185';

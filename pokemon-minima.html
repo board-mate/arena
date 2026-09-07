@@ -33,7 +33,7 @@ button:disabled{opacity:.4;cursor:not-allowed}
 .btn.small{padding:4px 9px;font-size:.75rem}
 
 /* ─── 메인 레이아웃 ─── */
-.game-area{display:grid;grid-template-columns:230px 1fr 230px;gap:12px;padding:12px;flex:1;min-height:0}
+.game-area{display:grid;grid-template-columns:210px minmax(0,1fr) 210px;gap:12px;padding:12px;flex:1;min-height:0}
 .panel{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:10px}
 .panel-title{font-size:.72rem;font-weight:800;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-bottom:2px}
 
@@ -121,8 +121,8 @@ button:disabled{opacity:.4;cursor:not-allowed}
 .display-mini strong{display:block;font-size:.75rem}
 
 /* ─── 손패 ─── */
-.hand-area{display:flex;gap:6px;flex-wrap:wrap}
-.hand-card{background:var(--card);border:2px solid var(--border);border-radius:9px;padding:6px 8px;font-size:.75rem;cursor:pointer;transition:all .12s;max-width:130px;position:relative}
+.hand-area{display:grid;grid-template-columns:repeat(3,minmax(190px,1fr));gap:10px;align-items:start}
+.hand-card{background:var(--card);border:2px solid var(--border);border-radius:12px;padding:9px;font-size:.75rem;cursor:pointer;transition:all .12s;min-width:180px;max-width:280px;position:relative}
 .hand-card:hover{border-color:var(--accent);transform:translateY(-2px)}
 .hand-card.selected{border-color:var(--accent);background:rgba(246,201,14,.08)}
 .hand-card.playable{border-color:var(--green)}
@@ -130,9 +130,24 @@ button:disabled{opacity:.4;cursor:not-allowed}
 .hand-count{font-size:.72rem;color:var(--muted);font-weight:700}
 .card-art-full{width:100%;aspect-ratio:441/626;object-fit:contain;border-radius:7px;margin:4px 0 7px;background:#0b1320}
 .draft-art{width:100%;aspect-ratio:441/626;object-fit:contain;border-radius:8px;background:#0b1320;margin-bottom:6px}
-.hand-art{width:100%;aspect-ratio:441/626;max-height:110px;object-fit:cover;object-position:top;border-radius:6px;margin-bottom:4px;background:#0b1320}
+.hand-art{width:100%;aspect-ratio:441/626;max-height:none;object-fit:contain;object-position:center;border-radius:8px;margin-bottom:7px;background:#0b1320}
 .display-art{width:44px;height:62px;object-fit:cover;object-position:top;border-radius:5px;float:left;margin-right:6px}
 .zoo-art{width:44px;height:62px;object-fit:cover;object-position:top;border-radius:5px;margin:0 auto 3px;display:block}
+
+
+.hand-card-detail{display:grid;gap:5px;margin-top:6px}
+.hand-effect{font-size:.69rem;line-height:1.4;color:#d6deea;background:#121c28;border:1px solid #2d4158;border-radius:7px;padding:6px 7px}
+.hand-effect b{color:#fff}
+.hand-sponsor{font-size:.68rem;line-height:1.4;color:#a9d8ff;background:rgba(49,130,206,.11);border:1px solid rgba(49,130,206,.35);border-radius:7px;padding:6px 7px}
+.hand-conservation{font-size:.68rem;line-height:1.4;color:#a7f3c6;background:rgba(56,161,105,.11);border:1px solid rgba(56,161,105,.35);border-radius:7px;padding:6px 7px}
+.card-zoom-btn{width:100%;margin:2px 0 4px;border:1px solid #425a75;background:#152438;color:#dbeafe;border-radius:7px;padding:5px 7px;font-size:.68rem;font-weight:900;cursor:pointer}
+.card-preview-backdrop{position:fixed;inset:0;z-index:9999;background:rgba(3,7,12,.88);display:flex;align-items:center;justify-content:center;padding:18px}
+.card-preview{width:min(980px,96vw);max-height:94vh;overflow:auto;background:#101923;border:1px solid #45617f;border-radius:18px;padding:16px;display:grid;grid-template-columns:minmax(300px,500px) minmax(260px,1fr);gap:16px;box-shadow:0 30px 90px #000}
+.card-preview img{width:100%;max-height:86vh;object-fit:contain;border-radius:12px;background:#07101a}
+.card-preview-info{display:flex;flex-direction:column;gap:10px}
+.card-preview-info h2{margin:0;color:var(--accent);font-size:1.45rem}
+.card-preview-close{align-self:flex-end}
+@media(max-width:760px){.hand-area{grid-template-columns:repeat(2,minmax(145px,1fr))}.hand-card{min-width:0;max-width:none}.card-preview{grid-template-columns:1fr}.card-preview img{max-height:60vh}}
 
 /* ─── 메시지/액션 선택 ─── */
 .action-bar{background:var(--surface);border-top:1px solid var(--border);padding:10px 16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
@@ -185,7 +200,9 @@ button:disabled{opacity:.4;cursor:not-allowed}
 @media(max-width:900px){
   .game-area{grid-template-columns:1fr;grid-template-rows:auto}
   .zoo-grid{grid-template-rows:repeat(3,70px)}
+  .hand-area{grid-template-columns:repeat(3,minmax(170px,1fr));overflow-x:auto;padding-bottom:5px}
 }
+@media(max-width:620px){.hand-area{grid-template-columns:repeat(2,minmax(145px,1fr));overflow:visible}.hand-card{max-width:none}.draft-art{max-height:none}}
 </style>
 </head>
 <body>
@@ -741,7 +758,7 @@ function renderCard(cardId, opts={}){
     ${card.req.length?`<div style="font-size:.68rem;color:var(--muted)">요건: ${card.req.map(ic=>icon(ic)).join('')}</div>`:''}
     ${!small?`<div class="card-ability">${card.ability}</div>`:''}
     ${!small&&!inZoo?`<div class="sponsor-section">
-      <div class="sponsor-label">후원 강도 ${card.sponsor.strength} · ${card.sponsor.name}</div>
+      <div class="sponsor-label">후원/협회 강도 ${card.sponsor.strength} · ${card.sponsor.name}</div>
       <div class="sponsor-text">${card.sponsor.text}</div>
     </div>`:''}
     ${!small&&!inZoo?`<div class="cons-section">
@@ -795,7 +812,7 @@ function renderActionCard(player, interactive=false){
     {id:'cards',icon:'🃏',label:'카드'},
     {id:'build',icon:'🏗',label:'건설'},
     {id:'animal',icon:'🐾',label:'포켓몬'},
-    {id:'sponsor',icon:'🤝',label:'후원보존'},
+    {id:'sponsor',icon:'🤝',label:'후원/협회·보존'},
   ];
   const slots=actions.map(a=>{
     const st=getStrength(player,a.id);
@@ -978,13 +995,15 @@ function renderDraft(){
       <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center">
         ${pool.map(id=>{
           const card=cardById(id);
-          return `<div class="hand-card" style="width:190px;cursor:pointer">
+          return `<div class="hand-card" style="width:235px;max-width:235px;cursor:pointer">
             <img class="draft-art" src="${cardArtPath(id)}" alt="${card?.name||'포켓몬'} 카드" loading="lazy">
             <div style="font-weight:900;font-size:.85rem">${card?.name||'?'}</div>
             <div style="font-size:.65rem;color:var(--muted)">${card?.latin||''} ${card?.starter?'⚡':''}</div>
             <div class="icon-row">${(card?.icons||[]).map(ic=>icon(ic)).join('')}</div>
             <div style="font-size:.68rem;margin-top:3px">매력 ${card?.appeal??0} · 크기 ${card?.size??0} · 비용 ${card?.cost??0}원</div>
-            <div style="font-size:.62rem;color:var(--muted);margin-top:2px">${String(card?.ability||'').slice(0,55)}${String(card?.ability||'').length>55?'…':''}</div>
+            <div style="font-size:.64rem;color:var(--muted);margin-top:3px">🐾 ${String(card?.ability||'').slice(0,72)}${String(card?.ability||'').length>72?'…':''}</div>
+            <div class="hand-sponsor" style="margin-top:5px"><b>🤝 ${card?.sponsor?.name||'후원/협회'}</b><br>${String(card?.sponsor?.text||'').slice(0,80)}</div>
+            <div class="hand-conservation" style="margin-top:5px"><b>🛡 보존</b><br>${conservationRequirementText(card?.conservation)} → ${card?.conservation?.points||0}</div>
             <button class="btn primary" style="width:100%;margin-top:6px" data-draft-pick="${id}">선택하기</button>
           </div>`;
         }).join('')}
@@ -994,6 +1013,7 @@ function renderDraft(){
 }
 
 function attachDraftEvents(){
+  document.querySelectorAll('[data-card-preview]').forEach(el=>{el.addEventListener('click',ev=>{ev.preventDefault();ev.stopPropagation();openCardPreview(el.dataset.cardPreview);});});
   if (IS_ONLINE_PARAM && Number(G?.draftCurrentPlayer ?? -1) !== ONLINE_SEAT) return;
   document.querySelectorAll('[data-draft-pick]').forEach(btn=>{
     btn.addEventListener('click',()=>draftPick(btn.dataset.draftPick));
@@ -1138,17 +1158,8 @@ function renderGame(){
 
           <div style="margin-top:8px">
             <div class="panel-title">손패 (${player.hand.length}/3)</div>
-            <div style="display:flex;gap:6px;flex-wrap:wrap">
-              ${(!IS_ONLINE_PARAM || ONLINE_SEAT===cp) ? player.hand.map(id=>{
-                const card=cardById(id);
-                const sel=uiState.selectedHandCard===id;
-                return `<div class="hand-card ${sel?'selected':''} playable" data-hand-card="${id}">
-                  <div style="font-weight:900;font-size:.78rem">${card?.name}</div>
-                  <div class="icon-row">${(card?.icons||[]).map(ic=>icon(ic)).join('')}</div>
-                  <div style="font-size:.65rem;color:var(--muted)">🎟${card?.appeal}·크기${card?.size}·${card?.cost}원</div>
-                  ${sel?'<div style="font-size:.62rem;color:var(--accent);margin-top:2px">✓ 선택됨</div>':''}
-                </div>`;
-              }).join('') : `<span class="stat-pill">상대 손패 ${player.hand.length}장 · 비공개</span>`}
+            <div class="hand-area">
+              ${(!IS_ONLINE_PARAM || ONLINE_SEAT===cp) ? handCards : `<span class="stat-pill">상대 손패 ${player.hand.length}장 · 비공개</span>`}
             </div>
           </div>
 
@@ -1170,7 +1181,7 @@ function renderGame(){
                 : `<button class="btn" id="btnCards">🃏 카드 (강도${actionStrengths.cards})</button>
                    <button class="btn" id="btnBuild">🏗 건설 (강도${actionStrengths.build})</button>
                    <button class="btn" id="btnAnimal" ${actionStrengths.animal<2?'disabled':''}>🐾 포켓몬 (강도${actionStrengths.animal})</button>
-                   <button class="btn" id="btnSponsor">🤝 후원보존 (강도${actionStrengths.sponsor})</button>`
+                   <button class="btn" id="btnSponsor">🤝 후원/협회·보존 (강도${actionStrengths.sponsor})</button>`
               }
             </div>
           </div>
@@ -1213,18 +1224,40 @@ function renderGame(){
 
 function renderHandCardInner(id){
   const card = cardById(id);
-  return `<img class="hand-art" src="${cardArtPath(id)}" alt="${card?.name||'포켓몬'} 카드" loading="lazy">
-  <div style="font-weight:900;font-size:.78rem">${card?.name}</div>
-  <div class="icon-row">${(card?.icons||[]).map(ic=>icon(ic)).join('')}</div>
-  <div style="font-size:.65rem;color:var(--muted)">🎟${card?.appeal}·크기${card?.size}·${card?.cost}원</div>`;
+  if(!card)return '';
+  return `<img class="hand-art" src="${cardArtPath(id)}" alt="${card.name} 카드" loading="lazy">
+  <button type="button" class="card-zoom-btn" data-card-preview="${id}">🔎 카드 크게 보기</button>
+  <div style="font-weight:900;font-size:.86rem">${card.name} <span style="font-size:.66rem;color:var(--muted);font-weight:500">${card.latin}</span></div>
+  <div class="icon-row" style="margin-top:4px">${(card.icons||[]).map(ic=>icon(ic)).join('')}</div>
+  <div style="font-size:.68rem;color:var(--muted)">🎟 매력 ${card.appeal} · 우리 ${card.size} · 입주 ${card.cost}원 · 보존값 ${card.conVal}</div>
+  <div class="hand-card-detail">
+    <div class="hand-effect"><b>🐾 카드 효과</b><br>${card.ability}</div>
+    <div class="hand-sponsor"><b>🤝 후원/협회 · 강도 ${card.sponsor.strength} · ${card.sponsor.name}</b><br>${card.sponsor.text}</div>
+    <div class="hand-conservation"><b>🛡 보존 · 강도 4</b><br>${conservationRequirementText(card.conservation)} → 보존 포인트 ${card.conservation.points} · 이 카드 보존값 ${card.conVal}</div>
+  </div>`;
+}
+
+function openCardPreview(id){
+  const card=cardById(id);if(!card)return;
+  document.querySelector('.card-preview-backdrop')?.remove();
+  const wrap=document.createElement('div');wrap.className='card-preview-backdrop';
+  wrap.innerHTML=`<section class="card-preview" role="dialog" aria-modal="true">
+    <div><img src="${cardArtPath(id)}" alt="${card.name} 카드 크게 보기"></div>
+    <div class="card-preview-info"><button class="btn card-preview-close">닫기 ✕</button><h2>${card.name}</h2><div style="color:var(--muted)">${card.latin}</div>
+    <div class="hand-effect"><b>🐾 카드 효과</b><br>${card.ability}</div>
+    <div class="hand-sponsor"><b>🤝 후원/협회 · 강도 ${card.sponsor.strength} · ${card.sponsor.name}</b><br>${card.sponsor.text}</div>
+    <div class="hand-conservation"><b>🛡 보존 · 강도 4</b><br>요건: ${conservationRequirementText(card.conservation)}<br>사용 가능 보존 포인트: ${card.conservation.points} · 카드 보존값: ${card.conVal}</div>
+    <div style="font-size:.8rem;color:var(--muted)">입주 ${card.cost}원 · 버릴 때 ${card.discardValue}원 · 준비된 카드 소비 ${card.moneyValue}원</div></div></section>`;
+  document.body.appendChild(wrap);wrap.querySelector('.card-preview-close').onclick=()=>wrap.remove();wrap.onclick=e=>{if(e.target===wrap)wrap.remove();};
 }
 
 function actionLabel(a){
-  return {cards:'카드 뽑기',build:'우리 건설',animal:'포켓몬 배치',sponsor:'후원/보존'}[a]||a;
+  return {cards:'카드 뽑기',build:'우리 건설',animal:'포켓몬 배치',sponsor:'후원/협회·보존'}[a]||a;
 }
 
 // ─── 게임 이벤트 ───
 function attachGameEvents(){
+  document.querySelectorAll('[data-card-preview]').forEach(el=>{el.addEventListener('click',ev=>{ev.preventDefault();ev.stopPropagation();openCardPreview(el.dataset.cardPreview);});});
   if (IS_ONLINE_PARAM && Number(G?.currentPlayer ?? -1) !== ONLINE_SEAT) return;
   // 손패 카드 선택
   document.querySelectorAll('[data-hand-card]').forEach(el=>{
