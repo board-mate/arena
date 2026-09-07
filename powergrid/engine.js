@@ -18,7 +18,7 @@
   'use strict';
   if (!GERMANY) throw new Error('PowerGridGermanyMap 데이터가 필요합니다.');
 
-  var STATE_KIND = 'powergrid-v3-germany-boardmate';
+  var STATE_KIND = 'powergrid-v11-maps-boardmate';
 
   // ============================================================
   // 상수 데이터
@@ -160,19 +160,91 @@
 
   var BOARD_DEFS = {
     germany: {
-      id:'germany',
-      name:'독일',
-      mode:'auto',
-      image:'./powergrid/assets/maps/germany.webp',
+      id:'germany', name:'독일', mode:'auto', image:'./powergrid/assets/maps/germany.webp',
       featureTitle:'독일맵 특징',
+      rules:{ uraniumStopOnPlant39:true, usaCoalStorage:false, koreaSplitMarkets:false },
       features:[
+        '재충전 규칙: 누군가 시장에 나온 39번 발전소를 구매하면 이후 매 정리 단계 우라늄 보충이 영구 중단됩니다.',
+        '39번 발전소가 팔리지 않거나 등장하지 않으면 우라늄 보충 중단은 적용되지 않습니다.',
         '6개 권역 중 플레이 인원에 따라 서로 연결된 3~5개 권역만 사용합니다.',
         '선택하지 않은 권역의 도시는 건설할 수 없고 연결 경로 계산에도 사용하지 않습니다.',
-        '독일 보드의 42개 도시와 83개 연결을 사용하며, 선택 지역 안에서 최단 연결비를 자동 계산합니다.',
-        '경매·자원 구매·도시 건설·전력 공급의 기본 진행은 공통 Power Grid 엔진을 사용합니다.'
+        '독일 보드의 42개 도시와 83개 연결을 사용하며, 선택 지역 안에서 최단 연결비를 자동 계산합니다.'
+      ]
+    },
+    usa: {
+      id:'usa', name:'미국', mode:'abstract', image:null,
+      featureTitle:'미국맵 특징',
+      rules:{ uraniumStopOnPlant39:false, usaCoalStorage:true, koreaSplitMarkets:false },
+      features:[
+        '미국맵은 동부/서부 연결비 차이가 큰 확장형 지형으로 표시됩니다.',
+        '재충전 규칙: 기본 자원 보충표를 사용하고, 석탄 시장이 비면 8 Elektro의 석탄 저장고 구매 규칙을 표시합니다.',
+        '경매·건설·자원·전력 공급은 공통 Power Grid Recharged 엔진을 사용합니다.',
+        '지도 해상도 대신 별도 연결비 오버레이와 연결비 표를 제공해 지역 간 연결 통로 비용을 확인합니다.'
+      ]
+    },
+    korea: {
+      id:'korea', name:'한국', mode:'abstract', image:null,
+      featureTitle:'한국맵 특징',
+      rules:{ uraniumStopOnPlant39:false, usaCoalStorage:false, koreaSplitMarkets:true },
+      features:[
+        '한국맵은 북/남 자원 시장 분리 규칙을 인게임 설명과 구매 단계에 표시합니다.',
+        '한 라운드에는 북부 시장 또는 남부 시장 중 하나만 골라 구매하는 규칙을 사용합니다.',
+        '자원 보충은 북부 시장을 먼저 채우고, 남은 만큼 남부 시장을 채우는 규칙을 안내합니다.',
+        '지도 해상도 대신 별도 연결비 오버레이와 연결비 표를 제공해 지역 간 연결 통로 비용을 확인합니다.'
       ]
     }
   };
+
+  function makeGeneratedMap(boardId, boardName, regionNames, cityNames, edgesList) {
+    var regionIds=['r0','r1','r2','r3','r4','r5'];
+    var colors=['#6f9d8a','#8b7657','#a7615f','#b6a03e','#7088a8','#83718f'];
+    var REGIONS={}, CITIES=[], CITY_BY_ID={};
+    regionIds.forEach(function(rid,i){REGIONS[rid]={id:rid,name:regionNames[i],shortName:regionNames[i].replace(/^[^·]+·\s*/,''),color:colors[i]};});
+    cityNames.forEach(function(name,i){
+      var region=Math.floor(i/7), pos=i%7;
+      var col=region%3, row=Math.floor(region/3);
+      var x=85+col*250+(pos%2)*90+Math.floor(pos/2)*20;
+      var y=85+row*360+Math.floor(pos/2)*72+(pos%2)*24;
+      var id=(boardId+'_'+name).toUpperCase().replace(/[^A-Z0-9가-힣]+/g,'_');
+      var c={id:id,name:name,region:regionIds[region],x:x,y:y}; CITIES.push(c); CITY_BY_ID[id]=c;
+    });
+    var EDGES=edgesList.map(function(e){return {a:CITIES[e[0]].id,b:CITIES[e[1]].id,cost:e[2]};});
+    function citiesForRegions(ids){var set={};(ids||[]).forEach(function(r){set[r]=true;});return CITIES.filter(function(c){return set[c.region];}).map(function(c){return c.id;});}
+    function regionAdjacency(){var out={};regionIds.forEach(function(r){out[r]=[];});EDGES.forEach(function(e){var ra=CITY_BY_ID[e.a].region,rb=CITY_BY_ID[e.b].region;if(ra===rb)return;if(out[ra].indexOf(rb)<0)out[ra].push(rb);if(out[rb].indexOf(ra)<0)out[rb].push(ra);});return out;}
+    var REGION_ADJ=regionAdjacency();
+    function regionsConnected(ids){ids=(ids||[]).filter(function(r,i,a){return REGIONS[r]&&a.indexOf(r)===i;}); if(!ids.length)return false; var allow={},seen={},q=[ids[0]];ids.forEach(function(r){allow[r]=true;});seen[ids[0]]=true;while(q.length){var r=q.shift();(REGION_ADJ[r]||[]).forEach(function(n){if(allow[n]&&!seen[n]){seen[n]=true;q.push(n);}});}return ids.every(function(r){return seen[r];});}
+    function normalizeCity(v){var raw=String(v||'').trim().toUpperCase();for(var i=0;i<CITIES.length;i++){if(CITIES[i].id===raw || CITIES[i].name.toUpperCase()===raw)return CITIES[i].id;}return null;}
+    return {BOARD_WIDTH:675,BOARD_HEIGHT:900,REGIONS:REGIONS,REGION_ORDER:regionIds,REGION_ADJ:REGION_ADJ,REGION_SHADE_POLYGONS:null,CITIES:CITIES,CITY_BY_ID:CITY_BY_ID,EDGES:EDGES,citiesForRegions:citiesForRegions,regionsConnected:regionsConnected,normalizeCity:normalizeCity,abstract:true,boardName:boardName};
+  }
+
+  function generatedEdges(target){
+    var e=[], seen={};
+    function add(a,b,c){ var k=Math.min(a,b)+'-'+Math.max(a,b); if(a===b||seen[k]) return false; seen[k]=true; e.push([a,b,c]); return true; }
+    for(var r=0;r<6;r++){var o=r*7; for(var i=0;i<6;i++) add(o+i,o+i+1,3+((i+r)%5)*2);}
+    [[0,7,7],[3,10,12],[7,14,8],[11,18,14],[14,21,9],[18,25,13],[21,28,10],[25,32,11],[28,35,12],[32,39,15],[5,12,18],[12,19,16],[19,26,13],[26,33,17],[9,16,12],[16,23,15],[23,30,14],[30,37,16],[34,40,8],[36,41,10]].forEach(function(x){add(x[0],x[1],x[2]);});
+    // 추상 지도용 보강 연결: 공식 보드 이미지가 추가되기 전까지 지역간 연결비 표와 최단경로가 풍부하게 작동하도록 한다.
+    var offsets=[7,8,6,14,13,15,2,5,9,11,16];
+    for(var oi=0; e.length<(target||56) && oi<offsets.length; oi++){
+      var d=offsets[oi];
+      for(var a=0; e.length<(target||56) && a+d<42; a++){
+        var b=a+d;
+        var cost=4 + ((a*7 + b*3 + d) % 18);
+        add(a,b,cost);
+      }
+    }
+    return e.slice(0,target||e.length);
+  }
+
+  var USA_MAP = makeGeneratedMap('usa','미국',
+    ['서북 · 초록','북중부 · 갈색','북동 · 빨강','서남 · 노랑','중남부 · 파랑','동남 · 보라'],
+    ['Seattle','Portland','Boise','Billings','Salt Lake City','Denver','Omaha','Fargo','Duluth','Minneapolis','Chicago','Detroit','Cleveland','Pittsburgh','Boston','New York','Philadelphia','Washington','Norfolk','Raleigh','Cincinnati','San Francisco','Los Angeles','Las Vegas','Phoenix','Santa Fe','Kansas City','St. Louis','Oklahoma City','Dallas','Houston','New Orleans','Memphis','Atlanta','Nashville','Birmingham','Jacksonville','Tampa','Miami','Savannah','Charleston','Knoxville'],
+    generatedEdges(87));
+  var KOREA_MAP = makeGeneratedMap('korea','한국',
+    ['북서 · 초록','북동 · 갈색','수도권 · 빨강','충청 · 노랑','호남 · 파랑','영남 · 보라'],
+    ['신의주','평양','남포','개성','해주','사리원','원산','청진','함흥','혜산','강계','안주','나진','금강산','서울','인천','수원','춘천','원주','강릉','속초','대전','청주','천안','세종','공주','충주','제천','광주','전주','목포','여수','순천','군산','제주','부산','대구','울산','포항','창원','진주','안동'],
+    generatedEdges(81));
+  var BOARD_MAPS = { germany: GERMANY, usa: USA_MAP, korea: KOREA_MAP };
+  function mapData(boardId){ return BOARD_MAPS[boardId || 'germany'] || GERMANY; }
 
   function adjacency() {
     var adj={};
@@ -186,49 +258,54 @@
   var ADJ=adjacency();
 
   // 다중 출발점 다익스트라. 선택되지 않은 지역의 도시는 경유할 수 없다.
-  function cheapestConnectionCost(sources, target, allowedCities) {
+  function cheapestConnectionCost(sources, target, allowedCities, edges) {
+    edges = edges || GERMANY.EDGES;
     var allowed={};
-    (allowedCities && allowedCities.length ? allowedCities : GERMANY.CITIES.map(function(c){return c.id;}))
-      .forEach(function(c){allowed[c]=true;});
+    (allowedCities && allowedCities.length ? allowedCities : GERMANY.CITIES.map(function(c){return c.id;})).forEach(function(c){allowed[c]=true;});
     if (!allowed[target]) return -1;
     if (!sources.length) return 0;
     if (sources.indexOf(target)!==-1) return -1;
+    var adj={}; Object.keys(allowed).forEach(function(c){adj[c]=[];});
+    edges.forEach(function(e){ if(allowed[e.a]&&allowed[e.b]){ adj[e.a].push({to:e.b,cost:e.cost}); adj[e.b].push({to:e.a,cost:e.cost}); } });
     var dist={},visited={},pq=[];
     Object.keys(allowed).forEach(function(c){dist[c]=Infinity;});
     sources.forEach(function(src){if(allowed[src]){dist[src]=0;pq.push({c:src,d:0});}});
     while(pq.length){
       pq.sort(function(a,b){return a.d-b.d;});
-      var cur=pq.shift();
-      if(visited[cur.c])continue;
-      visited[cur.c]=true;
-      if(cur.c===target)return cur.d;
-      (ADJ[cur.c]||[]).forEach(function(edge){
-        if(!allowed[edge.to])return;
-        var nd=cur.d+edge.cost;
-        if(nd<dist[edge.to]){dist[edge.to]=nd;pq.push({c:edge.to,d:nd});}
-      });
+      var cur=pq.shift(); if(visited[cur.c])continue; visited[cur.c]=true; if(cur.c===target)return cur.d;
+      (adj[cur.c]||[]).forEach(function(edge){var nd=cur.d+edge.cost;if(nd<dist[edge.to]){dist[edge.to]=nd;pq.push({c:edge.to,d:nd});}});
     }
     return Number.isFinite(dist[target]) ? dist[target] : -1;
   }
 
-  function defaultRegions(numPlayers) {
-    if (numPlayers <= 3) return ['green','brown','yellow'];
-    if (numPlayers === 4) return ['green','brown','yellow','red'];
-    return ['green','brown','yellow','red','blue'];
+
+  function defaultRegions(numPlayers, boardId) {
+    boardId = boardId || 'germany';
+    if (boardId === 'germany') {
+      if (numPlayers <= 3) return ['green','brown','yellow'];
+      if (numPlayers === 4) return ['green','brown','yellow','red'];
+      return ['green','brown','yellow','red','blue'];
+    }
+    if (numPlayers <= 3) return ['r0','r1','r2'];
+    if (numPlayers === 4) return ['r0','r1','r2','r3'];
+    return ['r0','r1','r2','r3','r4'];
   }
 
-  function validateRegionSelection(numPlayers, regionIds) {
+  function validateRegionSelection(numPlayers, regionIds, boardId) {
+    var B = mapData(boardId || 'germany');
     var wanted=REGIONS_TO_USE[numPlayers];
-    var ids=(regionIds||[]).filter(function(r,i,a){return GERMANY.REGIONS[r]&&a.indexOf(r)===i;});
-    if(ids.length!==wanted) throw new Error(numPlayers+'인 게임은 독일 지역 '+wanted+'개를 선택해야 합니다.');
-    if(!GERMANY.regionsConnected(ids)) throw new Error('선택한 지역들은 서로 연결되어 있어야 합니다.');
+    var ids=(regionIds||[]).filter(function(r,i,a){return B.REGIONS[r]&&a.indexOf(r)===i;});
+    if(ids.length!==wanted) throw new Error(numPlayers+'인 게임은 '+BOARD_DEFS[boardId||'germany'].name+' 지역 '+wanted+'개를 선택해야 합니다.');
+    if(!B.regionsConnected(ids)) throw new Error('선택한 지역들은 서로 연결되어 있어야 합니다.');
     return ids;
   }
 
-  function selectedCities(numPlayers, regionIds) {
-    var ids=validateRegionSelection(numPlayers, regionIds || defaultRegions(numPlayers));
-    return { regionIds:ids, cityNames:GERMANY.citiesForRegions(ids) };
+  function selectedCities(numPlayers, regionIds, boardId) {
+    var B = mapData(boardId || 'germany');
+    var ids=validateRegionSelection(numPlayers, regionIds || defaultRegions(numPlayers, boardId), boardId);
+    return { boardId:boardId || 'germany', regionIds:ids, cityNames:B.citiesForRegions(ids), edges:B.EDGES.slice() };
   }
+
 
   // ============================================================
   // 게임 상태 생성 / 진행
@@ -241,9 +318,9 @@
     if (!seatNames || seatNames.length < numPlayers) throw new Error('플레이어 이름이 부족합니다.');
     var rng = mulberry32(opts.seed != null ? opts.seed : Date.now() % 2147483647);
 
-    var boardId='germany';
-    var boardDef=BOARD_DEFS.germany;
-    var zone=selectedCities(numPlayers, opts.regionIds);
+    var boardId=BOARD_DEFS[opts.boardId] ? opts.boardId : 'germany';
+    var boardDef=BOARD_DEFS[boardId];
+    var zone=selectedCities(numPlayers, opts.regionIds, boardId);
 
     // 발전소 덱 세팅 (룰북 8~9단계 그대로 구현)
     var plugShuffled = shuffle(PLUG_NUMBERS, rng);
@@ -285,7 +362,7 @@
       v: 4,
       kind: STATE_KIND,
       numPlayers: numPlayers,
-      map: { mode:'auto', boardId:boardId, regionIds:zone.regionIds, cityNames:zone.cityNames },
+      map: { mode:boardDef.mode||'auto', boardId:boardId, regionIds:zone.regionIds, cityNames:zone.cityNames, edges:zone.edges },
       step: 1,
       round: 1,
       phase: 1, // 1..5
@@ -305,7 +382,8 @@
       winner: null,
       gameOver: false
     };
-    pushLog(state, '게임을 시작합니다. ('+numPlayers+'인, 독일맵 / 지역 '+zone.regionIds.map(function(r){return GERMANY.REGIONS[r].shortName;}).join('·')+' / 도시 '+zone.cityNames.length+'개)');
+    var _startMap = mapData(boardId);
+    pushLog(state, '게임을 시작합니다. ('+numPlayers+'인, '+boardDef.name+'맵 / 지역 '+zone.regionIds.map(function(r){return (_startMap.REGIONS[r]&&_startMap.REGIONS[r].shortName)||r;}).join('·')+' / 도시 '+zone.cityNames.length+'개)');
     pushLog(state, '독일 42도시 연결 그래프로 건설 연결비를 자동 계산합니다.');
     beginPhase2(state);
     syncDerivedTurn(state);
@@ -481,6 +559,14 @@
     state.players[winner].money -= price;
     state.players[winner].plants.push(plantNum);
     pushLog(state, state.players[winner].name + '님이 ' + plantNum + '번 발전소를 ' + price + '€에 낙찰받았습니다.');
+    state.flags = state.flags || { purchasedPlants:[] };
+    state.flags.purchasedPlants = state.flags.purchasedPlants || [];
+    if (state.flags.purchasedPlants.indexOf(plantNum) === -1) state.flags.purchasedPlants.push(plantNum);
+    var bdefForSale = BOARD_DEFS[(state.map && state.map.boardId) || 'germany'] || BOARD_DEFS.germany;
+    if (bdefForSale.rules && bdefForSale.rules.uraniumStopOnPlant39 && plantNum === 39 && !state.flags.uraniumResupplyStopped) {
+      state.flags.uraniumResupplyStopped = true;
+      pushLog(state, '독일 재충전 규칙 발동: 39번 발전소가 판매되어 앞으로 우라늄 보충이 중단됩니다.');
+    }
     if (plantNum === state.plantMarket.discounted) state.plantMarket.discounted = null;
 
     // 시장에서 제거하고 보충
@@ -670,7 +756,7 @@
     if (owners.indexOf(seat) !== -1) return null; // 이미 소유
     var mySources = state.players[seat].cities;
     if (state.map.cityNames.indexOf(cityName) === -1) return null;
-    var connCost = cheapestConnectionCost(mySources, cityName, state.map.cityNames);
+    var connCost = cheapestConnectionCost(mySources, cityName, state.map.cityNames, state.map.edges);
     if (connCost === -1) return null;
     var tierCost = BUILD_TIER_COST[owners.length];
     return connCost + tierCost;
@@ -687,7 +773,8 @@
     state.players[seat].cities.push(cityName);
     if (!state.cityOwners[cityName]) state.cityOwners[cityName] = [];
     state.cityOwners[cityName].push(seat);
-    var cityLabel=GERMANY.CITY_BY_ID[cityName] ? GERMANY.CITY_BY_ID[cityName].name : cityName;
+    var B=mapData((state.map&&state.map.boardId)||'germany');
+    var cityLabel=B.CITY_BY_ID[cityName] ? B.CITY_BY_ID[cityName].name : cityName;
     pushLog(state, state.players[seat].name + '님이 ' + cityLabel + '에 ' + cost + '€로 건설했습니다.');
   }
 
@@ -771,49 +858,38 @@
     state.powerTurn = { orderIdx:0 };
     Object.keys(state.players).forEach(function (s) { state.players[s]._lastPoweredCities = []; });
     pushLog(state, '=== 5단계: 관료 · 전력 공급 ===');
-    pushLog(state, '각 플레이어가 사용할 발전소와 전력을 공급할 자신의 도시를 직접 선택해야 다음 단계로 넘어갑니다.');
+    pushLog(state, '각 플레이어가 사용할 발전소와 전력을 공급할 도시 개수를 선택하면 다음 단계로 넘어갑니다.');
   }
 
   function actionPowerCities(state, seat, args) {
     if (powerTurnSeat(state) !== seat) throw new Error('지금은 당신의 전력 공급 차례가 아닙니다.');
     var p = state.players[seat];
     var plants = (args.plants || []).map(Number).filter(function (n, i, a) { return a.indexOf(n) === i; });
-    var cities = (args.cities || []).filter(function (c, i, a) { return a.indexOf(c) === i; });
-
     plants.forEach(function (n) { if (p.plants.indexOf(n) === -1) throw new Error('보유하지 않은 발전소가 선택되었습니다.'); });
-    cities.forEach(function (c) { if (p.cities.indexOf(c) === -1) throw new Error('내가 건설하지 않은 도시는 공급 대상으로 선택할 수 없습니다.'); });
-
     var capacity = 0;
     plants.forEach(function (n) { capacity += PLANT_DEFS[n].cities; });
-    if (cities.length > capacity) throw new Error('선택한 발전소는 최대 도시 ' + capacity + '개까지만 공급할 수 있습니다.');
-    if (cities.length === 0 && plants.length > 0) throw new Error('공급할 도시가 0개라면 발전소를 선택하지 않고 확정하세요.');
-
+    var requested = args.cityCount != null ? Number(args.cityCount) : (args.cities || []).length;
+    if (!Number.isFinite(requested) || requested < 0) requested = 0;
+    requested = Math.floor(requested);
+    if (requested > p.cities.length) throw new Error('보유 도시보다 많이 공급할 수 없습니다.');
+    if (requested > capacity) throw new Error('선택한 발전소는 최대 도시 ' + capacity + '개까지만 공급할 수 있습니다.');
+    if (requested === 0 && plants.length > 0) throw new Error('공급할 도시가 0개라면 발전소를 선택하지 않고 확정하세요.');
     var fuel = fuelUseForPlants(plants, p.stock);
     if (!fuel) throw new Error('선택한 발전소를 가동할 자원이 부족합니다.');
-    p.stock.coal -= fuel.coal;
-    p.stock.oil -= fuel.oil;
-    p.stock.garbage -= fuel.garbage;
-    p.stock.uranium -= fuel.uranium;
-
-    p._lastPoweredCities = cities.slice();
-    var pay = payoutFor(cities.length);
+    p.stock.coal -= fuel.coal; p.stock.oil -= fuel.oil; p.stock.garbage -= fuel.garbage; p.stock.uranium -= fuel.uranium;
+    p._lastPoweredCities = p.cities.slice(0, requested);
+    var pay = payoutFor(requested);
     p.money += pay;
-    if (state.gameOver) p._finalPowered = cities.length;
-    var cityLabels = cities.map(function (id) { return GERMANY.CITY_BY_ID[id] ? GERMANY.CITY_BY_ID[id].name : id; });
-    pushLog(state, p.name + '님이 ' + (plants.length ? plants.join(',') + '번 발전소로 ' : '') +
-      '도시 ' + cities.length + '개' + (cityLabels.length ? ' (' + cityLabels.join(', ') + ')' : '') +
-      '에 전력을 공급하고 ' + pay + '€를 받았습니다.');
-
+    if (state.gameOver) p._finalPowered = requested;
+    pushLog(state, p.name + '님이 발전소 ' + (plants.length ? plants.join(',')+'번' : '없음') + '으로 도시 ' + requested + '개에 전력을 공급하고 ' + pay + '€를 받았습니다.');
     state.powerTurn.orderIdx += 1;
     if (state.powerTurn.orderIdx >= state.order.length) {
       state.powerTurn = null;
-      if (state.gameOver) {
-        finalizeWinner(state);
-        return;
-      }
+      if (state.gameOver) { finalizeWinner(state); return; }
       finishPhase5Round(state);
     }
   }
+
 
   function finishPhase5Round(state) {
     // 자원시장 보충
@@ -821,6 +897,7 @@
     var stepIdx = state.step - 1;
     ['coal', 'oil', 'garbage', 'uranium'].forEach(function (res) {
       var amt = table[res][stepIdx];
+      if (res === 'uranium' && state.flags && state.flags.uraniumResupplyStopped) amt = 0;
       var bank = RESOURCE_CAPACITY[res] - state.resourceMarket[res] - totalHeldByPlayers(state, res);
       var add = Math.max(0, Math.min(amt, RESOURCE_CAPACITY[res] - state.resourceMarket[res], bank));
       state.resourceMarket[res] += add;
@@ -903,7 +980,7 @@
 
   function applyAction(state, action) {
     var next = clone(state);
-    if (next.kind !== STATE_KIND) throw new Error('이 방은 이전 형식의 파워그리드 상태입니다. 방장이 독일맵으로 다시 시작해야 합니다.');
+    if (next.kind !== STATE_KIND) throw new Error('이 방은 이전 형식의 파워그리드 상태입니다. 방장이 새 파워그리드 방으로 다시 시작해야 합니다.');
     var fn = ACTIONS[action.type];
     if (!fn) throw new Error('알 수 없는 액션: ' + action.type);
     fn(next, action.seat, action.args || {});
@@ -933,6 +1010,8 @@
     STATE_KIND: STATE_KIND,
     MAP: MAP,
     GERMANY: GERMANY,
+    BOARD_MAPS: BOARD_MAPS,
+    mapData: mapData,
     BOARD_DEFS: BOARD_DEFS,
     PLANT_DEFS: PLANT_DEFS,
     RESOURCE_CAPACITY: RESOURCE_CAPACITY,

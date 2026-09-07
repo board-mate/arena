@@ -3,16 +3,16 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>파워그리드 독일 · BoardMate 온라인</title>
-  <link rel="stylesheet" href="./powergrid/pg-styles.css?v=10">
+  <title>파워그리드 · BoardMate 온라인</title>
+  <link rel="stylesheet" href="./powergrid/pg-styles.css?v=11">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="./config.js"></script>
 </head>
 <body>
 <div class="pg-app" id="app">불러오는 중…</div>
-<script src="./powergrid/data/germany-map.js?v=10"></script>
-<script src="./powergrid/engine.js?v=10"></script>
-<script src="./powergrid/ui.js?v=10"></script>
+<script src="./powergrid/data/germany-map.js?v=11"></script>
+<script src="./powergrid/engine.js?v=11"></script>
+<script src="./powergrid/ui.js?v=11"></script>
 <script type="module">
 import {
   configured, roomId, getMe, loadRoom, loadState, saveState, startStatePoll,
@@ -25,26 +25,32 @@ let me,room,members,mySeat,isHost,state=null,revision=0,stopPoll=null,submitted=
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
 function setupView(){
-  const wanted=PowerGrid.defaultRegions(members.length).length;
-  const defaults=new Set(PowerGrid.defaultRegions(members.length));
-  const regionHtml=PowerGrid.GERMANY.REGION_ORDER.map(rid=>{
-    const r=PowerGrid.GERMANY.REGIONS[rid];
+  const boardId=document.querySelector('#boardSelect')?.value || 'germany';
+  const boardDef=PowerGrid.BOARD_DEFS[boardId] || PowerGrid.BOARD_DEFS.germany;
+  const boardMap=PowerGrid.mapData(boardId);
+  const wanted=PowerGrid.defaultRegions(members.length,boardId).length;
+  const defaults=new Set(PowerGrid.defaultRegions(members.length,boardId));
+  const mapOptions=Object.values(PowerGrid.BOARD_DEFS).map(b=>`<option value="${b.id}" ${b.id===boardId?'selected':''}>${esc(b.name)}</option>`).join('');
+  const regionHtml=boardMap.REGION_ORDER.map(rid=>{
+    const r=boardMap.REGIONS[rid];
     return `<label class="pg-region-option"><input type="checkbox" value="${rid}" ${defaults.has(rid)?'checked':''}><i style="background:${r.color}"></i><span>${esc(r.name)}</span></label>`;
   }).join('');
   app.innerHTML=`
     <div class="pg-topbar">
-      <div class="pg-title">🔌 파워그리드 독일<br><small>${esc(room.title||'BoardMate 온라인')} · ${members.length}인 · 다인플 전용</small></div>
+      <div class="pg-title">🔌 파워그리드<br><small>${esc(room.title||'BoardMate 온라인')} · ${members.length}인 · 다인플 전용</small></div>
       <a class="pg-btn small" href="./index.html#/room/${encodeURIComponent(roomId)}">← 방으로</a>
     </div>
     <div class="pg-card">
-      <h3>독일맵 게임 설정</h3>
-      ${legacyState?'<div class="pg-setup-warning">이 방에 이전 형식의 Power Grid 상태가 남아 있습니다. 방장이 아래 설정으로 새 독일맵 게임을 시작하면 현재 형식으로 교체합니다.</div>':''}
-      <p>이 버전은 <b>독일맵 다인플만</b> 지원합니다. ${members.length}인 게임은 서로 이어진 지역 <b>${wanted}개</b>를 사용합니다.</p>
+      <h3>파워그리드 게임 설정</h3>
+      ${legacyState?'<div class="pg-setup-warning">이 방에 이전 형식의 Power Grid 상태가 남아 있습니다. 방장이 아래 설정으로 새 게임을 시작하면 현재 형식으로 교체합니다.</div>':''}
+      <p>사용할 맵과 연결된 지역을 선택하세요. ${members.length}인 게임은 서로 이어진 지역 <b>${wanted}개</b>를 사용합니다.</p>
+      <label class="pg-map-select-label">맵 선택 <select class="pg-input" id="boardSelect">${mapOptions}</select></label>
       ${isHost?`<div class="pg-region-selector" id="regionSelector">${regionHtml}</div>
       <div class="pg-setup-warning" id="regionStatus">지역 ${wanted}개를 선택하세요. 선택 지역들은 하나의 연결된 영역이어야 합니다.</div>
-      <button class="pg-btn primary" id="start">독일맵 게임 시작</button>`:'<p>방장이 사용할 지역을 선택하고 게임을 초기화하면 자동으로 시작됩니다.</p>'}
-      <div class="pg-map-features"><b>🗺️ ${esc(PowerGrid.BOARD_DEFS.germany.featureTitle||'독일맵 특징')}</b><ul>${(PowerGrid.BOARD_DEFS.germany.features||[]).map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div>
+      <button class="pg-btn primary" id="start">${esc(boardDef.name)} 게임 시작</button>`:'<p>방장이 사용할 맵/지역을 선택하고 게임을 초기화하면 자동으로 시작됩니다.</p>'}
+      <div class="pg-map-features"><b>🗺️ ${esc(boardDef.featureTitle||'맵 특징')}</b><ul>${(boardDef.features||[]).map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div>
     </div>`;
+  document.querySelector('#boardSelect')?.addEventListener('change',setupView);
   document.querySelector('#start')?.addEventListener('click',startGame);
   document.querySelectorAll('#regionSelector input').forEach(el=>el.addEventListener('change',updateRegionStatus));
   updateRegionStatus();
@@ -55,9 +61,10 @@ function selectedRegions(){
 }
 function updateRegionStatus(){
   const box=document.querySelector('#regionStatus'); if(!box)return;
-  const ids=selectedRegions(),wanted=PowerGrid.defaultRegions(members.length).length;
+  const boardId=document.querySelector('#boardSelect')?.value || 'germany';
+  const ids=selectedRegions(),wanted=PowerGrid.defaultRegions(members.length,boardId).length;
   let msg=`선택 ${ids.length}/${wanted}`;
-  if(ids.length===wanted) msg+=PowerGrid.GERMANY.regionsConnected(ids)?' · ✅ 서로 연결됨':' · ❌ 서로 연결되지 않음';
+  if(ids.length===wanted) msg+=PowerGrid.mapData(boardId).regionsConnected(ids)?' · ✅ 서로 연결됨':' · ❌ 서로 연결되지 않음';
   box.textContent=msg;
 }
 async function startGame(){
@@ -66,8 +73,9 @@ async function startGame(){
     saving=true;
     const names=members.slice().sort((a,b)=>a.seat-b.seat).map(m=>m.nickname);
     const regionIds=selectedRegions();
-    PowerGrid.validateRegionSelection(names.length,regionIds);
-    const s=PowerGrid.newGame({numPlayers:names.length,seatNames:names,regionIds});
+    const boardId=document.querySelector('#boardSelect')?.value || 'germany';
+    PowerGrid.validateRegionSelection(names.length,regionIds,boardId);
+    const s=PowerGrid.newGame({numPlayers:names.length,seatNames:names,regionIds,boardId});
     const nr=await saveState(revision,s);
     revision=Number(nr); state=s; legacyState=false; draw();
   }catch(e){alert(e.message||e)}finally{saving=false}
@@ -105,12 +113,15 @@ async function action(a){
 }
 function draw(){
   if(!state)return setupView();
-  const regionNames=(state.map.regionIds||[]).map(r=>PowerGrid.GERMANY.REGIONS[r]?.shortName||r).join('·');
+  const boardId=(state.map&&state.map.boardId)||'germany';
+  const boardMap=PowerGrid.mapData(boardId);
+  const boardName=(PowerGrid.BOARD_DEFS[boardId]||PowerGrid.BOARD_DEFS.germany).name;
+  const regionNames=(state.map.regionIds||[]).map(r=>boardMap.REGIONS[r]?.shortName||r).join('·');
   const ranks=state.gameOver?rankingSeats():[];
   const myPlace=ranks.indexOf(mySeat)+1;
   PowerGridUI.render(app,{
     state,mySeat,allowAnySeat:false,
-    subtitle:`BoardMate 공통 방 · Realtime · 독일맵 (${regionNames})`,
+    subtitle:`BoardMate 공통 방 · Realtime · ${boardName}맵 (${regionNames})`,
     extraTopHtml:`<a class="pg-btn small" href="./index.html#/room/${encodeURIComponent(roomId)}">← 방</a>`,
     footerHtml:(state.gameOver&&state.winner!=null)?endPanel('파워그리드 최종 결과','최종 전력 공급 도시 수 → 보유 현금 순으로 순위를 확정합니다.',{
       outcome:myPlace===1?'win':'lose',

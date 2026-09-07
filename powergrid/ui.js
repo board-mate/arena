@@ -1,5 +1,5 @@
 /*!
- * BoardMate Power Grid Germany - Multiplayer UI Layer v10
+ * BoardMate Power Grid - Multiplayer UI Layer v11
  * 순수 DOM/SVG 렌더링. React 등 프레임워크 없이 동작.
  * window.PowerGrid (engine.js) 를 사용한다.
  */
@@ -37,7 +37,7 @@
     if (idx == null) return '<div class="pg-plant-img pg-plant-missing">'+esc(num)+'</div>';
     var x = (idx % 7) * 100, y = Math.floor(idx / 7) * 100;
     return '<svg class="pg-plant-img" viewBox="'+x+' '+y+' 100 100" role="img" aria-label="'+esc(num)+'번 발전소">'+
-      '<image href="./powergrid/assets/plants/plant_sheet.webp?v=7" x="0" y="0" width="700" height="700" preserveAspectRatio="none"></image></svg>';
+      '<image href="./powergrid/assets/plants/plant_sheet.webp?v=11" x="0" y="0" width="700" height="700" preserveAspectRatio="none"></image></svg>';
   }
 
   function renderMapFeatures(boardId, compact) {
@@ -76,6 +76,7 @@
       var price = filled > 0 ? PG.LADDERS[r][emptyCount] : null;
       var refillTable = PG.RESOURCE_REPLENISH && PG.RESOURCE_REPLENISH[state.numPlayers];
       var refill = refillTable && refillTable[r] ? refillTable[r][Math.max(0, Math.min(2, state.step-1))] : null;
+      if (r === 'uranium' && state.flags && state.flags.uraniumResupplyStopped) refill = 0;
       var cells = '';
       for (var i=0;i<cap;i++) {
         cells += '<i class="'+(i>=emptyCount?'filled':'')+'"></i>';
@@ -121,19 +122,30 @@
   }
 
   function renderMap(state, mySeat, allowAct, actingSeats) {
-    var G=PG.GERMANY;
+    var boardId=(state.map && state.map.boardId) || 'germany';
+    var G=PG.mapData ? PG.mapData(boardId) : PG.GERMANY;
+    var def=PG.BOARD_DEFS[boardId] || PG.BOARD_DEFS.germany;
     var selected={};
     (state.map.cityNames||[]).forEach(function(id){selected[id]=true;});
     var selectedRegions=(state.map.regionIds||[]);
     var canBuild=state.phase===4 && actingSeats[0]===mySeat && allowAct;
-    var canPower=state.phase===5 && actingSeats[0]===mySeat && allowAct && !(state.gameOver && state.winner!=null);
     var myMoney=(canBuild && state.players[mySeat]) ? state.players[mySeat].money : -1;
 
     var regionChips=selectedRegions.map(function(rid){
       var r=G.REGIONS[rid];
-      return '<span class="pg-region-chip" style="--region:'+esc(r.color)+'">'+esc(r.shortName)+'</span>';
+      return r ? '<span class="pg-region-chip" style="--region:'+esc(r.color)+'">'+esc(r.shortName)+'</span>' : '';
     }).join('');
     var excludedShade=renderExcludedRegionShade(G, selectedRegions);
+
+    var edgeSvg='';
+    var edgeRows=[];
+    (state.map.edges||G.EDGES||[]).forEach(function(e){
+      var a=G.CITY_BY_ID[e.a], b=G.CITY_BY_ID[e.b];
+      if(!a||!b||!selected[e.a]||!selected[e.b])return;
+      edgeSvg+='<line class="pg-map-edge" x1="'+a.x+'" y1="'+a.y+'" x2="'+b.x+'" y2="'+b.y+'"></line>'+
+        '<text class="pg-map-edge-cost" x="'+((a.x+b.x)/2).toFixed(1)+'" y="'+((a.y+b.y)/2).toFixed(1)+'">'+e.cost+'</text>';
+      edgeRows.push({a:a.name,b:b.name,cost:e.cost});
+    });
 
     var markers='';
     G.CITIES.forEach(function(city){
@@ -142,25 +154,18 @@
       var cost=canBuild ? PG.computeBuildCost(state,mySeat,city.id) : null;
       var affordable=cost!=null && cost<=myMoney;
       var buildClickable=canBuild && affordable;
-      var powerClickable=canPower && owners.indexOf(mySeat)!==-1;
       var poweredSeats=owners.filter(function(seat){return (state.players[seat]._lastPoweredCities||[]).indexOf(city.id)!==-1;});
-      var ownerDots=owners.map(function(seat){
-        var powered=(state.players[seat]._lastPoweredCities||[]).indexOf(city.id)!==-1;
-        return '<i class="'+(powered?' powered':'')+'" style="background:'+SEAT_COLORS[seat%6]+'"></i>';
-      }).join('');
-      var title=city.name+(cost!=null?' · '+cost+'€':'')+(powerClickable?' · 전력 공급 도시로 선택':'')+(poweredSeats.length?' · ⚡ 공급됨':'');
-      var attrs=buildClickable ? 'data-action="buildCity" data-city="'+esc(city.id)+'"' :
-        (powerClickable ? 'data-power-city-toggle="'+esc(city.id)+'"' : 'disabled');
-      markers+='<button class="pg-germany-city-marker'+(buildClickable?' can-build':'')+(powerClickable?' can-power':'')+(owners.length?' occupied':'')+(poweredSeats.length?' powered':'')+'" '+
+      var ownerDots=owners.map(function(seat){return '<i style="background:'+SEAT_COLORS[seat%6]+'"></i>';}).join('');
+      var title=city.name+(cost!=null?' · '+cost+'€':'')+(poweredSeats.length?' · ⚡ 공급됨':'');
+      var attrs=buildClickable ? 'data-action="buildCity" data-city="'+esc(city.id)+'"' : 'disabled';
+      markers+='<button class="pg-germany-city-marker'+(buildClickable?' can-build':'')+(owners.length?' occupied':'')+(poweredSeats.length?' powered':'')+'" '+
         'style="left:'+(city.x/G.BOARD_WIDTH*100).toFixed(3)+'%;top:'+(city.y/G.BOARD_HEIGHT*100).toFixed(3)+'%" '+
-        'title="'+esc(title)+'" aria-label="'+esc(title)+'" '+attrs+'>'+
-        '<span class="pg-city-marker-core">'+(poweredSeats.length?'⚡':'')+'</span><span class="pg-city-marker-owners">'+ownerDots+'</span>'+
-        (cost!=null?'<b>'+cost+'</b>':'')+'</button>';
+        'title="'+esc(title)+'" aria-label="'+esc(title)+'" '+attrs+'>'+ownerDots+(cost!=null?'<b>'+cost+'</b>':'')+'</button>';
     });
 
     var cityGroups='';
     selectedRegions.forEach(function(rid){
-      var region=G.REGIONS[rid];
+      var region=G.REGIONS[rid]; if(!region)return;
       var buttons=G.CITIES.filter(function(c){return c.region===rid;}).map(function(city){
         var owners=state.cityOwners[city.id]||[];
         var cost=canBuild ? PG.computeBuildCost(state,mySeat,city.id) : null;
@@ -175,14 +180,26 @@
       cityGroups+='<section class="pg-city-group"><h4><i style="background:'+esc(region.color)+'"></i>'+esc(region.name)+'</h4><div class="pg-city-choice-grid">'+buttons+'</div></section>';
     });
 
-    var note=canPower ? '⚡ 관료 단계: 지도에서 내가 건설한 도시를 눌러 공급 대상을 선택할 수 있습니다. 선택 후 오른쪽 패널에서 발전소와 함께 확정하세요.' :
-      '선택 지역 안에서만 최단 연결비를 계산합니다. 다른 플레이어의 도시를 경유하는 경로도 연결선 비용 계산에는 사용할 수 있습니다.';
-    return '<div class="pg-real-map pg-germany-map"><div class="pg-real-map-head"><div><b>독일 보드</b><div class="pg-region-chips">'+regionChips+'</div></div><span class="pg-tag">42도시 · 83연결 자동 계산</span></div>'+
-      renderBoardTracks(state)+
-      '<div class="pg-germany-board"><img src="'+esc(PG.BOARD_DEFS.germany.image)+'" alt="Power Grid Germany board" loading="eager">'+excludedShade+markers+'</div>'+
-      '<div class="pg-map-note">'+note+'</div>'+
-      '<details class="pg-city-picker"'+(canBuild?' open':'')+'><summary>도시 목록'+(canBuild?' · 건설 가능 비용 보기':'')+'</summary>'+cityGroups+'</details></div>';
+    var edgeTable=edgeRows.sort(function(a,b){return a.cost-b.cost;}).slice(0,120).map(function(e){return '<tr><td>'+esc(e.a)+'</td><td>'+esc(e.b)+'</td><td>'+e.cost+'€</td></tr>';}).join('');
+    var boardInner='';
+    if(def.image){
+      boardInner='<div class="pg-germany-board"><img src="'+esc(def.image)+'" alt="Power Grid '+esc(def.name)+' board" loading="eager"><svg class="pg-abstract-map pg-edge-overlay" viewBox="0 0 '+G.BOARD_WIDTH+' '+G.BOARD_HEIGHT+'" preserveAspectRatio="none">'+edgeSvg+'</svg>'+excludedShade+markers+'</div>';
+    }else{
+      boardInner='<div class="pg-germany-board pg-abstract-board"><svg class="pg-abstract-map" viewBox="0 0 '+G.BOARD_WIDTH+' '+G.BOARD_HEIGHT+'" preserveAspectRatio="xMidYMid meet">'+edgeSvg+'</svg>'+markers+'</div>';
+    }
+    var note='건설 단계에서는 원형 마커 또는 도시 목록을 눌러 건설합니다. 연결비는 지도 선 위 숫자와 아래 연결비 표에서 확인할 수 있습니다.';
+    return '<div class="pg-real-map pg-germany-map"><div class="pg-real-map-head"><div><b>'+esc(def.name)+' 보드</b><div class="pg-region-chips">'+regionChips+'</div></div><span class="pg-tag">'+G.CITIES.length+'도시 · '+(state.map.edges||G.EDGES).length+'연결 자동 계산</span></div>'+renderBoardTracks(state)+boardInner+
+      '<div class="pg-map-note">'+note+'</div>'+renderIncomeTable()+
+      '<details class="pg-city-picker"'+(canBuild?' open':'')+'><summary>도시 목록'+(canBuild?' · 건설 가능 비용 보기':'')+'</summary>'+cityGroups+'</details>'+ 
+      '<details class="pg-connection-costs"><summary>지역/도시 연결비 표 보기</summary><table><thead><tr><th>도시 A</th><th>도시 B</th><th>비용</th></tr></thead><tbody>'+edgeTable+'</tbody></table></details></div>';
   }
+
+  function renderIncomeTable(){
+    var rows=[];
+    for(var i=0;i<PG.PAYOUT_TABLE.length;i++){rows.push('<tr><td>'+i+'개</td><td>'+PG.PAYOUT_TABLE[i]+'€</td></tr>');}
+    return '<details class="pg-income-table"><summary>💰 전력 생산량별 수입표</summary><div class="pg-income-grid">'+rows.join('')+'</div></details>';
+  }
+
 
   // ------------------------------------------------------------
   // 플레이어 패널
@@ -223,10 +240,12 @@
     var html = '<div class="pg-market-grid">';
     mkt.current.forEach(function (n) {
       var clickable = canOffer;
-      html += '<div class="pg-plant-card' + (n === mkt.discounted ? ' discounted' : '') + '"' +
-        (clickable ? ' data-action="offerPlant" data-plant="' + n + '" style="cursor:pointer"' : '') + '>';
+      var minBid = (n === mkt.discounted) ? 1 : n;
+      html += '<div class="pg-plant-card' + (n === mkt.discounted ? ' discounted' : '') + '">';
       html += plantSprite(n);
-      html += '<div class="info">' + (n === mkt.discounted ? '💲 ' : '') + plantLabel(n) + '</div></div>';
+      html += '<div class="info">' + (n === mkt.discounted ? '💲 ' : '') + plantLabel(n) + '</div>';
+      if (clickable) html += '<div class="pg-offer-row"><input class="pg-input pg-offer-bid" id="pg-offer-bid-' + n + '" type="number" min="' + minBid + '" value="' + minBid + '"><button class="pg-btn primary small" data-action="offerPlant" data-plant="' + n + '">경매 시작</button></div>';
+      html += '</div>';
     });
     mkt.future.forEach(function (n) {
       html += '<div class="pg-plant-card future">' + plantSprite(n) + '<div class="info">' + plantLabel(n) + '</div></div>';
@@ -297,7 +316,7 @@
       var a = state.auction;
       var html = '<div class="pg-card"><h3>2단계 · 발전소 경매</h3>';
       if (a.sub === 'offer') {
-        html += '<p>' + (iAmActing ? '경매에 올릴 발전소를 시장에서 선택하세요.' :
+        html += '<p>' + (iAmActing ? '경매에 올릴 발전소를 시장에서 선택하고, 시작가를 직접 입력하세요.' :
           '<b>' + esc(state.players[acting[0]].name) + '</b>님이 발전소를 고르는 중입니다.') + '</p>';
       } else {
         var minNeeded = Math.max(a.minBid, a.highBid + 1);
@@ -346,27 +365,23 @@
     }
 
     if (state.phase === 5) {
-      var html5='<div class="pg-card pg-power-card"><h3>5단계 · 전력 공급</h3>';
+      var html5='<div class="pg-card pg-power-card"><h3>5단계 · 발전 / 수입</h3>';
       if(!iAmActing){
-        html5+='<p><b>'+esc(state.players[acting[0]].name)+'</b>님이 사용할 발전소와 공급할 도시를 선택하는 중입니다.</p></div>';
+        html5+='<p><b>'+esc(state.players[acting[0]].name)+'</b>님이 사용할 발전소와 공급 도시 수를 선택하는 중입니다.</p></div>';
         return html5;
       }
       var p=state.players[mySeat];
-      html5+='<p>자동 정산하지 않습니다. <b>가동할 발전소</b>와 <b>전력을 공급할 내 도시</b>를 직접 선택한 뒤 반드시 <b>전력 공급 확정</b>을 눌러야 다음 플레이어로 넘어갑니다.</p>';
-      html5+='<div class="pg-power-summary" id="pg-power-summary">발전소와 도시를 선택하세요.</div>';
+      html5+='<p><b>가동할 발전소</b>를 고르고, 실제로 전력을 공급할 <b>도시 개수</b>만 정하면 됩니다. 어느 도시를 활성화할지는 더 이상 고르지 않습니다.</p>';
+      html5+='<div class="pg-power-summary" id="pg-power-summary">발전소와 도시 개수를 선택하세요.</div>';
       html5+='<h4>① 가동할 발전소</h4><div class="pg-power-plant-grid">';
       p.plants.forEach(function(n){
         html5+='<label class="pg-power-plant-choice"><input type="checkbox" class="pg-power-plant-check" value="'+n+'">'+plantSprite(n)+'<span><b>'+n+'번</b><small>'+plantLabel(n)+'</small></span></label>';
       });
       if(!p.plants.length) html5+='<span class="pg-map-note">보유 발전소가 없습니다.</span>';
-      html5+='</div><h4>② 공급할 도시</h4><div class="pg-power-city-grid">';
-      p.cities.forEach(function(id){
-        var c=PG.GERMANY.CITY_BY_ID[id];
-        html5+='<label class="pg-power-city-choice"><input type="checkbox" class="pg-power-city-check" value="'+esc(id)+'"><span>'+esc(c?c.name:id)+'</span></label>';
-      });
-      if(!p.cities.length) html5+='<span class="pg-map-note">건설한 도시가 없습니다. 0도시 공급으로 확정하면 됩니다.</span>';
-      html5+='</div><div class="pg-form-row"><button class="pg-btn primary" id="pg-power-confirm" data-action="powerCities">⚡ 전력 공급 확정</button></div>';
-      html5+='<div class="pg-map-note">지도에서 내가 건설한 큰 원형 도시 마커를 눌러도 공급 도시 선택/해제가 됩니다. 0개 도시는 발전소를 선택하지 않고 확정하세요.</div>';
+      html5+='</div><h4>② 공급할 도시 개수</h4>';
+      html5+='<div class="pg-form-row"><input class="pg-input" id="pg-power-city-count" type="number" min="0" max="'+p.cities.length+'" value="0" style="width:110px"><span class="pg-map-note">내 도시 '+p.cities.length+'개 중 몇 개에 공급할지 입력</span></div>';
+      html5+='<div class="pg-form-row"><button class="pg-btn primary" id="pg-power-confirm" data-action="powerCities">⚡ 발전/수입 확정</button></div>';
+      html5+='<div class="pg-map-note">0개 공급은 발전소를 선택하지 않고 확정하세요. 수입은 위의 전력 생산량별 수입표와 동일하게 지급됩니다.</div>';
       return html5+'</div>';
     }
     return '';
@@ -407,7 +422,7 @@
     var acting = PG.actingSeats(state);
 
     var top = '<div class="pg-topbar">' +
-      '<div class="pg-title">🔌 파워그리드 독일<br><small>' + esc(ctx.subtitle || '') + '</small></div>' +
+      '<div class="pg-title">🔌 파워그리드 '+esc((PG.BOARD_DEFS[(state.map&&state.map.boardId)||'germany']||PG.BOARD_DEFS.germany).name)+'<br><small>' + esc(ctx.subtitle || '') + '</small></div>' +
       '<div style="display:flex;gap:8px;flex-wrap:wrap">' +
       '<span class="pg-pill">Step <b>' + state.step + '</b></span>' +
       '<span class="pg-pill">라운드 <b>' + state.round + '</b></span>' +
@@ -439,12 +454,12 @@
         var actType = el.getAttribute('data-action');
         var seat = mySeat != null ? mySeat : acting[0];
         var args = {};
-        if (actType === 'offerPlant' || actType === 'discardPlant') args.plant = Number(el.getAttribute('data-plant'));
+        if (actType === 'offerPlant' || actType === 'discardPlant') { args.plant = Number(el.getAttribute('data-plant')); var bi=container.querySelector('#pg-offer-bid-'+args.plant); if (actType==='offerPlant' && bi) args.bid=Number(bi.value); }
         if (actType === 'buildCity') args.city = el.getAttribute('data-city');
         if (actType === 'buyResource') { args.resource = el.getAttribute('data-resource'); args.qty = Number(el.getAttribute('data-qty')); }
         if (actType === 'powerCities') {
           args.plants = Array.from(container.querySelectorAll('.pg-power-plant-check:checked')).map(function(x){return Number(x.value);});
-          args.cities = Array.from(container.querySelectorAll('.pg-power-city-check:checked')).map(function(x){return x.value;});
+          var ci=container.querySelector('#pg-power-city-count'); args.cityCount = ci ? Number(ci.value) : 0;
         }
         if (actType === 'bid') {
           var input = container.querySelector('#pg-bid-amount');
@@ -459,22 +474,21 @@
       var summary=container.querySelector('#pg-power-summary');
       if(!summary || mySeat==null) return;
       var selectedPlants=Array.from(container.querySelectorAll('.pg-power-plant-check:checked')).map(function(x){return Number(x.value);});
-      var selectedCities=Array.from(container.querySelectorAll('.pg-power-city-check:checked')).map(function(x){return x.value;});
+      var cityInput=container.querySelector('#pg-power-city-count');
+      var cityCount=cityInput ? Math.max(0, Math.floor(Number(cityInput.value)||0)) : 0;
       var capacity=selectedPlants.reduce(function(sum,n){return sum+(PG.PLANT_DEFS[n]?PG.PLANT_DEFS[n].cities:0);},0);
       var fuel=PG.fuelUseForPlants(selectedPlants,state.players[mySeat].stock);
-      var ok=fuel!==null && selectedCities.length<=capacity && !(selectedCities.length===0 && selectedPlants.length>0);
+      var maxCities=(state.players[mySeat].cities||[]).length;
+      var ok=fuel!==null && cityCount<=capacity && cityCount<=maxCities && !(cityCount===0 && selectedPlants.length>0);
       var fuelText=fuel ? ('석탄 '+fuel.coal+' · 석유 '+fuel.oil+' · 쓰레기 '+fuel.garbage+' · 우라늄 '+fuel.uranium) : '자원 부족';
-      summary.innerHTML='선택 발전소 <b>'+selectedPlants.length+'장</b> · 공급능력 <b>'+capacity+'도시</b> · 선택 도시 <b>'+selectedCities.length+'개</b><br><small>소모 자원: '+fuelText+'</small>';
+      summary.innerHTML='선택 발전소 <b>'+selectedPlants.length+'장</b> · 공급능력 <b>'+capacity+'도시</b> · 공급 예정 <b>'+cityCount+'개</b> · 수입 <b>'+PG.payoutFor(cityCount)+'€</b><br><small>소모 자원: '+fuelText+'</small>';
       summary.classList.toggle('invalid',!ok);
       var confirm=container.querySelector('#pg-power-confirm');
       if(confirm) confirm.disabled=!ok;
-      container.querySelectorAll('[data-power-city-toggle]').forEach(function(btn){
-        var id=btn.getAttribute('data-power-city-toggle');
-        btn.classList.toggle('selected-power',selectedCities.indexOf(id)!==-1);
-      });
     }
 
-    container.querySelectorAll('.pg-power-plant-check,.pg-power-city-check').forEach(function(el){el.addEventListener('change',updatePowerSelectionUI);});
+
+    container.querySelectorAll('.pg-power-plant-check,#pg-power-city-count').forEach(function(el){el.addEventListener('change',updatePowerSelectionUI);el.addEventListener('input',updatePowerSelectionUI);});
     container.querySelectorAll('[data-power-city-toggle]').forEach(function(btn){
       btn.addEventListener('click',function(){
         var id=btn.getAttribute('data-power-city-toggle');
