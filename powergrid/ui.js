@@ -1,5 +1,5 @@
 /*!
- * BoardMate Power Grid Germany - Multiplayer UI Layer
+ * BoardMate Power Grid Germany - Multiplayer UI Layer v4
  * 순수 DOM/SVG 렌더링. React 등 프레임워크 없이 동작.
  * window.PowerGrid (engine.js) 를 사용한다.
  */
@@ -26,6 +26,20 @@
 
   function resLabel(r) { return { coal: '석탄', oil: '석유', garbage: '쓰레기', uranium: '우라늄' }[r]; }
 
+
+  // 발전소 이미지는 파일 수를 줄이기 위해 7x7 단일 스프라이트 시트를 사용한다.
+  // 100x100 타일, 발전소 번호 오름차순 42장 + 마지막 칸 STEP3.
+  var PLANT_SPRITE_ORDER = Object.keys(PG.PLANT_DEFS).map(Number).sort(function (a,b) { return a-b; });
+  var PLANT_SPRITE_INDEX = {};
+  PLANT_SPRITE_ORDER.forEach(function (n, i) { PLANT_SPRITE_INDEX[n] = i; });
+  function plantSprite(num) {
+    var idx = PLANT_SPRITE_INDEX[num];
+    if (idx == null) return '<div class="pg-plant-img pg-plant-missing">'+esc(num)+'</div>';
+    var x = (idx % 7) * 100, y = Math.floor(idx / 7) * 100;
+    return '<svg class="pg-plant-img" viewBox="'+x+' '+y+' 100 100" role="img" aria-label="'+esc(num)+'번 발전소">'+
+      '<image href="./powergrid/assets/plants/plant_sheet.webp?v=4" x="0" y="0" width="700" height="700" preserveAspectRatio="none"></image></svg>';
+  }
+
   // ------------------------------------------------------------
   // 지도 SVG
   // ------------------------------------------------------------
@@ -35,6 +49,7 @@
     (state.map.cityNames||[]).forEach(function(id){selected[id]=true;});
     var selectedRegions=(state.map.regionIds||[]);
     var canBuild=state.phase===4 && actingSeats[0]===mySeat && allowAct;
+    var canPower=state.phase===5 && actingSeats[0]===mySeat && allowAct && !(state.gameOver && state.winner!=null);
     var myMoney=(canBuild && state.players[mySeat]) ? state.players[mySeat].money : -1;
 
     var regionChips=selectedRegions.map(function(rid){
@@ -48,14 +63,20 @@
       var owners=state.cityOwners[city.id]||[];
       var cost=canBuild ? PG.computeBuildCost(state,mySeat,city.id) : null;
       var affordable=cost!=null && cost<=myMoney;
-      var clickable=canBuild && affordable;
-      var ownerDots=owners.map(function(seat){return '<i style="background:'+SEAT_COLORS[seat%6]+'"></i>';}).join('');
-      var title=city.name+(cost!=null?' · '+cost+'€':'');
-      markers+='<button class="pg-germany-city-marker'+(clickable?' can-build':'')+(owners.length?' occupied':'')+'" '+
+      var buildClickable=canBuild && affordable;
+      var powerClickable=canPower && owners.indexOf(mySeat)!==-1;
+      var poweredSeats=owners.filter(function(seat){return (state.players[seat]._lastPoweredCities||[]).indexOf(city.id)!==-1;});
+      var ownerDots=owners.map(function(seat){
+        var powered=(state.players[seat]._lastPoweredCities||[]).indexOf(city.id)!==-1;
+        return '<i class="'+(powered?' powered':'')+'" style="background:'+SEAT_COLORS[seat%6]+'"></i>';
+      }).join('');
+      var title=city.name+(cost!=null?' · '+cost+'€':'')+(powerClickable?' · 전력 공급 도시로 선택':'')+(poweredSeats.length?' · ⚡ 공급됨':'');
+      var attrs=buildClickable ? 'data-action="buildCity" data-city="'+esc(city.id)+'"' :
+        (powerClickable ? 'data-power-city-toggle="'+esc(city.id)+'"' : 'disabled');
+      markers+='<button class="pg-germany-city-marker'+(buildClickable?' can-build':'')+(powerClickable?' can-power':'')+(owners.length?' occupied':'')+(poweredSeats.length?' powered':'')+'" '+
         'style="left:'+(city.x/G.BOARD_WIDTH*100).toFixed(3)+'%;top:'+(city.y/G.BOARD_HEIGHT*100).toFixed(3)+'%" '+
-        'title="'+esc(title)+'" aria-label="'+esc(title)+'" '+
-        (clickable?'data-action="buildCity" data-city="'+esc(city.id)+'"':'disabled')+'>'+
-        '<span class="pg-city-marker-core"></span><span class="pg-city-marker-owners">'+ownerDots+'</span>'+
+        'title="'+esc(title)+'" aria-label="'+esc(title)+'" '+attrs+'>'+
+        '<span class="pg-city-marker-core">'+(poweredSeats.length?'⚡':'')+'</span><span class="pg-city-marker-owners">'+ownerDots+'</span>'+
         (cost!=null?'<b>'+cost+'</b>':'')+'</button>';
     });
 
@@ -67,16 +88,20 @@
         var cost=canBuild ? PG.computeBuildCost(state,mySeat,city.id) : null;
         var affordable=cost!=null && cost<=myMoney;
         var clickable=canBuild && affordable;
+        var powered=(state.players[mySeat] && (state.players[mySeat]._lastPoweredCities||[]).indexOf(city.id)!==-1);
         var dots=owners.map(function(seat){return '<i class="pg-city-owner-dot" style="background:'+SEAT_COLORS[seat%6]+'"></i>';}).join('');
-        var suffix=cost!=null ? '<span class="pg-city-cost">'+cost+'€</span>' : (owners.indexOf(mySeat)!==-1?'<span class="pg-city-status">내 도시</span>':'');
+        var suffix=cost!=null ? '<span class="pg-city-cost">'+cost+'€</span>' :
+          (owners.indexOf(mySeat)!==-1?'<span class="pg-city-status">'+(powered?'⚡ 공급':'내 도시')+'</span>':'');
         return '<button class="pg-city-choice'+(clickable?' can-build':'')+'" '+(clickable?'data-action="buildCity" data-city="'+esc(city.id)+'"':'disabled')+'>'+dots+'<span>'+esc(city.name)+'</span>'+suffix+'</button>';
       }).join('');
       cityGroups+='<section class="pg-city-group"><h4><i style="background:'+esc(region.color)+'"></i>'+esc(region.name)+'</h4><div class="pg-city-choice-grid">'+buttons+'</div></section>';
     });
 
+    var note=canPower ? '⚡ 관료 단계: 지도에서 내가 건설한 도시를 눌러 공급 대상을 선택할 수 있습니다. 선택 후 오른쪽 패널에서 발전소와 함께 확정하세요.' :
+      '선택 지역 안에서만 최단 연결비를 계산합니다. 다른 플레이어의 도시를 경유하는 경로도 연결선 비용 계산에는 사용할 수 있습니다.';
     return '<div class="pg-real-map pg-germany-map"><div class="pg-real-map-head"><div><b>독일 보드</b><div class="pg-region-chips">'+regionChips+'</div></div><span class="pg-tag">42도시 · 83연결 자동 계산</span></div>'+
       '<div class="pg-germany-board"><img src="'+esc(PG.BOARD_DEFS.germany.image)+'" alt="Power Grid Germany board" loading="eager">'+markers+'</div>'+
-      '<div class="pg-map-note">선택 지역 안에서만 최단 연결비를 계산합니다. 다른 플레이어의 도시를 경유하는 경로도 연결선 비용 계산에는 사용할 수 있습니다.</div>'+
+      '<div class="pg-map-note">'+note+'</div>'+
       '<details class="pg-city-picker"'+(canBuild?' open':'')+'><summary>도시 목록'+(canBuild?' · 건설 가능 비용 보기':'')+'</summary>'+cityGroups+'</details></div>';
   }
 
@@ -91,7 +116,7 @@
       html += '<div class="pg-player-row' + (active ? ' active' : '') + '">';
       html += '<span class="pg-swatch" style="background:' + SEAT_COLORS[seat % 6] + '"></span>';
       html += '<div><div class="pg-player-name">' + esc(p.name) + '</div>';
-      html += '<div class="pg-player-meta">💰' + p.money + '€ · 🏙️' + p.cities.length + ' · 🔌' + (p.plants.length ? p.plants.join(',') : '-') + '</div>';
+      html += '<div class="pg-player-meta">💰' + p.money + '€ · 🏙️' + p.cities.length + ' · 🔌' + (p.plants.length ? p.plants.join(',') : '-') + ((p._lastPoweredCities||[]).length ? ' · ⚡' + p._lastPoweredCities.length : '') + '</div>';
       html += '<div class="pg-stock"><span>석탄 ' + p.stock.coal + '</span><span>석유 ' + p.stock.oil + '</span><span>쓰레기 ' + p.stock.garbage + '</span><span>우라늄 ' + p.stock.uranium + '</span></div>';
       html += '</div>';
       html += '<div>' + (active ? '▶️' : '') + '</div>';
@@ -111,11 +136,11 @@
       var clickable = canOffer;
       html += '<div class="pg-plant-card' + (n === mkt.discounted ? ' discounted' : '') + '"' +
         (clickable ? ' data-action="offerPlant" data-plant="' + n + '" style="cursor:pointer"' : '') + '>';
-      html += '<img class="pg-plant-img" src="./powergrid/assets/plants/plant_' + String(n).padStart(2, '0') + '.webp" alt="' + n + '번 발전소">';
+      html += plantSprite(n);
       html += '<div class="info">' + (n === mkt.discounted ? '💲 ' : '') + plantLabel(n) + '</div></div>';
     });
     mkt.future.forEach(function (n) {
-      html += '<div class="pg-plant-card future"><img class="pg-plant-img" src="./powergrid/assets/plants/plant_' + String(n).padStart(2, '0') + '.webp" alt="' + n + '번 발전소"><div class="info">' + plantLabel(n) + '</div></div>';
+      html += '<div class="pg-plant-card future">' + plantSprite(n) + '<div class="info">' + plantLabel(n) + '</div></div>';
     });
     html += '</div>';
     return html;
@@ -137,9 +162,8 @@
       html += '<div class="amt">' + filled + '</div>';
       html += '<div class="price">' + (price != null ? price + '€' : '품절') + '</div>';
       if (canBuy && filled > 0 && p) {
-        var storageCap = PG.plantStorageCap(p.plants, r);
-        var held = (r === 'coal' || r === 'oil') ? (p.stock.coal + p.stock.oil) : p.stock[r];
-        var room = storageCap - held;
+        var room = 0;
+        while (room < 12 && PG.canStoreResource(p.plants, p.stock, r, room + 1)) room += 1;
         if (room > 0) {
           var canAfford1 = p.money >= price;
           html += '<div style="margin-top:6px;display:flex;gap:4px;justify-content:center">';
@@ -162,9 +186,23 @@
   // 컨텍스트(현재 단계별) 액션 패널
   // ------------------------------------------------------------
   function renderContextPanel(state, mySeat, allowAct) {
-    if (state.gameOver) return '';
+    if (state.gameOver && state.winner != null) return '';
     var acting = PG.actingSeats(state);
     var iAmActing = allowAct && acting.indexOf(mySeat) !== -1;
+
+    if (state.plantDiscard) {
+      var pd=state.plantDiscard, owner=state.players[pd.seat];
+      var htmlD='<div class="pg-card pg-attention"><h3>발전소 보유 한도 · 폐기 선택</h3>';
+      htmlD+='<p><b>'+esc(owner.name)+'</b>님은 발전소를 최대 <b>'+pd.max+'장</b> 보유할 수 있습니다. 방금 낙찰받은 발전소를 포함해 보유 카드 중 <b>1장</b>을 직접 버려야 경매가 계속됩니다.</p>';
+      if(iAmActing){
+        htmlD+='<div class="pg-discard-grid">';
+        owner.plants.forEach(function(n){
+          htmlD+='<button class="pg-discard-plant" data-action="discardPlant" data-plant="'+n+'">'+plantSprite(n)+'<b>'+n+'번 폐기</b><span>'+plantLabel(n)+'</span></button>';
+        });
+        htmlD+='</div><div class="pg-map-note">발전소를 버려 저장 한도가 줄어든 경우 넘치는 자원은 자동으로 반납됩니다.</div>';
+      } else htmlD+='<p>폐기할 발전소를 고르는 중입니다.</p>';
+      return htmlD+'</div>';
+    }
 
     if (state.phase === 2) {
       var a = state.auction;
@@ -217,6 +255,31 @@
       html4 += '</div>';
       return html4;
     }
+
+    if (state.phase === 5) {
+      var html5='<div class="pg-card pg-power-card"><h3>5단계 · 전력 공급</h3>';
+      if(!iAmActing){
+        html5+='<p><b>'+esc(state.players[acting[0]].name)+'</b>님이 사용할 발전소와 공급할 도시를 선택하는 중입니다.</p></div>';
+        return html5;
+      }
+      var p=state.players[mySeat];
+      html5+='<p>자동 정산하지 않습니다. <b>가동할 발전소</b>와 <b>전력을 공급할 내 도시</b>를 직접 선택한 뒤 반드시 <b>전력 공급 확정</b>을 눌러야 다음 플레이어로 넘어갑니다.</p>';
+      html5+='<div class="pg-power-summary" id="pg-power-summary">발전소와 도시를 선택하세요.</div>';
+      html5+='<h4>① 가동할 발전소</h4><div class="pg-power-plant-grid">';
+      p.plants.forEach(function(n){
+        html5+='<label class="pg-power-plant-choice"><input type="checkbox" class="pg-power-plant-check" value="'+n+'">'+plantSprite(n)+'<span><b>'+n+'번</b><small>'+plantLabel(n)+'</small></span></label>';
+      });
+      if(!p.plants.length) html5+='<span class="pg-map-note">보유 발전소가 없습니다.</span>';
+      html5+='</div><h4>② 공급할 도시</h4><div class="pg-power-city-grid">';
+      p.cities.forEach(function(id){
+        var c=PG.GERMANY.CITY_BY_ID[id];
+        html5+='<label class="pg-power-city-choice"><input type="checkbox" class="pg-power-city-check" value="'+esc(id)+'"><span>'+esc(c?c.name:id)+'</span></label>';
+      });
+      if(!p.cities.length) html5+='<span class="pg-map-note">건설한 도시가 없습니다. 0도시 공급으로 확정하면 됩니다.</span>';
+      html5+='</div><div class="pg-form-row"><button class="pg-btn primary" id="pg-power-confirm" data-action="powerCities">⚡ 전력 공급 확정</button></div>';
+      html5+='<div class="pg-map-note">지도에서 내가 건설한 큰 원형 도시 마커를 눌러도 공급 도시 선택/해제가 됩니다. 0개 도시는 발전소를 선택하지 않고 확정하세요.</div>';
+      return html5+'</div>';
+    }
     return '';
   }
 
@@ -229,7 +292,7 @@
   }
 
   function renderGameOverBanner(state) {
-    if (!state.gameOver) return '';
+    if (!state.gameOver || state.winner == null) return '';
     var rows = state.order.slice().sort(function (a, b) {
       var pa = state.players[a], pb = state.players[b];
       var pw = (pb._finalPowered || 0) - (pa._finalPowered || 0);
@@ -255,7 +318,7 @@
     var acting = PG.actingSeats(state);
 
     var top = '<div class="pg-topbar">' +
-      '<div class="pg-title">🔌 파워그리드 독일 β<br><small>' + esc(ctx.subtitle || '') + '</small></div>' +
+      '<div class="pg-title">🔌 파워그리드 독일 β4<br><small>' + esc(ctx.subtitle || '') + '</small></div>' +
       '<div style="display:flex;gap:8px;flex-wrap:wrap">' +
       '<span class="pg-pill">Step <b>' + state.step + '</b></span>' +
       '<span class="pg-pill">라운드 <b>' + state.round + '</b></span>' +
@@ -268,7 +331,7 @@
 
     var left = '<div>' +
       renderMap(state, mySeat, allowAct, acting) +
-      '<div class="pg-card"><h3>발전소 시장</h3>' + renderPlantMarket(state, mySeat, allowAct && state.phase === 2 && state.auction.sub === 'offer' && acting.indexOf(mySeat) !== -1) + '</div>' +
+      '<div class="pg-card"><h3>발전소 시장</h3>' + renderPlantMarket(state, mySeat, allowAct && !state.plantDiscard && state.phase === 2 && state.auction && state.auction.sub === 'offer' && acting.indexOf(mySeat) !== -1) + '</div>' +
       '<div class="pg-card"><h3>자원 시장</h3>' + renderResourceMarket(state, mySeat, canBuy) + '</div>' +
       '</div>';
 
@@ -287,9 +350,13 @@
         var actType = el.getAttribute('data-action');
         var seat = mySeat != null ? mySeat : acting[0];
         var args = {};
-        if (actType === 'offerPlant') args.plant = Number(el.getAttribute('data-plant'));
+        if (actType === 'offerPlant' || actType === 'discardPlant') args.plant = Number(el.getAttribute('data-plant'));
         if (actType === 'buildCity') args.city = el.getAttribute('data-city');
         if (actType === 'buyResource') { args.resource = el.getAttribute('data-resource'); args.qty = Number(el.getAttribute('data-qty')); }
+        if (actType === 'powerCities') {
+          args.plants = Array.from(container.querySelectorAll('.pg-power-plant-check:checked')).map(function(x){return Number(x.value);});
+          args.cities = Array.from(container.querySelectorAll('.pg-power-city-check:checked')).map(function(x){return x.value;});
+        }
         if (actType === 'bid') {
           var input = container.querySelector('#pg-bid-amount');
           args.amount = Number(input.value);
@@ -297,6 +364,36 @@
         ctx.onAction({ type: actType, seat: seat, args: args });
       });
     });
+
+
+    function updatePowerSelectionUI() {
+      var summary=container.querySelector('#pg-power-summary');
+      if(!summary || mySeat==null) return;
+      var selectedPlants=Array.from(container.querySelectorAll('.pg-power-plant-check:checked')).map(function(x){return Number(x.value);});
+      var selectedCities=Array.from(container.querySelectorAll('.pg-power-city-check:checked')).map(function(x){return x.value;});
+      var capacity=selectedPlants.reduce(function(sum,n){return sum+(PG.PLANT_DEFS[n]?PG.PLANT_DEFS[n].cities:0);},0);
+      var fuel=PG.fuelUseForPlants(selectedPlants,state.players[mySeat].stock);
+      var ok=fuel!==null && selectedCities.length<=capacity && !(selectedCities.length===0 && selectedPlants.length>0);
+      var fuelText=fuel ? ('석탄 '+fuel.coal+' · 석유 '+fuel.oil+' · 쓰레기 '+fuel.garbage+' · 우라늄 '+fuel.uranium) : '자원 부족';
+      summary.innerHTML='선택 발전소 <b>'+selectedPlants.length+'장</b> · 공급능력 <b>'+capacity+'도시</b> · 선택 도시 <b>'+selectedCities.length+'개</b><br><small>소모 자원: '+fuelText+'</small>';
+      summary.classList.toggle('invalid',!ok);
+      var confirm=container.querySelector('#pg-power-confirm');
+      if(confirm) confirm.disabled=!ok;
+      container.querySelectorAll('[data-power-city-toggle]').forEach(function(btn){
+        var id=btn.getAttribute('data-power-city-toggle');
+        btn.classList.toggle('selected-power',selectedCities.indexOf(id)!==-1);
+      });
+    }
+
+    container.querySelectorAll('.pg-power-plant-check,.pg-power-city-check').forEach(function(el){el.addEventListener('change',updatePowerSelectionUI);});
+    container.querySelectorAll('[data-power-city-toggle]').forEach(function(btn){
+      btn.addEventListener('click',function(){
+        var id=btn.getAttribute('data-power-city-toggle');
+        var check=Array.from(container.querySelectorAll('.pg-power-city-check')).find(function(x){return x.value===id;});
+        if(check){check.checked=!check.checked;updatePowerSelectionUI();}
+      });
+    });
+    updatePowerSelectionUI();
   }
 
   global.PowerGridUI = { render: render, SEAT_COLORS: SEAT_COLORS, plantLabel: plantLabel };

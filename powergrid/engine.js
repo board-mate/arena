@@ -1,5 +1,5 @@
 /*!
- * BoardMate Power Grid Germany - Multiplayer Core Engine (beta v3)
+ * BoardMate Power Grid Germany - Multiplayer Core Engine (beta v4)
  * -----------------------------------------------------------------
  * 다인플 전용. 브라우저와 Node(CommonJS)에서 동일 규칙 엔진을 사용한다.
  * 독일 보드의 42개 도시 / 83개 연결비 그래프를 내장해 도시 건설 비용을
@@ -113,7 +113,7 @@
     2: [1, 5], 3: [2, 6], 4: [1, 3], 5: [0, 0], 6: [0, 0]
   };
 
-  var MAX_PLANTS = function (numPlayers) { return numPlayers === 2 ? 4 : 3; };
+  var MAX_PLANTS = function () { return 3; };
 
   // ============================================================
   // 유틸리티
@@ -270,7 +270,7 @@
     order = shuffle(order, rng);
 
     var state = {
-      v: 3,
+      v: 4,
       kind: STATE_KIND,
       numPlayers: numPlayers,
       map: { mode:'auto', boardId:boardId, regionIds:zone.regionIds, cityNames:zone.cityNames },
@@ -287,6 +287,8 @@
       auction: null, // {stillIn:[seat,...], offerIdx, sub:'offer'|'bid', plant, bids:{seat:amount}, highBidder, highBid, biddersLeft:[...]}
       resourceTurn: null, // {orderIdx}
       buildTurn: null,   // {orderIdx}
+      powerTurn: null,   // {orderIdx} - 관료 단계에서 각 플레이어가 직접 공급 확정
+      plantDiscard: null, // {seat,max,purchased} - 발전소 보유 한도 초과 시 직접 폐기 선택
       log: [],
       winner: null,
       gameOver: false
@@ -469,14 +471,6 @@
     pushLog(state, state.players[winner].name + '님이 ' + plantNum + '번 발전소를 ' + price + '€에 낙찰받았습니다.');
     if (plantNum === state.plantMarket.discounted) state.plantMarket.discounted = null;
 
-    // 최대 보유량 초과시 즉시 폐기
-    var maxP = MAX_PLANTS(state.numPlayers);
-    if (state.players[winner].plants.length > maxP) {
-      var scrap = Math.min.apply(null, state.players[winner].plants.filter(function (n) { return n !== plantNum; }));
-      state.players[winner].plants.splice(state.players[winner].plants.indexOf(scrap), 1);
-      pushLog(state, state.players[winner].name + '님이 발전소 보유 한도를 넘어 ' + scrap + '번 발전소를 폐기했습니다.');
-    }
-
     // 시장에서 제거하고 보충
     var mkt = state.plantMarket;
     mkt.current.splice(mkt.current.indexOf(plantNum), 1);
@@ -491,6 +485,34 @@
       a.offerSeat = nextActiveSeatAfter(state, winner, a.stillIn);
     }
     // wasOfferer가 false면 제시자는 아직 못 샀으므로 a.offerSeat 그대로 유지 (다시 제시/포기 선택)
+
+    // 최대 보유량을 넘으면 자동 폐기하지 않는다. 낙찰자가 보유 중인 카드 가운데
+    // 어떤 발전소를 버릴지 직접 고른 뒤에야 경매가 계속된다.
+    var maxP = MAX_PLANTS(state.numPlayers);
+    if (state.players[winner].plants.length > maxP) {
+      state.plantDiscard = { seat:winner, max:maxP, purchased:plantNum };
+      pushLog(state, state.players[winner].name + '님은 발전소를 최대 ' + maxP + '장만 보유할 수 있습니다. 폐기할 발전소 1장을 선택하세요.');
+      return;
+    }
+
+    checkAuctionEnd(state);
+  }
+
+  function actionDiscardPlant(state, seat, plantNum) {
+    var pending = state.plantDiscard;
+    if (!pending || pending.seat !== seat) throw new Error('지금은 발전소를 폐기할 차례가 아닙니다.');
+    var p = state.players[seat];
+    var idx = p.plants.indexOf(plantNum);
+    if (idx === -1) throw new Error('보유하지 않은 발전소입니다.');
+    p.plants.splice(idx, 1);
+    var removed = trimStockToPlants(p.plants, p.stock);
+    pushLog(state, p.name + '님이 ' + plantNum + '번 발전소를 폐기했습니다.');
+    var lost = [];
+    ['coal','oil','garbage','uranium'].forEach(function (r) {
+      if (removed[r] > 0) lost.push(r + ' ' + removed[r] + '개');
+    });
+    if (lost.length) pushLog(state, '저장 공간 부족으로 자원 ' + lost.join(', ') + '를 함께 반납했습니다.');
+    state.plantDiscard = null;
     checkAuctionEnd(state);
   }
 
@@ -513,15 +535,64 @@
   }
 
   // ---------------- Phase 3: 자원 구매 ----------------
-  function plantStorageCap(playerPlants, resource) {
-    var cap = 0;
-    playerPlants.forEach(function (n) {
+  function storageProfile(playerPlants) {
+    var out = { coalOnly:0, oilOnly:0, hybrid:0, garbage:0, uranium:0 };
+    (playerPlants || []).forEach(function (n) {
       var d = PLANT_DEFS[n];
-      if (!d) return;
-      if (d.type === resource) cap += d.need * 2;
-      if (d.type === 'hybrid' && (resource === 'coal' || resource === 'oil')) cap += d.need * 2;
+      if (!d || d.need <= 0) return;
+      var cap = d.need * 2;
+      if (d.type === 'coal') out.coalOnly += cap;
+      else if (d.type === 'oil') out.oilOnly += cap;
+      else if (d.type === 'hybrid') out.hybrid += cap;
+      else if (d.type === 'garbage') out.garbage += cap;
+      else if (d.type === 'uranium') out.uranium += cap;
     });
-    return cap;
+    return out;
+  }
+
+  function plantStorageCap(playerPlants, resource) {
+    var p = storageProfile(playerPlants);
+    if (resource === 'coal') return p.coalOnly + p.hybrid;
+    if (resource === 'oil') return p.oilOnly + p.hybrid;
+    return p[resource] || 0;
+  }
+
+  function stockFitsPlants(playerPlants, stock) {
+    var p = storageProfile(playerPlants);
+    if ((stock.garbage || 0) > p.garbage || (stock.uranium || 0) > p.uranium) return false;
+    var coal = stock.coal || 0, oil = stock.oil || 0;
+    if (coal > p.coalOnly + p.hybrid) return false;
+    if (oil > p.oilOnly + p.hybrid) return false;
+    return coal + oil <= p.coalOnly + p.oilOnly + p.hybrid;
+  }
+
+  function canStoreResource(playerPlants, stock, resource, qty) {
+    var next = clone(stock);
+    next[resource] = (next[resource] || 0) + (qty || 0);
+    return stockFitsPlants(playerPlants, next);
+  }
+
+  function trimStockToPlants(playerPlants, stock) {
+    var before = clone(stock);
+    var p = storageProfile(playerPlants);
+    stock.garbage = Math.min(stock.garbage || 0, p.garbage);
+    stock.uranium = Math.min(stock.uranium || 0, p.uranium);
+    stock.coal = Math.min(stock.coal || 0, p.coalOnly + p.hybrid);
+    stock.oil = Math.min(stock.oil || 0, p.oilOnly + p.hybrid);
+    var maxCombined = p.coalOnly + p.oilOnly + p.hybrid;
+    while (stock.coal + stock.oil > maxCombined) {
+      var coalFlex = Math.max(0, stock.coal - p.coalOnly);
+      var oilFlex = Math.max(0, stock.oil - p.oilOnly);
+      if (oilFlex >= coalFlex && stock.oil > 0) stock.oil -= 1;
+      else if (stock.coal > 0) stock.coal -= 1;
+      else break;
+    }
+    return {
+      coal: before.coal - stock.coal,
+      oil: before.oil - stock.oil,
+      garbage: before.garbage - stock.garbage,
+      uranium: before.uranium - stock.uranium
+    };
   }
 
   function beginPhase3(state) {
@@ -541,9 +612,7 @@
     if (resourceTurnSeat(state) !== seat) throw new Error('지금은 당신의 자원 구매 차례가 아닙니다.');
     var p = state.players[seat];
     for (var i = 0; i < qty; i++) {
-      var capNow = plantStorageCap(p.plants, resource);
-      var heldNow = (resource === 'coal' || resource === 'oil') ? (p.stock.coal + p.stock.oil) : p.stock[resource];
-      if (heldNow >= capNow) throw new Error('더 이상 저장할 공간이 없습니다.');
+      if (!canStoreResource(p.plants, p.stock, resource, 1)) throw new Error('더 이상 저장할 공간이 없습니다.');
       var filled = state.resourceMarket[resource];
       if (filled <= 0) throw new Error('시장에 남은 ' + resource + '가 없습니다.');
       var emptyCount = RESOURCE_CAPACITY[resource] - filled;
@@ -648,80 +717,93 @@
     beginPhase5(state);
   }
 
-  // ---------------- Phase 5: 관료 단계 (자동 정산) ----------------
-  function bestFireCombo(plants, stock, networkSize) {
-    // 2^n 부분집합 완전탐색 (n<=4)
-    var n = plants.length;
-    var best = { subset: [], cities: 0, use: {} };
-    for (var mask = 0; mask < (1 << n); mask++) {
-      var need = { coal: 0, oil: 0, garbage: 0, uranium: 0 };
-      var cities = 0;
-      var subsetPlants = [];
-      for (var i = 0; i < n; i++) {
-        if (mask & (1 << i)) {
-          var d = PLANT_DEFS[plants[i]];
-          subsetPlants.push(plants[i]);
-          cities += d.cities;
-          if (d.type === 'coal') need.coal += d.need;
-          else if (d.type === 'oil') need.oil += d.need;
-          else if (d.type === 'garbage') need.garbage += d.need;
-          else if (d.type === 'uranium') need.uranium += d.need;
-          else if (d.type === 'hybrid') need._hybrid = (need._hybrid || 0) + d.need;
-        }
-      }
-      var feasible = need.coal <= stock.coal && need.garbage <= stock.garbage && need.uranium <= stock.uranium;
-      if (feasible) {
-        var remainCoalOil = (stock.coal - need.coal) + (stock.oil);
-        feasible = (need._hybrid || 0) <= remainCoalOil && need.oil <= stock.oil + (stock.coal - need.coal);
-        // 좀 더 정확히: coal+oil 총량으로 hybrid+oil 수요 커버 가능한지
-        var totalCoalOilStock = stock.coal + stock.oil;
-        var totalCoalOilNeed = need.coal + need.oil + (need._hybrid || 0);
-        feasible = need.coal <= stock.coal && totalCoalOilNeed <= totalCoalOilStock;
-      }
-      var effectiveCities = Math.min(cities, networkSize);
-      if (feasible && effectiveCities > best.cities) {
-        best = { subset: subsetPlants, cities: effectiveCities, use: need, rawCities: cities };
-      }
-    }
-    return best;
+  // ---------------- Phase 5: 관료 단계 (직접 전력 공급) ----------------
+  function fuelUseForPlants(plants, stock) {
+    var need = { coal:0, oil:0, garbage:0, uranium:0, hybrid:0 };
+    (plants || []).forEach(function (n) {
+      var d = PLANT_DEFS[n];
+      if (!d) throw new Error('알 수 없는 발전소입니다: ' + n);
+      if (d.type === 'coal') need.coal += d.need;
+      else if (d.type === 'oil') need.oil += d.need;
+      else if (d.type === 'garbage') need.garbage += d.need;
+      else if (d.type === 'uranium') need.uranium += d.need;
+      else if (d.type === 'hybrid') need.hybrid += d.need;
+    });
+    if (need.coal > (stock.coal || 0) || need.oil > (stock.oil || 0) ||
+        need.garbage > (stock.garbage || 0) || need.uranium > (stock.uranium || 0)) return null;
+    var coalLeft = (stock.coal || 0) - need.coal;
+    var oilLeft = (stock.oil || 0) - need.oil;
+    if (need.hybrid > coalLeft + oilLeft) return null;
+
+    // 하이브리드 발전소는 기존 동작과 동일하게 남은 석유를 먼저 사용하고
+    // 부족분을 석탄으로 채운다.
+    var hybridOil = Math.min(oilLeft, need.hybrid);
+    var hybridCoal = need.hybrid - hybridOil;
+    return {
+      coal: need.coal + hybridCoal,
+      oil: need.oil + hybridOil,
+      garbage: need.garbage,
+      uranium: need.uranium
+    };
+  }
+
+  function powerTurnSeat(state) {
+    if (!state.powerTurn) return null;
+    var idx = state.powerTurn.orderIdx;
+    if (idx < 0 || idx >= state.order.length) return null;
+    return state.order[idx];
   }
 
   function beginPhase5(state) {
     state.phase = 5;
-    pushLog(state, '=== 5단계: 관료 (정산) ===');
-    var order = state.order; // 임의 순서로 처리해도 결과 동일 (자동 정산이므로)
-    order.forEach(function (seat) {
-      var p = state.players[seat];
-      var combo = bestFireCombo(p.plants, p.stock, p.cities.length);
-      // 자원 소모
-      var need = combo.use || {};
-      p.stock.coal -= Math.min(p.stock.coal, need.coal || 0);
-      p.stock.garbage -= Math.min(p.stock.garbage, need.garbage || 0);
-      p.stock.uranium -= Math.min(p.stock.uranium, need.uranium || 0);
-      var hybridNeed = need._hybrid || 0;
-      var oilNeed = need.oil || 0;
-      var totalOilLikeNeed = hybridNeed + oilNeed;
-      // 이미 coal 소모는 need.coal 만큼 위에서 처리됨. hybrid/oil 수요는 남은 coal+oil에서 충당
-      var remainCoal = p.stock.coal, remainOil = p.stock.oil;
-      var takeOilFirst = Math.min(remainOil, totalOilLikeNeed);
-      remainOil -= takeOilFirst;
-      var stillNeed = totalOilLikeNeed - takeOilFirst;
-      var takeCoal = Math.min(remainCoal, stillNeed);
-      remainCoal -= takeCoal;
-      p.stock.oil = remainOil;
-      p.stock.coal = remainCoal;
+    state.powerTurn = { orderIdx:0 };
+    Object.keys(state.players).forEach(function (s) { state.players[s]._lastPoweredCities = []; });
+    pushLog(state, '=== 5단계: 관료 · 전력 공급 ===');
+    pushLog(state, '각 플레이어가 사용할 발전소와 전력을 공급할 자신의 도시를 직접 선택해야 다음 단계로 넘어갑니다.');
+  }
 
-      var pay = payoutFor(combo.cities);
-      p.money += pay;
-      if (state.gameOver) p._finalPowered = combo.cities;
-      pushLog(state, p.name + '님이 도시 ' + combo.cities + '개에 전력을 공급하고 ' + pay + '€를 받았습니다.');
-    });
+  function actionPowerCities(state, seat, args) {
+    if (powerTurnSeat(state) !== seat) throw new Error('지금은 당신의 전력 공급 차례가 아닙니다.');
+    var p = state.players[seat];
+    var plants = (args.plants || []).map(Number).filter(function (n, i, a) { return a.indexOf(n) === i; });
+    var cities = (args.cities || []).filter(function (c, i, a) { return a.indexOf(c) === i; });
 
-    if (state.gameOver) {
-      finalizeWinner(state);
-      return;
+    plants.forEach(function (n) { if (p.plants.indexOf(n) === -1) throw new Error('보유하지 않은 발전소가 선택되었습니다.'); });
+    cities.forEach(function (c) { if (p.cities.indexOf(c) === -1) throw new Error('내가 건설하지 않은 도시는 공급 대상으로 선택할 수 없습니다.'); });
+
+    var capacity = 0;
+    plants.forEach(function (n) { capacity += PLANT_DEFS[n].cities; });
+    if (cities.length > capacity) throw new Error('선택한 발전소는 최대 도시 ' + capacity + '개까지만 공급할 수 있습니다.');
+    if (cities.length === 0 && plants.length > 0) throw new Error('공급할 도시가 0개라면 발전소를 선택하지 않고 확정하세요.');
+
+    var fuel = fuelUseForPlants(plants, p.stock);
+    if (!fuel) throw new Error('선택한 발전소를 가동할 자원이 부족합니다.');
+    p.stock.coal -= fuel.coal;
+    p.stock.oil -= fuel.oil;
+    p.stock.garbage -= fuel.garbage;
+    p.stock.uranium -= fuel.uranium;
+
+    p._lastPoweredCities = cities.slice();
+    var pay = payoutFor(cities.length);
+    p.money += pay;
+    if (state.gameOver) p._finalPowered = cities.length;
+    var cityLabels = cities.map(function (id) { return GERMANY.CITY_BY_ID[id] ? GERMANY.CITY_BY_ID[id].name : id; });
+    pushLog(state, p.name + '님이 ' + (plants.length ? plants.join(',') + '번 발전소로 ' : '') +
+      '도시 ' + cities.length + '개' + (cityLabels.length ? ' (' + cityLabels.join(', ') + ')' : '') +
+      '에 전력을 공급하고 ' + pay + '€를 받았습니다.');
+
+    state.powerTurn.orderIdx += 1;
+    if (state.powerTurn.orderIdx >= state.order.length) {
+      state.powerTurn = null;
+      if (state.gameOver) {
+        finalizeWinner(state);
+        return;
+      }
+      finishPhase5Round(state);
     }
+  }
 
+  function finishPhase5Round(state) {
     // 자원시장 보충
     var table = RESOURCE_REPLENISH[state.numPlayers];
     var stepIdx = state.step - 1;
@@ -739,7 +821,7 @@
       pool.shift();
       while (pool.length < 6 && state.deck.length) {
         var dd = state.deck.shift();
-        if (dd === 'STEP3') continue; // 이미 Step3라 무시
+        if (dd === 'STEP3') continue;
         pool.push(dd);
       }
       mkt.current = pool.sort(function (a, b) { return a - b; }).slice(0, 6);
@@ -747,7 +829,7 @@
     } else {
       var pool2 = mkt.current.concat(mkt.future).sort(function (a, b) { return a - b; });
       var highest = pool2.pop();
-      state.deck.push(highest); // 덱 맨 밑으로
+      state.deck.push(highest);
       if (state.deck.length && state.deck[0] === 'STEP3') { /* no-op */ }
       while (pool2.length < 8 && state.deck.length) {
         var d3 = state.deck.shift();
@@ -793,10 +875,12 @@
     offerPass: function (s, seat) { actionOfferPass(s, seat); },
     bid: function (s, seat, args) { actionBid(s, seat, args.amount); },
     bidPass: function (s, seat) { actionBidPass(s, seat); },
+    discardPlant: function (s, seat, args) { actionDiscardPlant(s, seat, args.plant); },
     buyResource: function (s, seat, args) { actionBuyResource(s, seat, args.resource, args.qty); },
     endResourceTurn: function (s, seat) { actionEndResourceTurn(s, seat); },
     buildCity: function (s, seat, args) { actionBuildCity(s, seat, args.city); },
-    endBuildTurn: function (s, seat) { actionEndBuildTurn(s, seat); }
+    endBuildTurn: function (s, seat) { actionEndBuildTurn(s, seat); },
+    powerCities: function (s, seat, args) { actionPowerCities(s, seat, args); }
   };
 
   function syncDerivedTurn(state) {
@@ -816,7 +900,8 @@
   }
 
   function actingSeats(state) {
-    if (state.gameOver) return [];
+    if (state.gameOver && state.winner != null) return [];
+    if (state.plantDiscard) return [state.plantDiscard.seat];
     if (state.phase === 2) {
       var a = state.auction;
       if (!a) return [];
@@ -825,6 +910,7 @@
     }
     if (state.phase === 3) return [resourceTurnSeat(state)];
     if (state.phase === 4) return [buildTurnSeat(state)];
+    if (state.phase === 5) return [powerTurnSeat(state)];
     return [];
   }
 
@@ -853,8 +939,13 @@
     validateRegionSelection: validateRegionSelection,
     defaultRegions: defaultRegions,
     plantStorageCap: plantStorageCap,
+    canStoreResource: canStoreResource,
+    stockFitsPlants: stockFitsPlants,
+    storageProfile: storageProfile,
+    fuelUseForPlants: fuelUseForPlants,
     resourceTurnSeat: resourceTurnSeat,
     buildTurnSeat: buildTurnSeat,
+    powerTurnSeat: powerTurnSeat,
     currentOfferer: currentOfferer,
     bidTurnSeat: bidTurnSeat,
     payoutFor: payoutFor,

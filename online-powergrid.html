@@ -3,16 +3,16 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>파워그리드 독일 β · BoardMate 온라인</title>
-  <link rel="stylesheet" href="./powergrid/pg-styles.css">
+  <title>파워그리드 독일 β4 · BoardMate 온라인</title>
+  <link rel="stylesheet" href="./powergrid/pg-styles.css?v=4">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="./config.js"></script>
 </head>
 <body>
 <div class="pg-app" id="app">불러오는 중…</div>
-<script src="./powergrid/data/germany-map.js"></script>
-<script src="./powergrid/engine.js"></script>
-<script src="./powergrid/ui.js"></script>
+<script src="./powergrid/data/germany-map.js?v=4"></script>
+<script src="./powergrid/engine.js?v=4"></script>
+<script src="./powergrid/ui.js?v=4"></script>
 <script type="module">
 import {
   configured, roomId, getMe, loadRoom, loadState, saveState, startStatePoll,
@@ -33,7 +33,7 @@ function setupView(){
   }).join('');
   app.innerHTML=`
     <div class="pg-topbar">
-      <div class="pg-title">🔌 파워그리드 독일 β<br><small>${esc(room.title||'BoardMate 온라인')} · ${members.length}인 · 다인플 전용</small></div>
+      <div class="pg-title">🔌 파워그리드 독일 β4<br><small>${esc(room.title||'BoardMate 온라인')} · ${members.length}인 · 다인플 전용</small></div>
       <a class="pg-btn small" href="./index.html#/room/${encodeURIComponent(roomId)}">← 방으로</a>
     </div>
     <div class="pg-card">
@@ -80,7 +80,7 @@ function rankingIds(){
   }).map(seat=>members.find(m=>Number(m.seat)===Number(seat))?.user_id).filter(Boolean);
 }
 async function maybeSubmit(){
-  if(!state?.gameOver||!isHost||submitted)return;
+  if(!state?.gameOver||state?.winner==null||!isHost||submitted)return;
   submitted=true;
   try{await submitMatch(rankingIds())}catch(e){console.warn('match submit',e);submitted=false}
 }
@@ -106,7 +106,7 @@ function draw(){
     state,mySeat,allowAnySeat:false,
     subtitle:`BoardMate 공통 방 · Realtime · 독일맵 (${regionNames})`,
     extraTopHtml:`<a class="pg-btn small" href="./index.html#/room/${encodeURIComponent(roomId)}">← 방</a>`,
-    footerHtml:state.gameOver?endPanel('파워그리드 종료','전력 공급 도시 수 → 보유 현금 순으로 순위를 저장합니다.'): '',
+    footerHtml:(state.gameOver&&state.winner!=null)?endPanel('파워그리드 종료','전력 공급 도시 수 → 보유 현금 순으로 순위를 저장합니다.'): '',
     onAction:action
   });
 }
