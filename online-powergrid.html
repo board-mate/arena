@@ -4,15 +4,17 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>파워그리드 · BoardMate 온라인</title>
-  <link rel="stylesheet" href="./powergrid/pg-styles.css?v=18">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <link rel="stylesheet" href="./powergrid/pg-styles.css?v=19">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="./config.js"></script>
 </head>
 <body>
 <div class="pg-app" id="app">불러오는 중…</div>
-<script src="./powergrid/data/germany-map.js?v=18"></script>
-<script src="./powergrid/engine.js?v=18"></script>
-<script src="./powergrid/ui.js?v=18"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="./powergrid/data/germany-map.js?v=19"></script>
+<script src="./powergrid/engine.js?v=19"></script>
+<script src="./powergrid/ui.js?v=19"></script>
 <script type="module">
 import {
   configured, roomId, getMe, loadRoom, loadState, saveState, startStatePoll,
@@ -24,20 +26,38 @@ const app=document.querySelector('#app');
 let me,room,members,mySeat,isHost,state=null,revision=0,stopPoll=null,submitted=false,saving=false,legacyState=false;
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
+let setupPreviewMaps=[];
+function destroySetupPreviews(){
+  setupPreviewMaps.forEach(m=>{try{m.remove()}catch(_){}}); setupPreviewMaps=[];
+}
 function setupMapPreview(boardId){
-  const def=PowerGrid.BOARD_DEFS[boardId] || PowerGrid.BOARD_DEFS.germany;
-  const srcMap={
-    germany:'./powergrid/assets/maps/germany.webp?v=18',
-    usa:'./powergrid/assets/maps/usa-original.png?v=18',
-    korea:'./powergrid/assets/maps/korea-original.png?v=18'
-  };
-  const src=srcMap[boardId] || srcMap.germany;
-  const orientation=boardId==='usa'?'landscape':'portrait';
-  const sourceLabel=boardId==='usa'?'제공받은 미국 보드':(boardId==='korea'?'제공받은 한국 보드':'기존 독일 보드');
-  return `<div class="pg-map-choice-real pg-map-choice-original ${orientation}"><img src="${src}" alt="${esc(def.name)} 원본 보드"><span>${sourceLabel}</span></div>`;
+  const G=PowerGrid.mapData(boardId);
+  const legend=G.REGION_ORDER.map(rid=>{const r=G.REGIONS[rid];return `<span style="--region:${esc(r.color)}"><i></i>${esc(r.shortName||r.name)}</span>`}).join('');
+  return `<div class="pg-map-choice-leaflet" data-pg-preview="${esc(boardId)}"><div class="pg-map-loading">지도 불러오는 중…</div></div><div class="pg-map-preview-legend">${legend}</div>`;
+}
+function mountSetupMapPreviews(){
+  destroySetupPreviews();
+  document.querySelectorAll('[data-pg-preview]').forEach(el=>{
+    const boardId=el.dataset.pgPreview, G=PowerGrid.mapData(boardId);
+    if(!window.L){el.innerHTML='<div class="pg-map-loading">지도 모듈을 불러오지 못했습니다.</div>';return;}
+    el.innerHTML='';
+    const map=L.map(el,{zoomControl:false,attributionControl:false,dragging:false,scrollWheelZoom:false,doubleClickZoom:false,boxZoom:false,keyboard:false,touchZoom:false});
+    setupPreviewMaps.push(map);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:18}).addTo(map);
+    const byId=G.CITY_BY_ID;
+    const currentBoard=document.querySelector('#boardSelect')?.value||'germany';
+    const chosen=new Set([...document.querySelectorAll('#regionSelector input:checked')].map(x=>x.value));
+    const filterRegions=boardId===currentBoard && chosen.size>0;
+    (G.EDGES||[]).forEach(e=>{const a=byId[e.a],b=byId[e.b];if(!a||!b||!Number.isFinite(a.lat)||!Number.isFinite(b.lat))return;const on=!filterRegions||(chosen.has(a.region)&&chosen.has(b.region));L.polyline([[a.lat,a.lng],[b.lat,b.lng]],{color:on?'#d7b45a':'#64748b',weight:on?1.35:.8,opacity:on?.48:.12,dashArray:on?null:'3,4',interactive:false}).addTo(map)});
+    G.CITIES.forEach(c=>{if(!Number.isFinite(c.lat)||!Number.isFinite(c.lng))return;const r=G.REGIONS[c.region],on=!filterRegions||chosen.has(c.region);L.circleMarker([c.lat,c.lng],{radius:on?3.5:2.6,weight:1,color:on?'#f8fafc':'#64748b',fillColor:on?(r?.color||'#94a3b8'):'#64748b',fillOpacity:on?.96:.20,opacity:on?.82:.20,interactive:false}).addTo(map)});
+    const pts=G.CITIES.filter(c=>Number.isFinite(c.lat)&&Number.isFinite(c.lng)).map(c=>[c.lat,c.lng]);
+    if(pts.length) map.fitBounds(pts,{padding:[10,10],animate:false}); else map.setView(G.GEO_CENTER||[0,0],G.GEO_ZOOM||4);
+    setTimeout(()=>map.invalidateSize(false),0);
+  });
 }
 
 function setupView(){
+  destroySetupPreviews();
   const boardId=document.querySelector('#boardSelect')?.value || 'germany';
   const boardDef=PowerGrid.BOARD_DEFS[boardId] || PowerGrid.BOARD_DEFS.germany;
   const boardMap=PowerGrid.mapData(boardId);
@@ -65,8 +85,9 @@ function setupView(){
     </div>`;
   document.querySelectorAll('.pg-map-choice').forEach(btn=>btn.addEventListener('click',()=>{ const input=document.querySelector('#boardSelect'); if(input) input.value=btn.dataset.board; setupView(); }));
   document.querySelector('#start')?.addEventListener('click',startGame);
-  document.querySelectorAll('#regionSelector input').forEach(el=>el.addEventListener('change',updateRegionStatus));
+  document.querySelectorAll('#regionSelector input').forEach(el=>el.addEventListener('change',()=>{updateRegionStatus();mountSetupMapPreviews();}));
   updateRegionStatus();
+  setTimeout(mountSetupMapPreviews,0);
 }
 
 function selectedRegions(){
