@@ -1,5 +1,5 @@
 /*!
- * BoardMate Power Grid - Multiplayer UI Layer v16
+ * BoardMate Power Grid - Multiplayer UI Layer v18
  * 순수 DOM/SVG 렌더링. React 등 프레임워크 없이 동작.
  * window.PowerGrid (engine.js) 를 사용한다.
  */
@@ -37,7 +37,7 @@
     if (idx == null) return '<div class="pg-plant-img pg-plant-missing">'+esc(num)+'</div>';
     var x = (idx % 7) * 100, y = Math.floor(idx / 7) * 100;
     return '<svg class="pg-plant-img" viewBox="'+x+' '+y+' 100 100" role="img" aria-label="'+esc(num)+'번 발전소">'+
-      '<image href="./powergrid/assets/plants/plant_sheet.webp?v=17" x="0" y="0" width="700" height="700" preserveAspectRatio="none"></image></svg>';
+      '<image href="./powergrid/assets/plants/plant_sheet.webp?v=18" x="0" y="0" width="700" height="700" preserveAspectRatio="none"></image></svg>';
   }
 
   function renderMapFeatures(boardId, compact) {
@@ -163,57 +163,58 @@
 
     var regionChips=selectedRegions.map(function(rid){
       var r=G.REGIONS[rid];
-      return r ? '<span class="pg-region-chip" style="--region:'+esc(r.color)+'">'+esc(r.shortName)+'</span>' : '';
+      return r ? '<span class="pg-region-chip" style="--region:'+esc(r.color)+'">'+esc(r.shortName||r.name)+'</span>' : '';
     }).join('');
-    var excludedShade=renderExcludedRegionShade(G, selectedRegions);
 
-    var edgeSvg=renderSchematicBackground(G, selectedRegions);
-    (state.map.edges||G.EDGES||[]).forEach(function(e){
-      var a=G.CITY_BY_ID[e.a], b=G.CITY_BY_ID[e.b];
-      if(!a||!b||!selected[e.a]||!selected[e.b])return;
-      var mx=((a.x+b.x)/2), my=((a.y+b.y)/2);
-      var bw=(String(e.cost).length>1?28:22);
-      edgeSvg+='<line class="pg-map-edge" x1="'+a.x+'" y1="'+a.y+'" x2="'+b.x+'" y2="'+b.y+'"></line>'+ 
-        '<g class="pg-edge-cost-badge"><rect x="'+(mx-bw/2).toFixed(1)+'" y="'+(my-10).toFixed(1)+'" width="'+bw+'" height="20" rx="7"></rect><text class="pg-map-edge-cost" x="'+mx.toFixed(1)+'" y="'+my.toFixed(1)+'">'+e.cost+'</text></g>';
-    });
-    G.CITIES.forEach(function(city){
-      if(!selected[city.id])return;
-      var labelY=city.y+24;
-      if(labelY>G.BOARD_HEIGHT-8) labelY=city.y-22;
-      edgeSvg+='<text class="pg-map-city-name" x="'+city.x+'" y="'+labelY+'">'+esc(city.name)+'</text>';
-    });
+    // v18: 원본 보드의 색상/지역 구분을 그대로 사용한다.
+    // 독일만 검증된 42도시/83연결 좌표 오버레이를 원본 보드 위에 올리고,
+    // 미국/한국은 원본 보드 사진 자체를 우선 표시한다. 검정색 제외 폴리곤은 사용하지 않는다.
+    var boardInner='', note='', tag='';
+    if(boardId==='germany'){
+      var edgeSvg='';
+      (state.map.edges||G.EDGES||[]).forEach(function(e){
+        var a=G.CITY_BY_ID[e.a], b=G.CITY_BY_ID[e.b];
+        if(!a||!b||!selected[e.a]||!selected[e.b])return;
+        var mx=((a.x+b.x)/2), my=((a.y+b.y)/2);
+        var bw=(String(e.cost).length>1?28:22);
+        edgeSvg+='<line class="pg-map-edge" x1="'+a.x+'" y1="'+a.y+'" x2="'+b.x+'" y2="'+b.y+'"></line>'+ 
+          '<g class="pg-edge-cost-badge"><rect x="'+(mx-bw/2).toFixed(1)+'" y="'+(my-10).toFixed(1)+'" width="'+bw+'" height="20" rx="7"></rect><text class="pg-map-edge-cost" x="'+mx.toFixed(1)+'" y="'+my.toFixed(1)+'">'+e.cost+'</text></g>';
+      });
+      G.CITIES.forEach(function(city){
+        if(!selected[city.id])return;
+        var labelY=city.y+24;
+        if(labelY>G.BOARD_HEIGHT-8) labelY=city.y-22;
+        edgeSvg+='<text class="pg-map-city-name" x="'+city.x+'" y="'+labelY+'">'+esc(city.name)+'</text>';
+      });
 
-    var markers='';
-    G.CITIES.forEach(function(city){
-      if(!selected[city.id])return;
-      var owners=state.cityOwners[city.id]||[];
-      var cost=canBuild ? PG.computeBuildCost(state,mySeat,city.id) : null;
-      var affordable=cost!=null && cost<=myMoney;
-      var buildClickable=canBuild && affordable;
-      var poweredSeats=owners.filter(function(seat){return (state.players[seat]._lastPoweredCities||[]).indexOf(city.id)!==-1;});
-      var ownerDots=owners.map(function(seat){return '<i style="background:'+SEAT_COLORS[seat%6]+'"></i>';}).join('');
-      var title=city.name+(cost!=null?' · '+cost+'€':'')+(poweredSeats.length?' · ⚡ 공급됨':'');
-      var attrs=buildClickable ? 'data-action="buildCity" data-city="'+esc(city.id)+'"' : 'disabled';
-      markers+='<button class="pg-germany-city-marker'+(buildClickable?' can-build':'')+(owners.length?' occupied':'')+(poweredSeats.length?' powered':'')+'" '+
-        'style="left:'+(city.x/G.BOARD_WIDTH*100).toFixed(3)+'%;top:'+(city.y/G.BOARD_HEIGHT*100).toFixed(3)+'%" '+
-        'title="'+esc(title)+'" aria-label="'+esc(title)+'" '+attrs+'>'+ownerDots+(cost!=null?'<b>'+cost+'</b>':'')+'</button>';
-    });
+      var markers='';
+      G.CITIES.forEach(function(city){
+        if(!selected[city.id])return;
+        var owners=state.cityOwners[city.id]||[];
+        var cost=canBuild ? PG.computeBuildCost(state,mySeat,city.id) : null;
+        var affordable=cost!=null && cost<=myMoney;
+        var buildClickable=canBuild && affordable;
+        var poweredSeats=owners.filter(function(seat){return (state.players[seat]._lastPoweredCities||[]).indexOf(city.id)!==-1;});
+        var ownerDots=owners.map(function(seat){return '<i style="background:'+SEAT_COLORS[seat%6]+'"></i>';}).join('');
+        var title=city.name+(cost!=null?' · '+cost+'€':'')+(poweredSeats.length?' · ⚡ 공급됨':'');
+        var attrs=buildClickable ? 'data-action="buildCity" data-city="'+esc(city.id)+'"' : 'disabled';
+        markers+='<button class="pg-germany-city-marker'+(buildClickable?' can-build':'')+(owners.length?' occupied':'')+(poweredSeats.length?' powered':'')+'" '+
+          'style="left:'+(city.x/G.BOARD_WIDTH*100).toFixed(3)+'%;top:'+(city.y/G.BOARD_HEIGHT*100).toFixed(3)+'%" '+
+          'title="'+esc(title)+'" aria-label="'+esc(title)+'" '+attrs+'>'+ownerDots+(cost!=null?'<b>'+cost+'</b>':'')+'</button>';
+      });
 
-    var boardInner='', note='';
-    if(boardId==='korea'){
-      // Use the supplied original Korea board as-is. Do not paint a made-up Korea basemap over it.
-      // Until the Korea city/edge dataset is transcribed against a high-resolution board source,
-      // building controls remain in the city list below instead of placing misleading markers on the photo.
-      boardInner='<div class="pg-germany-board pg-original-board"><img class="pg-map-base pg-map-base-original" src="./powergrid/assets/maps/korea-original.png?v=17" alt="파워그리드 한국 원본 보드"></div>';
-      note='한국은 제공받은 원본 보드 이미지를 그대로 표시합니다. 임의로 만든 지형·권역 디자인은 제거했습니다. 현재 자동 건설 조작은 아래 도시 목록을 사용하며, 원본 보드 위 도시/연결비 좌표 자동화는 고해상도 원본 기준으로 별도 검수합니다.';
+      boardInner='<div class="pg-germany-board pg-original-board pg-map-portrait pg-live-board"><img class="pg-map-base pg-map-base-original" src="./powergrid/assets/maps/germany.webp?v=18" alt="파워그리드 독일 원본 보드"><svg class="pg-abstract-map" viewBox="0 0 '+G.BOARD_WIDTH+' '+G.BOARD_HEIGHT+'" preserveAspectRatio="none">'+edgeSvg+'</svg>'+markers+'</div>';
+      note='독일은 원본 보드의 지역 색과 인쇄 정보를 그대로 두고, 선택된 지역의 도시·연결비 데이터만 위에 표시합니다. 이전 버전의 검정색 제외 영역은 제거했습니다.';
+      tag=G.CITIES.length+'도시 · '+(state.map.edges||G.EDGES).length+'연결';
     }else{
-      var baseSrc=boardId==='germany' ? './powergrid/assets/maps/germany.webp?v=17' : './powergrid/assets/map-previews/'+boardId+'.png?v=17';
-      boardInner='<div class="pg-germany-board pg-abstract-board"><img class="pg-map-base'+(boardId==='germany'?' pg-map-base-original':'')+'" src="'+baseSrc+'" alt="" aria-hidden="true"><svg class="pg-abstract-map" viewBox="0 0 '+G.BOARD_WIDTH+' '+G.BOARD_HEIGHT+'" preserveAspectRatio="none">'+edgeSvg+'</svg>'+excludedShade+markers+'</div>';
-      note=boardId==='germany'
-        ? '독일은 기존 원본 보드 이미지를 배경으로 사용하고, BoardMate 도시·연결비·건설 표시를 데이터 레이어로 겹쳐 표시합니다.'
-        : '미국 원본 보드 이미지는 현재 프로젝트에 제공되지 않아 데이터 지도 미리보기를 사용합니다. 원본 이미지를 받으면 같은 방식으로 교체할 수 있습니다.';
+      var src=boardId==='usa' ? './powergrid/assets/maps/usa-original.png?v=18' : './powergrid/assets/maps/korea-original.png?v=18';
+      var cls=boardId==='usa'?'pg-map-landscape':'pg-map-portrait';
+      var alt=boardId==='usa'?'파워그리드 미국 원본 보드':'파워그리드 한국 원본 보드';
+      boardInner='<div class="pg-germany-board pg-original-board '+cls+'"><img class="pg-map-base pg-map-base-original" src="'+src+'" alt="'+alt+'"></div>';
+      note=(boardId==='usa'?'미국':'한국')+'은 제공받은 실제 보드 사진을 그대로 표시합니다. 임의로 만든 지형/검정 음영은 사용하지 않습니다. 현재 건설 조작은 아래 도시 목록에서도 가능합니다.';
+      tag='원본 보드 표시';
     }
-    return '<div class="pg-real-map pg-germany-map"><div class="pg-real-map-head"><div><b>'+esc(def.name)+' 보드</b><div class="pg-region-chips">'+regionChips+'</div></div><span class="pg-tag">'+G.CITIES.length+'도시 · '+(state.map.edges||G.EDGES).length+'연결 자동 계산</span></div>'+boardInner+
+    return '<div class="pg-real-map pg-germany-map"><div class="pg-real-map-head"><div><b>'+esc(def.name)+' 보드</b><div class="pg-region-chips">'+regionChips+'</div></div><span class="pg-tag">'+esc(tag)+'</span></div>'+boardInner+
       '<div class="pg-map-note">'+note+'</div></div>';
   }
 

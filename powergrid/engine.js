@@ -160,7 +160,7 @@
 
   var BOARD_DEFS = {
     germany: {
-      id:'germany', name:'독일', mode:'schematic', image:null,
+      id:'germany', name:'독일', mode:'original', image:'./powergrid/assets/maps/germany.webp',
       featureTitle:'독일맵 특징',
       rules:{ uraniumStopOnPlant39:true, usaCoalStorage:false, koreaSplitMarkets:false },
       features:[
@@ -168,31 +168,31 @@
         '39번 발전소가 팔리지 않거나 등장하지 않으면 우라늄 보충 중단은 적용되지 않습니다.',
         '6개 권역 중 플레이 인원에 따라 서로 연결된 3~5개 권역만 사용합니다.',
         '선택하지 않은 권역의 도시는 건설할 수 없고 연결 경로 계산에도 사용하지 않습니다.',
-        '독일 보드는 42개 도시와 83개 연결을 데이터 좌표로 직접 그려 도시·연결선·연결비가 항상 같은 좌표계에 맞습니다.'
+        '독일 원본 보드 위에 42개 도시와 83개 연결 데이터만 겹쳐 표시하며, 제외 지역 검정 폴리곤은 사용하지 않습니다.'
       ]
     },
     usa: {
-      id:'usa', name:'미국', mode:'abstract', image:null,
+      id:'usa', name:'미국', mode:'original', image:'./powergrid/assets/maps/usa-original.png',
       featureTitle:'미국맵 특징',
       rules:{ uraniumStopOnPlant39:false, usaCoalStorage:true, koreaSplitMarkets:false },
       features:[
-        '미국맵은 동부/서부 연결비 차이가 큰 확장형 지형으로 표시됩니다.',
+        '미국은 제공받은 실제 Power Grid 미국 보드를 시작 화면과 게임 화면에 표시합니다.',
         '미국 석탄 저장고: 석탄을 발전에 사용하면 사용한 석탄은 시장 옆 저장고로 이동합니다. 석탄 시장이 완전히 비었을 때 저장고에 석탄이 남아 있으면 1개당 8 Elektro로 구매할 수 있습니다.',
         '정리 단계의 석탄 보충은 저장고의 석탄을 시장으로 되돌립니다. 따라서 저장고까지 비면 석탄은 다음 사용분이 저장고로 돌아오기 전까지 살 수 없습니다.',
         '경매·건설·자원·전력 공급은 공통 Power Grid Recharged 엔진을 사용합니다.',
-        '지도 해상도 대신 별도 연결비 오버레이와 연결비 표를 제공해 지역 간 연결 통로 비용을 확인합니다.'
+        '원본 보드의 연결비를 우선 확인하고, 화면 아래 연결비 표를 보조 정보로 제공합니다.'
       ]
     },
     korea: {
-      id:'korea', name:'한국', mode:'abstract', image:null,
+      id:'korea', name:'한국', mode:'original', image:'./powergrid/assets/maps/korea-original.png',
       featureTitle:'한국맵 특징',
       rules:{ uraniumStopOnPlant39:false, usaCoalStorage:false, koreaSplitMarkets:true },
       features:[
-        '한국맵은 제공받은 원본 보드 이미지를 그대로 사용합니다. 임의 지형/권역 디자인은 사용하지 않습니다.',
+        '한국은 제공받은 실제 Power Grid 한국 보드를 시작 화면과 게임 화면에 그대로 표시합니다.',
         '북/남 자원 시장 분리 규칙을 인게임 설명과 구매 단계에 표시합니다.',
         '한 라운드에는 북부 시장 또는 남부 시장 중 하나만 골라 구매하는 규칙을 사용합니다.',
         '자원 보충은 북부 시장을 먼저 채우고, 남은 만큼 남부 시장을 채우는 규칙을 안내합니다.',
-        '지도 해상도 대신 별도 연결비 오버레이와 연결비 표를 제공해 지역 간 연결 통로 비용을 확인합니다.'
+        '원본 보드의 연결비를 우선 확인하고, 화면 아래 연결비 표를 보조 정보로 제공합니다.'
       ]
     }
   };

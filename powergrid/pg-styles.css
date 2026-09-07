@@ -455,3 +455,24 @@ a { color: var(--accent2); }
 .pg-map-choice-original img{object-fit:contain!important;filter:none!important;background:#0b0f14}
 .pg-original-board{background:#0b0f14}
 .pg-map-base-original{object-fit:contain!important;opacity:1!important;filter:none!important;background:#0b0f14}
+
+/* v18: use the actual board photographs as the visual base. */
+.pg-original-board{position:relative;min-height:0!important;background:#0b0f14;border:1px solid #344155;border-radius:13px;overflow:hidden;margin:0 auto;line-height:0}
+.pg-original-board.pg-map-portrait{width:min(100%,675px);aspect-ratio:3 / 4}
+.pg-original-board.pg-map-landscape{width:min(100%,980px);aspect-ratio:4 / 3}
+.pg-original-board .pg-map-base-original{position:absolute!important;inset:0!important;display:block!important;width:100%!important;height:100%!important;object-fit:contain!important;opacity:1!important;filter:none!important;background:#0b0f14}
+.pg-live-board .pg-abstract-map{position:absolute;inset:0;width:100%;height:100%;z-index:1;pointer-events:none}
+.pg-live-board .pg-germany-city-marker{z-index:3}
+/* Never paint region blackout polygons on top of the printed board. */
+.pg-live-board .pg-excluded-region-overlay,.pg-live-board .pg-region-land,.pg-live-board .pg-region-land-label{display:none!important}
+
+/* Start-map cards keep each board's natural orientation so region colours are legible. */
+.pg-map-choice-preview.portrait{aspect-ratio:3 / 4}
+.pg-map-choice-preview.landscape{aspect-ratio:4 / 3}
+.pg-map-choice-preview .pg-map-choice-original{width:100%;height:100%}
+.pg-map-choice-preview .pg-map-choice-original img{width:100%;height:100%;object-fit:contain!important;filter:none!important;background:#0b0f14}
+@media(max-width:760px){
+  .pg-map-choice{grid-template-columns:116px 1fr}
+  .pg-map-choice-preview.landscape{aspect-ratio:4 / 3}
+  .pg-map-choice-preview.portrait{aspect-ratio:3 / 4}
+}
