@@ -3,7 +3,7 @@ export const configured=()=>Boolean(CFG.supabaseUrl&&CFG.supabaseAnonKey&&window
 export const sb=configured()?window.supabase.createClient(CFG.supabaseUrl,CFG.supabaseAnonKey,{auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}}):null;
 export const roomId=new URLSearchParams(location.search).get('room')||'';
 const SESSION_KEY='boardmate:member_session';
-const token=()=>localStorage.getItem(SESSION_KEY)||'';
+const token=()=>localStorage.getItem(SESSION_KEY)||sessionStorage.getItem(SESSION_KEY)||'';
 async function rpc(name,args={}){if(!sb)throw new Error('Supabase 설정이 필요합니다.');const {data,error}=await sb.rpc(name,args);if(error)throw error;return data;}
 export const esc=s=>String(s??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
 export function showFatal(message){const el=document.querySelector('#app')||document.body;el.innerHTML=`<div style="padding:24px;font-family:system-ui"><h2>게임을 열 수 없습니다.</h2><p>${esc(message)}</p><p><a href="./index.html#/multi">다인플 방 목록으로 돌아가기</a></p></div>`;throw new Error(message);}
@@ -73,41 +73,6 @@ export async function saveState(expectedRevision,state){
   void broadcastStateRevision(newRevision);
   return newRevision;
 }
-
-// Fantasy Realms uses a private-per-room state row because player hands are secret.
-// The public room_state contains only redacted game state; the private RPC returns
-// the caller's seat state (or the full host state for the authoritative host).
-export async function loadFantasyState(){
-  const t=token();
-  if(!t)throw new Error('로그인이 필요합니다.');
-  await touchPresence();
-  return await rpc('get_boardmate_fantasy_state',{p_token:t,p_room_id:roomId});
-}
-export async function saveFantasyState(expectedRevision,publicState,privateStates){
-  const t=token();
-  if(!t)throw new Error('로그인이 필요합니다.');
-  await touchPresence();
-  const newRevision=await rpc('put_boardmate_fantasy_state',{
-    p_token:t,p_room_id:roomId,p_expected_revision:expectedRevision,
-    p_public_state:publicState,p_private_states:privateStates
-  });
-  void broadcastStateRevision(newRevision);
-  return Number(newRevision);
-}
-export async function sendRoomBroadcast(event,payload={}){
-  try{
-    const ch=await getStateChannel();
-    if(!ch)return false;
-    const result=await ch.send({type:'broadcast',event,payload});
-    return result==='ok';
-  }catch(e){console.warn(`[BoardMate Realtime] ${event} broadcast failed.`,e);return false;}
-}
-export async function subscribeRoomBroadcast(event,handler){
-  const ch=await getStateChannel();
-  if(!ch)return null;
-  ch.on('broadcast',{event},msg=>{try{handler(msg?.payload??msg);}catch(e){console.warn(`[BoardMate Realtime] ${event} handler failed.`,e);}});
-  return ch;
-}
 function tier(row){const wins=Number(row?.wins||0),losses=Number(row?.losses||0),rank=Number(row?.elo_rank||0);if(rank>=1&&rank<=5)return{text:`#${rank}`,cls:'rank',title:`전체 ${rank}위`};if(wins>=2&&wins/(wins+losses||1)>=.5)return{text:'🥇',cls:'gold',title:'골드'};if(wins>=1)return{text:'🥈',cls:'silver',title:'실버'};return{text:'🥉',cls:'bronze',title:'브론즈'};}
 export async function ratingBadges(game,userIds){const rows=await rpc('boardmate_get_ratings',{p_token:token(),p_game:game,p_user_ids:userIds});return Object.fromEntries((rows||[]).map(r=>[r.user_id,tier(r)]));}
 export async function submitMatch(order){return await rpc('submit_boardmate_match',{p_token:token(),p_room_id:roomId,p_order:order});}
@@ -171,35 +136,7 @@ export function startStatePoll(onRow,options={}){
 window.addEventListener('focus',()=>touchPresence(true));
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)touchPresence(true)});
 
-export function endPanel(title='게임 종료',message='',options={}){
-  const o=options&&typeof options==='object'?options:{};
-  const outcome=String(o.outcome||'complete');
-  const tone=outcome==='win'
-    ?{icon:'🏆',accent:'#16a34a',soft:'#ecfdf5',border:'#86efac',headline:o.headline||'승리!'}
-    :outcome==='lose'
-      ?{icon:'🎯',accent:'#dc2626',soft:'#fff1f2',border:'#fda4af',headline:o.headline||'게임 종료'}
-      :outcome==='draw'
-        ?{icon:'🤝',accent:'#7c3aed',soft:'#f5f3ff',border:'#c4b5fd',headline:o.headline||'무승부'}
-        :{icon:'🏁',accent:'#d97706',soft:'#fffbeb',border:'#fcd34d',headline:o.headline||title};
-  const ranking=Array.isArray(o.ranking)?o.ranking:[];
-  const details=Array.isArray(o.details)?o.details:[];
-  const rankingHtml=ranking.length?`<div style="margin:16px auto 0;max-width:620px;display:grid;gap:7px;text-align:left">${ranking.map((r,i)=>`<div style="display:grid;grid-template-columns:42px minmax(0,1fr) auto;gap:9px;align-items:center;padding:10px 12px;border-radius:12px;background:${r.me?'#eef6ff':'#fff'};border:1px solid ${r.winner?'#f4c84a':r.me?'#93c5fd':'#e5e7eb'};box-shadow:${r.winner?'0 4px 14px #f59e0b1f':'none'}"><b style="font-size:14px;color:${r.winner?'#b45309':'#475569'}">${esc(r.place??(i+1)+'위')}</b><span style="min-width:0"><b>${esc(r.name??'')}</b>${r.sub?`<small style="display:block;color:#64748b;margin-top:2px">${esc(r.sub)}</small>`:''}</span><strong style="white-space:nowrap;color:#111827">${esc(r.value??'')}</strong></div>`).join('')}</div>`:'';
-  const detailHtml=details.length?`<div style="display:flex;gap:7px;justify-content:center;flex-wrap:wrap;margin:14px 0 0">${details.map(x=>`<span style="padding:6px 9px;border-radius:999px;background:#fff;border:1px solid #e5e7eb;color:#475569;font-size:12px;font-weight:800">${esc(x)}</span>`).join('')}</div>`:'';
-  return `<section style="margin-top:16px;padding:22px 16px;border-radius:24px;background:linear-gradient(145deg,${tone.soft},#fff);border:2px solid ${tone.border};text-align:center;box-shadow:0 16px 44px #0f172a1f;overflow:hidden;position:relative">
-    <div style="position:absolute;inset:0 0 auto;height:5px;background:${tone.accent}"></div>
-    <div style="font-size:46px;line-height:1;margin-top:2px">${tone.icon}</div>
-    <div style="font-size:11px;letter-spacing:.18em;text-transform:uppercase;font-weight:1000;color:${tone.accent};margin-top:8px">${esc(o.kicker||'FINAL RESULT')}</div>
-    <h2 style="margin:5px 0 4px;font-size:clamp(24px,5vw,38px);color:#111827">${esc(tone.headline)}</h2>
-    ${title&&tone.headline!==title?`<div style="font-weight:900;color:#334155;margin-bottom:4px">${esc(title)}</div>`:''}
-    ${message?`<p style="margin:5px auto 0;max-width:680px;color:#64748b;line-height:1.6">${esc(message)}</p>`:''}
-    ${detailHtml}${rankingHtml}
-    <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:18px">
-      <a href="./index.html#/multi" style="text-decoration:none;background:${tone.accent};color:#fff;padding:11px 16px;border-radius:12px;font-weight:950;box-shadow:0 6px 18px #0002">다인플 목록으로 나가기</a>
-      <a href="./index.html#/" style="text-decoration:none;background:#111827;color:#fff;padding:11px 16px;border-radius:12px;font-weight:900">홈으로</a>
-      <a href="./index.html#/room/${encodeURIComponent(roomId)}" style="text-decoration:none;background:#fff;color:#334155;border:1px solid #cbd5e1;padding:11px 16px;border-radius:12px;font-weight:900">방 결과 보기</a>
-    </div>
-  </section>`;
-}
+export function endPanel(title='게임 종료',message=''){return `<section style="margin-top:14px;padding:18px;border-radius:18px;background:#fffdf3;border:2px solid #e7c45a;text-align:center;box-shadow:0 8px 24px #00000012"><h2 style="margin:0 0 6px">${esc(title)}</h2>${message?`<p style="margin:0 0 14px;color:#64748b">${esc(message)}</p>`:''}<div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap"><a href="./index.html#/" style="text-decoration:none;background:#111827;color:#fff;padding:10px 14px;border-radius:11px;font-weight:900">← 홈으로</a><a href="./index.html#/multi" style="text-decoration:none;background:#f36f21;color:#fff;padding:10px 14px;border-radius:11px;font-weight:900">다인플 목록</a><a href="./index.html#/room/${encodeURIComponent(roomId)}" style="text-decoration:none;background:#fff;color:#334155;border:1px solid #cbd5e1;padding:10px 14px;border-radius:11px;font-weight:900">방으로 돌아가기</a></div></section>`;}
 
 
 // ───────────────────── unanimous game-cancel vote ─────────────────────

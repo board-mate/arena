@@ -79,7 +79,7 @@ if (!configured() || !roomId) {
 // ── 상태 ──────────────────────────────────────────────────────────
 let me, room, members, badges = {}, mySeat = -1;
 let revision = 0, state = null, frame = null;
-let saving = false, pending = null, submitted = false, finalOrder = null;
+let saving = false, pending = null, submitted = false;
 
 const sync  = document.getElementById('sync');
 const playersEl = document.getElementById('players');
@@ -88,7 +88,7 @@ const endEl = document.getElementById('end');
 // ── 플레이어 목록 렌더 ────────────────────────────────────────────
 function drawPlayers() {
   if (!members) return;
-  const current = Number(state?.currentSeat ?? state?.currentPlayer ?? -1);
+  const current = Number(state?.currentPlayer ?? -1);
   playersEl.innerHTML = members.map((m, i) => {
     const tier  = badges[m.user_id]?.text || '🥉';
     const isMe  = i === mySeat;
@@ -111,33 +111,15 @@ function sendState() {
 }
 
 // ── iframe → 저장 큐 ─────────────────────────────────────────────
-function parsePayload(x) {
-  if (!x) return null;
-  try { return typeof x === 'string' ? JSON.parse(x) : x; }
-  catch { return null; }
-}
-
-function canCommitFromThisSeat(nextParsed) {
-  const prev = parsePayload(state?.payload);
-  if (!prev) return room?.host_id === me?.user_id; // 최초 상태는 방장만 생성
-  if (prev.phase === 'end') return false;
-  if (prev.phase === 'draft') return Number(prev.draftCurrentPlayer ?? 0) === mySeat;
-  return Number(prev.currentPlayer ?? 0) === mySeat;
-}
-
 function queuePayload(rawPayload) {
-  const parsed = parsePayload(rawPayload);
-  if (!parsed?.players || parsed.players.length !== 2) return;
-  if (!canCommitFromThisSeat(parsed)) {
-    sync.textContent = '상대 차례 · 읽기 전용';
-    sendState();
-    return;
-  }
+  let parsed;
+  try { parsed = typeof rawPayload === 'string' ? JSON.parse(rawPayload) : rawPayload; }
+  catch { return; }
+  if (!parsed) return;
 
   pending = {
     kind: 'pokemon-minima-v1-boardmate',
     payload: typeof rawPayload === 'string' ? rawPayload : JSON.stringify(rawPayload),
-    currentSeat: Number(parsed.currentPlayer ?? 0),
     currentPlayer: Number(parsed.currentPlayer ?? 0),
     phase:  String(parsed.phase || 'playing'),
     round:  Number(parsed.round || 1),
@@ -193,17 +175,12 @@ async function submitResult(finalOrder) {
 // ── 종료 패널 ─────────────────────────────────────────────────────
 function showEnd() {
   if (!state || state.phase !== 'end') return;
-  const order=Array.isArray(finalOrder)?finalOrder:[0,1];
-  const myPlace=order.indexOf(mySeat)+1;
-  endEl.innerHTML = endPanel(
-    '포켓몬 미니마 최종 결과',
-    '게임 화면의 최종 점수표와 함께 결과가 BoardMate에 저장됩니다.',
-    {
-      outcome:myPlace===1?'win':'lose',
-      headline:myPlace===1?'1위 · 승리!':`${myPlace}위`,
-      ranking:order.map((seat,n)=>({place:`${n+1}위`,name:members[seat]?.nickname||`플레이어 ${seat+1}`,value:'최종 점수표 확인',me:seat===mySeat,winner:n===0}))
-    }
-  );
+  if (!endEl.innerHTML) {
+    endEl.innerHTML = endPanel(
+      '포켓몬 미니마 종료',
+      '최종 점수를 확인한 뒤 홈이나 다인플 목록으로 돌아갈 수 있습니다.'
+    );
+  }
 }
 
 // ── iframe 메시지 수신 ────────────────────────────────────────────
@@ -222,9 +199,7 @@ window.addEventListener('message', e => {
   }
   // 게임 종료 결과
   if (e.data?.type === 'game_result') {
-    finalOrder = Array.isArray(e.data.order) ? e.data.order.map(Number) : null;
-    submitResult(finalOrder);
-    showEnd();
+    submitResult(e.data.order);
     return;
   }
 });
@@ -265,7 +240,7 @@ window.addEventListener('message', e => {
     frame = document.getElementById('gameFrame');
     const names   = encodeURIComponent(JSON.stringify(members.map(m => m.nickname)));
     const isHost  = room.host_id === me.user_id ? '1' : '0';
-    frame.src = `./pokemon-minima.html?online=1&seat=${mySeat}&host=${isHost}&names=${names}&v=8`;
+    frame.src = `./pokemon-minima.html?online=1&seat=${mySeat}&host=${isHost}&names=${names}`;
     frame.addEventListener('load', sendState);
 
     showEnd();
@@ -280,7 +255,7 @@ window.addEventListener('message', e => {
         sendState();
         showEnd();
       }
-    }, { interval: 2000 });
+    }, { interval: 10000 });
 
     sync.textContent = '연결됨';
 

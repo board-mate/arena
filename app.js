@@ -18,8 +18,8 @@ const MEMBER_SESSION_KEY=STORAGE_PREFIX+'member_session';
 let routeCleanups=[];
 function addCleanup(fn){ routeCleanups.push(fn); }
 function clearRouteCleanups(){ routeCleanups.splice(0).forEach(fn=>{try{fn();}catch{}}); }
-function memberToken(){return localStorage.getItem(MEMBER_SESSION_KEY)||'';}
-function saveMemberToken(t){if(t)localStorage.setItem(MEMBER_SESSION_KEY,t);else localStorage.removeItem(MEMBER_SESSION_KEY);}
+function memberToken(){return localStorage.getItem(MEMBER_SESSION_KEY)||sessionStorage.getItem(MEMBER_SESSION_KEY)||'';}
+function saveMemberToken(t,remember=true){localStorage.removeItem(MEMBER_SESSION_KEY);sessionStorage.removeItem(MEMBER_SESSION_KEY);if(t)(remember?localStorage:sessionStorage).setItem(MEMBER_SESSION_KEY,t);}
 async function callRpc(name,args={}){if(!sb)throw new Error('Supabase 설정이 필요합니다.');const {data,error}=await sb.rpc(name,args);if(error)throw error;return data;}
 async function authSession(){return memberToken()||null;}
 async function authProfile(){const token=memberToken();if(!token)return null;try{return await callRpc('boardmate_me',{p_token:token});}catch(e){return null;}}
@@ -38,9 +38,10 @@ function gameInfo(game){
     thegame:{name:'더 게임',icon:'🃏',min:2,max:5},
     kraken:{name:'노터치 크라켄',icon:'🐙',min:3,max:8},
     cascadia:{name:'캐스캐디아',icon:'🌲',min:2,max:4},
-    pocketnova:{name:'포켓몬 미니마',icon:'🎮',min:2,max:2,page:'online-pokemon-minima.html'},
+    pocketnova:{name:'포켓몬 미니마',icon:'⚡',min:2,max:2,page:'online-pokemon-minima.html'},
     fantasyrealms:{name:'판타지 왕국',icon:'🏰',min:3,max:6,page:'online-fantasy-realms.html'},
-    powergrid:{name:'파워그리드',icon:'🔌',min:2,max:6,page:'online-powergrid.html'},
+    plakoro:{name:'프라코로',icon:'🎲',min:2,max:2,page:'online-plakoro.html'},
+    powergrid:{name:'파워그리드 독일 β',icon:'🔌',min:2,max:6,page:'online-powergrid.html'},
     avalon:{name:'레지스탕스 아발론',icon:'⚔️',min:5,max:10,page:'online-avalon.html',mode:'realtime'},
     secrethitler:{name:'시크릿 히틀러',icon:'🗳️',min:5,max:10,page:'online-secret-hitler.html',mode:'realtime'},
     onenightwerewolf:{name:'한밤의 늑대인간',icon:'🌕',min:3,max:10,page:'online-one-night-werewolf.html',mode:'realtime'}
@@ -59,10 +60,74 @@ function toast(message){
   const el=document.createElement('div'); el.className='toast'; el.textContent=message; document.body.appendChild(el);
   setTimeout(()=>el.remove(),2200);
 }
+let deferredInstallPrompt=null;
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredInstallPrompt=e;});
+window.addEventListener('appinstalled',()=>{deferredInstallPrompt=null;toast('BoardMate 앱이 설치되었습니다.');});
+function ensureSiteFeatures(){
+  if(document.getElementById('boardmate-site-style')) return;
+  const st=document.createElement('style'); st.id='boardmate-site-style'; st.textContent=`
+    .site-info-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:16px}
+    .site-info-card{display:block;text-decoration:none;color:inherit;background:rgba(20,25,34,.72);border:1px solid var(--line,#2b3341);border-radius:14px;padding:16px;transition:.15s}
+    .site-info-card:hover{transform:translateY(-2px);border-color:#76839a}
+    .site-info-card .info-icon{font-size:28px;margin-bottom:9px}.site-info-card h3{margin:0 0 6px}.site-info-card p{margin:0;color:var(--muted);font-size:.88rem;line-height:1.55}
+    .info-panel{max-width:860px;margin:0 auto;background:rgba(20,25,34,.8);border:1px solid var(--line,#2b3341);border-radius:16px;padding:20px;line-height:1.7}
+    .info-panel h2{margin-top:22px}.info-panel h2:first-child{margin-top:0}.info-panel .notice{padding:12px 14px;border-radius:10px;background:rgba(68,85,110,.25);border:1px solid rgba(120,140,170,.24)}
+    .install-box{padding:16px;border-radius:14px;background:rgba(18,29,45,.9);border:1px solid var(--line,#2b3341);margin-top:14px}
+    .login-remember{display:flex;align-items:center;gap:8px;margin:12px 0;color:var(--muted);font-size:.86rem}.login-remember input{width:auto}
+    .footer-text-btn{background:none;border:0;color:inherit;font:inherit;padding:0;cursor:pointer}.footer-text-btn:hover{text-decoration:underline}
+    .site-info-grid .site-info-card{min-height:132px}
+    @media(max-width:850px){.site-info-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:520px){.site-info-grid{grid-template-columns:1fr}}
+  `; document.head.appendChild(st);
+  if(!document.querySelector('link[rel="manifest"]')){const l=document.createElement('link');l.rel='manifest';l.href='./manifest.webmanifest';document.head.appendChild(l);}
+  if(!document.querySelector('meta[name="theme-color"]')){const m=document.createElement('meta');m.name='theme-color';m.content='#141922';document.head.appendChild(m);}
+  if(!document.querySelector('link[rel="manifest"]')){const l=document.createElement('link');l.rel='manifest';l.href='./manifest.webmanifest';document.head.appendChild(l);}
+  if('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js',{scope:'./'}).catch(()=>{});
+}
+async function installBoardMate(){
+  if(deferredInstallPrompt){
+    deferredInstallPrompt.prompt();
+    try{await deferredInstallPrompt.userChoice;}catch{}
+    deferredInstallPrompt=null;
+    return;
+  }
+  location.hash='#/install';
+}
+function renderInfoPage(kind){
+  const pages={
+    install:{title:'📲 앱 설치',lead:'BoardMate를 앱처럼 빠르게 열 수 있습니다.',html:`
+      <h2>안드로이드 · Chrome 계열</h2>
+      <div class="install-box"><b>1. 앱 설치</b><p>브라우저 메뉴(⋮)를 엽니다.</p><p>「앱 설치」또는「바로가기 만들기」를 선택합니다.</p><button class="primary" id="installNow">📲 앱으로 설치 시도</button></div>
+      <h2>PC · Chrome / Edge</h2>
+      <div class="install-box"><p>주소창 오른쪽의 설치 아이콘이 표시되면 눌러 설치할 수 있습니다. 아이콘이 없으면 브라우저 메뉴(⋮) → 「앱 설치」 또는 「바로가기 만들기」를 선택하세요.</p></div>
+      <h2>iPhone / iPad · Safari</h2>
+      <div class="install-box"><p>공유 버튼 → 「홈 화면에 추가」를 선택하면 홈 화면에서 앱처럼 실행할 수 있습니다.</p></div>
+      <div class="notice">브라우저와 기기에 따라 설치 메뉴의 이름과 위치가 조금 다를 수 있습니다.</div>`},
+    usage:{title:'📘 이용안내',lead:'BoardMate Arena의 기본 이용 방법입니다.',html:`
+      <h2>회원</h2><p>닉네임과 비밀번호/PIN으로 로그인합니다. 로그인하면 다인플 방 생성, 참가, 재접속 기능을 이용할 수 있습니다.</p>
+      <h2>다인플</h2><p>「다인플 → 방 만들기」에서 원하는 게임을 선택해 방을 만들고, 다른 모임원은 열린 방에서 참가하면 됩니다. 게임별 최소/최대 인원은 게임 규칙에 맞춰 제한됩니다.</p>
+      <h2>자동 저장 · 재접속</h2><p>온라인 게임은 행동 후 상태를 Supabase에 저장합니다. Realtime 연결이 가능한 경우 즉시 동기화하고, 연결이 불안정하면 polling으로 상태를 보완합니다.</p>
+      <h2>게임 주의사항</h2><p>BoardMate의 일부 게임은 원작 보드게임 규칙을 참고한 커뮤니티용 디지털 구현입니다. 게임별 구현 범위와 미지원 확장판은 해당 게임 화면에서 확인하세요.</p>`},
+    copyright:{title:'© 저작권 안내',lead:'BoardMate는 보드게임 모임용 비공식 커뮤니티 서비스입니다.',html:`
+      <h2>원저작물</h2><p>각 게임의 이름, 규칙, 일러스트, 캐릭터, 상표 및 관련 지식재산권은 각 원저작권자에게 귀속됩니다. BoardMate는 해당 권리를 주장하지 않습니다.</p>
+      <h2>비공식 디지털 구현</h2><p>BoardMate는 모임의 테스트·친목·플레이 편의를 위해 디지털 게임을 제공하며, 공식 게임 서비스나 공식 라이선스 제품을 의미하지 않습니다.</p>
+      <h2>프라코로</h2><p>프라코로 및 Pokémon 관련 명칭과 지식재산은 각 권리자에게 귀속됩니다. BoardMate의 프라코로 페이지는 커뮤니티용 비공식 디지털 구현입니다.</p>
+      <h2>콘텐츠 삭제 요청</h2><p>권리자 또는 권한 있는 담당자가 삭제/수정이 필요한 콘텐츠를 발견한 경우 아래 문의 채널로 알려주세요.</p>`},
+    contact:{title:'✉ 문의 안내',lead:'게임 오류, 회원 문제, 권리 관련 문의를 보내주세요.',html:`
+      <h2>문의 채널</h2><p>가장 빠른 방법은 Board Mate 공식 소셜 채널을 이용하는 것입니다.</p>
+      <div class="actions"><a class="primary link-btn" href="${LINKS.instagram}" target="_blank" rel="noreferrer">📷 Instagram 문의</a><a class="ghost link-btn" href="${LINKS.somoim}" target="_blank" rel="noreferrer">👥 소모임 문의</a></div>
+      <h2>버그 제보</h2><p>게임명, 방 코드(가능한 경우), 사용 기기/브라우저, 발생한 행동과 오류 화면을 함께 알려주면 확인하기 쉽습니다.</p>
+      <h2>개인정보가 포함된 제보</h2><p>비밀번호/PIN, 세션 토큰 등 민감한 인증정보는 메시지에 보내지 마세요.</p>`}
+  };
+  const x=pages[kind]||pages.usage;
+  shell(`<div class="page-head"><div><h1>${x.title}</h1><p>${x.lead}</p></div><div class="actions"><button class="ghost" id="backHome">← 홈</button></div></div><section class="info-panel">${x.html}</section>`);
+  document.querySelector('#backHome').onclick=()=>location.hash='#/';
+  document.querySelector('#installNow')?.addEventListener('click',installBoardMate);
+}
 function footer(){
-  return `<footer class="footer"><span>© BoardMate · 모임원용 게임 아케이드</span><div class="footer-links"><a href="${LINKS.instagram}" target="_blank" rel="noreferrer">Instagram</a><a href="${LINKS.somoim}" target="_blank" rel="noreferrer">소모임</a><a href="${LINKS.shop}" target="_blank" rel="noreferrer">마플샵</a></div></footer>`;
+  return `<footer class="footer"><span>© BoardMate · 모임원용 게임 아케이드</span><div class="footer-links"><button class="footer-text-btn" onclick="location.hash='#/install'">📲 앱 설치</button><button class="footer-text-btn" onclick="location.hash='#/usage'">이용안내</button><button class="footer-text-btn" onclick="location.hash='#/copyright'">저작권 안내</button><button class="footer-text-btn" onclick="location.hash='#/contact'">문의 안내</button><a href="${LINKS.instagram}" target="_blank" rel="noreferrer">Instagram</a><a href="${LINKS.somoim}" target="_blank" rel="noreferrer">소모임</a><a href="${LINKS.shop}" target="_blank" rel="noreferrer">마플샵</a></div></footer>`;
 }
 function shell(content){
+  ensureSiteFeatures();
   app.innerHTML=`<div class="app-shell"><header class="topbar"><button class="brand-btn" id="homeBtn"><span class="brand-mark">●</span> BOARDMATE</button><nav class="topnav"><button data-nav="">미니게임</button><button data-nav="solo">1인플</button><button data-nav="multi">다인플</button><button data-nav="mypage">마이페이지</button></nav><div class="top-date">${formatDate(kstDate())}</div></header><main class="container">${content}${footer()}</main></div>`;
   document.querySelector('#homeBtn')?.addEventListener('click',()=>location.hash='#/');
   document.querySelectorAll('[data-nav]').forEach(b=>b.onclick=()=>location.hash=`#/${b.dataset.nav}`);
@@ -187,8 +252,9 @@ function rollOne(){const a=new Uint32Array(1);crypto.getRandomValues(a);return a
 // -------------------- pages --------------------
 async function renderHome(){
   shell(`<section class="hero"><div><h1><span>BoardMate</span> Arcade</h1><p>보드메이트에서 같이 즐기는 웹 보드게임 공간.<br>미니게임, AI 연습, 로그인 기반 온라인 방을 한 곳에 모았습니다.</p><div class="social-links"><a class="social-link" href="${LINKS.instagram}" target="_blank" rel="noreferrer">📷 Instagram</a><a class="social-link" href="${LINKS.somoim}" target="_blank" rel="noreferrer">👥 소모임</a><a class="social-link" href="${LINKS.shop}" target="_blank" rel="noreferrer">🛍 마플샵</a></div></div><div class="hero-badge">🎲</div></section>
-  <section class="mode-grid"><button class="mode-card" data-go="solo"><span>🧠</span><b>1인플 · AI/솔로</b><small>마스크맨 / 어콰이어 / 캘리코 / 캐스캐디아 / 포켓몬 미니마 / 에친스톤 / 더 게임</small></button><button class="mode-card" data-go="multi"><span>🌐</span><b>다인플 · 온라인 방</b><small>자동 저장 · 재접속 · 게임별 티어</small></button></section>
-  <div class="section-title"><h2>미니게임</h2><small>${formatDate(kstDate())} · KST</small></div><section class="game-grid daily-two">${homeCard('pensterdam','🧩','펜토리니','도움칸 적게 사용 → 동률이면 먼저 클리어')} ${homeCard('yahtzee','🎲','Yahtzee','언제든 플레이 · 올타임 최고 점수')}</section><div id="connection"></div>`);
+  <section class="mode-grid"><button class="mode-card" data-go="solo"><span>🧠</span><b>1인플 · AI/솔로</b><small>마스크맨 / 어콰이어 / 캘리코 / 캐스캐디아 / 포켓몬 미니마 / 더 게임</small></button><button class="mode-card" data-go="multi"><span>🌐</span><b>다인플 · 온라인 방</b><small>자동 저장 · 재접속 · 게임별 티어</small></button></section>
+  <div class="section-title"><h2>미니게임</h2><small>${formatDate(kstDate())} · KST</small></div><section class="game-grid daily-two">${homeCard('pensterdam','🧩','펜토리니','도움칸 적게 사용 → 동률이면 먼저 클리어')} ${homeCard('yahtzee','🎲','Yahtzee','언제든 플레이 · 올타임 최고 점수')}</section>
+  <section class="site-info-grid"><a class="site-info-card" href="#/install"><div class="info-icon">📲</div><h3>앱 설치</h3><p>휴대폰과 PC에서 BoardMate를 앱처럼 실행하는 방법을 안내합니다.</p></a><a class="site-info-card" href="#/usage"><div class="info-icon">📘</div><h3>이용안내</h3><p>회원가입, 자동 로그인, 다인플 방 만들기와 재접속 방법입니다.</p></a><a class="site-info-card" href="#/copyright"><div class="info-icon">©️</div><h3>저작권 안내</h3><p>비공식 커뮤니티 서비스와 각 게임 권리자에 관한 안내입니다.</p></a><a class="site-info-card" href="#/contact"><div class="info-icon">✉️</div><h3>문의 안내</h3><p>게임 오류와 서비스 문의, 콘텐츠 삭제 요청 방법을 확인합니다.</p></a></section><div id="connection"></div>`);
   document.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>location.hash=`#/${b.dataset.go}`);
   for(const g of ['pensterdam','yahtzee']){const data=await loadLeaderboard(g,5);const el=document.querySelector(`#lb-${g}`);if(el)el.innerHTML=leaderboardHtml(g,data,false);}
   bindHome();
@@ -204,8 +270,7 @@ function renderSolo(){
     <article class="library-card acquire"><div class="library-icon">🏙️</div><h2>어콰이어</h2><p>타일 배치, 호텔 체인, 주식과 합병을 AI들과 연습합니다.</p><span class="save-badge">💾 로컬 자동 저장</span><a class="primary link-btn" href="./solo-acquire.html">AI와 대전</a></article>
     <article class="library-card calico"><div class="library-icon">🧵</div><h2>캘리코</h2><p>공개된 MyAutoma 구현을 BoardMate 상단바 안에서 엽니다.</p><span class="save-badge external">외부 게임 · BoardMate 저장 제외</span><a class="primary link-btn" href="./solo-calico.html">솔로 게임 열기</a></article>
     <article class="library-card cascadia"><div class="library-icon">🌲</div><h2>캐스캐디아</h2><p>공개 Cascadia 웹 구현을 BoardMate 상단바 안에서 엽니다.</p><span class="save-badge external">외부 게임 · BoardMate 저장 제외</span><a class="primary link-btn" href="./solo-cascadia.html">솔로 게임 열기</a></article>
-    <article class="library-card pocketnova"><div class="library-icon">🎮</div><h2>포켓몬 미니마</h2><p>아크 미니마 × 포켓몬 리테마. 18장의 카드로 펼치는 2인 전략 게임이며 ARMIN 솔로를 지원합니다.</p><span class="save-badge">💾 로컬 자동 저장</span><a class="primary link-btn" href="./solo-pokemon-minima.html">솔로 플레이</a></article>
-    <article class="library-card etchinstone"><div class="library-icon">🐉</div><h2>에친스톤의 용들</h2><p>16장의 마법사 카드로 4개 지역을 돌파하고 최후의 용과 싸우는 1인 전용 손패 관리 모험입니다.</p><span class="save-badge">💾 로컬 자동 저장</span><a class="primary link-btn" href="./solo-etchinstone.html">모험 시작</a></article>
+    <article class="library-card pocketnova"><div class="library-icon">⚡</div><h2>포켓몬 미니마</h2><p>1~2인용 포켓몬 미니마를 브라우저에서 플레이합니다.</p><span class="save-badge">💾 로컬 저장 · 1~2인</span><a class="primary link-btn" href="./solo-pokemon-minima.html">1인플 플레이</a></article>
     <article class="library-card thegame"><div class="library-icon">🃏</div><h2>더 게임</h2><p>업로드한 HTML로 1인 솔로 플레이. ±10 되돌리기 규칙을 지원합니다.</p><span class="save-badge">💾 로컬 자동 저장</span><a class="primary link-btn" href="./solo-thegame.html">솔로 플레이</a></article>
   </section>`);
   document.querySelector('#backHome').onclick=()=>location.hash='#/';
@@ -218,10 +283,11 @@ async function loadRatingMap(game,userIds){
 async function renderLoginPage(){
   if(!onlineConfigured()){shell(`<div class="page-head"><div><h1>🔐 로그인</h1><p>Supabase 연결 후 사용할 수 있습니다.</p></div></div><div class="connection-note">config.js 설정과 v11 supabase.sql 실행이 필요합니다.</div>`);return;}
   const me=await authProfile();if(me){location.hash='#/mypage';return;}
-  shell(`<div class="page-head"><div><h1>🔐 BoardMate 로그인</h1><p>닉네임과 비밀번호/PIN만 사용합니다.</p></div><div class="actions"><button class="ghost" id="backHome">← 홈</button></div></div><section class="auth-card standalone-auth"><div class="auth-tabs"><button class="active" data-auth-tab="login">로그인</button><button data-auth-tab="signup">회원가입</button></div><form id="authForm"><input id="authNick" maxlength="20" placeholder="닉네임" required><input id="authPass" type="password" minlength="4" maxlength="72" placeholder="비밀번호/PIN (4자 이상)" required><button class="primary" id="authSubmit">로그인</button><div id="authStatus" class="bonus-note"></div></form><p class="auth-note">이메일 인증은 사용하지 않습니다. 비밀번호 원문은 저장하지 않고 해시만 저장합니다.</p></section>`);
+  shell(`<div class="page-head"><div><h1>🔐 BoardMate 로그인</h1><p>닉네임과 비밀번호/PIN만 사용합니다.</p></div><div class="actions"><button class="ghost" id="backHome">← 홈</button></div></div><section class="auth-card standalone-auth"><div class="auth-tabs"><button class="active" data-auth-tab="login">로그인</button><button data-auth-tab="signup">회원가입</button></div><form id="authForm"><input id="authNick" maxlength="20" placeholder="닉네임" required><input id="authPass" type="password" minlength="4" maxlength="72" placeholder="비밀번호/PIN (4자 이상)" required><label class="login-remember"><input id="autoLogin" type="checkbox" checked> 이 기기에서 자동 로그인</label><button class="primary" id="authSubmit">로그인</button><div id="authStatus" class="bonus-note"></div></form><p class="auth-note">이메일 인증은 사용하지 않습니다. 비밀번호 원문은 저장하지 않고 해시만 저장합니다.</p></section>`);
+  const rememberBox=document.querySelector('#autoLogin'); if(rememberBox) rememberBox.checked=localStorage.getItem(STORAGE_PREFIX+'auto_login')!=='0';
   document.querySelector('#backHome').onclick=()=>location.hash='#/';let mode='login';
   document.querySelectorAll('[data-auth-tab]').forEach(b=>b.onclick=()=>{mode=b.dataset.authTab;document.querySelectorAll('[data-auth-tab]').forEach(x=>x.classList.toggle('active',x===b));document.querySelector('#authSubmit').textContent=mode==='login'?'로그인':'회원가입';});
-  document.querySelector('#authForm').onsubmit=async e=>{e.preventDefault();const n=document.querySelector('#authNick').value.trim(),pw=document.querySelector('#authPass').value,st=document.querySelector('#authStatus'),btn=document.querySelector('#authSubmit');if(!n||pw.length<4){st.textContent='닉네임과 4자 이상 비밀번호를 입력하세요.';return;}btn.disabled=true;st.textContent='처리 중…';try{const data=await callRpc(mode==='signup'?'boardmate_register':'boardmate_login',{p_nickname:n,p_password:pw});if(!data?.token)throw new Error('로그인 토큰을 받지 못했습니다.');saveMemberToken(data.token);location.hash=mode==='signup'?'#/mypage':'#/multi';}catch(err){st.textContent=String(err.message||err).replace(/^.*?exception:\s*/i,'');}finally{btn.disabled=false;}};
+  document.querySelector('#authForm').onsubmit=async e=>{e.preventDefault();const n=document.querySelector('#authNick').value.trim(),pw=document.querySelector('#authPass').value,st=document.querySelector('#authStatus'),btn=document.querySelector('#authSubmit');if(!n||pw.length<4){st.textContent='닉네임과 4자 이상 비밀번호를 입력하세요.';return;}btn.disabled=true;st.textContent='처리 중…';try{const data=await callRpc(mode==='signup'?'boardmate_register':'boardmate_login',{p_nickname:n,p_password:pw});if(!data?.token)throw new Error('로그인 토큰을 받지 못했습니다.');const remember=Boolean(document.querySelector('#autoLogin')?.checked);saveMemberToken(data.token,remember);localStorage.setItem(STORAGE_PREFIX+'auto_login',remember?'1':'0');location.hash=mode==='signup'?'#/mypage':'#/multi';}catch(err){st.textContent=String(err.message||err).replace(/^.*?exception:\s*/i,'');}finally{btn.disabled=false;}};
 }
 
 async function renderMyPage(){
@@ -248,11 +314,11 @@ async function renderMyPage(){
 
 async function renderCreateRoom(){
   if(!onlineConfigured())return renderMulti();const me=await authProfile();if(!me){location.hash='#/login';return;}
-  const games=['maskmen','acquire','calico','cascadia','pocketnova','powergrid','thegame','kraken','fantasyrealms','avalon','secrethitler','onenightwerewolf'];let selected='maskmen';
+  const games=['maskmen','acquire','calico','cascadia','pocketnova','plakoro','powergrid','thegame','kraken','fantasyrealms','avalon','secrethitler','onenightwerewolf'];let selected='maskmen';
   shell(`<div class="page-head"><div><h1>➕ 새 방 만들기</h1><p>게임을 고르고 바로 방을 만드세요. 제목을 비우면 닉네임과 게임 이름으로 자동 생성됩니다.</p></div><div class="actions"><button class="ghost" id="backMulti">← 방 목록</button></div></div><section class="room-maker"><label>방 제목 <small>선택 사항</small></label><input id="roomTitle" maxlength="40" placeholder="비워두면 예: ${esc(me.nickname)}의 마스크맨 한 판"><div class="turn-system-note"><b>⏳ 모든 게임은 BoardMate Supabase 방 + Realtime</b><span>판타지 왕국도 다른 게임과 동일한 방 생성·참가·재접속 흐름으로 운영됩니다.</span></div><h2>게임 선택</h2><div id="roomGameGrid" class="library-grid compact-games">${games.map(g=>{const x=gameInfo(g);return `<button class="library-card game-choice ${g==='maskmen'?'selected':''}" data-room-game="${g}"><div class="library-icon">${x.icon}</div><h2>${x.name}</h2><p>${x.min}명부터 · 최대 ${x.max}명</p></button>`;}).join('')}</div><button class="primary create-room-submit" id="createRoomBtn">선택한 게임으로 방 만들기</button><div id="roomStatus" class="bonus-note"></div></section>`);
   document.querySelector('#backMulti').onclick=()=>location.hash='#/multi';
   document.querySelectorAll('[data-room-game]').forEach(b=>b.onclick=()=>{selected=b.dataset.roomGame;document.querySelectorAll('[data-room-game]').forEach(x=>x.classList.toggle('selected',x===b));const title=document.querySelector('#roomTitle');if(!title.value)title.placeholder=`비워두면 예: ${me.nickname}의 ${gameInfo(selected).name} 한 판`;});
-  document.querySelector('#createRoomBtn').onclick=async()=>{const title=document.querySelector('#roomTitle').value.trim(),st=document.querySelector('#roomStatus');st.textContent='';const social=['avalon','secrethitler','onenightwerewolf'].includes(selected);try{let id;try{id=await callRpc('create_boardmate_room_v10',{p_token:memberToken(),p_title:title,p_game:selected});}catch(v10e){const v10missing=/create_boardmate_room_v10|PGRST202|schema cache/i.test(String(v10e?.message||v10e));if(!v10missing)throw v10e;if(social)throw new Error('소셜 디덕션 Supabase 업데이트가 필요합니다. SUPABASE_SOCIAL_DEDUCTION_V1.sql을 먼저 실행하세요.');try{id=await callRpc('create_boardmate_room_v9',{p_token:memberToken(),p_title:title,p_game:selected});}catch(v9e){const v9missing=/create_boardmate_room_v9|PGRST202|schema cache/i.test(String(v9e?.message||v9e));if(!v9missing)throw v9e;if(selected==='powergrid')throw new Error('파워그리드용 Supabase 업데이트가 필요합니다. SUPABASE_POWERGRID_UNIFIED.sql을 먼저 실행하세요.');try{id=await callRpc('create_boardmate_room_v8',{p_token:memberToken(),p_title:title,p_game:selected});}catch(e){const missing=/create_boardmate_room_v8|PGRST202|schema cache/i.test(String(e?.message||e));if(!missing)throw e;try{id=await callRpc('create_boardmate_room_v7',{p_token:memberToken(),p_title:title,p_game:selected,p_play_mode:'turn'});}catch(fallbackErr){const fallbackMissing=/create_boardmate_room_v7|PGRST202|schema cache|지원하지 않는 게임/i.test(String(fallbackErr?.message||fallbackErr));if(fallbackMissing)throw new Error('Supabase 방 생성 RPC가 아직 적용되지 않았습니다. SQL 업데이트를 적용한 뒤 다시 시도하세요.');throw fallbackErr;}}}}location.hash=`#/room/${id}`;}catch(e){const msg=String(e?.message||e||'');st.textContent=/boardmate_rooms_max_players_check/i.test(msg)?'Supabase 방 최대 인원 제한이 아직 8명입니다. SUPABASE_SOCIAL_ROOM_CAPACITY_FIX.sql을 SQL Editor에서 실행한 뒤 다시 방을 만들어주세요.':msg;}};
+  document.querySelector('#createRoomBtn').onclick=async()=>{const title=document.querySelector('#roomTitle').value.trim(),st=document.querySelector('#roomStatus');st.textContent='';const social=['avalon','secrethitler','onenightwerewolf'].includes(selected);try{let id;try{id=await callRpc('create_boardmate_room_v10',{p_token:memberToken(),p_title:title,p_game:selected});}catch(v10e){const v10missing=/create_boardmate_room_v10|PGRST202|schema cache/i.test(String(v10e?.message||v10e));if(!v10missing)throw v10e;if(social)throw new Error('소셜 디덕션 Supabase 업데이트가 필요합니다. SUPABASE_SOCIAL_DEDUCTION_V1.sql을 먼저 실행하세요.');if(selected==='plakoro')throw new Error('프라코로용 Supabase 업데이트가 필요합니다. SUPABASE_BOARDMATE_GAME_CATALOG_V2.sql을 먼저 실행하세요.');try{id=await callRpc('create_boardmate_room_v9',{p_token:memberToken(),p_title:title,p_game:selected});}catch(v9e){const v9missing=/create_boardmate_room_v9|PGRST202|schema cache/i.test(String(v9e?.message||v9e));if(!v9missing)throw v9e;if(selected==='powergrid')throw new Error('파워그리드용 Supabase 업데이트가 필요합니다. SUPABASE_POWERGRID_UNIFIED.sql을 먼저 실행하세요.');try{id=await callRpc('create_boardmate_room_v8',{p_token:memberToken(),p_title:title,p_game:selected});}catch(e){const missing=/create_boardmate_room_v8|PGRST202|schema cache/i.test(String(e?.message||e));if(!missing)throw e;try{id=await callRpc('create_boardmate_room_v7',{p_token:memberToken(),p_title:title,p_game:selected,p_play_mode:'turn'});}catch(fallbackErr){const fallbackMissing=/create_boardmate_room_v7|PGRST202|schema cache|지원하지 않는 게임/i.test(String(fallbackErr?.message||fallbackErr));if(fallbackMissing)throw new Error('Supabase 방 생성 RPC가 아직 적용되지 않았습니다. SQL 업데이트를 적용한 뒤 다시 시도하세요.');throw fallbackErr;}}}}location.hash=`#/room/${id}`;}catch(e){st.textContent=e.message;}};
 }
 
 async function renderMulti(){
@@ -336,6 +402,10 @@ async function router(){
   if(route==='mypage')return renderMyPage();
   if(route==='multi')return renderMulti();
   if(route==='new-room')return renderCreateRoom();
+  if(route==='install')return renderInfoPage('install');
+  if(route==='usage')return renderInfoPage('usage');
+  if(route==='copyright')return renderInfoPage('copyright');
+  if(route==='contact')return renderInfoPage('contact');
   if(route.startsWith('room/'))return renderRoom(route.split('/')[1]);
   return renderHome();
 }
