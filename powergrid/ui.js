@@ -164,7 +164,7 @@
     var tag=G.CITIES.length+'도시 · '+(state.map.edges||G.EDGES||[]).length+'연결';
     return '<div class="pg-real-map pg-leaflet-map-card"><div class="pg-real-map-head"><div><b>'+esc(def.name)+' 지도</b><div class="pg-region-chips">'+regionChips+'</div></div><span class="pg-tag">'+esc(tag)+'</span></div>'+
       '<div class="pg-leaflet-live" id="pg-live-leaflet-map"><div class="pg-map-loading">지도 불러오는 중…</div></div>'+
-      '<div class="pg-map-note">선택 지역은 지역색 도시와 밝은 연결선으로 표시하고, 사용하지 않는 지역은 검정 음영 없이 도시·연결선만 흐리게 표시합니다. 연결비는 선 위 숫자로 확인할 수 있습니다.</div></div>';
+      '<div class="pg-map-note">선택 지역은 지역색 도시와 밝은 연결선으로 표시하고, 사용하지 않는 지역은 검정 음영 없이 도시·연결선만 흐리게 표시합니다. 연결비는 선 위 숫자로 확인할 수 있습니다. 지도 이동·축소는 해당 국가 범위 안으로 제한됩니다.</div></div>';
   }
 
   function destroyLiveMap(){
@@ -182,9 +182,10 @@
     var canBuild=state.phase===4 && actingSeats[0]===mySeat && allowAct;
     var myMoney=(canBuild && state.players[mySeat]) ? state.players[mySeat].money : -1;
     el.innerHTML='';
-    var map=global.L.map(el,{zoomControl:true,attributionControl:true,minZoom:3,maxZoom:12});
+    var hardBounds=G.GEO_BOUNDS ? global.L.latLngBounds(G.GEO_BOUNDS) : null;
+    var map=global.L.map(el,{zoomControl:true,attributionControl:true,minZoom:3,maxZoom:12,maxBounds:hardBounds||undefined,maxBoundsViscosity:1.0});
     LIVE_MAP=map;
-    global.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:18,attribution:'&copy; OpenStreetMap contributors'}).addTo(map);
+    global.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:18,noWrap:true,attribution:'&copy; OpenStreetMap contributors'}).addTo(map);
     var byId=G.CITY_BY_ID||{};
 
     (state.map.edges||G.EDGES||[]).forEach(function(e){
@@ -234,9 +235,18 @@
     });
 
     var pts=G.CITIES.filter(function(c){return Number.isFinite(c.lat)&&Number.isFinite(c.lng);}).map(function(c){return [c.lat,c.lng];});
-    if(pts.length)map.fitBounds(pts,{padding:[28,28],animate:false});
-    else map.setView(G.GEO_CENTER||[0,0],G.GEO_ZOOM||4);
-    setTimeout(function(){if(LIVE_MAP===map)map.invalidateSize(false);},0);
+    if(hardBounds){
+      map.fitBounds(hardBounds,{padding:[18,18],animate:false});
+      // 초기 국가 전체가 보이는 배율보다 더 멀리 축소할 수 없게 해 주변 국가/해역으로 빠지는 것을 막는다.
+      map.setMinZoom(map.getZoom());
+      map.panInsideBounds(hardBounds,{animate:false});
+    }else if(pts.length){
+      var cityBounds=global.L.latLngBounds(pts).pad(0.08);
+      map.setMaxBounds(cityBounds);
+      map.fitBounds(cityBounds,{padding:[28,28],animate:false});
+      map.setMinZoom(map.getZoom());
+    }else map.setView(G.GEO_CENTER||[0,0],G.GEO_ZOOM||4);
+    setTimeout(function(){if(LIVE_MAP===map){map.invalidateSize(false);if(hardBounds)map.panInsideBounds(hardBounds,{animate:false});}},0);
   }
 
   function renderMapDetails(state, mySeat, allowAct, actingSeats) {
