@@ -165,15 +165,13 @@
     var excludedShade=renderExcludedRegionShade(G, selectedRegions);
 
     var edgeSvg=renderSchematicBackground(G, selectedRegions);
-    var edgeRows=[];
     (state.map.edges||G.EDGES||[]).forEach(function(e){
       var a=G.CITY_BY_ID[e.a], b=G.CITY_BY_ID[e.b];
       if(!a||!b||!selected[e.a]||!selected[e.b])return;
       var mx=((a.x+b.x)/2), my=((a.y+b.y)/2);
       var bw=(String(e.cost).length>1?28:22);
-      edgeSvg+='<line class="pg-map-edge" x1="'+a.x+'" y1="'+a.y+'" x2="'+b.x+'" y2="'+b.y+'"></line>'+
+      edgeSvg+='<line class="pg-map-edge" x1="'+a.x+'" y1="'+a.y+'" x2="'+b.x+'" y2="'+b.y+'"></line>'+ 
         '<g class="pg-edge-cost-badge"><rect x="'+(mx-bw/2).toFixed(1)+'" y="'+(my-10).toFixed(1)+'" width="'+bw+'" height="20" rx="7"></rect><text class="pg-map-edge-cost" x="'+mx.toFixed(1)+'" y="'+my.toFixed(1)+'">'+e.cost+'</text></g>';
-      edgeRows.push({a:a.name,b:b.name,cost:e.cost});
     });
     G.CITIES.forEach(function(city){
       if(!selected[city.id])return;
@@ -198,6 +196,21 @@
         'title="'+esc(title)+'" aria-label="'+esc(title)+'" '+attrs+'>'+ownerDots+(cost!=null?'<b>'+cost+'</b>':'')+'</button>';
     });
 
+    var boardInner='<div class="pg-germany-board pg-abstract-board"><svg class="pg-abstract-map" viewBox="0 0 '+G.BOARD_WIDTH+' '+G.BOARD_HEIGHT+'" preserveAspectRatio="none">'+edgeSvg+'</svg>'+excludedShade+markers+'</div>';
+    var note='도시·연결선·연결비·클릭 영역을 같은 좌표계로 그리는 BoardMate 전용 지도입니다. 건설 단계에서는 원형 마커 또는 아래 도시 목록을 눌러 건설합니다.';
+    return '<div class="pg-real-map pg-germany-map"><div class="pg-real-map-head"><div><b>'+esc(def.name)+' 보드</b><div class="pg-region-chips">'+regionChips+'</div></div><span class="pg-tag">'+G.CITIES.length+'도시 · '+(state.map.edges||G.EDGES).length+'연결 자동 계산</span></div>'+boardInner+
+      '<div class="pg-map-note">'+note+'</div></div>';
+  }
+
+  function renderMapDetails(state, mySeat, allowAct, actingSeats) {
+    var boardId=(state.map && state.map.boardId) || 'germany';
+    var G=PG.mapData ? PG.mapData(boardId) : PG.GERMANY;
+    var selected={};
+    (state.map.cityNames||[]).forEach(function(id){selected[id]=true;});
+    var selectedRegions=(state.map.regionIds||[]);
+    var canBuild=state.phase===4 && actingSeats[0]===mySeat && allowAct;
+    var myMoney=(canBuild && state.players[mySeat]) ? state.players[mySeat].money : -1;
+
     var cityGroups='';
     selectedRegions.forEach(function(rid){
       var region=G.REGIONS[rid]; if(!region)return;
@@ -215,11 +228,16 @@
       cityGroups+='<section class="pg-city-group"><h4><i style="background:'+esc(region.color)+'"></i>'+esc(region.name)+'</h4><div class="pg-city-choice-grid">'+buttons+'</div></section>';
     });
 
+    var edgeRows=[];
+    (state.map.edges||G.EDGES||[]).forEach(function(e){
+      var a=G.CITY_BY_ID[e.a], b=G.CITY_BY_ID[e.b];
+      if(!a||!b||!selected[e.a]||!selected[e.b])return;
+      edgeRows.push({a:a.name,b:b.name,cost:e.cost});
+    });
     var edgeTable=edgeRows.sort(function(a,b){return a.cost-b.cost;}).slice(0,120).map(function(e){return '<tr><td>'+esc(e.a)+'</td><td>'+esc(e.b)+'</td><td>'+e.cost+'€</td></tr>';}).join('');
-    var boardInner='<div class="pg-germany-board pg-abstract-board"><svg class="pg-abstract-map" viewBox="0 0 '+G.BOARD_WIDTH+' '+G.BOARD_HEIGHT+'" preserveAspectRatio="none">'+edgeSvg+'</svg>'+excludedShade+markers+'</div>';
-    var note='도시·연결선·연결비·클릭 영역을 같은 좌표계로 그리는 BoardMate 전용 지도입니다. 건설 단계에서는 원형 마커 또는 도시 목록을 눌러 건설합니다.';
-    return '<div class="pg-real-map pg-germany-map"><div class="pg-real-map-head"><div><b>'+esc(def.name)+' 보드</b><div class="pg-region-chips">'+regionChips+'</div></div><span class="pg-tag">'+G.CITIES.length+'도시 · '+(state.map.edges||G.EDGES).length+'연결 자동 계산</span></div>'+renderBoardTracks(state)+boardInner+
-      '<div class="pg-map-note">'+note+'</div>'+renderIncomeTable()+
+
+    return '<div class="pg-map-reference-panels">'+
+      renderIncomeTable()+
       '<details class="pg-city-picker"'+(canBuild?' open':'')+'><summary>도시 목록'+(canBuild?' · 건설 가능 비용 보기':'')+'</summary>'+cityGroups+'</details>'+ 
       '<details class="pg-connection-costs"><summary>지역/도시 연결비 표 보기</summary><table><thead><tr><th>도시 A</th><th>도시 B</th><th>비용</th></tr></thead><tbody>'+edgeTable+'</tbody></table></details></div>';
   }
@@ -464,9 +482,11 @@
     var canBuy = allowAct && state.phase === 3 && acting.indexOf(mySeat) !== -1;
 
     var left = '<div>' +
+      renderBoardTracks(state) +
+      '<div class="pg-card"><h3>자원 시장</h3>' + renderResourceMarket(state, mySeat, canBuy) + '</div>' +
       renderMap(state, mySeat, allowAct, acting) +
       '<div class="pg-card"><h3>발전소 시장</h3>' + renderPlantMarket(state, mySeat, allowAct && !state.plantDiscard && state.phase === 2 && state.auction && state.auction.sub === 'offer' && acting.indexOf(mySeat) !== -1) + '</div>' +
-      '<div class="pg-card"><h3>자원 시장</h3>' + renderResourceMarket(state, mySeat, canBuy) + '</div>' +
+      renderMapDetails(state, mySeat, allowAct, acting) +
       '</div>';
 
     var right = '<div>' +
