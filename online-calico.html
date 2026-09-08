@@ -9,7 +9,7 @@
 <meta name="board-mate-min-players" content="2" />
 <meta name="board-mate-max-players" content="4" />
 <meta name="board-mate-multiplayer" content="true" />
-<script type="application/json" id="boardMateGameManifest">{"id":"calico-pvp","name":"Calico PVP","version":"8.1.0-arena-mobile-fit","minPlayers":2,"maxPlayers":4,"multiplayer":true,"turnBased":true,"entry":"single-html","stateMode":"shared"}</script>
+<script type="application/json" id="boardMateGameManifest">{"id":"calico-pvp","name":"Calico PVP","version":"11.0.0-historical-token-recovery","minPlayers":2,"maxPlayers":4,"multiplayer":true,"turnBased":true,"entry":"single-html","stateMode":"shared"}</script>
 <style>
   :root{
     --ink:#362d3c;
@@ -462,9 +462,9 @@ if(roomId) window.addEventListener('DOMContentLoaded',()=>{
   // The user supplied these public GitHub Pages materials as the visual reference.
   const ASSET_BASE = 'https://myautoma.github.io/games/calico/img';
   const SAVE_KEY = 'calico-pvp-arena-v8';
-  const VERSION = 10;
+  const VERSION = 11;
   const GAME_ID = 'calico-pvp';
-  const GAME_MANIFEST = Object.freeze({id:GAME_ID,name:'Calico PVP',version:'10.0.0-arena',minPlayers:2,maxPlayers:4,multiplayer:true,turnBased:true});
+  const GAME_MANIFEST = Object.freeze({id:GAME_ID,name:'Calico PVP',version:'11.0.0-historical-token-recovery',minPlayers:2,maxPlayers:4,multiplayer:true,turnBased:true});
 
   const COLORS = [
     {id:'darkBlue', ko:'남색', css:'#32467b'},
@@ -707,68 +707,148 @@ if(roomId) window.addEventListener('DOMContentLoaded',()=>{
     return null;
   }
 
+  // ---------------------------------------------------------------------------
+  // V11: historical / cross-turn token recovery
+  // ---------------------------------------------------------------------------
+  // V10까지는 현재 턴의 turnTokens / _lastPlacedKey에 의존해 복구했다.
+  // 예전 턴에서 획득했지만 토큰을 놓지 못한 경우 advanceTurn()이 turnTokens를
+  // 비우므로 복구 근거가 사라졌다. V11은 현재 퀼트 전체를 검사해서 토큰이 없는
+  // 완성 그룹을 다시 후보로 만든다. 따라서 기존 진행 방도 새로 만들 필요가 없다.
+  function tokenTargetKeys(p,group){
+    return (group||[]).filter(k=>p.board?.[k]?.type==='patch' && p.board[k]?.tile);
+  }
+  function groupSignature(group){return (group||[]).slice().sort().join('|');}
+  function normalizeTokenReturnPhase(value,fallback='draft'){
+    return ['place','draft','turn-end'].includes(value)?value:fallback;
+  }
+  function pendingChoiceSignature(x){
+    return `${x?.type||''}:${x?.id||''}:${x?.groupKey||groupSignature(x?.keys||[])}`;
+  }
+  function mergePendingTokenChoices(...lists){
+    const out=[],seen=new Set();
+    for(const list of lists){
+      for(const x of (list||[])){
+        if(!x || !Array.isArray(x.keys) || !x.keys.length) continue;
+        const sig=pendingChoiceSignature(x);
+        if(seen.has(sig)) continue;
+        seen.add(sig); out.push(x);
+      }
+    }
+    return out;
+  }
+  function buildAllPendingTokenChoices(p,sourceState=state){
+    if(!p?.board || !sourceState?.inventories) return [];
+    const choices=[];
+    const seenColorGroups=new Set();
+    const seenPatternGroups=new Set();
+
+    for(const [key,cell] of Object.entries(p.board)){
+      if(cell?.type!=='patch' || !cell.tile) continue;
+
+      const color=cell.tile.color;
+      const colorGroup=componentFor(p,key,'color',color);
+      const colorSig=`${color}:${groupSignature(colorGroup)}`;
+      if(!seenColorGroups.has(colorSig)){
+        seenColorGroups.add(colorSig);
+        const targets=tokenTargetKeys(p,colorGroup);
+        if(targets.length && colorGroup.length>=3 &&
+           !hasButtonInComponent(p,colorGroup,color) &&
+           Number(sourceState.inventories.buttons?.[color]||0)>0){
+          choices.push({
+            type:'button',id:color,
+            label:`🔘 ${colorById(color)?.ko||color} 단추`,
+            keys:targets,groupKey:colorSig,historical:true
+          });
+        }
+      }
+
+      const pattern=cell.tile.pattern;
+      const patternGroup=componentFor(p,key,'pattern',pattern);
+      const patternSig=`${pattern}:${groupSignature(patternGroup)}`;
+      if(!seenPatternGroups.has(patternSig)){
+        seenPatternGroups.add(patternSig);
+        const targets=tokenTargetKeys(p,patternGroup);
+        if(targets.length && !hasCatInComponent(p,patternGroup)){
+          for(const cat of (sourceState.cats||[])){
+            if(Number(sourceState.inventories.cats?.[cat.id]||0)<=0 ||
+               !Array.isArray(cat.preferred) || !cat.preferred.includes(pattern)) continue;
+            const ok=cat.kind==='size'
+              ? patternGroup.length>=Number(cat.size)
+              : !!componentHasShape(p,patternGroup,cat.shape);
+            if(ok){
+              choices.push({
+                type:'cat',id:cat.id,label:`🐈 ${cat.ko} 고양이`,
+                keys:targets,groupKey:patternSig,historical:true
+              });
+            }
+          }
+        }
+      }
+    }
+
+    if(Number(sourceState.inventories.rainbow||0)>0 &&
+       COLORS.every(c=>countButtonsByColor(p,c.id)>=1) &&
+       !Object.values(p.board).some(c=>(c.buttons||[]).includes('rainbow'))){
+      const allPatchKeys=Object.keys(p.board).filter(k=>p.board[k]?.type==='patch'&&p.board[k]?.tile);
+      if(allPatchKeys.length){
+        choices.push({type:'rainbow',id:'rainbow',label:'🌈 무지개 단추',keys:allPatchKeys,groupKey:'rainbow',historical:true});
+      }
+    }
+
+    // 같은 종류의 후보가 여러 그룹이면 UI에서 서로 구분한다.
+    const totals=new Map();
+    choices.forEach(x=>{const k=`${x.type}:${x.id}`;totals.set(k,(totals.get(k)||0)+1);});
+    const seq=new Map();
+    choices.forEach(x=>{
+      const k=`${x.type}:${x.id}`;
+      if((totals.get(k)||0)>1){
+        const n=(seq.get(k)||0)+1; seq.set(k,n);
+        x.label+=` · 그룹 ${n}`;
+      }
+    });
+    return choices;
+  }
+
   // 구버전 진행 상태에서 토큰 배치 UI가 저장되지 않은 경우의 복구용.
   // 정확한 '방금 만든 그룹' 기록이 없는 구버전 상태는 현재 보드에서 합법적인
   // 후보를 찾아 보여주되, 플레이어가 실제 위치를 직접 선택하게 한다.
   function buildRecoveryPendingTokenChoices(next){
     if(!next?.players?.[next.active]) return [];
-    const p=next.players[next.active], choices=[], seen=new Set();
-    const rawAwards=(Array.isArray(next.turnTokens)?next.turnTokens:[]);
-    const awards=rawAwards.map(awardDescriptor).filter(Boolean);
-    for(const award of awards){
-      const key=`${award.type}:${award.id}`;
-      if(seen.has(key)) continue;
-      if(award.type==='cat'){
-        const alreadyPlaced=countCatsById(p,award.id)>0;
-        if(alreadyPlaced) continue;
-        const cat=next.cats?.find(c=>c.id===award.id)||catById(award.id);
-        if(!cat) continue;
-        for(const [k,cell] of Object.entries(p.board||{})){
-          if(!cell?.tile) continue;
-          const pattern=cell.tile.pattern;
-          if(!cat.preferred.includes(pattern)) continue;
-          const group=componentFor(p,k,'pattern',pattern);
-          if(hasCatInComponent(p,group)) continue;
-          const ok=cat.kind==='size'?group.length>=cat.size:!!componentHasShape(p,group,cat.shape);
-          if(ok){choices.push({type:'cat',id:cat.id,label:`🐈 ${cat.ko} 고양이`,keys:group.slice()});break;}
-        }
-      }else if(award.type==='button'){
-        const color=award.id;
-        const hasAny=countButtonsByColor(p,color)>0;
-        if(hasAny) continue;
-        for(const [k,cell] of Object.entries(p.board||{})){
-          if(!cell?.tile||cell.tile.color!==color) continue;
-          const group=componentFor(p,k,'color',color);
-          if(group.length>=3&&!hasButtonInComponent(p,group,color)){
-            choices.push({type:'button',id:color,label:`🔘 ${colorById(color)?.ko||color} 단추`,keys:group.slice()});break;
-          }
-        }
-      }else if(award.type==='rainbow'){
-        const placed=Object.values(p.board||{}).some(c=>(c.buttons||[]).includes('rainbow'));
-        if(placed) continue;
-        if(Number(next.inventories?.rainbow||0)>0&&COLORS.every(c=>countButtonsByColor(p,c.id)>=1)){
-          choices.push({type:'rainbow',id:'rainbow',label:'🌈 무지개 단추',keys:Object.keys(p.board||{}).filter(k=>p.board[k]?.type==='patch'&&p.board[k]?.tile)});
-        }
-      }
-      if(choices.some(x=>x.type===award.type&&String(x.id)===String(award.id))) seen.add(key);
-    }
-    return choices;
+    const p=next.players[next.active];
+
+    // 저장된 현재 턴 후보가 있다면 보존하되, 핵심은 현재 퀼트 전체 스캔이다.
+    // turnTokens가 이미 지난 턴에 지워진 기존 진행 게임도 여기서 복구된다.
+    const stored=Array.isArray(next._pendingTokenChoices)?deepClone(next._pendingTokenChoices):[];
+    const scanned=buildAllPendingTokenChoices(p,next);
+    // 현재 보드 재검사를 우선한다. 현재 상태에서 판정 가능한 후보가 없다면
+    // token 단계의 저장 후보만 마지막 안전망으로 사용한다.
+    return scanned.length ? scanned : (next.phase==='token' ? stored : []);
   }
 
   function recoverPendingTokensOnLoad(next){
-    if(!next || !Array.isArray(next.turnTokens) || !next.turnTokens.length) return {changed:false,legacy:false};
-    if(Array.isArray(next._pendingTokenChoices) && next._pendingTokenChoices.length) return {changed:false,legacy:false};
+    if(!next || !Array.isArray(next.players) || !next.players[next.active]) return {changed:false,legacy:false,count:0};
+
+    const existing=Array.isArray(next._pendingTokenChoices)?next._pendingTokenChoices:[];
     const choices=buildRecoveryPendingTokenChoices(next);
-    if(!choices.length) return {changed:false,legacy:false};
+    if(!choices.length) return {changed:false,legacy:false,count:0};
+
+    // 이미 token 단계이고 저장 후보가 있으면 상태를 흔들지 않는다.
+    if(next.phase==='token' && existing.length){
+      next._pendingTokenChoices=deepClone(choices);
+      return {changed:choices.length!==existing.length,legacy:false,count:choices.length};
+    }
+
     const wasGameOver=!!next.gameOver;
     const priorPhase=next.phase;
     next._pendingTokenChoices=deepClone(choices);
     next._tokenPlacementMode=null;
-    next._tokenReturnPhase=priorPhase==='gameover'||wasGameOver?'gameover':(priorPhase==='turn-end'?'turn-end':'draft');
+    next._tokenReturnPhase=priorPhase==='gameover'||wasGameOver
+      ? 'gameover'
+      : normalizeTokenReturnPhase(priorPhase,'draft');
     next.phase='token';
     next.gameOver=false;
-    next._legacyTokenRecoveryV9=true;
-    return {changed:true,legacy:true};
+    next._legacyTokenRecoveryV11=true;
+    return {changed:true,legacy:true,count:choices.length};
   }
 
   function publishArenaState(reason='update'){
@@ -1218,7 +1298,8 @@ if(roomId) window.addEventListener('DOMContentLoaded',()=>{
       gameOver:false,
       _pendingTokenChoices:[],
       _tokenPlacementMode:null,
-      _turnStartSnapshot:null
+      _turnStartSnapshot:null,
+      _manualTokenPlacementV9:true
     };
     state.cats.forEach(c=>state.inventories.cats[c.id]=8);
     state.players.forEach(p=>{p.hand.push(drawTile(),drawTile());});
@@ -1427,7 +1508,7 @@ if(roomId) window.addEventListener('DOMContentLoaded',()=>{
       if(!edgeCatalog){toast('이 보드의 가장자리 데이터가 없습니다.');return;}
       p.edgeCatalog=edgeCatalog;
       p.hand.splice(idx,1); p.board[key].tile=tile; state._lastPlacedKey=key; state.selectedHand=null; dirtyTurn=true;
-      pendingTokenChoices=buildPendingTokenChoices(p,key);
+      pendingTokenChoices=buildAllPendingTokenChoices(p,state);
       tokenPlacementMode=null;
       // V10: 획득 후보를 게임 state에도 즉시 저장한다.
       // 기존 V9는 pendingTokenChoices만 메모리에 있고 turnTokens가 비어 있을 수 있어
@@ -1443,25 +1524,9 @@ if(roomId) window.addEventListener('DOMContentLoaded',()=>{
   }
 
   function buildPendingTokenChoices(p,placedKey){
-    const placed=p.board[placedKey]; if(!placed?.tile)return [];
-    const choices=[];
-    const color=placed.tile.color;
-    const colorGroup=componentFor(p,placedKey,'color',color);
-    if(colorGroup.length>=3&&!hasButtonInComponent(p,colorGroup,color)&&Number(state.inventories.buttons[color]||0)>0){
-      choices.push({type:'button',id:color,label:`🔘 ${colorById(color)?.ko||color} 단추`,keys:colorGroup.slice()});
-    }
-    const pattern=placed.tile.pattern;
-    const patternGroup=componentFor(p,placedKey,'pattern',pattern);
-    const eligibleCats=state.cats.filter(cat=>Number(state.inventories.cats[cat.id]||0)>0&&cat.preferred.includes(pattern)&&!hasCatInComponent(p,patternGroup)&& (cat.kind==='size'?patternGroup.length>=cat.size:!!componentHasShape(p,patternGroup,cat.shape)));
-    if(eligibleCats.length){
-      // One pattern area can attract only one cat. Let the player choose which eligible cat.
-      eligibleCats.forEach(cat=>choices.push({type:'cat',id:cat.id,label:`🐈 ${cat.ko} 고양이`,keys:patternGroup.slice()}));
-    }
-    if(Number(state.inventories.rainbow||0)>0&&COLORS.every(c=>countButtonsByColor(p,c.id)>=1)&&!Object.values(p.board).some(c=>(c.buttons||[]).includes('rainbow'))){
-      const allPatchKeys=Object.keys(p.board).filter(k=>p.board[k]?.type==='patch'&&p.board[k]?.tile);
-      choices.push({type:'rainbow',id:'rainbow',label:'🌈 무지개 단추',keys:allPatchKeys});
-    }
-    return choices;
+    // V11: 새 타일로 생긴 후보 + 과거 턴에서 놓친 후보를 항상 함께 반환한다.
+    if(!p?.board) return [];
+    return buildAllPendingTokenChoices(p,state);
   }
 
   function beginTokenPlacement(choice){
@@ -1477,6 +1542,9 @@ if(roomId) window.addEventListener('DOMContentLoaded',()=>{
   // 잘못된 자동 배치를 먼저 회수하고 현재 보드에서 합법적인 그룹을 선택하게 한다.
   function migrateLegacyAutoTokenPlacement(next){
     if(!next || !Array.isArray(next.players) || next._manualTokenPlacementV9) return {changed:false};
+    // V10+ 상태에는 _pendingTokenChoices 필드가 항상 존재한다. 이 상태의 보드 토큰은
+    // 이미 사용자가 직접 놓은 것이므로 V8 자동배치 마이그레이션으로 회수하면 안 된다.
+    if(Array.isArray(next._pendingTokenChoices)) return {changed:false};
     const p=next.players[next.active];
     if(!p || !Array.isArray(next.turnTokens) || !next.turnTokens.length) return {changed:false};
     if(!['draft','turn-end'].includes(next.phase)) return {changed:false};
@@ -1526,64 +1594,65 @@ if(roomId) window.addEventListener('DOMContentLoaded',()=>{
   }
 
   function buildLegacyPendingTokenChoices(p){
-    const choices=[];
-    const seenButton=new Set();
-    const seenCat=new Set();
-    for(const [key,cell] of Object.entries(p.board||{})){
-      if(!cell?.tile) continue;
-      const color=cell.tile.color;
-      const colorGroup=componentFor(p,key,'color',color);
-      if(colorGroup.length>=3 && !hasButtonInComponent(p,colorGroup,color) && Number(state.inventories.buttons[color]||0)>0 && !seenButton.has(color)){
-        seenButton.add(color);
-        choices.push({type:'button',id:color,label:`🔘 ${colorById(color)?.ko||color} 단추`,keys:colorGroup.slice()});
-      }
-      const pattern=cell.tile.pattern;
-      const patternGroup=componentFor(p,key,'pattern',pattern);
-      for(const cat of state.cats){
-        if(seenCat.has(cat.id)||Number(state.inventories.cats[cat.id]||0)<=0||!cat.preferred.includes(pattern)||hasCatInComponent(p,patternGroup)) continue;
-        const ok=cat.kind==='size'?patternGroup.length>=cat.size:!!componentHasShape(p,patternGroup,cat.shape);
-        if(ok){seenCat.add(cat.id);choices.push({type:'cat',id:cat.id,label:`🐈 ${cat.ko} 고양이`,keys:patternGroup.slice()});}
-      }
-    }
-    if(Number(state.inventories.rainbow||0)>0&&COLORS.every(c=>countButtonsByColor(p,c.id)>=1)&&!Object.values(p.board).some(c=>(c.buttons||[]).includes('rainbow'))){
-      choices.push({type:'rainbow',id:'rainbow',label:'🌈 무지개 단추',keys:Object.keys(p.board).filter(k=>p.board[k]?.type==='patch'&&p.board[k]?.tile)});
-    }
-    return choices;
+    return buildAllPendingTokenChoices(p,state);
   }
 
   function placePendingToken(key){
     const choice=tokenPlacementMode,p=state.players[state.active],cell=p.board[key];
     if(!choice||!choice.keys.includes(key)||!cell?.tile)return;
-    // state.turnTokens는 현재 턴의 '획득/대기 토큰' 표시다. 후보를 저장한 뒤
-    // 실제 배치 시 중복 추가하지 않고, 선택한 종류의 최종 토큰만 유지한다.
     state.turnTokens=Array.isArray(state.turnTokens)?state.turnTokens:[];
+    state._manualTokenPlacementV9=true;
+
     if(choice.type==='button'){
       const color=choice.id;
       if(hasButtonInComponent(p,choice.keys,color)){toast('이 색상 그룹에는 이미 같은 색 단추가 있습니다.');return;}
-      cell.buttons=cell.buttons||[];cell.buttons.push(color);state.inventories.buttons[color]--;state._turnPlacedAwards=Array.isArray(state._turnPlacedAwards)?state._turnPlacedAwards:[];state._turnPlacedAwards.push(`button:${color}`);
-      const label=`${colorById(color)?.ko||color} 단추`; state.turnTokens=[...state.turnTokens.filter(x=>x!==label),label];
+      cell.buttons=cell.buttons||[];
+      cell.buttons.push(color);
+      state.inventories.buttons[color]--;
+      state._turnPlacedAwards=Array.isArray(state._turnPlacedAwards)?state._turnPlacedAwards:[];
+      state._turnPlacedAwards.push(`button:${color}`);
+      const label=`${colorById(color)?.ko||color} 단추`;
+      state.turnTokens=[...state.turnTokens.filter(x=>x!==label),label];
     }else if(choice.type==='cat'){
       if(hasCatInComponent(p,choice.keys)){toast('이 무늬 그룹에는 이미 고양이 토큰이 있습니다.');return;}
-      const cat=catById(choice.id);cell.cats=cell.cats||[];cell.cats.push(choice.id);state.inventories.cats[choice.id]--;state._turnPlacedAwards=Array.isArray(state._turnPlacedAwards)?state._turnPlacedAwards:[];state._turnPlacedAwards.push(`cat:${choice.id}`);
-      // 같은 무늬 영역에는 고양이 하나만 가능하므로 다른 후보 고양이는 모두 제거한다.
+      const cat=catById(choice.id);
+      cell.cats=cell.cats||[];
+      cell.cats.push(choice.id);
+      state.inventories.cats[choice.id]--;
+      state._turnPlacedAwards=Array.isArray(state._turnPlacedAwards)?state._turnPlacedAwards:[];
+      state._turnPlacedAwards.push(`cat:${choice.id}`);
       const label=`${cat?.ko||choice.id} 고양이`;
-      state.turnTokens=[...state.turnTokens.filter(x=>!String(x).endsWith(' 고양이')),label];
-      pendingTokenChoices=pendingTokenChoices.filter(x=>x.type!=='cat');
+      state.turnTokens=[...state.turnTokens.filter(x=>x!==label),label];
     }else if(choice.type==='rainbow'){
       if(Object.values(p.board).some(c=>(c.buttons||[]).includes('rainbow'))){toast('무지개 단추는 이미 놓였습니다.');return;}
-      cell.buttons=cell.buttons||[];cell.buttons.push('rainbow');state.inventories.rainbow--;state._turnPlacedAwards=Array.isArray(state._turnPlacedAwards)?state._turnPlacedAwards:[];state._turnPlacedAwards.push('rainbow:rainbow');
+      cell.buttons=cell.buttons||[];
+      cell.buttons.push('rainbow');
+      state.inventories.rainbow--;
+      state._turnPlacedAwards=Array.isArray(state._turnPlacedAwards)?state._turnPlacedAwards:[];
+      state._turnPlacedAwards.push('rainbow:rainbow');
       state.turnTokens=[...state.turnTokens.filter(x=>x!=='무지개 단추'),'무지개 단추'];
     }
-    pendingTokenChoices=pendingTokenChoices.filter(x=>!(x.type===choice.type&&x.id===choice.id));
+
+    // 중요: type/id만 지우면 같은 색의 다른 그룹이나 다른 고양이 그룹까지 사라질 수 있다.
+    // 토큰 하나를 놓을 때마다 보드 전체를 다시 검사해 아직 미배치인 그룹만 남긴다.
+    pendingTokenChoices=buildAllPendingTokenChoices(p,state);
     state._pendingTokenChoices=deepClone(pendingTokenChoices);
     state._tokenPlacementMode=null;
     tokenPlacementMode=null;
+
     if(!pendingTokenChoices.length){
-      if(allBoardsFull()){state.phase='gameover';autoSave('tokens-complete');finishGame();return;}
-      state.phase=state._tokenReturnPhase||'draft';
+      if(allBoardsFull()){state.phase='gameover';autoSave('tokens-complete-v11');finishGame();return;}
+      const returnPhase=normalizeTokenReturnPhase(state._tokenReturnPhase,'draft');
+      state.phase=returnPhase;
       delete state._tokenReturnPhase;
-      autoSave('tokens-complete');renderGame();toast('토큰 배치가 완료되었습니다.');
-    }else{autoSave('token-placed');renderGame();toast('다음 획득 토큰을 선택하세요.');}
+      autoSave('tokens-complete-v11');
+      renderGame();
+      toast(returnPhase==='place'?'놓친 토큰 복구가 끝났습니다. 이제 이번 턴 타일을 놓으세요.':'토큰 배치가 완료되었습니다.');
+    }else{
+      autoSave('token-placed-v11');
+      renderGame();
+      toast('아직 놓지 않은 획득 토큰이 있습니다. 다음 토큰을 선택하세요.');
+    }
   }
 
   function renderCats(){
@@ -1602,30 +1671,29 @@ if(roomId) window.addEventListener('DOMContentLoaded',()=>{
   function recomputePendingTokensFromLastPlaced(next=state){
     if(!next || !Array.isArray(next.players) || !Number.isInteger(next.active)) return [];
     const p=next.players[next.active];
-    const key=next._lastPlacedKey;
-    if(!p || !key || !p.board?.[key]?.tile) return [];
-    return buildPendingTokenChoices(p,key);
+    if(!p) return [];
+    return buildAllPendingTokenChoices(p,next);
   }
 
   function ensureTokenPhaseIntegrity(next=state){
     if(!next || next.phase!=='token' || next.gameOver) return false;
     if(pendingTokenChoices.length) return true;
-    let recovered=recomputePendingTokensFromLastPlaced(next);
-    if(!recovered.length) recovered=buildRecoveryPendingTokenChoices(next);
+
+    const recovered=buildRecoveryPendingTokenChoices(next);
     if(recovered.length){
       pendingTokenChoices=deepClone(recovered);
       next._pendingTokenChoices=deepClone(recovered);
       next._tokenPlacementMode=null;
       next._tokenReturnPhase=next._tokenReturnPhase||'draft';
-      next._tokenRecoveryV10=true;
+      next._tokenRecoveryV11=true;
       return true;
     }
-    // 조건을 만족하는 토큰이 정말 없으면 token 단계에 멈추지 않고 시장 단계로 이동한다.
+
     pendingTokenChoices=[]; tokenPlacementMode=null;
     next._pendingTokenChoices=[]; next._tokenPlacementMode=null;
-    next.phase=next._tokenReturnPhase==='turn-end'?'turn-end':'draft';
+    next.phase=normalizeTokenReturnPhase(next._tokenReturnPhase,'draft');
     delete next._tokenReturnPhase;
-    next._tokenRecoveryV10=true;
+    next._tokenRecoveryV11=true;
     return true;
   }
 
@@ -1634,7 +1702,7 @@ if(roomId) window.addEventListener('DOMContentLoaded',()=>{
     if(isArenaMode()&&!isMyTurn()){const me=myPlayerIndex();card.innerHTML=`<h3 class="section-title" style="font-size:1rem">상대 차례</h3><div class="action-line"><b>${escapeHtml(p.name)}</b>의 차례입니다. 행동이 동기화되면 자동으로 화면에 반영됩니다.</div>${me!==null?`<button class="btn" id="viewOwnBoardBtn">내 보드 보기</button>`:''}`;if($('#viewOwnBoardBtn'))$('#viewOwnBoardBtn').onclick=()=>{viewedPlayer=me;renderGame();};return;}
     if(viewedPlayer!==state.active){card.innerHTML=`<h3 class="section-title" style="font-size:1rem">다른 보드 확인 중</h3><div class="action-line">내 차례입니다. 행동하려면 현재 차례 보드로 돌아가세요.</div><button class="btn primary" id="returnActiveBtn">현재 차례 보드로</button>`;$('#returnActiveBtn').onclick=()=>{viewedPlayer=state.active;renderGame();};return;}
     let html=`<h3 class="section-title" style="font-size:1rem">차례 진행</h3><div class="action-line"><b>${phaseLabel()}</b></div>`;
-    if(state.phase==='place')html+=`<p style="font-size:.83rem;color:var(--muted);line-height:1.5">손패에서 타일을 하나 선택한 뒤 빈 육각 칸을 누르세요. 조건을 만족하면 아래에서 고양이/단추를 선택하고, 해당 그룹의 타일을 눌러 직접 놓을 수 있습니다.</p>`;
+    if(state.phase==='place')html+=`<p style="font-size:.83rem;color:var(--muted);line-height:1.5">손패에서 타일을 하나 선택한 뒤 빈 육각 칸을 누르세요. 조건을 만족하면 아래에서 고양이/단추를 선택하고, 해당 그룹의 타일을 눌러 직접 놓을 수 있습니다.</p><div class="turn-actions"><button type="button" class="btn small" id="historicalTokenSearchBtn">🔎 이전 미배치 토큰 검색</button></div>`;
     else if(state.phase==='token'){
       const noChoices=!pendingTokenChoices.length;
       html+=`<div class="token-placement-panel"><div class="token-placement-title">🐈 🔘 획득 토큰 배치</div><div style="font-size:.8rem;color:var(--muted);margin-bottom:7px">${noChoices?'저장된 토큰 배치 정보가 없으면 방금 놓은 타일 기준으로 다시 검색합니다.':'토큰을 선택한 뒤 보드에서 강조된 타일을 누르세요.'}</div><div class="token-choice-grid">${pendingTokenChoices.map((x,i)=>`<button type="button" class="token-choice ${tokenPlacementMode===x?'active':''}" data-token-index="${i}">${x.label}<small>${x.type==='rainbow'?'아무 패치 타일':x.type==='cat'?'해당 무늬 그룹':'해당 색상 그룹'}</small></button>`).join('')}</div>${noChoices?'<div class="token-recovery-actions"><button type="button" class="btn small" id="recoverTokensBtn" style="margin-top:8px">🔄 미배치 토큰 다시 검색</button><button type="button" class="btn small" id="skipEmptyTokenBtn" style="margin-top:8px">➡️ 토큰 없이 시장으로</button></div>':''}</div>`;
@@ -1642,6 +1710,21 @@ if(roomId) window.addEventListener('DOMContentLoaded',()=>{
       html+=`<div class="turn-actions"><button class="btn small" id="undoTurnBtn" ${dirtyTurn?'':'disabled'}>↶ 현재 차례 되돌리기</button></div>`;
     } else if(state.phase==='draft'||state.phase==='turn-end'){html+=`<div class="token-auto-note"><b>토큰 배치 완료</b><br>${state.phase==='draft'?'이제 시장에서 1개를 가져오세요.':'시장 선택이 끝났습니다. 턴 종료를 누르세요.'}</div>`;if(state.turnTokens?.length)html+=`<div class="token-award">이번 턴 획득 · ${state.turnTokens.join(' · ')}</div>`;html+=`<div class="turn-actions"><button class="btn small" id="undoTurnBtn" ${dirtyTurn?'':'disabled'}>↶ 현재 차례 되돌리기</button><button class="btn primary" id="endTurnBtn" ${state.phase==='draft'?'disabled':''}>턴 종료</button></div>`;}
     card.innerHTML=html;if($('#undoTurnBtn'))$('#undoTurnBtn').onclick=undoTurn;if($('#endTurnBtn'))$('#endTurnBtn').onclick=()=>{if(state.phase==='turn-end')advanceTurn();};$$('[data-token-index]').forEach(b=>b.onclick=()=>beginTokenPlacement(pendingTokenChoices[Number(b.dataset.tokenIndex)]));
+    if($('#historicalTokenSearchBtn')) $('#historicalTokenSearchBtn').onclick=()=>{
+      if(!isMyTurn() || state.phase!=='place') return;
+      const recovered=buildAllPendingTokenChoices(state.players[state.active],state);
+      if(!recovered.length){toast('현재 퀼트에서 복구할 미배치 고양이/단추가 없습니다.');return;}
+      pendingTokenChoices=deepClone(recovered);
+      tokenPlacementMode=null;
+      state._pendingTokenChoices=deepClone(recovered);
+      state._tokenPlacementMode=null;
+      state._tokenReturnPhase='place';
+      state.phase='token';
+      state._tokenRecoveryV11=true;
+      autoSave('historical-token-search-v11');
+      renderGame();
+      toast(`이전에 놓지 못한 토큰 후보 ${recovered.length}개를 찾았습니다.`);
+    };
     if($('#recoverTokensBtn')) $('#recoverTokensBtn').onclick=()=>{
       if(!isMyTurn()) return;
       let recovered=recomputePendingTokensFromLastPlaced(state);
@@ -1661,7 +1744,7 @@ if(roomId) window.addEventListener('DOMContentLoaded',()=>{
       }else{
         pendingTokenChoices=[]; tokenPlacementMode=null;
         state._pendingTokenChoices=[]; state._tokenPlacementMode=null;
-        state.phase=state._tokenReturnPhase==='turn-end'?'turn-end':'draft';
+        state.phase=normalizeTokenReturnPhase(state._tokenReturnPhase,'draft');
         delete state._tokenReturnPhase;
         state._tokenRecoveryV10=true;
         autoSave('manual-token-recovery-empty-v10');
@@ -1673,7 +1756,7 @@ if(roomId) window.addEventListener('DOMContentLoaded',()=>{
       if(!isMyTurn() || state.phase!=='token') return;
       pendingTokenChoices=[]; tokenPlacementMode=null;
       state._pendingTokenChoices=[]; state._tokenPlacementMode=null;
-      state.phase=state._tokenReturnPhase==='turn-end'?'turn-end':'draft';
+      state.phase=normalizeTokenReturnPhase(state._tokenReturnPhase,'draft');
       delete state._tokenReturnPhase;
       state._tokenRecoveryV10=true;
       autoSave('skip-empty-token-phase-v10');
@@ -1686,7 +1769,32 @@ if(roomId) window.addEventListener('DOMContentLoaded',()=>{
     if(state.phase!=='draft'||!isMyTurn())return;const p=state.players[state.active],tile=state.market.splice(idx,1)[0];if(!tile)return;p.hand.push(tile);const next=drawTile();if(next)state.market.push(next);dirtyTurn=true;state.phase='turn-end';autoSave('market-take');renderGame();toast('시장 타일을 가져왔습니다. 턴 종료를 누르세요.');
   }
   function advanceTurn(){
-    if(allBoardsFull()){finishGame();return;}state.active=(state.active+1)%state.players.length;if(state.active===0)state.round++;state.phase='place';state.selectedHand=null;state.turnTokens=[];state._turnPlacedAwards=[];state._pendingTokenChoices=[];state._tokenPlacementMode=null;state._tokenReturnPhase=null;viewedPlayer=state.active;renderGame();beginTurn();autoSave('advance-turn');
+    if(allBoardsFull()){finishGame();return;}
+    state.active=(state.active+1)%state.players.length;
+    if(state.active===0)state.round++;
+    state.phase='place';
+    state.selectedHand=null;
+    state.turnTokens=[];
+    state._turnPlacedAwards=[];
+    state._pendingTokenChoices=[];
+    state._tokenPlacementMode=null;
+    state._tokenReturnPhase=null;
+    viewedPlayer=state.active;
+
+    // 먼저 정상적인 새 턴 스냅샷을 만든 뒤, 그 플레이어의 과거 미배치 토큰을 검사한다.
+    beginTurn();
+    const recovered=buildAllPendingTokenChoices(state.players[state.active],state);
+    if(recovered.length){
+      pendingTokenChoices=deepClone(recovered);
+      tokenPlacementMode=null;
+      state._pendingTokenChoices=deepClone(recovered);
+      state._tokenPlacementMode=null;
+      state._tokenReturnPhase='place';
+      state.phase='token';
+      state._tokenRecoveryV11=true;
+    }
+    renderGame();
+    autoSave(recovered.length?'advance-turn-historical-token-recovery-v11':'advance-turn');
   }
 
   function undoTurn(){
@@ -1839,7 +1947,7 @@ if(roomId) window.addEventListener('DOMContentLoaded',()=>{
     if(isArenaMode()) return toast('Arena 온라인 게임은 방 상태에서 자동 복구됩니다.');
     try{
       const raw=localStorage.getItem(SAVE_KEY); if(!raw) return toast('저장된 게임이 없습니다.');
-      const parsed=JSON.parse(raw); if(![VERSION,9,8].includes(Number(parsed.version)) && parsed.gameId!==GAME_ID && parsed._gameId!==GAME_ID) return toast('저장 버전이 호환되지 않습니다.'); parsed.version=VERSION;
+      const parsed=JSON.parse(raw); if(![VERSION,10,9,8].includes(Number(parsed.version)) && parsed.gameId!==GAME_ID && parsed._gameId!==GAME_ID) return toast('저장 버전이 호환되지 않습니다.'); parsed.version=VERSION;
       state=parsed;
       const repair=repairInvalidCatTokens(state);
       restoreTransientTurnState(state);
@@ -1856,7 +1964,7 @@ if(roomId) window.addEventListener('DOMContentLoaded',()=>{
   }
   function importGameFile(file){
     if(isArenaMode()) return toast('온라인 방에서는 파일 불러오기 대신 Arena 공유 상태를 사용합니다.');
-    const r=new FileReader(); r.onload=()=>{try{const parsed=JSON.parse(r.result);if(![VERSION,9,8].includes(Number(parsed.version)) && parsed.gameId!==GAME_ID && parsed._gameId!==GAME_ID)throw new Error('version');parsed.version=VERSION;state=parsed;viewedPlayer=state.active;enterGame();toast('게임을 불러왔습니다.');}catch(e){toast('올바른 Calico PVP 저장 파일이 아닙니다.');}};r.readAsText(file);
+    const r=new FileReader(); r.onload=()=>{try{const parsed=JSON.parse(r.result);if(![VERSION,10,9,8].includes(Number(parsed.version)) && parsed.gameId!==GAME_ID && parsed._gameId!==GAME_ID)throw new Error('version');parsed.version=VERSION;state=parsed;viewedPlayer=state.active;enterGame();toast('게임을 불러왔습니다.');}catch(e){toast('올바른 Calico PVP 저장 파일이 아닙니다.');}};r.readAsText(file);
   }
 
   function newGame(){
