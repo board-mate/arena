@@ -1,0 +1,719 @@
+--- /mnt/data/BoardMate_PowerGrid_3PLUS_V24/app.js	2026-09-08 01:03:26.458820095 +0000
++++ /mnt/data/BoardMate_PowerGrid_RULES_FIX_V25/app.js	2026-09-08 01:07:38.576026555 +0000
+@@ -40,7 +40,7 @@
+     cascadia:{name:'캐스캐디아',icon:'🌲',min:2,max:4},
+     pocketnova:{name:'포크노바 β',icon:'⚡',min:2,max:4},
+     fantasyrealms:{name:'판타지 왕국',icon:'🏰',min:3,max:6,page:'online-fantasy-realms.html'},
+-    powergrid:{name:'파워그리드 독일 β',icon:'🔌',min:3,max:6,page:'online-powergrid.html'},
++    powergrid:{name:'파워그리드',icon:'🔌',min:3,max:6,page:'online-powergrid.html'},
+     avalon:{name:'레지스탕스 아발론',icon:'⚔️',min:5,max:10,page:'online-avalon.html',mode:'realtime'},
+     secrethitler:{name:'시크릿 히틀러',icon:'🗳️',min:5,max:10,page:'online-secret-hitler.html',mode:'realtime'},
+     onenightwerewolf:{name:'한밤의 늑대인간',icon:'🌕',min:3,max:10,page:'online-one-night-werewolf.html',mode:'realtime'}
+--- /mnt/data/BoardMate_PowerGrid_3PLUS_V24/online-powergrid.html	2026-09-08 01:03:25.522797366 +0000
++++ /mnt/data/BoardMate_PowerGrid_RULES_FIX_V25/online-powergrid.html	2026-09-08 01:07:50.517193867 +0000
+@@ -5,17 +5,17 @@
+   <meta name="viewport" content="width=device-width,initial-scale=1">
+   <title>파워그리드 · BoardMate 온라인</title>
+   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+-  <link rel="stylesheet" href="./powergrid/pg-styles.css?v=23">
++  <link rel="stylesheet" href="./powergrid/pg-styles.css?v=25">
+   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+   <script src="./config.js"></script>
+ </head>
+ <body>
+ <div class="pg-app" id="app">불러오는 중…</div>
+ <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+-<script src="./powergrid/data/germany-map.js?v=23"></script>
+-<script src="./powergrid/engine.js?v=23"></script>
+-<script src="./powergrid/ui.js?v=23"></script>
+-<script src="./powergrid/map-rules-v23.js?v=23"></script>
++<script src="./powergrid/data/germany-map.js?v=25"></script>
++<script src="./powergrid/engine.js?v=25"></script>
++<script src="./powergrid/ui.js?v=25"></script>
++<script src="./powergrid/map-rules-v23.js?v=25"></script>
+ <script type="module">
+ import {
+   configured, roomId, getMe, loadRoom, loadState, saveState, startStatePoll,
+@@ -105,7 +105,7 @@
+   }).join('');
+   app.innerHTML=`
+     <div class="pg-topbar">
+-      <div class="pg-title">🔌 파워그리드<br><small>${esc(room.title||'BoardMate 온라인')} · ${members.length}인 · 다인플 전용</small></div>
++      <div class="pg-title">🔌 파워그리드<br><small>${esc(room.title||'BoardMate 온라인')} · ${members.length}인 · 3~6인 전용</small></div>
+       <a class="pg-btn small" href="./index.html#/room/${encodeURIComponent(roomId)}">← 방으로</a>
+     </div>
+     <div class="pg-card">
+--- /mnt/data/_pg_latest/arena-patched/powergrid/engine.js	2026-09-07 12:22:49.000000000 +0000
++++ /mnt/data/BoardMate_PowerGrid_RULES_FIX_V25/powergrid/engine.js	2026-09-08 01:07:38.576528502 +0000
+@@ -1,5 +1,5 @@
+ /*!
+- * BoardMate Power Grid Germany - Multiplayer Core Engine
++ * BoardMate Power Grid Recharged - Multiplayer Core Engine v25
+  * -----------------------------------------------------------------
+  * 다인플 전용. 브라우저와 Node(CommonJS)에서 동일 규칙 엔진을 사용한다.
+  * 독일 보드의 42개 도시 / 83개 연결비 그래프를 내장해 도시 건설 비용을
+@@ -19,6 +19,7 @@
+   if (!GERMANY) throw new Error('PowerGridGermanyMap 데이터가 필요합니다.');
+ 
+   var STATE_KIND = 'powergrid-v11-maps-boardmate';
++  var RULES_REV = 'powergrid-recharged-v25';
+ 
+   // ============================================================
+   // 상수 데이터
+@@ -30,8 +31,8 @@
+     return PAYOUT_TABLE[Math.max(0, Math.min(20, cities))];
+   }
+ 
+-  var STEP2_TRIGGER = { 2: 10, 3: 7, 4: 7, 5: 7, 6: 6 };
+-  var END_GAME_CITIES = { 2: 21, 3: 17, 4: 17, 5: 15, 6: 14 };
++  var STEP2_TRIGGER = { 2: 7, 3: 7, 4: 7, 5: 7, 6: 6 };
++  var END_GAME_CITIES = { 2: 18, 3: 17, 4: 17, 5: 15, 6: 14 };
+   var REGIONS_TO_USE = { 2: 3, 3: 3, 4: 4, 5: 5, 6: 5 };
+ 
+   // Resource Supply Table (coal/oil/garbage/uranium) [step1, step2, step3]
+@@ -142,6 +143,26 @@
+ 
+   function clone(o) { return JSON.parse(JSON.stringify(o)); }
+ 
++  function stringHash32(s) {
++    s = String(s == null ? '' : s);
++    var h = 2166136261 >>> 0;
++    for (var i = 0; i < s.length; i++) {
++      h ^= s.charCodeAt(i);
++      h = Math.imul(h, 16777619) >>> 0;
++    }
++    return h >>> 0;
++  }
++
++  function reshuffleDeckBelowStep3(state, reason) {
++    var seed = stringHash32([
++      reason || 'step3', state.round || 0, state.step || 0,
++      (state.deck || []).join(','),
++      (state.plantMarket.current || []).join(','),
++      (state.plantMarket.future || []).join(',')
++    ].join('|'));
++    state.deck = shuffle(state.deck || [], mulberry32(seed));
++  }
++
+   // ============================================================
+   // 독일 지도 / 연결 그래프
+   // ============================================================
+@@ -637,7 +658,7 @@
+   function newGame(opts) {
+     var numPlayers = opts.numPlayers;
+     var seatNames = opts.seatNames; // string[]
+-    if (!Number.isInteger(numPlayers) || numPlayers < 2 || numPlayers > 6) throw new Error('파워그리드는 2~6인 다인플만 지원합니다.');
++    if (!Number.isInteger(numPlayers) || numPlayers < 3 || numPlayers > 6) throw new Error('파워그리드는 3~6인 다인플만 지원합니다.');
+     if (!seatNames || seatNames.length < numPlayers) throw new Error('플레이어 이름이 부족합니다.');
+     var rng = mulberry32(opts.seed != null ? opts.seed : Date.now() % 2147483647);
+ 
+@@ -684,6 +705,7 @@
+     var state = {
+       v: 4,
+       kind: STATE_KIND,
++      rulesRev: RULES_REV,
+       numPlayers: numPlayers,
+       map: { mode:boardDef.mode||'auto', boardId:boardId, regionIds:zone.regionIds, cityNames:zone.cityNames, edges:zone.edges },
+       step: 1,
+@@ -700,7 +722,7 @@
+       resourceTurn: null, // {orderIdx}
+       buildTurn: null,   // {orderIdx}
+       powerTurn: null,   // {orderIdx} - 관료 단계에서 각 플레이어가 직접 공급 확정
+-      plantDiscard: null, // {seat,max,purchased} - 발전소 보유 한도 초과 시 직접 폐기 선택
++      plantDiscard: null, // {seat,max,purchased,stage,discarded} - 새 발전소는 폐기 불가, 초과 자원은 직접 선택해 반납
+       log: [],
+       winner: null,
+       gameOver: false
+@@ -720,43 +742,75 @@
+ 
+   function activePlant(numOrStep3) { return numOrStep3 === 'STEP3' ? null : PLANT_DEFS[numOrStep3]; }
+ 
+-  function refillMarketAfterPurchase(state) {
+-    // 시장에 8장 미만이면 덱에서 채우고, current=가장 싼 4장 순으로 정렬
++  function setPlantMarketFromPool(state, pool) {
+     var mkt = state.plantMarket;
+-    var pool = mkt.current.concat(mkt.future);
+-    while (pool.length < 8 && state.deck.length) {
+-      var drawn = state.deck.shift();
+-      if (drawn === 'STEP3') { handleStep3Drawn(state, 'phase2'); continue; }
+-      pool.push(drawn);
+-    }
+-    pool.sort(function (a, b) { return a - b; });
++    pool = pool.filter(function (x) { return x !== 'STEP3'; }).sort(function (a, b) { return a - b; });
+     if (state.step === 3) {
+       mkt.current = pool.slice(0, 6);
+       mkt.future = [];
+     } else {
+       mkt.current = pool.slice(0, 4);
+-      mkt.future = pool.slice(4, 8);
++      mkt.future = pool.slice(4);
+     }
+   }
+ 
+   function handleStep3Drawn(state, when) {
+-    // Step3 카드가 뽑히면: 최고가로 취급 후 이번 단계가 끝나면 없앰(간략화: 즉시 표시만 하고
+-    // 실제 Step3 전환은 아래 checkStepTransition에서 처리)
+-    state._step3Pending = true;
+-    pushLog(state, 'Step 3 카드가 나왔습니다! 이번 단계가 끝나면 Step 3로 전환됩니다.');
++    if (when === 'phase2') {
++      state._step3Phase2 = true;
++      state._step3CardInMarket = true;
++      reshuffleDeckBelowStep3(state, 'phase2');
++      pushLog(state, 'Step 3 카드가 경매 단계에 공개되었습니다. 이번 경매 단계가 끝날 때 최저 발전소와 Step 3 카드를 제거하고 Step 3를 시작합니다.');
++      return;
++    }
++    state._step3Phase5 = true;
++    reshuffleDeckBelowStep3(state, 'phase5');
++    pushLog(state, 'Step 3 카드가 관료 단계에 공개되었습니다. Step 2 보충을 마지막으로 적용하고 다음 라운드부터 Step 3를 시작합니다.');
++  }
++
++  function refillMarketAfterPurchase(state) {
++    var mkt = state.plantMarket;
++    var pool = mkt.current.concat(mkt.future).filter(function (x) { return x !== 'STEP3'; });
++    var target = state.step === 3 ? 6 : (state._step3Phase2 ? 7 : 8);
++    while (pool.length < target && state.deck.length) {
++      var drawn = state.deck.shift();
++      if (drawn === 'STEP3') {
++        if (state.step === 3) continue;
++        handleStep3Drawn(state, 'phase2');
++        target = 7;
++        break;
++      }
++      if (mkt.discounted != null && drawn < mkt.discounted) {
++        pushLog(state, drawn + '번 발전소가 할인 발전소 ' + mkt.discounted + '번보다 낮아 게임에서 제거되었습니다. 할인 토큰도 제거합니다.');
++        mkt.discounted = null;
++        continue;
++      }
++      pool.push(drawn);
++    }
++    setPlantMarketFromPool(state, pool);
+   }
+ 
+-  function applyStep3IfPending(state) {
+-    if (!state._step3Pending) return;
+-    state._step3Pending = false;
+-    // 가장 싼 발전소 제거(교체 없음)
++  function startStep3AfterPhase2(state) {
+     var mkt = state.plantMarket;
+-    var pool = mkt.current.concat(mkt.future).sort(function (a, b) { return a - b; });
+-    pool.shift();
++    var pool = mkt.current.concat(mkt.future).filter(function (x) { return x !== 'STEP3'; }).sort(function (a, b) { return a - b; });
++    var removed = pool.shift();
+     state.step = 3;
++    state._step3Phase2 = false;
++    state._step3CardInMarket = false;
++    mkt.discounted = null;
+     mkt.current = pool.slice(0, 6);
+     mkt.future = [];
+-    pushLog(state, 'Step 3 시작! 이제부터 시장의 발전소 6장을 모두 경매할 수 있습니다.');
++    pushLog(state, 'Step 3 시작! ' + (removed != null ? removed + '번 최저 발전소와 ' : '') + 'Step 3 카드를 제거했습니다. 이제 발전소 시장 6장을 모두 경매할 수 있습니다.');
++  }
++
++  function removeUnsoldDiscountAtPhaseEnd(state) {
++    var mkt = state.plantMarket;
++    var discounted = mkt.discounted;
++    if (discounted == null) return;
++    if (mkt.current.indexOf(discounted) === -1) { mkt.discounted = null; return; }
++    mkt.current.splice(mkt.current.indexOf(discounted), 1);
++    mkt.discounted = null;
++    pushLog(state, '이번 경매 단계에 할인 발전소 ' + discounted + '번이 팔리지 않아 게임에서 제거하고 새 발전소로 교체합니다.');
++    refillMarketAfterPurchase(state);
+   }
+ 
+   // ---------------- Phase 1: 순서 결정 ----------------
+@@ -911,7 +965,7 @@
+     // 어떤 발전소를 버릴지 직접 고른 뒤에야 경매가 계속된다.
+     var maxP = MAX_PLANTS(state.numPlayers);
+     if (state.players[winner].plants.length > maxP) {
+-      state.plantDiscard = { seat:winner, max:maxP, purchased:plantNum };
++      state.plantDiscard = { seat:winner, max:maxP, purchased:plantNum, stage:'plant', discarded:null };
+       pushLog(state, state.players[winner].name + '님은 발전소를 최대 ' + maxP + '장만 보유할 수 있습니다. 폐기할 발전소 1장을 선택하세요.');
+       return;
+     }
+@@ -919,22 +973,41 @@
+     checkAuctionEnd(state);
+   }
+ 
++  function finishPlantDiscard(state) {
++    var pending = state.plantDiscard;
++    if (!pending) return;
++    var p = state.players[pending.seat];
++    if (!stockFitsPlants(p.plants, p.stock)) throw new Error('남은 발전소에 저장할 수 없는 자원이 아직 있습니다.');
++    pushLog(state, p.name + '님의 발전소 폐기 및 자원 재배치가 완료되었습니다.');
++    state.plantDiscard = null;
++    checkAuctionEnd(state);
++  }
++
+   function actionDiscardPlant(state, seat, plantNum) {
+     var pending = state.plantDiscard;
+     if (!pending || pending.seat !== seat) throw new Error('지금은 발전소를 폐기할 차례가 아닙니다.');
++    if (pending.stage && pending.stage !== 'plant') throw new Error('먼저 초과 자원을 정리하세요.');
++    if (Number(plantNum) === Number(pending.purchased)) throw new Error('방금 구입한 발전소는 폐기할 수 없습니다.');
+     var p = state.players[seat];
+     var idx = p.plants.indexOf(plantNum);
+     if (idx === -1) throw new Error('보유하지 않은 발전소입니다.');
+     p.plants.splice(idx, 1);
+-    var removed = trimStockToPlants(p.plants, p.stock);
+-    pushLog(state, p.name + '님이 ' + plantNum + '번 발전소를 폐기했습니다.');
+-    var lost = [];
+-    ['coal','oil','garbage','uranium'].forEach(function (r) {
+-      if (removed[r] > 0) lost.push(r + ' ' + removed[r] + '개');
+-    });
+-    if (lost.length) pushLog(state, '저장 공간 부족으로 자원 ' + lost.join(', ') + '를 함께 반납했습니다.');
+-    state.plantDiscard = null;
+-    checkAuctionEnd(state);
++    pending.discarded = plantNum;
++    pending.stage = 'resources';
++    pushLog(state, p.name + '님이 ' + plantNum + '번 발전소를 폐기했습니다. 남은 발전소에 자원을 자유롭게 재배치합니다.');
++    if (stockFitsPlants(p.plants, p.stock)) { finishPlantDiscard(state); return; }
++    pushLog(state, '남은 발전소의 저장 한도를 넘는 자원이 있습니다. 어떤 자원을 반납할지 직접 선택하세요.');
++  }
++
++  function actionDiscardExcessResource(state, seat, resource) {
++    var pending = state.plantDiscard;
++    if (!pending || pending.seat !== seat || pending.stage !== 'resources') throw new Error('지금은 초과 자원을 정리할 차례가 아닙니다.');
++    if (['coal','oil','garbage','uranium'].indexOf(resource) === -1) throw new Error('알 수 없는 자원입니다.');
++    var p = state.players[seat];
++    if (Number(p.stock[resource] || 0) <= 0) throw new Error('반납할 자원이 없습니다.');
++    p.stock[resource] -= 1;
++    pushLog(state, p.name + '님이 발전소 폐기에 따라 ' + resource + ' 1개를 공급처로 반납했습니다.');
++    if (stockFitsPlants(p.plants, p.stock)) finishPlantDiscard(state);
+   }
+ 
+   function checkAuctionEnd(state) {
+@@ -945,12 +1018,21 @@
+   }
+ 
+   function endPhase2(state) {
+-    if (state.firstRoundAuction) {
+-      state.firstRoundAuction = false;
+-      recomputeOrder(state);
++    if (state.firstRoundAuction) { state.firstRoundAuction = false; recomputeOrder(state); }
++    if (state._step3Phase2) {
++      startStep3AfterPhase2(state);
++      state.auction = null;
++      beginPhase3(state);
++      return;
++    }
++    removeUnsoldDiscountAtPhaseEnd(state);
++    if (state._step3Phase2) {
++      startStep3AfterPhase2(state);
++      state.auction = null;
++      beginPhase3(state);
++      return;
+     }
+     state.plantMarket.discounted = null;
+-    applyStep3IfPending(state);
+     state.auction = null;
+     beginPhase3(state);
+   }
+@@ -1132,36 +1214,39 @@
+   }
+ 
+   function afterBuildPhase(state) {
+-    // Step2 트리거 체크
+     var maxCities = 0;
+-    Object.keys(state.players).forEach(function (s) {
+-      maxCities = Math.max(maxCities, state.players[s].cities.length);
+-    });
++    Object.keys(state.players).forEach(function (s) { maxCities = Math.max(maxCities, state.players[s].cities.length); });
+     if (state.step === 1 && maxCities >= STEP2_TRIGGER[state.numPlayers]) {
+       state.step = 2;
+       var mkt = state.plantMarket;
+-      var pool = mkt.current.concat(mkt.future).sort(function (a, b) { return a - b; });
+-      pool.shift();
++      var pool = mkt.current.concat(mkt.future).filter(function (x) { return x !== 'STEP3'; }).sort(function (a, b) { return a - b; });
++      var firstRemoved = pool.shift();
+       while (pool.length < 8 && state.deck.length) {
+         var d = state.deck.shift();
+-        if (d === 'STEP3') { handleStep3Drawn(state, 'step2trigger'); continue; }
++        if (d === 'STEP3') {
++          handleStep3Drawn(state, 'phase5');
++          pool.sort(function (a, b) { return a - b; });
++          var secondRemoved = pool.shift();
++          state._step3EarlyDuringStep2 = true;
++          pushLog(state, 'Step 2 시작 중 Step 3 카드가 공개되어 ' + secondRemoved + '번 발전소도 제거합니다. 다음 라운드부터 Step 3가 시작됩니다.');
++          break;
++        }
+         pool.push(d);
+       }
+       pool.sort(function (a, b) { return a - b; });
+       mkt.current = pool.slice(0, 4);
+-      mkt.future = pool.slice(4, 8);
+-      pushLog(state, 'Step 2 시작! (가장 저렴한 발전소 1장을 교체했습니다)');
++      mkt.future = pool.slice(4);
++      pushLog(state, 'Step 2 시작! ' + firstRemoved + '번 최저 발전소를 제거하고 시장을 갱신했습니다.');
+     }
+-    // 종료 조건 체크
+     if (maxCities >= END_GAME_CITIES[state.numPlayers]) {
+       state.gameOver = true;
+-      pushLog(state, '누군가 ' + maxCities + '개 도시를 연결하여 게임 종료 조건을 달성했습니다! 마지막 관료 단계를 진행합니다.');
++      pushLog(state, '누군가 ' + maxCities + '개 도시를 연결하여 게임 종료 조건을 달성했습니다! 마지막 관료 단계에서는 수입을 받지 않고 최종 공급 도시 수만 비교합니다.');
+     }
+     beginPhase5(state);
+   }
+ 
+   // ---------------- Phase 5: 관료 단계 (직접 전력 공급) ----------------
+-  function fuelUseForPlants(plants, stock) {
++  function fuelNeedsForPlants(plants) {
+     var need = { coal:0, oil:0, garbage:0, uranium:0, hybrid:0 };
+     (plants || []).forEach(function (n) {
+       var d = PLANT_DEFS[n];
+@@ -1172,22 +1257,30 @@
+       else if (d.type === 'uranium') need.uranium += d.need;
+       else if (d.type === 'hybrid') need.hybrid += d.need;
+     });
+-    if (need.coal > (stock.coal || 0) || need.oil > (stock.oil || 0) ||
+-        need.garbage > (stock.garbage || 0) || need.uranium > (stock.uranium || 0)) return null;
++    return need;
++  }
++
++  function hybridFuelRange(plants, stock) {
++    var need = fuelNeedsForPlants(plants);
++    if (need.coal > (stock.coal || 0) || need.oil > (stock.oil || 0) || need.garbage > (stock.garbage || 0) || need.uranium > (stock.uranium || 0)) return null;
+     var coalLeft = (stock.coal || 0) - need.coal;
+     var oilLeft = (stock.oil || 0) - need.oil;
+     if (need.hybrid > coalLeft + oilLeft) return null;
++    return { hybridNeed:need.hybrid, minCoal:Math.max(0, need.hybrid-oilLeft), maxCoal:Math.min(need.hybrid, coalLeft), base:need };
++  }
+ 
+-    // 하이브리드 발전소는 기존 동작과 동일하게 남은 석유를 먼저 사용하고
+-    // 부족분을 석탄으로 채운다.
+-    var hybridOil = Math.min(oilLeft, need.hybrid);
+-    var hybridCoal = need.hybrid - hybridOil;
+-    return {
+-      coal: need.coal + hybridCoal,
+-      oil: need.oil + hybridOil,
+-      garbage: need.garbage,
+-      uranium: need.uranium
+-    };
++  function fuelUseForPlants(plants, stock, hybridCoalChoice) {
++    var range = hybridFuelRange(plants, stock);
++    if (!range) return null;
++    var hybridCoal;
++    if (range.hybridNeed <= 0) hybridCoal = 0;
++    else if (hybridCoalChoice == null || hybridCoalChoice === '') hybridCoal = range.minCoal;
++    else {
++      hybridCoal = Math.floor(Number(hybridCoalChoice));
++      if (!Number.isFinite(hybridCoal) || hybridCoal < range.minCoal || hybridCoal > range.maxCoal) return null;
++    }
++    var hybridOil = range.hybridNeed - hybridCoal;
++    return { coal:range.base.coal+hybridCoal, oil:range.base.oil+hybridOil, garbage:range.base.garbage, uranium:range.base.uranium, hybridCoal:hybridCoal, hybridOil:hybridOil, hybridNeed:range.hybridNeed };
+   }
+ 
+   function powerTurnSeat(state) {
+@@ -1218,14 +1311,15 @@
+     if (requested > p.cities.length) throw new Error('보유 도시보다 많이 공급할 수 없습니다.');
+     if (requested > capacity) throw new Error('선택한 발전소는 최대 도시 ' + capacity + '개까지만 공급할 수 있습니다.');
+     if (requested === 0 && plants.length > 0) throw new Error('공급할 도시가 0개라면 발전소를 선택하지 않고 확정하세요.');
+-    var fuel = fuelUseForPlants(plants, p.stock);
++    var fuel = fuelUseForPlants(plants, p.stock, args.hybridCoal);
+     if (!fuel) throw new Error('선택한 발전소를 가동할 자원이 부족합니다.');
+     p.stock.coal -= fuel.coal; p.stock.oil -= fuel.oil; p.stock.garbage -= fuel.garbage; p.stock.uranium -= fuel.uranium;
+     p._lastPoweredCities = p.cities.slice(0, requested);
+-    var pay = payoutFor(requested);
+-    p.money += pay;
++    var pay = state.gameOver ? 0 : payoutFor(requested);
++    if (!state.gameOver) p.money += pay;
+     if (state.gameOver) p._finalPowered = requested;
+-    pushLog(state, p.name + '님이 발전소 ' + (plants.length ? plants.join(',')+'번' : '없음') + '으로 도시 ' + requested + '개에 전력을 공급하고 ' + pay + '€를 받았습니다.');
++    var hybridNote = fuel.hybridNeed > 0 ? ' (하이브리드: 석탄 ' + fuel.hybridCoal + ' / 석유 ' + fuel.hybridOil + ')' : '';
++    pushLog(state, p.name + '님이 발전소 ' + (plants.length ? plants.join(',')+'번' : '없음') + '으로 도시 ' + requested + '개에 전력을 공급했습니다.' + hybridNote + (state.gameOver ? ' 최종 라운드이므로 수입은 받지 않습니다.' : ' ' + pay + '€를 받았습니다.'));
+     state.powerTurn.orderIdx += 1;
+     if (state.powerTurn.orderIdx >= state.order.length) {
+       state.powerTurn = null;
+@@ -1236,9 +1330,10 @@
+ 
+ 
+   function finishPhase5Round(state) {
+-    // 자원시장 보충
+     var table = RESOURCE_REPLENISH[state.numPlayers];
+-    var stepIdx = state.step - 1;
++    var step3WillAppear = !!state._step3EarlyDuringStep2 || (state.step !== 3 && state.deck && state.deck[0] === 'STEP3');
++    var replenishStep = step3WillAppear ? 2 : state.step;
++    var stepIdx = replenishStep - 1;
+     ['coal', 'oil', 'garbage', 'uranium'].forEach(function (res) {
+       var amt = table[res][stepIdx];
+       if (res === 'uranium' && state.flags && state.flags.uraniumResupplyStopped) amt = 0;
+@@ -1247,11 +1342,18 @@
+       state.resourceMarket[res] += add;
+     });
+ 
+-    // 발전소 시장 갱신
+     var mkt = state.plantMarket;
+-    if (state.step === 3) {
+-      var pool = mkt.current.slice().sort(function (a, b) { return a - b; });
+-      pool.shift();
++    if (state._step3EarlyDuringStep2) {
++      state._step3EarlyDuringStep2 = false;
++      state._step3Phase5 = false;
++      state.step = 3;
++      var earlyPool = mkt.current.concat(mkt.future).filter(function (x) { return x !== 'STEP3'; }).sort(function (a, b) { return a - b; });
++      mkt.current = earlyPool.slice(0, 6);
++      mkt.future = [];
++      pushLog(state, 'Step 2 자원 보충을 마지막으로 적용했습니다. 다음 라운드부터 Step 3입니다.');
++    } else if (state.step === 3) {
++      var pool = mkt.current.slice().filter(function (x) { return x !== 'STEP3'; }).sort(function (a, b) { return a - b; });
++      var removed3 = pool.shift();
+       while (pool.length < 6 && state.deck.length) {
+         var dd = state.deck.shift();
+         if (dd === 'STEP3') continue;
+@@ -1259,22 +1361,33 @@
+       }
+       mkt.current = pool.sort(function (a, b) { return a - b; }).slice(0, 6);
+       mkt.future = [];
++      if (removed3 != null) pushLog(state, 'Step 3 관료 단계: ' + removed3 + '번 최저 발전소를 제거하고 새 발전소로 교체했습니다.');
+     } else {
+-      var pool2 = mkt.current.concat(mkt.future).sort(function (a, b) { return a - b; });
++      var pool2 = mkt.current.concat(mkt.future).filter(function (x) { return x !== 'STEP3'; }).sort(function (a, b) { return a - b; });
+       var highest = pool2.pop();
+-      state.deck.push(highest);
+-      if (state.deck.length && state.deck[0] === 'STEP3') { /* no-op */ }
+-      while (pool2.length < 8 && state.deck.length) {
++      if (highest != null) state.deck.push(highest);
++      if (state.deck.length) {
+         var d3 = state.deck.shift();
+-        if (d3 === 'STEP3') { handleStep3Drawn(state, 'phase5'); continue; }
+-        pool2.push(d3);
++        if (d3 === 'STEP3') {
++          handleStep3Drawn(state, 'phase5');
++          pool2.sort(function (a, b) { return a - b; });
++          var removedLow = pool2.shift();
++          state.step = 3;
++          state._step3Phase5 = false;
++          mkt.current = pool2.sort(function (a, b) { return a - b; }).slice(0, 6);
++          mkt.future = [];
++          pushLog(state, 'Phase 5에서 Step 3 카드와 ' + removedLow + '번 최저 발전소를 제거했습니다. 다음 라운드부터 Step 3입니다.');
++        } else {
++          pool2.push(d3);
++          pool2.sort(function (a, b) { return a - b; });
++          mkt.current = pool2.slice(0, 4);
++          mkt.future = pool2.slice(4, 8);
++        }
++      } else {
++        mkt.current = pool2.slice(0, 4);
++        mkt.future = pool2.slice(4, 8);
+       }
+-      pool2.sort(function (a, b) { return a - b; });
+-      mkt.current = pool2.slice(0, 4);
+-      mkt.future = pool2.slice(4, 8);
+     }
+-
+-    applyStep3IfPending(state);
+     state.round += 1;
+     recomputeOrder(state);
+     beginPhase2(state);
+@@ -1309,6 +1422,7 @@
+     bid: function (s, seat, args) { actionBid(s, seat, args.amount); },
+     bidPass: function (s, seat) { actionBidPass(s, seat); },
+     discardPlant: function (s, seat, args) { actionDiscardPlant(s, seat, args.plant); },
++    discardExcessResource: function (s, seat, args) { actionDiscardExcessResource(s, seat, args.resource); },
+     buyResource: function (s, seat, args) { actionBuyResource(s, seat, args.resource, args.qty); },
+     endResourceTurn: function (s, seat) { actionEndResourceTurn(s, seat); },
+     buildCity: function (s, seat, args) { actionBuildCity(s, seat, args.city); },
+@@ -1324,6 +1438,7 @@
+ 
+   function applyAction(state, action) {
+     var next = clone(state);
++    next.rulesRev = RULES_REV;
+     if (next.kind !== STATE_KIND) throw new Error('이 방은 이전 형식의 파워그리드 상태입니다. 방장이 새 파워그리드 방으로 다시 시작해야 합니다.');
+     var fn = ACTIONS[action.type];
+     if (!fn) throw new Error('알 수 없는 액션: ' + action.type);
+@@ -1352,6 +1467,7 @@
+   // ============================================================
+   return {
+     STATE_KIND: STATE_KIND,
++    RULES_REV: RULES_REV,
+     MAP: MAP,
+     GERMANY: GERMANY,
+     BOARD_MAPS: BOARD_MAPS,
+@@ -1377,6 +1493,8 @@
+     plantStorageCap: plantStorageCap,
+     canStoreResource: canStoreResource,
+     stockFitsPlants: stockFitsPlants,
++    fuelNeedsForPlants: fuelNeedsForPlants,
++    hybridFuelRange: hybridFuelRange,
+     storageProfile: storageProfile,
+     fuelUseForPlants: fuelUseForPlants,
+     resourceTurnSeat: resourceTurnSeat,
+--- /mnt/data/_pg_latest/arena-patched/powergrid/ui.js	2026-09-07 12:14:31.000000000 +0000
++++ /mnt/data/BoardMate_PowerGrid_RULES_FIX_V25/powergrid/ui.js	2026-09-08 01:07:38.576722705 +0000
+@@ -1,5 +1,5 @@
+ /*!
+- * BoardMate Power Grid - Multiplayer UI Layer v19
++ * BoardMate Power Grid - Multiplayer UI Layer v25
+  * 순수 DOM/SVG 렌더링. React 등 프레임워크 없이 동작.
+  * window.PowerGrid (engine.js) 를 사용한다.
+  */
+@@ -33,11 +33,12 @@
+   var PLANT_SPRITE_ORDER = Object.keys(PG.PLANT_DEFS).map(Number).sort(function (a,b) { return a-b; });
+   var PLANT_SPRITE_INDEX = {};
+   PLANT_SPRITE_ORDER.forEach(function (n, i) { PLANT_SPRITE_INDEX[n] = i; });
++  PLANT_SPRITE_INDEX.STEP3 = 42;
+   function plantSprite(num) {
+     var idx = PLANT_SPRITE_INDEX[num];
+     if (idx == null) return '<div class="pg-plant-img pg-plant-missing">'+esc(num)+'</div>';
+     var x = (idx % 7) * 100, y = Math.floor(idx / 7) * 100;
+-    return '<svg class="pg-plant-img" viewBox="'+x+' '+y+' 100 100" role="img" aria-label="'+esc(num)+'번 발전소">'+
++    return '<svg class="pg-plant-img" viewBox="'+x+' '+y+' 100 100" role="img" aria-label="'+(num==='STEP3'?'Step 3 카드':esc(num)+'번 발전소')+'">'+
+       '<image href="./powergrid/assets/plants/plant_sheet.webp?v=19" x="0" y="0" width="700" height="700" preserveAspectRatio="none"></image></svg>';
+   }
+ 
+@@ -345,6 +346,9 @@
+     mkt.future.forEach(function (n) {
+       html += '<div class="pg-plant-card future">' + plantSprite(n) + '<div class="info">' + plantLabel(n) + '</div></div>';
+     });
++    if (state._step3CardInMarket) {
++      html += '<div class="pg-plant-card future">' + plantSprite('STEP3') + '<div class="info"><b>Step 3 카드</b><br>경매 단계 종료 후 발동</div></div>';
++    }
+     html += '</div>';
+     return html;
+   }
+@@ -401,15 +405,29 @@
+ 
+     if (state.plantDiscard) {
+       var pd=state.plantDiscard, owner=state.players[pd.seat];
+-      var htmlD='<div class="pg-card pg-attention"><h3>발전소 보유 한도 · 폐기 선택</h3>';
+-      htmlD+='<p><b>'+esc(owner.name)+'</b>님은 발전소를 최대 <b>'+pd.max+'장</b> 보유할 수 있습니다. 방금 낙찰받은 발전소를 포함해 보유 카드 중 <b>1장</b>을 직접 버려야 경매가 계속됩니다.</p>';
+-      if(iAmActing){
+-        htmlD+='<div class="pg-discard-grid">';
+-        owner.plants.forEach(function(n){
+-          htmlD+='<button class="pg-discard-plant" data-action="discardPlant" data-plant="'+n+'">'+plantSprite(n)+'<b>'+n+'번 폐기</b><span>'+plantLabel(n)+'</span></button>';
+-        });
+-        htmlD+='</div><div class="pg-map-note">발전소를 버려 저장 한도가 줄어든 경우 넘치는 자원은 자동으로 반납됩니다.</div>';
+-      } else htmlD+='<p>폐기할 발전소를 고르는 중입니다.</p>';
++      var htmlD='<div class="pg-card pg-attention"><h3>발전소 보유 한도 · 폐기 처리</h3>';
++      if ((pd.stage||'plant') === 'plant') {
++        htmlD+='<p><b>'+esc(owner.name)+'</b>님은 발전소를 최대 <b>'+pd.max+'장</b> 보유할 수 있습니다. <b>방금 구입한 '+pd.purchased+'번 발전소는 폐기할 수 없고</b>, 기존 발전소 중 1장을 선택해야 합니다.</p>';
++        if(iAmActing){
++          htmlD+='<div class="pg-discard-grid">';
++          owner.plants.forEach(function(n){
++            var justBought=Number(n)===Number(pd.purchased);
++            htmlD+='<button class="pg-discard-plant" data-action="discardPlant" data-plant="'+n+'" '+(justBought?'disabled':'')+'>'+plantSprite(n)+'<b>'+n+'번 '+(justBought?'폐기 불가':'폐기')+'</b><span>'+(justBought?'방금 구입한 발전소':plantLabel(n))+'</span></button>';
++          });
++          htmlD+='</div><div class="pg-map-note">폐기 후 자원은 남은 발전소 사이에서 자유롭게 재배치할 수 있습니다. 저장 한도를 넘는 자원이 있으면 어떤 자원을 공급처로 돌릴지 직접 고릅니다.</div>';
++        } else htmlD+='<p>폐기할 기존 발전소를 고르는 중입니다.</p>';
++      } else {
++        var prof=PG.storageProfile(owner.plants);
++        htmlD+='<p><b>'+esc(owner.name)+'</b>님이 '+pd.discarded+'번 발전소를 폐기했습니다. 남은 발전소에 모두 저장할 수 있도록 초과 자원을 공급처로 반납하세요.</p>';
++        htmlD+='<div class="pg-power-summary invalid">현재 자원 · 석탄 '+owner.stock.coal+' / 석유 '+owner.stock.oil+' / 쓰레기 '+owner.stock.garbage+' / 우라늄 '+owner.stock.uranium+'<br><small>남은 저장 한도 · 석탄전용 '+prof.coalOnly+' · 석유전용 '+prof.oilOnly+' · 하이브리드 '+prof.hybrid+' · 쓰레기 '+prof.garbage+' · 우라늄 '+prof.uranium+'</small></div>';
++        if(iAmActing){
++          htmlD+='<div class="pg-form-row">';
++          [['coal','석탄'],['oil','석유'],['garbage','쓰레기'],['uranium','우라늄']].forEach(function(x){
++            if(Number(owner.stock[x[0]]||0)>0) htmlD+='<button class="pg-btn small" data-action="discardExcessResource" data-resource="'+x[0]+'">'+x[1]+' 1개 반납</button>';
++          });
++          htmlD+='</div><div class="pg-map-note">남은 발전소에 현재 자원이 모두 들어가는 순간 자동으로 정리가 완료되고 경매가 계속됩니다.</div>';
++        } else htmlD+='<p>초과 자원을 정리하는 중입니다.</p>';
++      }
+       return htmlD+'</div>';
+     }
+ 
+@@ -472,7 +490,7 @@
+         return html5;
+       }
+       var p=state.players[mySeat];
+-      html5+='<p><b>가동할 발전소</b>를 고르고, 실제로 전력을 공급할 <b>도시 개수</b>만 정하면 됩니다. 어느 도시를 활성화할지는 더 이상 고르지 않습니다.</p>';
++      html5+='<p><b>가동할 발전소</b>를 고르고, 실제로 전력을 공급할 <b>도시 개수</b>를 정하세요. 하이브리드 발전소가 있으면 석탄/석유 조합도 직접 선택합니다.'+(state.gameOver?' <b>최종 라운드에는 수입을 받지 않습니다.</b>':'')+'</p>';
+       html5+='<div class="pg-power-summary" id="pg-power-summary">발전소와 도시 개수를 선택하세요.</div>';
+       var myCityCount = p.cities.length;
+       html5+='<h4>① 가동할 발전소</h4><div class="pg-power-plant-grid">';
+@@ -480,15 +498,15 @@
+         html5+='<label class="pg-power-plant-choice"><input type="checkbox" class="pg-power-plant-check" value="'+n+'">'+plantSprite(n)+'<span><b>'+n+'번</b><small>'+plantLabel(n)+'</small></span></label>';
+       });
+       if(!p.plants.length) html5+='<span class="pg-map-note">보유 발전소가 없습니다.</span>';
+-      html5+='</div><h4>② 공급할 도시 개수</h4>';
++      html5+='</div><div id="pg-hybrid-fuel-box" class="pg-setup-warning" style="display:none;margin-top:10px"></div><h4>② 공급할 도시 개수</h4>';
+       html5+='<div class="pg-form-row pg-power-city-row">' +
+         '<button class="pg-btn pg-city-count-btn" id="pg-power-city-minus" type="button" aria-label="감소">▼</button>' +
+         '<input class="pg-input" id="pg-power-city-count" type="number" min="0" max="'+myCityCount+'" value="'+myCityCount+'" style="width:80px;text-align:center">' +
+         '<button class="pg-btn pg-city-count-btn" id="pg-power-city-plus" type="button" aria-label="증가">▲</button>' +
+         '<span class="pg-map-note">내 도시 '+myCityCount+'개</span>' +
+       '</div>';
+-      html5+='<div class="pg-form-row"><button class="pg-btn primary" id="pg-power-confirm" data-action="powerCities">⚡ 발전/수입 확정</button></div>';
+-      html5+='<div class="pg-map-note">0개 공급은 발전소를 선택하지 않고 확정하세요. 수입은 위의 전력 생산량별 수입표와 동일하게 지급됩니다.</div>';
++      html5+='<div class="pg-form-row"><button class="pg-btn primary" id="pg-power-confirm" data-action="powerCities">'+(state.gameOver?'⚡ 최종 공급 확정':'⚡ 발전/수입 확정')+'</button></div>';
++      html5+='<div class="pg-map-note">0개 공급은 발전소를 선택하지 않고 확정하세요. '+(state.gameOver?'최종 라운드는 돈을 받지 않으며, 공급 도시 수 → 남은 현금 순으로 승자를 정합니다.':'수입은 위의 전력 생산량별 수입표와 동일하게 지급됩니다.')+'</div>';
+       return html5+'</div>';
+     }
+     return '';
+@@ -568,9 +586,11 @@
+         if (actType === 'offerPlant' || actType === 'discardPlant') { args.plant = Number(el.getAttribute('data-plant')); var bi=container.querySelector('#pg-offer-bid-'+args.plant); if (actType==='offerPlant' && bi) args.bid=Number(bi.value); }
+         if (actType === 'buildCity') args.city = el.getAttribute('data-city');
+         if (actType === 'buyResource') { args.resource = el.getAttribute('data-resource'); args.qty = Number(el.getAttribute('data-qty')); }
++        if (actType === 'discardExcessResource') args.resource = el.getAttribute('data-resource');
+         if (actType === 'powerCities') {
+           args.plants = Array.from(container.querySelectorAll('.pg-power-plant-check:checked')).map(function(x){return Number(x.value);});
+           var ci=container.querySelector('#pg-power-city-count'); args.cityCount = ci ? Number(ci.value) : 0;
++          var hc=container.querySelector('#pg-hybrid-coal-count'); if(hc) args.hybridCoal=Number(hc.value);
+         }
+         if (actType === 'bid') {
+           var input = container.querySelector('#pg-bid-amount');
+@@ -588,11 +608,32 @@
+       var cityInput=container.querySelector('#pg-power-city-count');
+       var cityCount=cityInput ? Math.max(0, Math.floor(Number(cityInput.value)||0)) : 0;
+       var capacity=selectedPlants.reduce(function(sum,n){return sum+(PG.PLANT_DEFS[n]?PG.PLANT_DEFS[n].cities:0);},0);
+-      var fuel=PG.fuelUseForPlants(selectedPlants,state.players[mySeat].stock);
+       var maxCities=(state.players[mySeat].cities||[]).length;
++      var range=PG.hybridFuelRange ? PG.hybridFuelRange(selectedPlants,state.players[mySeat].stock) : null;
++      var fuelBox=container.querySelector('#pg-hybrid-fuel-box');
++      var hybridCoalInput=container.querySelector('#pg-hybrid-coal-count');
++      var hybridCoal=null;
++      if(range && range.hybridNeed>0){
++        if(fuelBox){
++          var old=hybridCoalInput ? Number(hybridCoalInput.value) : range.minCoal;
++          if(!Number.isFinite(old)) old=range.minCoal;
++          old=Math.max(range.minCoal,Math.min(range.maxCoal,Math.floor(old)));
++          fuelBox.style.display='block';
++          fuelBox.innerHTML='<b>하이브리드 연료 선택</b> · 필요한 혼합 연료 '+range.hybridNeed+'개<br><div class="pg-form-row" style="margin-top:6px"><label>석탄 <input class="pg-input" id="pg-hybrid-coal-count" type="number" min="'+range.minCoal+'" max="'+range.maxCoal+'" value="'+old+'" style="width:70px"></label><span>석유 <b id="pg-hybrid-oil-count">'+(range.hybridNeed-old)+'</b>개</span></div><small>가능한 석탄 범위 '+range.minCoal+'~'+range.maxCoal+'개 · 나머지는 석유를 사용합니다.</small>';
++          hybridCoalInput=container.querySelector('#pg-hybrid-coal-count');
++          hybridCoal=old;
++          hybridCoalInput.addEventListener('input',updatePowerSelectionUI);
++          hybridCoalInput.addEventListener('change',updatePowerSelectionUI);
++        } else hybridCoal=range.minCoal;
++      } else if(fuelBox){
++        fuelBox.style.display='none'; fuelBox.innerHTML='';
++      }
++      if(hybridCoalInput && range && range.hybridNeed>0) hybridCoal=Number(hybridCoalInput.value);
++      var fuel=PG.fuelUseForPlants(selectedPlants,state.players[mySeat].stock,hybridCoal);
+       var ok=fuel!==null && cityCount<=capacity && cityCount<=maxCities && !(cityCount===0 && selectedPlants.length>0);
+-      var fuelText=fuel ? ('석탄 '+fuel.coal+' · 석유 '+fuel.oil+' · 쓰레기 '+fuel.garbage+' · 우라늄 '+fuel.uranium) : '자원 부족';
+-      summary.innerHTML='선택 발전소 <b>'+selectedPlants.length+'장</b> · 공급능력 <b>'+capacity+'도시</b> · 공급 예정 <b>'+cityCount+'개</b> · 수입 <b>'+PG.payoutFor(cityCount)+'€</b><br><small>소모 자원: '+fuelText+'</small>';
++      var fuelText=fuel ? ('석탄 '+fuel.coal+' · 석유 '+fuel.oil+' · 쓰레기 '+fuel.garbage+' · 우라늄 '+fuel.uranium) : '자원 부족 또는 하이브리드 조합 오류';
++      var incomeText=state.gameOver?'최종 판정 · 수입 없음':('수입 <b>'+PG.payoutFor(cityCount)+'€</b>');
++      summary.innerHTML='선택 발전소 <b>'+selectedPlants.length+'장</b> · 공급능력 <b>'+capacity+'도시</b> · 공급 예정 <b>'+cityCount+'개</b> · '+incomeText+'<br><small>소모 자원: '+fuelText+'</small>';
+       summary.classList.toggle('invalid',!ok);
+       var confirm=container.querySelector('#pg-power-confirm');
+       if(confirm) confirm.disabled=!ok;
+--- /mnt/data/BoardMate_PowerGrid_3PLUS_V24/powergrid/map-rules-v23.js	2026-09-08 00:57:35.838203458 +0000
++++ /mnt/data/BoardMate_PowerGrid_RULES_FIX_V25/powergrid/map-rules-v23.js	2026-09-08 01:05:40.716018597 +0000
+@@ -306,18 +306,21 @@
+     if (b === 'korea' && action.type === 'chooseKoreaMarket') {
+       var k1 = clone(state);
+       chooseKoreaMarket(k1, action.seat, action.args && action.args.market);
++      k1.rulesRev = PG.RULES_REV || k1.rulesRev;
+       PG.syncDerivedTurn(k1);
+       return k1;
+     }
+     if (b === 'korea' && action.type === 'buyResource') {
+       var k2 = clone(state);
+       buyKoreaResource(k2, action.seat, action.args || {});
++      k2.rulesRev = PG.RULES_REV || k2.rulesRev;
+       PG.syncDerivedTurn(k2);
+       return k2;
+     }
+     if (b === 'usa' && action.type === 'buyResource') {
+       var u = clone(state);
+       buyUsaResource(u, action.seat, action.args || {});
++      u.rulesRev = PG.RULES_REV || u.rulesRev;
+       PG.syncDerivedTurn(u);
+       return u;
+     }
+@@ -333,7 +336,7 @@
+     if (b === 'korea') {
+       ensureKoreaMarkets(next);
+       if (beforePhase === 5 && action.type === 'powerCities' && !next.gameOver && next.round === beforeRound + 1) {
+-        refillKorea(next, beforeStep);
++        refillKorea(next, (beforeStep < 3 && next.step === 3) ? 2 : beforeStep);
+       } else {
+         syncKoreaShadow(next);
+       }

@@ -1,5 +1,5 @@
 /*!
- * BoardMate Power Grid - Multiplayer UI Layer v22
+ * BoardMate Power Grid - Multiplayer UI Layer v26
  * 순수 DOM/SVG 렌더링. React 등 프레임워크 없이 동작.
  * window.PowerGrid (engine.js) 를 사용한다.
  */
@@ -33,11 +33,12 @@
   var PLANT_SPRITE_ORDER = Object.keys(PG.PLANT_DEFS).map(Number).sort(function (a,b) { return a-b; });
   var PLANT_SPRITE_INDEX = {};
   PLANT_SPRITE_ORDER.forEach(function (n, i) { PLANT_SPRITE_INDEX[n] = i; });
+  PLANT_SPRITE_INDEX.STEP3 = 42;
   function plantSprite(num) {
     var idx = PLANT_SPRITE_INDEX[num];
     if (idx == null) return '<div class="pg-plant-img pg-plant-missing">'+esc(num)+'</div>';
     var x = (idx % 7) * 100, y = Math.floor(idx / 7) * 100;
-    return '<svg class="pg-plant-img" viewBox="'+x+' '+y+' 100 100" role="img" aria-label="'+esc(num)+'번 발전소">'+
+    return '<svg class="pg-plant-img" viewBox="'+x+' '+y+' 100 100" role="img" aria-label="'+(num==='STEP3'?'Step 3 카드':esc(num)+'번 발전소')+'">'+
       '<image href="./powergrid/assets/plants/plant_sheet.webp?v=19" x="0" y="0" width="700" height="700" preserveAspectRatio="none"></image></svg>';
   }
 
@@ -345,6 +346,9 @@
     mkt.future.forEach(function (n) {
       html += '<div class="pg-plant-card future">' + plantSprite(n) + '<div class="info">' + plantLabel(n) + '</div></div>';
     });
+    if (state._step3CardInMarket) {
+      html += '<div class="pg-plant-card future">' + plantSprite('STEP3') + '<div class="info"><b>Step 3 카드</b><br>경매 단계 종료 후 발동</div></div>';
+    }
     html += '</div>';
     return html;
   }
@@ -401,15 +405,29 @@
 
     if (state.plantDiscard) {
       var pd=state.plantDiscard, owner=state.players[pd.seat];
-      var htmlD='<div class="pg-card pg-attention"><h3>발전소 보유 한도 · 폐기 선택</h3>';
-      htmlD+='<p><b>'+esc(owner.name)+'</b>님은 발전소를 최대 <b>'+pd.max+'장</b> 보유할 수 있습니다. 방금 낙찰받은 발전소를 포함해 보유 카드 중 <b>1장</b>을 직접 버려야 경매가 계속됩니다.</p>';
-      if(iAmActing){
-        htmlD+='<div class="pg-discard-grid">';
-        owner.plants.forEach(function(n){
-          htmlD+='<button class="pg-discard-plant" data-action="discardPlant" data-plant="'+n+'">'+plantSprite(n)+'<b>'+n+'번 폐기</b><span>'+plantLabel(n)+'</span></button>';
-        });
-        htmlD+='</div><div class="pg-map-note">발전소를 버려 저장 한도가 줄어든 경우 넘치는 자원은 자동으로 반납됩니다.</div>';
-      } else htmlD+='<p>폐기할 발전소를 고르는 중입니다.</p>';
+      var htmlD='<div class="pg-card pg-attention"><h3>발전소 보유 한도 · 폐기 처리</h3>';
+      if ((pd.stage||'plant') === 'plant') {
+        htmlD+='<p><b>'+esc(owner.name)+'</b>님은 발전소를 최대 <b>'+pd.max+'장</b> 보유할 수 있습니다. <b>방금 구입한 '+pd.purchased+'번 발전소는 폐기할 수 없고</b>, 기존 발전소 중 1장을 선택해야 합니다.</p>';
+        if(iAmActing){
+          htmlD+='<div class="pg-discard-grid">';
+          owner.plants.forEach(function(n){
+            var justBought=Number(n)===Number(pd.purchased);
+            htmlD+='<button class="pg-discard-plant" data-action="discardPlant" data-plant="'+n+'" '+(justBought?'disabled':'')+'>'+plantSprite(n)+'<b>'+n+'번 '+(justBought?'폐기 불가':'폐기')+'</b><span>'+(justBought?'방금 구입한 발전소':plantLabel(n))+'</span></button>';
+          });
+          htmlD+='</div><div class="pg-map-note">폐기 후 자원은 남은 발전소 사이에서 자유롭게 재배치할 수 있습니다. 저장 한도를 넘는 자원이 있으면 어떤 자원을 공급처로 돌릴지 직접 고릅니다.</div>';
+        } else htmlD+='<p>폐기할 기존 발전소를 고르는 중입니다.</p>';
+      } else {
+        var prof=PG.storageProfile(owner.plants);
+        htmlD+='<p><b>'+esc(owner.name)+'</b>님이 '+pd.discarded+'번 발전소를 폐기했습니다. 남은 발전소에 모두 저장할 수 있도록 초과 자원을 공급처로 반납하세요.</p>';
+        htmlD+='<div class="pg-power-summary invalid">현재 자원 · 석탄 '+owner.stock.coal+' / 석유 '+owner.stock.oil+' / 쓰레기 '+owner.stock.garbage+' / 우라늄 '+owner.stock.uranium+'<br><small>남은 저장 한도 · 석탄전용 '+prof.coalOnly+' · 석유전용 '+prof.oilOnly+' · 하이브리드 '+prof.hybrid+' · 쓰레기 '+prof.garbage+' · 우라늄 '+prof.uranium+'</small></div>';
+        if(iAmActing){
+          htmlD+='<div class="pg-form-row">';
+          [['coal','석탄'],['oil','석유'],['garbage','쓰레기'],['uranium','우라늄']].forEach(function(x){
+            if(Number(owner.stock[x[0]]||0)>0) htmlD+='<button class="pg-btn small" data-action="discardExcessResource" data-resource="'+x[0]+'">'+x[1]+' 1개 반납</button>';
+          });
+          htmlD+='</div><div class="pg-map-note">남은 발전소에 현재 자원이 모두 들어가는 순간 자동으로 정리가 완료되고 경매가 계속됩니다.</div>';
+        } else htmlD+='<p>초과 자원을 정리하는 중입니다.</p>';
+      }
       return htmlD+'</div>';
     }
 
@@ -472,7 +490,7 @@
         return html5;
       }
       var p=state.players[mySeat];
-      html5+='<p><b>가동할 발전소</b>를 고르고, 실제로 전력을 공급할 <b>도시 개수</b>만 정하면 됩니다. 어느 도시를 활성화할지는 더 이상 고르지 않습니다.</p>';
+      html5+='<p><b>가동할 발전소</b>를 고르고, 실제로 전력을 공급할 <b>도시 개수</b>를 정하세요. 하이브리드 발전소가 있으면 석탄/석유 조합도 직접 선택합니다.'+(state.gameOver?' <b>최종 라운드에는 수입을 받지 않습니다.</b>':'')+'</p>';
       html5+='<div class="pg-power-summary" id="pg-power-summary">발전소와 도시 개수를 선택하세요.</div>';
       var myCityCount = p.cities.length;
       html5+='<h4>① 가동할 발전소</h4><div class="pg-power-plant-grid">';
@@ -480,15 +498,15 @@
         html5+='<label class="pg-power-plant-choice"><input type="checkbox" class="pg-power-plant-check" value="'+n+'">'+plantSprite(n)+'<span><b>'+n+'번</b><small>'+plantLabel(n)+'</small></span></label>';
       });
       if(!p.plants.length) html5+='<span class="pg-map-note">보유 발전소가 없습니다.</span>';
-      html5+='</div><h4>② 공급할 도시 개수</h4>';
+      html5+='</div><div id="pg-hybrid-fuel-box" class="pg-setup-warning" style="display:none;margin-top:10px"></div><h4>② 공급할 도시 개수</h4>';
       html5+='<div class="pg-form-row pg-power-city-row">' +
         '<button class="pg-btn pg-city-count-btn" id="pg-power-city-minus" type="button" aria-label="감소">▼</button>' +
-        '<input class="pg-input" id="pg-power-city-count" type="number" min="0" max="'+myCityCount+'" step="1" inputmode="numeric" value="'+myCityCount+'" style="width:80px;text-align:center" aria-label="공급할 도시 수">' +
+        '<input class="pg-input" id="pg-power-city-count" type="number" min="0" max="'+myCityCount+'" value="'+myCityCount+'" style="width:80px;text-align:center">' +
         '<button class="pg-btn pg-city-count-btn" id="pg-power-city-plus" type="button" aria-label="증가">▲</button>' +
         '<span class="pg-map-note">내 도시 '+myCityCount+'개</span>' +
       '</div>';
-      html5+='<div class="pg-form-row"><button class="pg-btn primary" id="pg-power-confirm" data-action="powerCities">⚡ 발전/수입 확정</button></div>';
-      html5+='<div class="pg-map-note">0개 공급은 발전소를 선택하지 않고 확정하세요. 수입은 위의 전력 생산량별 수입표와 동일하게 지급됩니다.</div>';
+      html5+='<div class="pg-form-row"><button class="pg-btn primary" id="pg-power-confirm" data-action="powerCities">'+(state.gameOver?'⚡ 최종 공급 확정':'⚡ 발전/수입 확정')+'</button></div>';
+      html5+='<div class="pg-map-note">0개 공급은 발전소를 선택하지 않고 확정하세요. '+(state.gameOver?'최종 라운드는 돈을 받지 않으며, 공급 도시 수 → 남은 현금 순으로 승자를 정합니다.':'수입은 위의 전력 생산량별 수입표와 동일하게 지급됩니다.')+'</div>';
       return html5+'</div>';
     }
     return '';
@@ -568,9 +586,11 @@
         if (actType === 'offerPlant' || actType === 'discardPlant') { args.plant = Number(el.getAttribute('data-plant')); var bi=container.querySelector('#pg-offer-bid-'+args.plant); if (actType==='offerPlant' && bi) args.bid=Number(bi.value); }
         if (actType === 'buildCity') args.city = el.getAttribute('data-city');
         if (actType === 'buyResource') { args.resource = el.getAttribute('data-resource'); args.qty = Number(el.getAttribute('data-qty')); }
+        if (actType === 'discardExcessResource') args.resource = el.getAttribute('data-resource');
         if (actType === 'powerCities') {
           args.plants = Array.from(container.querySelectorAll('.pg-power-plant-check:checked')).map(function(x){return Number(x.value);});
           var ci=container.querySelector('#pg-power-city-count'); args.cityCount = ci ? Number(ci.value) : 0;
+          var hc=container.querySelector('#pg-hybrid-coal-count'); if(hc) args.hybridCoal=Number(hc.value);
         }
         if (actType === 'bid') {
           var input = container.querySelector('#pg-bid-amount');
@@ -588,18 +608,35 @@
       var cityInput=container.querySelector('#pg-power-city-count');
       var cityCount=cityInput ? Math.max(0, Math.floor(Number(cityInput.value)||0)) : 0;
       var capacity=selectedPlants.reduce(function(sum,n){return sum+(PG.PLANT_DEFS[n]?PG.PLANT_DEFS[n].cities:0);},0);
-      var fuel=PG.fuelUseForPlants(selectedPlants,state.players[mySeat].stock);
       var maxCities=(state.players[mySeat].cities||[]).length;
+      var range=PG.hybridFuelRange ? PG.hybridFuelRange(selectedPlants,state.players[mySeat].stock) : null;
+      var fuelBox=container.querySelector('#pg-hybrid-fuel-box');
+      var hybridCoalInput=container.querySelector('#pg-hybrid-coal-count');
+      var hybridCoal=null;
+      if(range && range.hybridNeed>0){
+        if(fuelBox){
+          var old=hybridCoalInput ? Number(hybridCoalInput.value) : range.minCoal;
+          if(!Number.isFinite(old)) old=range.minCoal;
+          old=Math.max(range.minCoal,Math.min(range.maxCoal,Math.floor(old)));
+          fuelBox.style.display='block';
+          fuelBox.innerHTML='<b>하이브리드 연료 선택</b> · 필요한 혼합 연료 '+range.hybridNeed+'개<br><div class="pg-form-row" style="margin-top:6px"><label>석탄 <input class="pg-input" id="pg-hybrid-coal-count" type="number" min="'+range.minCoal+'" max="'+range.maxCoal+'" value="'+old+'" style="width:70px"></label><span>석유 <b id="pg-hybrid-oil-count">'+(range.hybridNeed-old)+'</b>개</span></div><small>가능한 석탄 범위 '+range.minCoal+'~'+range.maxCoal+'개 · 나머지는 석유를 사용합니다.</small>';
+          hybridCoalInput=container.querySelector('#pg-hybrid-coal-count');
+          hybridCoal=old;
+          hybridCoalInput.addEventListener('input',updatePowerSelectionUI);
+          hybridCoalInput.addEventListener('change',updatePowerSelectionUI);
+        } else hybridCoal=range.minCoal;
+      } else if(fuelBox){
+        fuelBox.style.display='none'; fuelBox.innerHTML='';
+      }
+      if(hybridCoalInput && range && range.hybridNeed>0) hybridCoal=Number(hybridCoalInput.value);
+      var fuel=PG.fuelUseForPlants(selectedPlants,state.players[mySeat].stock,hybridCoal);
       var ok=fuel!==null && cityCount<=capacity && cityCount<=maxCities && !(cityCount===0 && selectedPlants.length>0);
-      var fuelText=fuel ? ('석탄 '+fuel.coal+' · 석유 '+fuel.oil+' · 쓰레기 '+fuel.garbage+' · 우라늄 '+fuel.uranium) : '자원 부족';
-      summary.innerHTML='선택 발전소 <b>'+selectedPlants.length+'장</b> · 공급능력 <b>'+capacity+'도시</b> · 공급 예정 <b>'+cityCount+'개</b> · 수입 <b>'+PG.payoutFor(cityCount)+'€</b><br><small>소모 자원: '+fuelText+'</small>';
+      var fuelText=fuel ? ('석탄 '+fuel.coal+' · 석유 '+fuel.oil+' · 쓰레기 '+fuel.garbage+' · 우라늄 '+fuel.uranium) : '자원 부족 또는 하이브리드 조합 오류';
+      var incomeText=state.gameOver?'최종 판정 · 수입 없음':('수입 <b>'+PG.payoutFor(cityCount)+'€</b>');
+      summary.innerHTML='선택 발전소 <b>'+selectedPlants.length+'장</b> · 공급능력 <b>'+capacity+'도시</b> · 공급 예정 <b>'+cityCount+'개</b> · '+incomeText+'<br><small>소모 자원: '+fuelText+'</small>';
       summary.classList.toggle('invalid',!ok);
       var confirm=container.querySelector('#pg-power-confirm');
       if(confirm) confirm.disabled=!ok;
-      var minus=container.querySelector('#pg-power-city-minus');
-      var plus=container.querySelector('#pg-power-city-plus');
-      if(minus) minus.disabled=cityCount<=0;
-      if(plus) plus.disabled=cityCount>=maxCities;
     }
 
 

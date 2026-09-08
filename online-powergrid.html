@@ -5,16 +5,17 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>파워그리드 · BoardMate 온라인</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-  <link rel="stylesheet" href="./powergrid/pg-styles.css?v=22">
+  <link rel="stylesheet" href="./powergrid/pg-styles.css?v=26">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="./config.js"></script>
 </head>
 <body>
 <div class="pg-app" id="app">불러오는 중…</div>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="./powergrid/data/germany-map.js?v=22"></script>
-<script src="./powergrid/engine.js?v=22"></script>
-<script src="./powergrid/ui.js?v=22"></script>
+<script src="./powergrid/data/germany-map.js?v=26"></script>
+<script src="./powergrid/engine.js?v=26"></script>
+<script src="./powergrid/ui.js?v=26"></script>
+<script src="./powergrid/map-rules-v23.js?v=26"></script>
 <script type="module">
 import {
   configured, roomId, getMe, loadRoom, loadState, saveState, startStatePoll,
@@ -104,7 +105,7 @@ function setupView(){
   }).join('');
   app.innerHTML=`
     <div class="pg-topbar">
-      <div class="pg-title">🔌 파워그리드<br><small>${esc(room.title||'BoardMate 온라인')} · ${members.length}인 · 다인플 전용</small></div>
+      <div class="pg-title">🔌 파워그리드<br><small>${esc(room.title||'BoardMate 온라인')} · ${members.length}인 · 3~6인 전용</small></div>
       <a class="pg-btn small" href="./index.html#/room/${encodeURIComponent(roomId)}">← 방으로</a>
     </div>
     <div class="pg-card">
@@ -174,7 +175,7 @@ async function action(a){
     saving=true;
     const next=PowerGrid.applyAction(state,a),nr=await saveState(revision,next);
     revision=Number(nr);state=next;
-    pushUndoSnapshot(revision,state);
+    pushUndoSnapshot(revision, state);
     draw();await maybeSubmit();
   }catch(e){
     if(/revision|conflict|expected/i.test(String(e.message||e))){
@@ -223,7 +224,7 @@ async function onRow(row){
   if(newRevision !== revision) undoStack=[];
   revision=newRevision;
   legacyState=false; legacyBoardId=null; state=incoming;
-  if(state && undoStack.length===0) pushUndoSnapshot(revision,state);
+  if(state && undoStack.length===0) pushUndoSnapshot(revision, state);
   draw();await maybeSubmit();
 }
 async function boot(){
@@ -232,7 +233,7 @@ async function boot(){
   ({room,members}=await loadRoom());
   if(room.game!==GAME)showFatal('파워그리드 방이 아닙니다.');
   const m=members.find(x=>x.user_id===me.user_id); if(!m)showFatal('이 방의 참가자가 아닙니다.');
-  if(members.length<2||members.length>6)showFatal('파워그리드는 2~6인 다인플만 지원합니다.');
+  if(members.length<3||members.length>6)showFatal('파워그리드는 3~6인 다인플만 지원합니다.');
   mySeat=Number(m.seat);isHost=room.host_id===me.user_id;
   const row=await loadState(); if(row)await onRow(row); else setupView();
   stopPoll=startStatePoll(onRow,{interval:10000});
