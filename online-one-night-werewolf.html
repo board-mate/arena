@@ -4,7 +4,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="./config.js"></script></head>
 <body><main class="sd-shell" id="app">불러오는 중…</main>
 <script type="module">
-import {boot,getView,act,startPolling,fatal,esc,roleKo,openRoles,seatName,roomId,rpc,token,finalizeSeatWinners,socialEndScreen,mountSocialCancelControl} from './social/social-common.js?v=27';
+import {boot,getView,act,startPolling,fatal,esc,roleKo,openRoles,seatName,roomId,rpc,token,finalizeSeatWinners,socialEndScreen,mountSocialCancelControl} from './social/social-common.js?v=28';
 const GAME='onenightwerewolf',app=document.querySelector('#app');let ctx,view,busy=false,stop=null;
 const MAX={doppelganger:1,werewolf:2,minion:1,mason:2,seer:1,robber:1,troublemaker:1,drunk:1,insomniac:1,villager:3,tanner:1,hunter:1};
 const ORDER=['doppelganger','werewolf','minion','mason','seer','robber','troublemaker','drunk','insomniac','villager','tanner','hunter'];
