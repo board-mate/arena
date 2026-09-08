@@ -1,5 +1,0 @@
-BoardMate Arena FINAL 2026-09-07
-base: downloaded arena-main (BoardMate Arcade INTEGRATED v11.4.10)
-adds: Avalon / Secret Hitler / One Night Werewolf
-replaces: Pocket Nova runtime -> Pokemon Minima (legacy DB key: pocketnova, 2 players)
-status: static validation packaged; live Supabase multi-browser E2E still required
