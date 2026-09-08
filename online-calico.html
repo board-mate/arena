@@ -9,7 +9,7 @@
 <meta name="board-mate-min-players" content="2" />
 <meta name="board-mate-max-players" content="4" />
 <meta name="board-mate-multiplayer" content="true" />
-<script type="application/json" id="boardMateGameManifest">{"id":"calico-pvp","name":"Calico PVP","version":"11.0.0-historical-token-recovery","minPlayers":2,"maxPlayers":4,"multiplayer":true,"turnBased":true,"entry":"single-html","stateMode":"shared"}</script>
+<script type="application/json" id="boardMateGameManifest">{"id":"calico-pvp","name":"Calico PVP","version":"12.0.0-edge-pattern-token-fix","minPlayers":2,"maxPlayers":4,"multiplayer":true,"turnBased":true,"entry":"single-html","stateMode":"shared"}</script>
 <style>
   :root{
     --ink:#362d3c;
@@ -462,9 +462,9 @@ if(roomId) window.addEventListener('DOMContentLoaded',()=>{
   // The user supplied these public GitHub Pages materials as the visual reference.
   const ASSET_BASE = 'https://myautoma.github.io/games/calico/img';
   const SAVE_KEY = 'calico-pvp-arena-v8';
-  const VERSION = 11;
+  const VERSION = 12;
   const GAME_ID = 'calico-pvp';
-  const GAME_MANIFEST = Object.freeze({id:GAME_ID,name:'Calico PVP',version:'11.0.0-historical-token-recovery',minPlayers:2,maxPlayers:4,multiplayer:true,turnBased:true});
+  const GAME_MANIFEST = Object.freeze({id:GAME_ID,name:'Calico PVP',version:'12.0.0-edge-pattern-token-fix',minPlayers:2,maxPlayers:4,multiplayer:true,turnBased:true});
 
   const COLORS = [
     {id:'darkBlue', ko:'남색', css:'#32467b'},
@@ -474,9 +474,11 @@ if(roomId) window.addEventListener('DOMContentLoaded',()=>{
     {id:'purple', ko:'보라', css:'#75408a'},
     {id:'yellow', ko:'노랑', css:'#e9a72a'}
   ];
+  // MyAutoma 공개 타일 자산의 실제 파일 번호와 무늬 대응
+  // 1 점 · 2 고사리/잎 · 3 꽃 · 4 격자/클로버 · 5 줄 · 6 덩굴
   const PATTERNS = [
-    {id:1, ko:'줄무늬'}, {id:2, ko:'점무늬'}, {id:3, ko:'격자무늬'},
-    {id:4, ko:'꽃무늬'}, {id:5, ko:'잎무늬'}, {id:6, ko:'덩굴무늬'}
+    {id:1, ko:'점무늬'}, {id:2, ko:'잎무늬'}, {id:3, ko:'꽃무늬'},
+    {id:4, ko:'격자무늬'}, {id:5, ko:'줄무늬'}, {id:6, ko:'덩굴무늬'}
   ];
   const BOARD_COLORS = [
     {id:'blue', ko:'파랑 보드'}, {id:'green', ko:'초록 보드'},
@@ -527,42 +529,44 @@ if(roomId) window.addEventListener('DOMContentLoaded',()=>{
   // ---------------------------------------------------------------------------
   // 사용자 제공 4색 보드 이미지에서 판정에 사용하는 인쇄 가장자리 22칸 × 4보드 = 88칸을
   // 색상/무늬 데이터로 고정 내장한다. 판정 엔진은 외부 이미지 분석을 전혀 사용하지 않는다.
-  // 패턴 ID: 1 줄무늬, 2 점무늬, 3 격자무늬, 4 꽃무늬, 5 잎무늬, 6 덩굴/소용돌이무늬
+  // 패턴 ID(실제 자산): 1 점무늬, 2 잎무늬, 3 꽃무늬, 4 격자무늬, 5 줄무늬, 6 덩굴무늬
   const PRINTED_EDGE_KEYS = Object.freeze([
     '-1,0','-1,1','-1,2','-1,3','-1,4','-1,5',
     '0,-1','0,5','1,-1','1,5','2,-1','2,5','3,-1','3,5','4,-1','4,5',
     '5,0','5,1','5,2','5,3','5,4','5,5'
   ]);
-  const EDGE_CATALOG_VERSION=7;
+  const EDGE_CATALOG_VERSION=12;
   const EDGE=(color,pattern)=>Object.freeze({color,pattern});
   const CALICO_EDGE_CATALOG=Object.freeze({
+    // V12: 실제 boards/*.jpg의 22개 판정 위치를 코드의 외곽 좌표와 다시 대조해 교정.
+    // 패턴 번호는 MyAutoma tiles/<color>/<n>.png의 실제 번호를 사용한다.
     blue:Object.freeze({
-      '-1,0':EDGE('green',4), '-1,1':EDGE('yellow',1), '-1,2':EDGE('lightBlue',6), '-1,3':EDGE('pink',4), '-1,4':EDGE('purple',3), '-1,5':EDGE('yellow',6),
-      '0,-1':EDGE('green',4), '0,5':EDGE('darkBlue',2), '1,-1':EDGE('darkBlue',3), '1,5':EDGE('purple',6),
-      '2,-1':EDGE('lightBlue',5), '2,5':EDGE('yellow',6), '3,-1':EDGE('pink',1), '3,5':EDGE('green',3),
-      '4,-1':EDGE('yellow',2), '4,5':EDGE('darkBlue',4),
-      '5,0':EDGE('yellow',2), '5,1':EDGE('lightBlue',3), '5,2':EDGE('pink',4), '5,3':EDGE('darkBlue',5), '5,4':EDGE('green',6), '5,5':EDGE('pink',2)
+      '-1,0':EDGE('yellow',5), '-1,1':EDGE('lightBlue',6), '-1,2':EDGE('pink',2), '-1,3':EDGE('purple',4), '-1,4':EDGE('yellow',3), '-1,5':EDGE('green',5),
+      '0,-1':EDGE('green',3), '0,5':EDGE('darkBlue',1), '1,-1':EDGE('darkBlue',4), '1,5':EDGE('purple',6),
+      '2,-1':EDGE('lightBlue',2), '2,5':EDGE('yellow',2), '3,-1':EDGE('purple',5), '3,5':EDGE('green',4),
+      '4,-1':EDGE('yellow',1), '4,5':EDGE('darkBlue',3),
+      '5,0':EDGE('lightBlue',4), '5,1':EDGE('pink',3), '5,2':EDGE('darkBlue',2), '5,3':EDGE('green',6), '5,4':EDGE('pink',1), '5,5':EDGE('lightBlue',5)
     }),
     green:Object.freeze({
-      '-1,0':EDGE('darkBlue',5), '-1,1':EDGE('yellow',6), '-1,2':EDGE('green',5), '-1,3':EDGE('darkBlue',1), '-1,4':EDGE('purple',3), '-1,5':EDGE('yellow',6),
-      '0,-1':EDGE('purple',2), '0,5':EDGE('pink',4), '1,-1':EDGE('pink',3), '1,5':EDGE('purple',5),
-      '2,-1':EDGE('lightBlue',1), '2,5':EDGE('yellow',1), '3,-1':EDGE('yellow',5), '3,5':EDGE('lightBlue',3),
-      '4,-1':EDGE('purple',6), '4,5':EDGE('pink',4),
-      '5,0':EDGE('green',1), '5,1':EDGE('darkBlue',2), '5,2':EDGE('green',3), '5,3':EDGE('pink',1), '5,4':EDGE('lightBlue',5), '5,5':EDGE('darkBlue',4)
+      '-1,0':EDGE('yellow',6), '-1,1':EDGE('green',2), '-1,2':EDGE('darkBlue',5), '-1,3':EDGE('purple',4), '-1,4':EDGE('yellow',1), '-1,5':EDGE('lightBlue',6),
+      '0,-1':EDGE('purple',1), '0,5':EDGE('pink',3), '1,-1':EDGE('pink',4), '1,5':EDGE('purple',2),
+      '2,-1':EDGE('lightBlue',5), '2,5':EDGE('yellow',5), '3,-1':EDGE('yellow',3), '3,5':EDGE('lightBlue',4),
+      '4,-1':EDGE('purple',6), '4,5':EDGE('pink',1),
+      '5,0':EDGE('darkBlue',1), '5,1':EDGE('green',4), '5,2':EDGE('pink',5), '5,3':EDGE('lightBlue',2), '5,4':EDGE('darkBlue',3), '5,5':EDGE('green',6)
     }),
     purple:Object.freeze({
-      '-1,0':EDGE('yellow',6), '-1,1':EDGE('pink',2), '-1,2':EDGE('purple',4), '-1,3':EDGE('yellow',6), '-1,4':EDGE('lightBlue',1), '-1,5':EDGE('pink',3),
-      '0,-1':EDGE('lightBlue',3), '0,5':EDGE('darkBlue',6), '1,-1':EDGE('darkBlue',1), '1,5':EDGE('lightBlue',4),
-      '2,-1':EDGE('green',5), '2,5':EDGE('pink',5), '3,-1':EDGE('pink',6), '3,5':EDGE('green',1),
-      '4,-1':EDGE('lightBlue',2), '4,5':EDGE('darkBlue',3),
-      '5,0':EDGE('lightBlue',2), '5,1':EDGE('yellow',3), '5,2':EDGE('purple',1), '5,3':EDGE('darkBlue',5), '5,4':EDGE('green',4), '5,5':EDGE('yellow',6)
+      '-1,0':EDGE('pink',1), '-1,1':EDGE('purple',3), '-1,2':EDGE('yellow',2), '-1,3':EDGE('lightBlue',5), '-1,4':EDGE('pink',4), '-1,5':EDGE('green',1),
+      '0,-1':EDGE('lightBlue',4), '0,5':EDGE('darkBlue',6), '1,-1':EDGE('darkBlue',5), '1,5':EDGE('lightBlue',3),
+      '2,-1':EDGE('green',2), '2,5':EDGE('pink',2), '3,-1':EDGE('pink',6), '3,5':EDGE('green',5),
+      '4,-1':EDGE('lightBlue',1), '4,5':EDGE('darkBlue',4),
+      '5,0':EDGE('yellow',4), '5,1':EDGE('purple',5), '5,2':EDGE('darkBlue',2), '5,3':EDGE('green',3), '5,4':EDGE('yellow',6), '5,5':EDGE('purple',1)
     }),
     yellow:Object.freeze({
-      '-1,0':EDGE('green',4), '-1,1':EDGE('darkBlue',4), '-1,2':EDGE('yellow',1), '-1,3':EDGE('purple',2), '-1,4':EDGE('darkBlue',6), '-1,5':EDGE('green',5),
-      '0,-1':EDGE('pink',5), '0,5':EDGE('lightBlue',4), '1,-1':EDGE('purple',6), '1,5':EDGE('darkBlue',1),
-      '2,-1':EDGE('yellow',2), '2,5':EDGE('green',2), '3,-1':EDGE('green',4), '3,5':EDGE('pink',6),
-      '4,-1':EDGE('darkBlue',3), '4,5':EDGE('lightBlue',5),
-      '5,0':EDGE('darkBlue',3), '5,1':EDGE('purple',5), '5,2':EDGE('yellow',6), '5,3':EDGE('lightBlue',2), '5,4':EDGE('pink',1), '5,5':EDGE('purple',4)
+      '-1,0':EDGE('darkBlue',3), '-1,1':EDGE('yellow',5), '-1,2':EDGE('purple',1), '-1,3':EDGE('darkBlue',6), '-1,4':EDGE('green',2), '-1,5':EDGE('pink',4),
+      '0,-1':EDGE('pink',2), '0,5':EDGE('lightBlue',3), '1,-1':EDGE('purple',6), '1,5':EDGE('darkBlue',5),
+      '2,-1':EDGE('yellow',1), '2,5':EDGE('green',1), '3,-1':EDGE('green',3), '3,5':EDGE('pink',6),
+      '4,-1':EDGE('darkBlue',4), '4,5':EDGE('lightBlue',2),
+      '5,0':EDGE('purple',2), '5,1':EDGE('yellow',6), '5,2':EDGE('lightBlue',1), '5,3':EDGE('pink',5), '5,4':EDGE('purple',3), '5,5':EDGE('yellow',4)
     })
   });
 
@@ -965,11 +969,14 @@ if(roomId) window.addEventListener('DOMContentLoaded',()=>{
     state=deepClone(next); state.version=VERSION; state.gameId=GAME_ID; state._gameId=GAME_ID;
     state.players?.forEach(p=>{p.edgeCatalog=CALICO_EDGE_CATALOG[p.boardColor]||null;});
     restoreTransientTurnState(state);
+    // V12 교정: 이미 token 단계에 있던 진행방은 V11의 잘못 저장된 후보(예: 허위 초록 단추)를
+    // 그대로 쓰지 않고, 교정된 가장자리/무늬 데이터로 즉시 재계산한다.
+    const correctedTokenRefresh = state.phase==='token' && isMyTurn() ? refreshCorrectedTokenChoicesV12(state) : {changed:false,count:0};
     // 구버전의 자동 토큰 배치가 남아 있는 진행 게임도 현재 게임을 새 방으로
     // 만들지 않고 그대로 수동 배치 단계로 복구한다.
     const legacyMigration=migrateLegacyAutoTokenPlacement(state);
     if(legacyMigration.changed && isMyTurn()) pendingTokenChoices=buildLegacyPendingTokenChoices(state.players[state.active]);
-    else if(state.phase==='token') pendingTokenChoices=Array.isArray(state._pendingTokenChoices)?deepClone(state._pendingTokenChoices):pendingTokenChoices;
+    else if(state.phase==='token' && !correctedTokenRefresh.changed) pendingTokenChoices=Array.isArray(state._pendingTokenChoices)?deepClone(state._pendingTokenChoices):pendingTokenChoices;
     const tokenRecovery=recoverPendingTokensOnLoad(state);
     if(tokenRecovery.changed && isMyTurn()) pendingTokenChoices=deepClone(state._pendingTokenChoices);
     else if(state.phase==='token' && !pendingTokenChoices.length && isMyTurn()) pendingTokenChoices=buildRecoveryPendingTokenChoices(state);
@@ -998,6 +1005,12 @@ if(roomId) window.addEventListener('DOMContentLoaded',()=>{
     if(tokenRecovery.changed){
       toast('기존 진행 게임에서 미배치 토큰을 복구했습니다. 토큰을 직접 배치하세요.');
       if(isSetupHost()) setTimeout(()=>autoSave('recover-unplaced-token'),0);
+    }
+    if(correctedTokenRefresh.changed){
+      toast(correctedTokenRefresh.count
+        ? `가장자리/무늬 판정을 교정해 토큰 후보 ${correctedTokenRefresh.count}개를 다시 계산했습니다.`
+        : '잘못 잡힌 토큰 후보를 제거하고 정상 단계로 복구했습니다.');
+      if(isSetupHost()) setTimeout(()=>autoSave('edge-pattern-token-fix-v12'),0);
     }
     return true;
   }
@@ -1452,7 +1465,7 @@ if(roomId) window.addEventListener('DOMContentLoaded',()=>{
     stage.appendChild(base);
 
     const grid=document.createElement('div'); grid.className='board-grid-layer'; stage.appendChild(grid);
-    const caption=document.createElement('div'); caption.className='board-edge-caption'; caption.textContent='실제 인쇄 가장자리 타일 데이터 포함 · 고양이/단추 자동 판정 · 원본 보드 이미지 기반 자동 추출'; stage.appendChild(caption);
+    const caption=document.createElement('div'); caption.className='board-edge-caption'; caption.textContent='실제 인쇄 가장자리 타일 데이터 포함 · 고양이/단추 자동 판정 · V12 원본 보드 좌표/무늬 교정'; stage.appendChild(caption);
 
     for(let r=0;r<BOARD_ROWS;r++) for(let c=0;c<BOARD_COLS;c++){
       const key=`${r},${c}`; const cell=p.board[key]; const pos=boardCellPosition(r,c);
@@ -1675,6 +1688,27 @@ if(roomId) window.addEventListener('DOMContentLoaded',()=>{
     return buildAllPendingTokenChoices(p,next);
   }
 
+  // V12: V11에서 잘못된 가장자리 좌표/무늬 번호로 저장된 토큰 후보를 폐기하고
+  // 교정된 보드 데이터로 현재 token 단계를 즉시 다시 계산한다.
+  function refreshCorrectedTokenChoicesV12(next=state){
+    if(!next || next.gameOver || next.phase!=='token' || !Array.isArray(next.players)) return {changed:false,count:0};
+    const p=next.players[next.active];
+    if(!p) return {changed:false,count:0};
+    const corrected=buildAllPendingTokenChoices(p,next);
+    const before=JSON.stringify((next._pendingTokenChoices||[]).map(pendingChoiceSignature).sort());
+    const after=JSON.stringify(corrected.map(pendingChoiceSignature).sort());
+    pendingTokenChoices=deepClone(corrected);
+    tokenPlacementMode=null;
+    next._pendingTokenChoices=deepClone(corrected);
+    next._tokenPlacementMode=null;
+    next._edgePatternTokenFixV12=true;
+    if(!corrected.length){
+      next.phase=normalizeTokenReturnPhase(next._tokenReturnPhase,'draft');
+      delete next._tokenReturnPhase;
+    }
+    return {changed:before!==after,count:corrected.length};
+  }
+
   function ensureTokenPhaseIntegrity(next=state){
     if(!next || next.phase!=='token' || next.gameOver) return false;
     if(pendingTokenChoices.length) return true;
@@ -1720,8 +1754,8 @@ if(roomId) window.addEventListener('DOMContentLoaded',()=>{
       state._tokenPlacementMode=null;
       state._tokenReturnPhase='place';
       state.phase='token';
-      state._tokenRecoveryV11=true;
-      autoSave('historical-token-search-v11');
+      state._tokenRecoveryV12=true;
+      autoSave('historical-token-search-v12');
       renderGame();
       toast(`이전에 놓지 못한 토큰 후보 ${recovered.length}개를 찾았습니다.`);
     };
@@ -1791,10 +1825,10 @@ if(roomId) window.addEventListener('DOMContentLoaded',()=>{
       state._tokenPlacementMode=null;
       state._tokenReturnPhase='place';
       state.phase='token';
-      state._tokenRecoveryV11=true;
+      state._tokenRecoveryV12=true;
     }
     renderGame();
-    autoSave(recovered.length?'advance-turn-historical-token-recovery-v11':'advance-turn');
+    autoSave(recovered.length?'advance-turn-historical-token-recovery-v12':'advance-turn');
   }
 
   function undoTurn(){
@@ -1819,7 +1853,9 @@ if(roomId) window.addEventListener('DOMContentLoaded',()=>{
   function hasButtonInComponent(p,keys,color){return keys.some(k=>(tokenCellFor(p,k)?.buttons||[]).includes(color));}
   function hasCatInComponent(p,keys){return keys.some(k=>(tokenCellFor(p,k)?.cats||[]).length>0);}
   const AXIAL_SHAPES={callie:[[0,0],[1,0],[0,1]],rumi:[[0,0],[1,0],[2,0]],tecolote:[[0,0],[1,0],[2,0],[3,0]],almond:[[0,0],[1,0],[-1,1],[0,1],[1,1]],leo:[[0,0],[1,0],[2,0],[3,0],[4,0]]};
-  function offsetToAxial(key){const [r,c]=key.split(',').map(Number);return[c-Math.floor(r/2),r];}function axialToKey(q,r){return`${r},${q+Math.floor(r/2)}`;}function rotateAxial(q,r){return[-r,q+r];}
+  // 보드는 짝수 행이 오른쪽으로 반 칸 밀린 even-r 오프셋이다.
+  // 기존 floor(r/2)는 odd-r 변환이라 대각선 회전형 고양이 모양을 오판할 수 있었다.
+  function offsetToAxial(key){const [r,c]=key.split(',').map(Number);return[c-Math.floor((r+1)/2),r];}function axialToKey(q,r){return`${r},${q+Math.floor((r+1)/2)}`;}function rotateAxial(q,r){return[-r,q+r];}
   function normalizedShape(coords){const minQ=Math.min(...coords.map(x=>x[0])),minR=Math.min(...coords.map(x=>x[1]));return coords.map(([q,r])=>`${q-minQ},${r-minR}`).sort().join('|');}
   function shapeVariants(shape){let set=new Set(),cur=shape.map(x=>x.slice());for(let i=0;i<6;i++){set.add(normalizedShape(cur));cur=cur.map(([q,r])=>rotateAxial(q,r));}return set;}
   function componentHasShape(p,keys,shapeName){const variants=shapeVariants(AXIAL_SHAPES[shapeName]||[]),keySet=new Set(keys),axial=new Map(keys.map(k=>[k,offsetToAxial(k)]));for(const origin of keys){const[oq,or]=axial.get(origin);for(const variant of variants){const pts=variant.split('|').map(x=>x.split(',').map(Number));for(const[vq,vr]of pts){const bq=oq-vq,br=or-vr,candidate=pts.map(([q,r])=>axialToKey(bq+q,br+r));if(candidate.every(k=>keySet.has(k)))return candidate;}}}return null;}
