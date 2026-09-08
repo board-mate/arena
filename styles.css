@@ -146,6 +146,16 @@
 @media(max-width:760px){.game-grid.daily-two{grid-template-columns:1fr}}
 
 
-/* v10: unified action-required home section */
-.home-action-games{margin-top:26px}.home-action-games.hidden{display:none}.home-action-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.action-game-card{display:flex;align-items:center;justify-content:space-between;gap:16px;background:#fff;border:1px solid #f0a46e;border-radius:18px;padding:16px 18px;box-shadow:0 10px 22px #f36f2112}.action-game-main{min-width:0}.action-game-main h3{margin:8px 0 4px;font-size:18px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.action-game-main p{margin:0;color:var(--muted);font-size:12px}.action-badge{display:inline-flex;align-items:center;margin-left:6px;padding:4px 8px;border-radius:999px;background:#fff0d9;color:#b44d0b;border:1px solid #ffc98f;font-size:11px;font-weight:950}.action-game-btn{flex:0 0 auto;white-space:nowrap}
-@media(max-width:760px){.home-action-grid{grid-template-columns:1fr}.action-game-card{align-items:flex-start;flex-direction:column}.action-game-btn{width:100%}.action-game-main h3{white-space:normal}}
+
+/* -------------------- v11.4.14 home information cards -------------------- */
+.home-mode-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:18px}
+.home-guide-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:16px}
+.home-guide-card{min-height:96px;border:1px solid var(--line);background:#fff;border-radius:18px;padding:16px;text-align:left;display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;box-shadow:0 8px 20px #1118270a;transition:transform .12s,border-color .12s,box-shadow .12s}
+.home-guide-card:hover{border-color:#f1b48d;transform:translateY(-1px);box-shadow:0 10px 24px #11182710}
+.home-guide-card.install{background:linear-gradient(145deg,#fff7ed,#fff)}
+.home-guide-icon{font-size:28px;line-height:1}
+.home-guide-card b{display:block;font-size:15px;letter-spacing:-.02em}
+.home-guide-card small{display:block;color:var(--muted);font-size:12px;line-height:1.45;margin-top:4px}
+.home-guide-card em{font-style:normal;font-size:25px;color:#a6afbc}
+@media(max-width:880px){.home-guide-grid{grid-template-columns:1fr 1fr}}
+@media(max-width:540px){.home-mode-grid{grid-template-columns:1fr}.home-guide-grid{grid-template-columns:1fr}.home-guide-card{min-height:84px}}
