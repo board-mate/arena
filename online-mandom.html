@@ -275,7 +275,7 @@ button { font: inherit; cursor: pointer; border: none; border-radius: 8px; }
 import {
   configured, roomId, getMe, loadRoom, loadState, saveState,
   startStatePoll, esc, showFatal, endPanel, submitMatch
-} from './multi-common.js';
+} from './multi-common.js?v=30';
 
 if (!configured() || !roomId) showFatal('Supabase 설정 또는 room 주소가 없습니다.');
 
@@ -301,7 +301,7 @@ const ITEMS = [
   { id:'torch',  emoji:'🔦', name:'횃불',     desc:'공격력 3 미만 몬스터 무력화 (고블린·스켈레톤·오크)' },
   { id:'grail',  emoji:'🏆', name:'성배',     desc:'짝수 번호 언데드 무력화 (스켈레톤·뱀파이어·리치)' },
   { id:'lance',  emoji:'🗡️', name:'창',       desc:'드래곤 무력화' },
-  { id:'sword',  emoji:'⚔️', name:'용사의 검',desc:'입장 전 몬스터 1종 선언 → 무력화' },
+  { id:'sword',  emoji:'⚔️', name:'용사의 검',desc:'입장 전 몬스터 종류 1종 선언 → 해당 종류 전체 무력화' },
   { id:'shield', emoji:'🛡️', name:'방패',     desc:'HP +3' },
   { id:'armor',  emoji:'🥻', name:'갑옷',     desc:'HP +5' },
 ];
@@ -372,11 +372,17 @@ let state = null, revision = 0, saving = false;
 let pendingSwordResolve = null;
 let resultSubmitted = false;
 
+const MONSTER_FAMILY = {
+  goblin1:'goblin', goblin2:'goblin',
+  skeleton1:'skeleton', skeleton2:'skeleton',
+  ork1:'ork', ork2:'ork',
+  vampire1:'vampire', vampire2:'vampire',
+  golem1:'golem', golem2:'golem',
+  lich:'lich', demon:'demon', dragon:'dragon'
+};
 function monsterFamily(id) {
   const raw = String(id || '');
-  const m = MONSTERS.find(x => x.id === raw);
-  if (!m) return raw.replace(/\d+$/, '');
-  return String(m.id).replace(/\d+$/, '');
+  return MONSTER_FAMILY[raw] || raw.replace(/\d+$/, '');
 }
 function monsterFamilyLabel(family) {
   const m = MONSTERS.find(x => monsterFamily(x.id) === family);
@@ -585,7 +591,7 @@ function actionNameMonster(monsterId) {
     s.namedMonster = monsterId;
     const m = MONSTERS.find(x => x.id === monsterId);
     s.phase = 'challenge';
-    s.logs.unshift(`용사의 검: "${m.name}" 선언`);
+    s.logs.unshift(`용사의 검: "${monsterFamilyLabel(monsterId)}" 종류 선언 → 같은 종류 전체 무력화`);
   });
 }
 
