@@ -1,0 +1,14 @@
+BoardMate Arena v11.4.31 validation
+
+PASS - online-plakoro.html module JavaScript: node --check
+PASS - drainSeat unwraps RETURNS TABLE RPC arrays
+PASS - drainSeat processes returned action through hostAction
+PASS - old broken direct a.action-on-array pattern removed
+PASS - v11.4.30 캐릭코로 / 에너지 코로 labels retained
+PASS - v11.4.30 normalizeEnergyType compatibility retained
+PASS - game state VERSION bumped to 6
+PASS - service worker cache bumped to boardmate-shell-v11.4.31
+
+Root cause:
+boardmate_plakoro_take_action returns a table, therefore Supabase returns an array.
+The old client treated the array as a single object and silently discarded ROLL actions.

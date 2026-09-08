@@ -42,13 +42,14 @@ import {configured,roomId,getMe,loadRoom,loadState,saveState,subscribeRoomBroadc
 'use strict';
 
 const GAME='plakoro';
-const VERSION=5;
+const VERSION=6;
 const MAX_HP=120;
 const STARTERS={"bulbasaur":{"id":"bulbasaur","name":"🌿 이상해씨","jp":"フシギダネ","type":"grass","typeLabel":"풀","color":"#22c55e","img":"https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/1.png","weak":"fire","waza":[{"name":"덩굴채찍","type":"grass","cost":[["grass",1]],"dmg":10,"effect":"서기/앞누움/뒷누움: +20","faces":["up","front","back"],"bonus":20,"id":"bulbasaur-vine"},{"name":"잎날가르기","type":"grass","cost":[["grass",2]],"dmg":20,"effect":"서기/좌우옆누움: +20","faces":["up","left","right"],"bonus":20,"id":"bulbasaur-leaf"},{"name":"씨뿌리기","type":"grass","cost":[["grass",2]],"dmg":10,"effect":"서기/앞/좌우: 상대 다음 턴 에너지 -1, 내 다음 턴 +1","faces":["up","front","left","right"],"oppMinus":1,"selfBonus":1,"id":"bulbasaur-leech"},{"name":"풀묶기","type":"grass","cost":[["grass",3]],"dmg":30,"effect":"서기/앞/뒷누움: 상대 기술 1장 다음 턴 사용 불가","faces":["up","front","back"],"block":true,"id":"bulbasaur-knot"},{"name":"돌진","type":"grass","cost":[["grass",3]],"dmg":30,"effect":"서기/앞누움: +40 / 역방향/뒷누움: 자신 30","faces":["up","front"],"bonus":40,"selfDamageOn":["down","back"],"selfDamage":30,"id":"bulbasaur-tackle"},{"name":"기가드레인","type":"grass","cost":[["grass",4]],"dmg":40,"effect":"서기/좌우옆누움: 자신 HP 40 회복","faces":["up","left","right"],"heal":40,"id":"bulbasaur-giga"},{"name":"애시드봄","type":"dark","cost":[["dark",1],["colorless",2]],"dmg":10,"effect":"서기/좌우옆누움: +20","faces":["up","left","right"],"bonus":20,"id":"bulbasaur-acid"}],"energyFaces":[["grass","grass","grass","grass","colorless","colorless"],["grass","grass","dark","colorless","colorless","colorless"],["grass","grass","grass","grass","grass","colorless"]]},"charmander":{"id":"charmander","name":"🔥 파이리","jp":"ヒトカゲ","type":"fire","typeLabel":"불꽃","color":"#ef4444","img":"https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/4.png","weak":"water","waza":[{"name":"불꽃세례","type":"fire","cost":[["fire",2]],"dmg":20,"effect":"서기/앞누움: +30","faces":["up","front"],"bonus":30,"id":"charmander-ember"},{"name":"히트업","type":"fire","cost":[["fire",2]],"dmg":10,"effect":"서기/앞누움: 다음 내 턴 에너지 +2","faces":["up","front"],"selfBonus":2,"id":"charmander-heat"},{"name":"화염방사","type":"fire","cost":[["fire",3]],"dmg":40,"effect":"서기/앞누움: +20 / 아래·뒤·좌우: 다음 내 턴 에너지 -1","faces":["up","front"],"bonus":20,"selfMinusOn":["down","back","left","right"],"selfMinus":1,"id":"charmander-flame"},{"name":"불꽃이빨","type":"fire","cost":[["fire",4]],"dmg":30,"effect":"서기/앞누움: +30","faces":["up","front"],"bonus":30,"id":"charmander-fang"},{"name":"플레어스톰","type":"fire","cost":[["colorless",5]],"dmg":20,"effect":"서기/좌우옆누움: 나온 불꽃 에너지 수×10 추가","faces":["up","left","right"],"fireCount":true,"id":"charmander-storm"},{"name":"천둥펀치","type":"lightning","cost":[["lightning",1],["colorless",2]],"dmg":10,"effect":"서기/앞/좌우: +20","faces":["up","front","left","right"],"bonus":20,"id":"charmander-thunderpunch"},{"name":"메탈클로","type":"steel","cost":[["steel",1],["colorless",2]],"dmg":20,"effect":"서기: +40","faces":["up"],"bonus":40,"id":"charmander-metal"}],"energyFaces":[["fire","fire","fire","fire","colorless","colorless"],["fire","fire","fire","colorless","colorless","colorless"],["fire","fire","fire","fire","fire","colorless"]]},"squirtle":{"id":"squirtle","name":"💧 꼬부기","jp":"ゼニガメ","type":"water","typeLabel":"물","color":"#3b82f6","img":"https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/7.png","weak":"lightning","waza":[{"name":"물대포","type":"water","cost":[["water",1]],"dmg":10,"effect":"서기/뒷누움: +20","faces":["up","back"],"bonus":20,"id":"squirtle-watergun"},{"name":"껍질에숨기","type":"water","cost":[["water",1]],"dmg":0,"effect":"뒷누움: 자신 HP 30 회복 / 다음 상대 턴 받는 데미지 -20","faces":["back"],"shield":20,"heal":30,"id":"squirtle-withdraw"},{"name":"물의파동","type":"water","cost":[["water",2]],"dmg":20,"effect":"서기/좌우옆누움: +20","faces":["up","left","right"],"bonus":20,"id":"squirtle-pulse"},{"name":"쉘어택","type":"water","cost":[["water",3]],"dmg":30,"effect":"서기/앞/뒷누움: 다음 상대 턴 받는 데미지 -20","faces":["up","front","back"],"shield":20,"id":"squirtle-shell"},{"name":"거품광선","type":"water","cost":[["water",3]],"dmg":30,"effect":"서기/앞/뒷누움: 상대 다음 턴 에너지 -1","faces":["up","front","back"],"oppMinus":1,"id":"squirtle-bubble"},{"name":"하이드로앙거","type":"water","cost":[["water",4]],"dmg":40,"effect":"서기/앞/뒷누움: HP 40 이하라면 +60","faces":["up","front","back"],"lowHpBonus":60,"id":"squirtle-hydro"},{"name":"머드샷","type":"fight","cost":[["fight",1],["colorless",3]],"dmg":30,"effect":"서기/좌우옆누움: +30","faces":["up","left","right"],"bonus":30,"id":"squirtle-mud"}],"energyFaces":[["water","water","water","water","colorless","colorless"],["water","water","water","fighting","colorless","colorless"],["water","water","water","water","water","colorless"]]},"pikachu":{"id":"pikachu","name":"⚡ 피카츄","jp":"ピカチュウ","type":"lightning","typeLabel":"전기","color":"#eab308","img":"https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/25.png","weak":"fight","waza":[{"name":"물기","type":"lightning","cost":[["lightning",1]],"dmg":10,"effect":"서기/앞누움: +30","faces":["up","front"],"bonus":30,"id":"pikachu-bite"},{"name":"전기쇼크","type":"lightning","cost":[["lightning",2]],"dmg":10,"effect":"서기/역방향/좌우: +20","faces":["up","down","left","right"],"bonus":20,"id":"pikachu-thundershock"},{"name":"일렉러시","type":"lightning","cost":[["lightning",2]],"dmg":20,"effect":"약점 계산 제외 / 서기·앞누움이면 한 번 더 사용 가능","faces":["up","front"],"noWeak":true,"repeat":true,"id":"pikachu-rush"},{"name":"10만볼트","type":"lightning","cost":[["lightning",3]],"dmg":30,"effect":"서기/좌우: +30 / 아래·좌우: 다음 내 턴 에너지 -2","faces":["up","left","right"],"bonus":30,"selfMinusOn":["down"],"selfMinus":2,"id":"pikachu-bolt"},{"name":"번개","type":"lightning","cost":[["lightning",3]],"dmg":20,"effect":"서기: +60","faces":["up"],"bonus":60,"id":"pikachu-thunder"},{"name":"볼트태클","type":"lightning","cost":[["lightning",4]],"dmg":40,"effect":"자신 30 데미지 / 서기·앞·뒷누움: +40","faces":["up","front","back"],"bonus":40,"selfDamage":30,"id":"pikachu-volttackle"},{"name":"아이언테일","type":"steel","cost":[["steel",1]],"dmg":20,"effect":"서기/앞/뒷누움: 다음 상대 턴 받는 데미지 -10","faces":["up","front","back"],"shield":10,"id":"pikachu-iron"}],"energyFaces":[["lightning","lightning","lightning","lightning","colorless","colorless"],["lightning","lightning","lightning","colorless","colorless","colorless"],["lightning","lightning","lightning","lightning","lightning","colorless"]]},"eevee":{"id":"eevee","name":"🌀 이브이","jp":"イーブイ","type":"colorless","typeLabel":"무색","color":"#a8a29e","img":"https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/133.png","weak":"fight","waza":[{"name":"꼬리치기","type":"colorless","cost":[["wind",1]],"dmg":10,"effect":"서기/좌우: +10","faces":["up","left","right"],"bonus":10,"id":"eevee-tailslap"},{"name":"몸통박치기","type":"colorless","cost":[["wind",2]],"dmg":10,"effect":"서기/앞/좌우: +20","faces":["up","front","left","right"],"bonus":20,"id":"eevee-tackle"},{"name":"돌진","type":"colorless","cost":[["wind",2]],"dmg":30,"effect":"서기/앞: +20 / 역방향·뒷누움: 자신 20","faces":["up","front"],"bonus":20,"selfDamageOn":["down","back"],"selfDamage":20,"id":"eevee-rush"},{"name":"마구뛰기","type":"colorless","cost":[["wind",3]],"dmg":0,"effect":"서기 +70 / 앞·뒷누움 +40 / 아래·좌우 20","faces":[],"branch":true,"id":"eevee-bounce"},{"name":"전력질주","type":"colorless","cost":[["colorless",5]],"dmg":40,"effect":"서기/앞/뒷누움: +40","faces":["up","front","back"],"bonus":40,"id":"eevee-full"},{"name":"애교","type":"psychic","cost":[["psychic",1]],"dmg":20,"effect":"서기/앞/좌우: 상대 다음 턴 에너지 -2","faces":["up","front","left","right"],"oppMinus":2,"id":"eevee-charm"},{"name":"물어뜯기","type":"dark","cost":[["dark",1],["colorless",2]],"dmg":10,"effect":"서기/좌우: +20","faces":["up","left","right"],"bonus":20,"id":"eevee-darkbite"}],"energyFaces":[["colorless","colorless","colorless","colorless","dark","psychic"],["colorless","colorless","colorless","colorless","colorless","dark"],["colorless","colorless","colorless","colorless","colorless","colorless"]]},"mew":{"id":"mew","name":"🔮 뮤","jp":"ミュウ","type":"psychic","typeLabel":"초","color":"#d946ef","img":"https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/151.png","weak":"dark","waza":[{"name":"염동력","type":"psychic","cost":[["psychic",1]],"dmg":10,"effect":"서기/좌우: +20","faces":["up","left","right"],"bonus":20,"id":"mew-confusion"},{"name":"사이케광선","type":"psychic","cost":[["psychic",2]],"dmg":20,"effect":"서기/역방향: +30","faces":["up","down"],"bonus":30,"id":"mew-psybeam"},{"name":"배리어","type":"psychic","cost":[["psychic",2]],"dmg":0,"effect":"다음 상대 턴 받는 데미지 -20 / 서기·앞누움: 추가 -30","faces":["up","front"],"shield":20,"bonusShield":30,"id":"mew-barrier"},{"name":"메모리스킵","type":"psychic","cost":[["psychic",2]],"dmg":20,"effect":"서기/좌우: 상대 기술 1장 다음 턴 사용 불가","faces":["up","left","right"],"block":true,"id":"mew-memory"},{"name":"사이코샷","type":"psychic","cost":[["psychic",3]],"dmg":30,"effect":"서기/역방향/앞/뒷누움: +20","faces":["up","down","front","back"],"bonus":20,"id":"mew-psyshot"},{"name":"사이코키네시스","type":"psychic","cost":[["psychic",3]],"dmg":20,"effect":"서기/앞/뒷누움: 상대 3에너지 중 가장 많이 나온 타입×10","faces":["up","front","back"],"mostType":true,"id":"mew-psychic"},{"name":"리플렉션","type":"psychic","cost":[["psychic",4]],"dmg":0,"effect":"마지막에 선택한 기술의 기본 데미지를 반사 / 서기·좌우: 2배","faces":["up","left","right"],"reflect":true,"id":"mew-reflection"}],"energyFaces":[["psychic","psychic","psychic","psychic","colorless","colorless"],["psychic","psychic","psychic","colorless","colorless","colorless"],["psychic","psychic","psychic","psychic","psychic","colorless"]]}};
 const TYPE={grass:'풀🌿',fire:'불꽃🔥',water:'물💧',lightning:'전기⚡',psychic:'에스퍼🔮',fight:'격투👊',fighting:'격투👊',dark:'악🌑',steel:'강철🔩',dragon:'드래곤🐉',flying:'비행🌬',wind:'비행🌬',colorless:'무색⬜'};
+const ENERGY_ALIAS={fighting:'fight',wind:'flying'};
+const ENERGY_KEYS=['grass','fire','water','lightning','psychic','fight','dark','steel','dragon','flying','colorless'];
 const FACE_LABEL={up:'서기 ⬆️',down:'역방향 ⬇️',front:'앞누움 ⤴️',back:'뒷누움 ⤵️',left:'왼쪽 옆누움 ◀️',right:'오른쪽 옆누움 ▶️'};
 const DIR_POOL=['up','down','front','back','left','right'];
-const ENERGY_KEYS=Object.keys(TYPE);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const token=()=>localStorage.getItem('boardmate:member_session')||sessionStorage.getItem('boardmate:member_session')||'';
 
@@ -80,21 +81,29 @@ function blockedBy(state,seat,w){
   return typeof b==='string' && b===w.id;
 }
 
+function normalizeEnergyType(t){const key=String(t??'');return ENERGY_ALIAS[key]||key;}
 function defaultEnergyConfig(pk){
-  const type=pk.type;
+  const type=normalizeEnergyType(pk.type);
   const alt=type==='grass'?'fire':type==='fire'?'water':type==='water'?'lightning':type==='lightning'?'fight':type==='psychic'?'dark':type==='colorless'?'dark':'colorless';
   return Array.from({length:3},()=>({a:[type,alt],b:[type,type],c:[[type,type],[type,'colorless']]}));
 }
 function energyConfigToFaces(cfg){
-  return (cfg||[]).map(d=>[...(d.a||[]),...(d.b||[]),...(d.c||[]).map(x=>Array.isArray(x)?x:[x])]);
+  return (cfg||[]).map(d=>[
+    ...(d.a||[]).map(normalizeEnergyType),
+    ...(d.b||[]).map(normalizeEnergyType),
+    ...(d.c||[]).map(x=>(Array.isArray(x)?x:[x]).map(normalizeEnergyType))
+  ]);
 }
 function facesToEnergyConfig(faces,pk){
+  const one=v=>normalizeEnergyType(Array.isArray(v)?v[0]:v);
+  const pair=v=>Array.isArray(v)?[one(v[0]),one(v[1]??v[0])]:[one(v),one(v)];
   if(Array.isArray(faces)&&faces.length===3&&faces.every(d=>Array.isArray(d)&&d.length===6)){
-    return faces.map(d=>({a:[d[0],d[1]],b:[d[2],d[3]],c:[[Array.isArray(d[4])?d[4][0]:d[4],Array.isArray(d[4])?d[4][1]:d[4]],[Array.isArray(d[5])?d[5][0]:d[5],Array.isArray(d[5])?d[5][1]:d[5]]]}));
+    return faces.map(d=>({a:[one(d[0]),one(d[1])],b:[one(d[2]),one(d[3])],c:[pair(d[4]),pair(d[5])]}));
   }
   return defaultEnergyConfig(pk);
 }
-function energyFaceLabel(t){return (TYPE[t]||t||'').replace(/[🌿🔥💧⚡🔮👊🌑🔩🐉🌬⬜]/g,'');}
+function energyFaceLabel(t){const n=normalizeEnergyType(t);return (TYPE[n]||n||'').replace(/[🌿🔥💧⚡🔮👊🌑🔩🐉🌬⬜]/g,'');}
+function energyResultLabel(e){return Array.isArray(e)?e.map(energyResultLabel).join(' + '):(TYPE[normalizeEnergyType(e)]||normalizeEnergyType(e)||'?');}
 function renderSetup(){
   if(!setupChoice){const first=Object.keys(STARTERS)[0],pk=STARTERS[first];setupChoice={pokemon:first,attacks:[],energyConfig:defaultEnergyConfig(pk)};}
   const pid=setupChoice.pokemon, p=STARTERS[pid];
@@ -103,24 +112,24 @@ function renderSetup(){
   const selected=new Set(mine.attacks||[]);
   const oppSeat=mySeat===0?1:0, opp=members.find(m=>Number(m.seat)===oppSeat),readyMap=full?.setupReady||{};
   document.querySelector('#main').innerHTML=`
-    <div class="toolbar"><div><h2 style="margin:.2em 0">게임 준비</h2><div class="turn-note">포켓몬 1마리 + 준비된 기술 7장 중 4장 + 에너지코로 3개의 6면을 설정합니다.</div></div><span class="badge">내 자리 ${mySeat+1}</span></div>
+    <div class="toolbar"><div><h2 style="margin:.2em 0">게임 준비</h2><div class="turn-note">포켓몬 1마리 + 준비된 기술 7장 중 4장 + 에너지 코로 3개의 6면을 설정합니다.</div></div><span class="badge">내 자리 ${mySeat+1}</span></div>
     <div class="setup-grid">
       <section class="player-card">
         <h2>1. 포켓몬 선택</h2>
         <div class="pokemon-grid">${Object.entries(STARTERS).map(([id,x])=>`<button class="pkm ${mine.pokemon===id?'selected':''}" data-pkm="${id}"><img src="${x.img}" alt="${x.name}" loading="lazy" onerror="this.style.display='none'"><b>${esc(x.name)}</b><div class="type">${esc(x.typeLabel)} · 약점 ${esc(STARTERS[x.weak]?.typeLabel||TYPE[x.weak]||x.weak)}</div></button>`).join('')}</div>
         <h2 style="margin-top:16px">2. 기술 4장 선택</h2>
-        <div class="face-legend"><b>🎲 캐릭터코로 면</b>${[['up','서기 ⬆️'],['down','역방향 ⬇️'],['front','앞누움 ⤴️'],['back','뒷누움 ⤵️'],['left','왼쪽 옆누움 ↔️'],['right','오른쪽 옆누움 ↔️']].map(([k,label])=>`<span class="face-chip" data-face="${k}">${label}</span>`).join('')}</div><div class="attacks">${p.waza.map(w=>`<button class="attack ${selected.has(w.id)?'selected':''}" data-atk="${w.id}"><strong>${esc(w.name)} · ${w.dmg===0?'특수/0':w.dmg}</strong><div class="attack-faces">${(w.faces?.length?w.faces:[]).map(f=>`<span class="face-chip mini" data-face="${f}">${faceLabel(f)}</span>`).join('') || '<span class="face-chip mini">모든 방향 판정</span>'}</div><small>${TYPE[w.type]||w.type} · 비용 ${w.cost.map(([t,n])=>`${TYPE[t]||t}×${n}`).join(' ')}<br>${esc(w.effect)}</small></button>`).join('')}</div>
+        <div class="face-legend"><b>🎲 캐릭코로 면</b>${[['up','서기 ⬆️'],['down','역방향 ⬇️'],['front','앞누움 ⤴️'],['back','뒷누움 ⤵️'],['left','왼쪽 옆누움 ↔️'],['right','오른쪽 옆누움 ↔️']].map(([k,label])=>`<span class="face-chip" data-face="${k}">${label}</span>`).join('')}</div><div class="attacks">${p.waza.map(w=>`<button class="attack ${selected.has(w.id)?'selected':''}" data-atk="${w.id}"><strong>${esc(w.name)} · ${w.dmg===0?'특수/0':w.dmg}</strong><div class="attack-faces">${(w.faces?.length?w.faces:[]).map(f=>`<span class="face-chip mini" data-face="${f}">${faceLabel(f)}</span>`).join('') || '<span class="face-chip mini">모든 방향 판정</span>'}</div><small>${TYPE[w.type]||w.type} · 비용 ${w.cost.map(([t,n])=>`${TYPE[t]||t}×${n}`).join(' ')}<br>${esc(w.effect)}</small></button>`).join('')}</div>
         <div class="toolbar" style="margin-top:10px"><span class="badge">선택 ${selected.size}/4</span><button class="btn primary" id="readyBtn" ${selected.size!==4||readyLocal?'disabled':''}>${readyLocal?'✅ 준비 완료':'준비 완료'}</button></div>
       </section>
       <section class="player-card">
-        <h2>3. 에너지코로 3개</h2><div class="small" style="margin-bottom:8px">업로드한 최신 준비 규칙을 반영했습니다. A 2면은 서로 다른 타입, B 2면은 단일 에너지, C 2면은 각 2에너지입니다.</div>
-        <div class="ene-config">${mine.energyConfig.map((die,di)=>{const cells=[['A1',die.a[0]],['A2',die.a[1]],['B1',die.b[0]],['B2',die.b[1]],['C1-1',die.c[0][0]],['C1-2',die.c[0][1]],['C2-1',die.c[1][0]],['C2-2',die.c[1][1]]];return `<div class="ene-row"><span class="ene-label">코로 ${di+1}</span>${cells.map(([lab,val],fi)=>`<div style="display:flex;flex-direction:column;gap:3px;align-items:center"><small style="font-size:8px;color:#64748b">${lab}</small><select class="ene-select" data-ene="${di}-${fi}">${Object.keys(TYPE).map(t=>`<option value="${t}" ${val===t?'selected':''}>${esc(TYPE[t]||t)}</option>`).join('')}</select></div>`).join('')}</div>`;}).join('')}</div>
+        <h2>3. 에너지 코로 3개</h2><div class="small" style="margin-bottom:8px">업로드한 최신 준비 규칙을 반영했습니다. A 2면은 서로 다른 타입, B 2면은 단일 에너지, C 2면은 각 2에너지입니다.</div>
+        <div class="ene-config">${mine.energyConfig.map((die,di)=>{const cells=[['A1',die.a[0]],['A2',die.a[1]],['B1',die.b[0]],['B2',die.b[1]],['C1-1',die.c[0][0]],['C1-2',die.c[0][1]],['C2-1',die.c[1][0]],['C2-2',die.c[1][1]]];return `<div class="ene-row"><span class="ene-label">코로 ${di+1}</span>${cells.map(([lab,val],fi)=>`<div style="display:flex;flex-direction:column;gap:3px;align-items:center"><small style="font-size:8px;color:#64748b">${lab}</small><select class="ene-select" data-ene="${di}-${fi}">${ENERGY_KEYS.map(t=>`<option value="${t}" ${normalizeEnergyType(val)===t?'selected':''}>${esc(TYPE[t]||t)}</option>`).join('')}</select></div>`).join('')}</div>`;}).join('')}</div>
         <div class="result"><b>${esc(opp?.nickname||'상대')}</b><div style="margin-top:6px">${readyMap[oppSeat]?'✅ 상대 준비 완료':'⏳ 상대 준비 중'}</div><div class="footer-note" style="margin-top:6px">두 플레이어가 준비 완료하면 방장이 최신 구성으로 전투를 시작합니다.</div></div>
       </section>
     </div>`;
   document.querySelectorAll('[data-pkm]').forEach(b=>b.onclick=()=>{const chosen=STARTERS[b.dataset.pkm];setupChoice={pokemon:b.dataset.pkm,attacks:[],energyConfig:defaultEnergyConfig(chosen)};readyLocal=false;localSelectedAttack=null;setupHydrated=true;renderSetup();});
   document.querySelectorAll('[data-atk]').forEach(b=>b.onclick=()=>{if(!setupChoice)return;const id=b.dataset.atk,s=new Set(setupChoice.attacks||[]);if(s.has(id))s.delete(id);else if(s.size<4)s.add(id);setupChoice.attacks=[...s];readyLocal=false;setupHydrated=true;renderSetup();});
-  document.querySelectorAll('[data-ene]').forEach(sel=>sel.onchange=()=>{if(!setupChoice?.energyConfig)return;const [di,fi]=sel.dataset.ene.split('-').map(Number);const d=setupChoice.energyConfig[di];if(fi<2)d.a[fi]=sel.value;else if(fi<4)d.b[fi-2]=sel.value;else if(fi<6)d.c[0][fi-4]=sel.value;else d.c[1][fi-6]=sel.value;readyLocal=false;setupHydrated=true;});
+  document.querySelectorAll('[data-ene]').forEach(sel=>sel.onchange=()=>{if(!setupChoice?.energyConfig)return;const [di,fi]=sel.dataset.ene.split('-').map(Number);const d=setupChoice.energyConfig[di];if(fi<2)d.a[fi]=normalizeEnergyType(sel.value);else if(fi<4)d.b[fi-2]=normalizeEnergyType(sel.value);else if(fi<6)d.c[0][fi-4]=normalizeEnergyType(sel.value);else d.c[1][fi-6]=normalizeEnergyType(sel.value);readyLocal=false;setupHydrated=true;});
   document.querySelector('#readyBtn')?.addEventListener('click',async()=>{try{if((setupChoice?.attacks||[]).length!==4)throw new Error('기술 카드 4장을 선택하세요.');const pk=STARTERS[setupChoice.pokemon],valid=new Set(pk?.waza?.map(w=>w.id)||[]);if((setupChoice.attacks||[]).some(id=>!valid.has(id)))throw new Error('현재 포켓몬의 기술 4장을 다시 선택해 주세요.');const faces=energyConfigToFaces(setupChoice.energyConfig);await rpc('boardmate_plakoro_set_setup_v2',{p_token:token(),p_room_id:room.id,p_pokemon:setupChoice.pokemon,p_attacks:setupChoice.attacks,p_energy:faces,p_ready:true});readyLocal=true;full=full||{};full.setupReady={...(full.setupReady||{}),[mySeat]:true};await sendRoomBroadcast('plakoro_setup_ready',{seat:mySeat});renderSetup();if(isHost)await maybeStart();}catch(e){const msg=String(e?.message||e||'');if(msg.includes('선택한 기술 카드가 해당 포켓몬의 기술 카드가 아닙니다'))alert('프라코로 준비 RPC가 구버전입니다. 이번 패키지의 SUPABASE_PLAKORO_PVP_V6.sql을 Supabase SQL Editor에서 한 번 실행한 뒤 다시 준비 완료를 눌러주세요.');else alert(msg);}});
 }
 
@@ -157,9 +166,9 @@ async function persist(reason){
   finally{saveBusy=false;}
 }
 
-function flattenEnergy(results){return (results||[]).flatMap(e=>Array.isArray(e)?e:[e]).filter(Boolean);}
+function flattenEnergy(results){return (results||[]).flatMap(e=>Array.isArray(e)?e:[e]).map(normalizeEnergyType).filter(Boolean);}
 function energyCounts(results){const c={};for(const e of flattenEnergy(results))c[e]=(c[e]||0)+1;return c;}
-function canPay(cost,results){const energies=flattenEnergy(results);for(const [reqType,reqN] of cost){if(reqType==='colorless'){if(energies.length<reqN)return false;}else{const count=energies.filter(t=>t===reqType||t==='colorless').length;if(count<reqN)return false;}}return true;}
+function canPay(cost,results){const energies=flattenEnergy(results);for(const [rawType,reqN] of cost){const reqType=normalizeEnergyType(rawType);if(reqType==='colorless'){if(energies.length<reqN)return false;}else{const count=energies.filter(t=>t===reqType||t==='colorless').length;if(count<reqN)return false;}}return true;}
 function rollEnergy(seat,n){const sets=full.energyFaces[seat]||[];return Array.from({length:n},(_,i)=>{const die=sets[i%3]||Array(6).fill('colorless');const face=die[Math.floor(Math.random()*6)];return Array.isArray(face)?face.slice():face;});}
 function rollDir(){return DIR_POOL[Math.floor(Math.random()*DIR_POOL.length)];}
 function extraForAttack(state,seat,w,dir,energy){
@@ -193,7 +202,7 @@ async function hostAction(seat,action,payload={}){
     const energy=rollEnergy(seat,n),dir=rollDir();full.lastEnergy[seat]=energy;const success=canPay(w.cost,energy);let damage=0,msg=[];
     if(success){
       if(w.branch){const raw=dir==='up'?70:(dir==='front'||dir==='back'?40:20);damage=raw;msg.push(`마구뛰기 ${raw} 피해`);}
-      else if(w.reflect){damage=Number(full.lastDamage?.[opp]||0);if(['up','left','right'].includes(dir))damage*=2;msg.push('캐릭터코로 효과 무시 · 마지막 피해 반사');}
+      else if(w.reflect){damage=Number(full.lastDamage?.[opp]||0);if(['up','left','right'].includes(dir))damage*=2;msg.push('캐릭코로 효과 무시 · 마지막 피해 반사');}
       else if(w.id.endsWith('-barrier')){damage=0;}
       else damage=Number(w.dmg)||0;
       if(!w.branch&&!w.reflect&&!w.id.endsWith('-barrier')){const ex=extraForAttack(full,seat,w,dir,energy);damage+=ex.bonus;msg.push(...ex.msg);}else if(w.id.endsWith('-barrier')){const shield=20+(['up','front'].includes(dir)?30:0);st.shield=(st.shield||0)+shield;msg.push(`다음 턴 받는 데미지 -${shield}`);}
@@ -222,9 +231,22 @@ async function sendPrivateAction(action,payload={}){
 async function drainSeat(seat){
   if(!isHost)return;
   try{
-    const a=await rpc('boardmate_plakoro_take_action',{p_token:token(),p_room_id:room.id,p_seat:Number(seat)});
-    if(a?.action)await hostAction(Number(seat),String(a.action),a.payload||{});
-  }catch(e){console.warn('plakoro action drain',e);}
+    // `boardmate_plakoro_take_action` is a RETURNS TABLE RPC, so PostgREST/Supabase
+    // returns an array even when exactly one pending action was deleted/returned.
+    // The previous code read `a.action` directly from that array, silently discarded
+    // every ROLL action, and therefore never produced a dice result.
+    const raw=await rpc('boardmate_plakoro_take_action',{p_token:token(),p_room_id:room.id,p_seat:Number(seat)});
+    const rows=Array.isArray(raw)?raw:(raw?[raw]:[]);
+    for(const a of rows){
+      if(!a?.action)continue;
+      const actionSeat=Number.isFinite(Number(a.seat))?Number(a.seat):Number(seat);
+      await hostAction(actionSeat,String(a.action),a.payload||{});
+    }
+  }catch(e){
+    console.warn('plakoro action drain',e);
+    const n=document.querySelector('#net');
+    if(n){n.textContent='액션 처리 오류 · 재시도';n.title=String(e?.message||e||'');}
+  }
 }
 
 function playDiceAnimation(result){
@@ -268,12 +290,12 @@ function renderBattle(){
           <b>${esc(w.name)}</b><div class="small">${esc(TYPE[w.type]||w.type)} · ${w.cost.map(([t,n])=>`${TYPE[t]||t}×${n}`).join(' ')} · 기본 ${w.dmg}</div>
           <div class="small">${esc(w.effect)}</div>
         </button>`).join('')}</div>
-      <div class="toolbar" style="margin-top:6px"><button class="btn primary" id="rollBtn" ${!myTurn||!localSelectedAttack||myChoice?'disabled':''}>🎲 캐라코로 + 에네코로 굴리기</button>
-        <span class="turn-note">P1 첫 턴 에네코로 2개 · 이후 3개</span></div>
+      <div class="toolbar" style="margin-top:6px"><button class="btn primary" id="rollBtn" ${!myTurn||!localSelectedAttack||myChoice?'disabled':''}>🎲 캐릭코로 + 에너지 코로 굴리기</button>
+        <span class="turn-note">P1 첫 턴 에너지 코로 2개 · 이후 3개</span></div>
       <div id="resultDice" class="dice-row"></div>
     </div>
     ${myChoice?`<div class="result"><b>상대가 사용할 수 없게 할 기술을 선택하세요.</b><div class="choice-grid">${(full.attacks[oppSeat]||[]).map(w=>`<button class="btn danger" data-forbid="${w.id}">${esc(w.name)}</button>`).join('')}</div></div>`:''}
-    ${full.lastResult?`<div class="result ${full.lastResult.success?'ok':'bad'}"><b>${esc(full.players[full.lastResult.seat].name)} · ${esc(full.lastResult.name)}</b><br>${full.lastResult.success?'✅ 성공':'❌ 실패'} · ${full.lastResult.damage} 피해 · 캐라코로 ${esc(faceLabel(full.lastResult.charDir))}<br>에너지: ${(full.lastResult.energy||[]).map(e=>TYPE[e]||e).join(' · ')}${full.lastResult.msg?.length?`<br>${full.lastResult.msg.map(x=>esc(x)).join(' · ')}`:''}</div>`:''}
+    ${full.lastResult?`<div class="result ${full.lastResult.success?'ok':'bad'}"><b>${esc(full.players[full.lastResult.seat].name)} · ${esc(full.lastResult.name)}</b><br>${full.lastResult.success?'✅ 성공':'❌ 실패'} · ${full.lastResult.damage} 피해 · 캐릭코로 ${esc(faceLabel(full.lastResult.charDir))}<br>에너지 코로: ${(full.lastResult.energy||[]).map(e=>esc(energyResultLabel(e))).join(' · ')}${full.lastResult.msg?.length?`<br>${full.lastResult.msg.map(x=>esc(x)).join(' · ')}`:''}</div>`:''}
     ${full.gameOver?`<div class="result"><div style="font-size:24px;font-weight:900;color:var(--gold)">${full.winner===mySeat?'🎉 승리!':'💥 패배'}</div><div class="toolbar" style="margin-top:8px"><a class="btn" href="./index.html#/room/${encodeURIComponent(room.id)}">방으로 돌아가기</a></div></div>`:''}`;
   document.querySelectorAll('[data-atk]').forEach(b=>b.onclick=()=>{
     if(!myTurn)return;
