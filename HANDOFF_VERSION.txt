@@ -1,1 +1,1 @@
-BoardMate Arena v11.4.27 — merged release: v11.4.26 game polish + game status/cancel patch + top-right PWA install + compact 4-column catalog + PowerGrid Germany V32 preserved
+BoardMate Arena v11.4.29 — Plakoro setup repair + cancel notice + Fantasy Realms scroll/minimize polish

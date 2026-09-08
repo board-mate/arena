@@ -1,15 +1,15 @@
 {
-  "release": "BoardMate Arena v11.4.27 MERGED 2026-09-08",
+  "release": "BoardMate Arena v11.4.29 HOTFIX 2026-09-08",
   "date": "2026-09-08",
   "bases": [
-    "BoardMate_Arena_V11_4_26_GAME_POLISH_FULL.zip",
-    "BoardMate_Arena_V11_4_26_GAME_STATUS_CANCEL_FULL.zip"
+    "BoardMate_Arena_V11_4_28_GAME_POLISH_FULL.zip"
   ],
   "preserved": [
-    "v11.4.26 game polish",
+    "v11.4.28 game updates",
     "PowerGrid Germany V32 current package",
     "solo save/abandon",
-    "Fantasy/Werewolf fixes"
+    "Fantasy/Werewolf fixes",
+    "v11.4.27 merged hub/status features"
   ],
   "hub_updates": [
     "top-right PWA install button",
@@ -28,14 +28,21 @@
   "social_cancel": [
     "avalon",
     "secrethitler",
-    "onenightwerewolf"
+    "onenightwerewolf",
+    "plakoro"
   ],
   "removed_ui_games": [
     "pokemon-minima",
     "pocketnova"
   ],
   "supabase_order": [
-    "SUPABASE_REPAIR_ALL_GAMES_V27.sql",
-    "SUPABASE_VERIFY_ALL_GAMES_V27.sql"
+    "SUPABASE_REPAIR_ALL_GAMES_V29.sql",
+    "SUPABASE_VERIFY_ALL_GAMES_V29.sql"
+  ],
+  "hotfixes": [
+    "Plakoro V3/V4/V5 setup move-id compatibility via V6 SQL",
+    "cancel completion overlay and cancelled room notice",
+    "Fantasy Realms scroll preservation and unchanged-revision poll suppression",
+    "Fantasy Realms minimizable action dialog"
   ]
 }

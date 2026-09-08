@@ -1,9 +1,18 @@
-BoardMate Arena v11.4.29 static validation
-- JS syntax: PASS for Mandom, Plakoro, Avalon, Secret Hitler, One Night Werewolf, multi-common, social-common
-- Mandom monster-family sword logic: PASS
-- Mandom result submission hook: PASS
-- Plakoro face-direction chips: PASS
-- Plakoro host direct roll + client retry: PASS
-- Plakoro setup SQL alias / current attack id validation: PASS
-- Universal cancel catalog includes Plakoro and current multiplayer ids: PASS
-- service worker cache key: boardmate-shell-v11.4.29
+BoardMate Arena v11.4.29 validation
+PASS: Plakoro V6 accepts current semantic move IDs and legacy numeric move IDs
+PASS: Plakoro V6 normalizes legacy IDs to current semantic IDs
+PASS: Plakoro setup-pair seat references are qualified
+PASS: Plakoro client detects stale setup RPC and points to V6 SQL
+PASS: multiplayer cancel UI reads cancelled/yes/total RPC fields
+PASS: final unanimous cancel immediately opens the full-screen cancellation notice
+PASS: room page also recognizes unanimously cancelled rooms stored as finished
+PASS: Fantasy Realms preserves page/discard/hand scroll positions across rerender
+PASS: Fantasy Realms polling no longer rerenders unchanged revisions every 10 seconds
+PASS: Fantasy Realms special-card dialog can be minimized and restored
+PASS: minimized Fantasy Realms dialog stays minimized during realtime refresh; Esc minimizes too
+PASS: changed module cache-busts bumped to v29
+PASS: service worker cache key bumped to boardmate-shell-v11.4.29
+PASS: app.js, multi-common.js, Plakoro module, Fantasy Realms module syntax checks passed
+PASS: v11.4.26 game-polish regression static tests passed
+PASS: social-deduction static regression tests passed
+PASS: Plakoro V6 and full V29 repair SQL static sanity checks passed
