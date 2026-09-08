@@ -72,13 +72,26 @@ async function loadHomeActionGames(me){
   if(!wrap||!box||!me||!onlineConfigured()) return;
   try{
     const rooms=await callRpc('boardmate_list_rooms',{p_token:memberToken()})||[];
-    const mine=rooms.filter(r=>roomNeedsMyAction(r,me));
+    // boardmate_list_rooms on older Supabase deployments may not expose
+    // turn_user_id/current_turn_user_id. It does expose `mine`, so fetch
+    // authoritative room metadata for only the member's active rooms.
+    const activeMine=rooms.filter(r=>r?.mine===true && r?.status==='playing');
+    const detailed=await Promise.all(activeMine.map(async r=>{
+      try{
+        const d=await callRpc('boardmate_get_room',{p_token:memberToken(),p_room_id:r.id});
+        return {...r,...(d?.room||{})};
+      }catch{
+        return r;
+      }
+    }));
+    const mine=detailed.filter(r=>roomNeedsMyAction(r,me));
     if(!mine.length){wrap.classList.add('hidden');box.innerHTML='';return;}
     wrap.classList.remove('hidden');
     box.innerHTML=mine.map(r=>actionGameCard(r,me)).join('');
-  }catch{
+  }catch(err){
     wrap.classList.add('hidden');
     box.innerHTML='';
+    console.warn('[BoardMate Home] action games load failed',err);
   }
 }
 
