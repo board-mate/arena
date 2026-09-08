@@ -61,7 +61,7 @@
 <dialog id="endDialog"><div id="endBody"></div><div style="display:flex;justify-content:flex-end;margin-top:14px"><button class="btn primary" id="endClose">닫기</button></div></dialog>
 
 <script type="module">
-import {configured,roomId,getMe,loadRoom,loadFantasyState,saveFantasyState,submitMatch,subscribeRoomBroadcast,sendRoomBroadcast,touchPresence,showFatal} from './multi-common.js?v=19';
+import {configured,roomId,getMe,loadRoom,loadFantasyState,saveFantasyState,submitMatch,subscribeRoomBroadcast,sendRoomBroadcast,touchPresence,showFatal,claimFantasyController} from './multi-common.js?v=22';
 (() => {
 'use strict';
 const GAME_ID='fantasyrealms';
@@ -134,7 +134,7 @@ const shuffle=a=>{const x=a.slice();for(let i=x.length-1;i>0;i--){const j=Math.f
 const deepClone=x=>JSON.parse(JSON.stringify(x));
 const optionsHtml=ids=>ids.map(id=>`<option value="${id}">${koName(id)} (${SUIT_KO[cardById(id).suit]||cardById(id).suit})</option>`).join('');
 let me=null,roomInfo=null,members=[],mySeat=null,isHost=false,maxPlayers=6;
-let fullState=null,view=null,revision=0,currentAction=null,subscriptionsReady=false,saveBusy=false,matchSubmitted=false,pollTimer=null;
+let fullState=null,view=null,revision=0,currentAction=null,subscriptionsReady=false,saveBusy=false,matchSubmitted=false,pollTimer=null,isController=false;
 
 function showDetail(id){const c=cardById(id),k=KO[id]||[c.name,''];$('detailTitle').textContent=`${k[0]} · ${SUIT_KO[c.suit]||c.suit} · 기본 힘 ${c.strength}`;$('detailBody').innerHTML=`<div class="rules">${k[1]}</div>`;$('detailDialog').showModal();}
 function cardEl(id,opt={}){const c=cardById(id),k=KO[id]||[c.name,''],el=document.createElement('div');el.className='card '+c.suit+(opt.click?' click':'');const cfg=opt.config&&ACTION_IDS.includes(id)?'<button class="configure">효과 설정</button>':'';el.innerHTML=`<div><div class="name">${k[0]}</div><div class="meta">${SUIT_KO[c.suit]||c.suit} · 기본 힘 ${c.strength}</div><div class="effect">${k[1]}</div>${cfg}</div><div class="pts"></div>`;el.ondblclick=e=>{e.stopPropagation();showDetail(id)};if(opt.click)el.onclick=opt.click;const b=el.querySelector('.configure');if(b)b.onclick=e=>{e.stopPropagation();openAction(id)};return el;}
@@ -145,7 +145,7 @@ function renderRoom(){
   $('roomHint').textContent=isHost?'판타지 왕국은 BoardMate 공통 방으로 실행됩니다.':'방장과 다른 참가자의 행동이 Realtime으로 동기화됩니다.';
 }
 function publicSnapshot(){
-  const s=fullState;return {version:GAME_VERSION,gameId:GAME_ID,_gameId:GAME_ID,started:true,playerCount:s.playerCount,players:s.players.map(p=>({seat:p.seat,name:p.name})),current:s.current,startingPlayer:s.startingPlayer,turnNumber:s.turnNumber,phase:s.phase,discardPile:s.discardPile.slice(),drawCount:s.drawPile.length,handCounts:s.hands.map(h=>h.length),gameOver:s.gameOver,finalizeSeat:s.finalizeTask?.seat??null,result:s.result||null};
+  const s=fullState;return {version:GAME_VERSION,gameId:GAME_ID,_gameId:GAME_ID,started:true,controllerUserId:s.controllerUserId||me?.user_id||null,playerCount:s.playerCount,players:s.players.map(p=>({seat:p.seat,name:p.name})),current:s.current,startingPlayer:s.startingPlayer,turnNumber:s.turnNumber,phase:s.phase,discardPile:s.discardPile.slice(),drawCount:s.drawPile.length,handCounts:s.hands.map(h=>h.length),gameOver:s.gameOver,finalizeSeat:s.finalizeTask?.seat??null,result:s.result||null};
 }
 function privateSnapshotMap(){
   const out={};
@@ -157,22 +157,40 @@ function makeView(publicState,privateState,seat){
   const own=privateState?.[String(seat)]||privateState||{};
   return {...deepClone(publicState),ownHand:(own.hand||[]).slice(),ownActions:deepClone(own.actionData||{}),finalizeTask:publicState.gameOver?null:deepClone(own.finalizeTask||null),revealHands:publicState.result?.hands||null};
 }
-function reconstructHost(publicState,privateMap){
+function reconstructController(publicState,privateMap){
   const h=privateMap?._host;if(!h)throw new Error('호스트 비공개 게임 상태가 없습니다.');
-  fullState={version:GAME_VERSION,gameId:GAME_ID,_gameId:GAME_ID,started:true,playerCount:publicState.playerCount,players:deepClone(publicState.players),current:publicState.current,startingPlayer:publicState.startingPlayer,turnNumber:publicState.turnNumber,phase:publicState.phase,discardPile:deepClone(publicState.discardPile),drawPile:(h.drawPile||[]).slice(),hands:(h.hands||[]).map(x=>x.slice()),actionData:deepClone(h.actionData||[]),gameOver:!!publicState.gameOver,finalizeQueue:deepClone(h.finalizeQueue||[]),finalizeTask:deepClone(h.finalizeTask||null),result:deepClone(publicState.result||null)};
+  fullState={version:GAME_VERSION,gameId:GAME_ID,_gameId:GAME_ID,started:true,controllerUserId:publicState.controllerUserId||roomInfo.host_id,playerCount:publicState.playerCount,players:deepClone(publicState.players),current:publicState.current,startingPlayer:publicState.startingPlayer,turnNumber:publicState.turnNumber,phase:publicState.phase,discardPile:deepClone(publicState.discardPile),drawPile:(h.drawPile||[]).slice(),hands:(h.hands||[]).map(x=>x.slice()),actionData:deepClone(h.actionData||[]),gameOver:!!publicState.gameOver,finalizeQueue:deepClone(h.finalizeQueue||[]),finalizeTask:deepClone(h.finalizeTask||null),result:deepClone(publicState.result||null)};
 }
 async function syncState(force=false){
-  try{const row=await loadFantasyState();const rev=Number(row?.revision||0);if(!force&&rev<=revision)return false;revision=rev;if(!row?.state){if(isHost&&!fullState)await startNewGame();return true;}if(isHost)reconstructHost(row.state,row.private);else fullState=null;view=makeView(row.state,row.private,mySeat);renderAll();if(view.gameOver&&view.result)showEnd(view.result);return true;}catch(e){console.warn('Fantasy sync',e);$('netBadge').textContent='연결 오류 · 재시도 중';return false;}}
+  try{
+    const row=await loadFantasyState();
+    const rev=Number(row?.revision||0);
+    if(!force&&rev<=revision)return false;
+    revision=rev;
+    if(!row?.state){
+      // The first player who opens a started Fantasy Realms room becomes the
+      // temporary game controller. This removes the old dependency on the
+      // BoardMate room host having to open the game page first.
+      if(!fullState) { isController=true; await startNewGame(); }
+      return true;
+    }
+    const controller=String(row.state.controllerUserId||roomInfo.host_id);
+    isController=controller===String(me.user_id);
+    if(isController)reconstructController(row.state,row.private);else fullState=null;
+    view=makeView(row.state,row.private,mySeat);renderAll();
+    if(view.gameOver&&view.result)showEnd(view.result);
+    return true;
+  }catch(e){console.warn('Fantasy sync',e);$('netBadge').textContent='연결 오류 · 재시도 중';return false;}}
 async function persist(reason){
-  if(!isHost||!fullState||saveBusy)return false;saveBusy=true;
+  if(!isController||!fullState||saveBusy)return false;saveBusy=true;
   try{const pub=publicSnapshot(),priv=privateSnapshotMap();const newRev=await saveFantasyState(revision,pub,priv);revision=Number(newRev);view=makeView(pub,priv,mySeat);renderAll();if(fullState.gameOver&&fullState.result&&!matchSubmitted){matchSubmitted=true;const order=fullState.result.order.map(x=>members[Number(x.p)]?.user_id).filter(Boolean);try{await submitMatch(order);}catch(e){matchSubmitted=false;console.warn('Fantasy match submit',e);}}$('netBadge').textContent='BoardMate Realtime · 연결됨';return true;}catch(e){console.warn('Fantasy save failed',e);$('netBadge').textContent='저장 실패 · 다시 시도';return false;}finally{saveBusy=false;}}
 function buildGame(){
   playerCount=members.length;const pile=shuffle(BASE_IDS.slice()),hands=Array.from({length:playerCount},()=>[]);for(let r=0;r<7;r++)for(let p=0;p<playerCount;p++)hands[p].push(pile.pop());const first=Math.floor(Math.random()*playerCount);
-  fullState={version:GAME_VERSION,gameId:GAME_ID,_gameId:GAME_ID,started:true,playerCount,players:members.map((m,i)=>({seat:i,name:m.nickname})),drawPile:pile,discardPile:[],hands,current:first,startingPlayer:first,turnNumber:0,phase:'draw',actionData:Array.from({length:playerCount},()=>({})),gameOver:false,finalizeQueue:[],finalizeTask:null,result:null};
+  fullState={version:GAME_VERSION,gameId:GAME_ID,_gameId:GAME_ID,started:true,controllerUserId:me.user_id,playerCount,players:members.map((m,i)=>({seat:i,name:m.nickname})),drawPile:pile,discardPile:[],hands,current:first,startingPlayer:first,turnNumber:0,phase:'draw',actionData:Array.from({length:playerCount},()=>({})),gameOver:false,finalizeQueue:[],finalizeTask:null,result:null};
 }
-async function startNewGame(){if(!isHost||fullState)return;buildGame();await persist('game-start');}
+async function startNewGame(){if(!isController||fullState)return;buildGame();const ok=await persist('game-start');if(!ok){isController=false;fullState=null;await syncState(true);}}
 function renderAll(){if(!view)return;$('gamePanel').style.display='block';$('playersPanel').style.display='block';$('discardPanel').style.display='block';renderGame();}
-function sendAction(action,payload={}){if(!view||view.gameOver)return;if(isHost)hostAction(mySeat,action,payload);else void sendRoomBroadcast('fantasy_action',{seat:mySeat,action,payload});}
+function sendAction(action,payload={}){if(!view||view.gameOver)return;if(isController)hostAction(mySeat,action,payload);else void sendRoomBroadcast('fantasy_action',{seat:mySeat,action,payload});}
 async function hostAction(seat,action,payload={}){
   if(!fullState||fullState.gameOver||seat!==fullState.current&&action!=='SET_SPECIAL'&&action!=='NECRO')return;
   if(action==='SET_SPECIAL'){
@@ -237,17 +255,66 @@ $('saveAction').onclick=()=>{const target=$('aTarget')?.value;if(!target)return;
 $('skipAction').onclick=()=>{if(currentAction==='FR28')sendAction('NECRO',{target:null});else sendAction('SET_SPECIAL',{cardId:currentAction,skip:true});$('actionDialog').close();$('skipAction').textContent='능력 사용 안 함';};
 function showEnd(r){const names=view.players.map(p=>p.name),win=r.winners.length===1?`${esc(names[r.winners[0]])} 승리!`:`${r.winners.map(i=>esc(names[i])).join(', ')} 공동 승리!`;const rows=r.order.map((x,i)=>`<tr><td>${i+1}위 · ${esc(names[x.p])}</td><td>${x.s}</td><td>${x.b}</td></tr>`).join('');$('endBody').innerHTML=`<div class="winner">${win}</div><table class="ranking"><thead><tr><th>순위</th><th>점수</th><th>기본 힘 합</th></tr></thead><tbody>${rows}</tbody></table><div style="margin-top:12px;color:#cbd5e1;font-size:12px">BoardMate 방에 결과가 자동 저장되었습니다.</div>`;if(!$('endDialog').open)$('endDialog').showModal();}
 
+async function withTimeout(promise,ms,label){
+  let timer;
+  const timeout=new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error(label)),ms);});
+  try{return await Promise.race([promise,timeout]);}finally{clearTimeout(timer);}
+}
+async function callControllerClaim(){return await claimFantasyController();}
 async function boot(){
   if(!configured()||!roomId)showFatal('BoardMate 방 정보가 없습니다. 다인플 방에서 판타지 왕국을 열어주세요.');
   if(typeof deck==='undefined'||typeof Hand==='undefined')showFatal('판타지 왕국 점수 엔진을 불러오지 못했습니다.');
-  me=await getMe();if(!me)showFatal('로그인이 필요합니다.');
-  ({room:roomInfo,members}=await loadRoom());if(roomInfo.game!==GAME_ID)showFatal('판타지 왕국 방이 아닙니다.');
-  const found=members.find(m=>m.user_id===me.user_id);if(!found)showFatal('이 방의 참가자가 아닙니다.');mySeat=Number(found.seat);isHost=roomInfo.host_id===me.user_id;maxPlayers=Number(roomInfo.max_players||6);renderRoom();
+  me=await withTimeout(getMe(),8000,'로그인 정보를 불러오지 못했습니다.');
+  if(!me)showFatal('로그인이 필요합니다.');
+  ({room:roomInfo,members}=await withTimeout(loadRoom(),8000,'BoardMate 방 정보를 불러오지 못했습니다.'));
+  if(roomInfo.game!==GAME_ID)showFatal('판타지 왕국 방이 아닙니다.');
+  const found=members.find(m=>m.user_id===me.user_id);if(!found)showFatal('이 방의 참가자가 아닙니다.');
+  mySeat=Number(found.seat);isHost=roomInfo.host_id===me.user_id;isController=isHost;maxPlayers=Number(roomInfo.max_players||6);renderRoom();
   $('netBadge').textContent='BoardMate 연결됨';
-  if(!subscriptionsReady){subscriptionsReady=true;await subscribeRoomBroadcast('fantasy_action',msg=>{if(isHost&&msg?.action)void hostAction(Number(msg.seat),msg.action,msg.payload||{});});await subscribeRoomBroadcast('state_changed',msg=>{const rev=Number(msg?.revision||0);if(rev>revision)void syncState();});}
-  const row=await loadFantasyState();revision=Number(row?.revision||0);
-  if(row?.state){if(isHost)reconstructHost(row.state,row.private);view=makeView(row.state,row.private,mySeat);renderAll();if(view.gameOver&&view.result)showEnd(view.result);}else if(isHost){await startNewGame();}else{$('message').textContent='게임 시작 대기 중';$('hint').textContent='방장이 게임을 초기화하면 자동으로 시작됩니다.';}
-  pollTimer=setInterval(()=>void syncState(),10000);
+
+  // Realtime is optional. Never block initial game-state loading on a WebSocket.
+  if(!subscriptionsReady){
+    subscriptionsReady=true;
+    void subscribeRoomBroadcast('fantasy_action',msg=>{if(isController&&msg?.action)void hostAction(Number(msg.seat),msg.action,msg.payload||{});}).catch(e=>console.warn('fantasy_action subscribe',e));
+    void subscribeRoomBroadcast('state_changed',msg=>{const rev=Number(msg?.revision||0);if(rev>revision)void syncState(true);}).catch(e=>console.warn('state_changed subscribe',e));
+  }
+
+  const row=await withTimeout(loadFantasyState(),10000,'판타지 왕국 게임 상태를 불러오지 못했습니다.');
+  revision=Number(row?.revision||0);
+
+  if(row?.state){
+    const controller=String(row.state.controllerUserId||row.controller_user_id||roomInfo.host_id);
+    isController=controller===String(me.user_id);
+    if(!isController){
+      const controllerMember=members.find(m=>m.user_id===controller);
+      if(controllerMember && !controllerMember.connected){
+        try{
+          const claimed=await withTimeout(callControllerClaim(),5000,'');
+          if(claimed){
+            isController=true;
+            const fresh=await withTimeout(loadFantasyState(),10000,'판타지 왕국 상태를 다시 불러오지 못했습니다.');
+            revision=Number(fresh?.revision||0);
+            reconstructController(fresh.state,fresh.private);
+            view=makeView(fresh.state,fresh.private,mySeat);renderAll();
+            if(view.gameOver&&view.result)showEnd(view.result);
+          }
+        }catch(e){console.warn('Fantasy controller claim',e);}
+      }
+    }
+    if(!view){
+      if(isController)reconstructController(row.state,row.private);else fullState=null;
+      view=makeView(row.state,row.private,mySeat);renderAll();
+      if(view.gameOver&&view.result)showEnd(view.result);
+    }
+  }else{
+    // A room can be marked "playing" even when the original host never opened
+    // the game page. Start it from the first connected participant who arrives.
+    isController=true;
+    await startNewGame();
+    if(!view)await syncState(true);
+  }
+
+  pollTimer=setInterval(()=>void syncState(true),10000);
   window.addEventListener('beforeunload',()=>{if(pollTimer)clearInterval(pollTimer);});
   setInterval(()=>{void touchPresence(true);},15000);
 }
