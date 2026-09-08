@@ -5,7 +5,7 @@
 <meta name="board-mate-min-players" content="2">
 <meta name="board-mate-max-players" content="4">
 <meta name="board-mate-multiplayer" content="true">
-<script type="application/json" id="boardMateGameManifest">{"id":"quacks","name":"돌팔이 약장수","version":"1.0.0","minPlayers":2,"maxPlayers":4,"multiplayer":true,"turnBased":false,"entry":"single-html","stateMode":"shared"}</script>
+<script type="application/json" id="boardMateGameManifest">{"id":"quacks","name":"돌팔이 약장수","version":"1.1.0","minPlayers":2,"maxPlayers":4,"multiplayer":true,"turnBased":false,"entry":"single-html","stateMode":"shared"}</script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="./config.js"></script>
 <style>
@@ -60,6 +60,7 @@ button:disabled{opacity:.4;cursor:not-allowed}
 .readychip.ok{background:#204a30;color:#a9f0bf}
 .status{text-align:center;font-weight:900;margin:4px 0}
 .result{background:#203c2e;border:1px solid #3f7a5d;border-radius:12px;padding:14px;text-align:center;margin-top:10px}
+.track-wrap{overflow-x:auto;padding:8px 2px 4px}.track{display:flex;gap:4px;min-width:max-content;align-items:stretch}.track-cell{position:relative;width:50px;min-width:50px;height:62px;border:1px solid #4b5064;border-radius:10px;background:#20232e;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:10px}.track-cell b{font-size:13px}.track-cell.ruby{box-shadow:inset 0 -4px 0 #c94e78}.track-cell.jackpot{background:#3b3420;border-color:#d4b04c}.track-markers{position:absolute;left:3px;right:3px;top:2px;display:flex;flex-wrap:wrap;gap:2px;justify-content:center}.track-marker{width:16px;height:16px;border-radius:50%;display:grid;place-items:center;font-size:9px;font-weight:1000;color:#111;background:#f1c40f;border:1px solid #fff}.track-marker.m1{background:#60a5fa}.track-marker.m2{background:#f472b6}.track-marker.m3{background:#34d399}.bag-summary{margin-top:8px;border:1px dashed #555b72;border-radius:11px;padding:8px;background:#1b1e28}.bag-summary summary{cursor:pointer;font-size:12px;font-weight:900}.bag-grid{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}.bag-chip{display:inline-flex;align-items:center;gap:4px;background:#303443;border-radius:8px;padding:5px 7px;font-size:11px}.bag-chip .chip{min-width:22px}.bag-total{font-size:11px;color:#c8cedc;margin-top:6px}
 </style></head>
 <body>
 <header class="bar">
@@ -320,6 +321,28 @@ async function maybeSubmit(){
 
 /* ── 렌더링 ───────────────────────────────────────────────── */
 function chip(c){ return `<span class="chip chip-${c.c}">${c.v}${c.pos!=null?`<small>${c.pos}</small>`:''}</span>`; }
+const CHIP_KO={white:'흰색',orange:'주황',green:'초록',blue:'파랑',red:'빨강',yellow:'노랑',purple:'보라',black:'검정'};
+function scoreCellForPlayer(p){return p.scoring?.scoringPos||Math.min(34,Math.max(1,(p.cursor||0)+1));}
+function trackHtml(){
+  const cells=[];
+  for(let pos=1;pos<=34;pos++){
+    const jackpot=pos===34,markers=state.players.map((p,i)=>scoreCellForPlayer(p)===pos?`<span class="track-marker m${i}" title="${esc(p.name)}">${i+1}</span>`:'').join('');
+    const coins=jackpot?JACKPOT.gold:GOLD_OF(pos),vp=jackpot?JACKPOT.points:POINTS_OF(pos),ruby=!jackpot&&RUBY_POS.has(pos);
+    cells.push(`<div class="track-cell ${ruby?'ruby':''} ${jackpot?'jackpot':''}"><div class="track-markers">${markers}</div><b>${jackpot?'🏁':pos}</b><span>🪙${coins} · 🏆${vp}</span>${ruby?'<span>💎</span>':''}</div>`);
+  }
+  return `<div class="card"><div class="hdr"><b>🫕 냄비 점수 트랙</b><span class="note">원형 숫자 = 플레이어 · 💎 = 루비칸</span></div><div class="track-wrap"><div class="track">${cells.join('')}</div></div><div class="note">현재 칩 위치의 다음 칸을 정산 칸으로 표시합니다. 34는 냄비 완주 보너스입니다.</div></div>`;
+}
+function bagInventoryHtml(p,includePot=false){
+  let list=[...(p.bag||[])];
+  if(includePot)list.push(...(p.pot||[]));
+  if(!includePot&&p.pendingBlue?.options)list.push(...p.pendingBlue.options);
+  const cnt=new Map();
+  for(const c of list){const k=`${c.c}:${c.v}`;cnt.set(k,(cnt.get(k)||0)+1);}
+  const order=['white','orange','green','blue','red','yellow','purple','black'];
+  const items=[...cnt.entries()].sort(([a],[b])=>{const [ca,va]=a.split(':'),[cb,vb]=b.split(':');return order.indexOf(ca)-order.indexOf(cb)||Number(va)-Number(vb);});
+  const label=includePot?'라운드 종료 기준 · 다음 라운드 주머니 구성':'현재 주머니에 남은 칩';
+  return `<details class="bag-summary" ${includePot?'open':''}><summary>🎒 ${label}</summary><div class="bag-grid">${items.map(([k,n])=>{const [c,v]=k.split(':');return `<span class="bag-chip">${chip({c,v:Number(v)})}<span>${CHIP_KO[c]||c} ${v} × ${n}</span></span>`;}).join('')||'<span class="note">비어 있음</span>'}</div><div class="bag-total">총 ${list.length}개${includePot?' · 이번 라운드에 꺼낸 칩과 남은 칩, 구매한 칩을 합친 구성입니다.':''}</div></details>`;
+}
 
 function playerBlock(i,p){
   const isMe=i===mySeat;
@@ -330,6 +353,7 @@ function playerBlock(i,p){
     <span>${status} · 흰합 ${p.whiteSum}/7 · 🧪가방 ${p.bag.length} · 💎${p.rubies} · 🏆${p.score}</span>
   </div>`;
   html+=`<div class="pot">${p.pot.map(chip).join('')||'<span class="log">(빈 냄비)</span>'}</div>`;
+  if(isMe)html+=bagInventoryHtml(p,state.phase==='scoring'||state.phase==='ended');
   if(state.phase==='drawing'){
     if(isMe){
       if(p.pendingBlue){
@@ -407,6 +431,7 @@ function render(){
     <span class="pill ${state.phase==='drawing'?'on':''}">${state.phase==='drawing'?'물약 만들기':state.phase==='scoring'?'라운드 정산':'게임 종료'}</span>
   </div><div class="note">${booksNote} · 세트1 규칙 · 흰색합 8 이상이면 폭발</div></div>`;
 
+  html+=trackHtml();
   html+='<div>'+state.players.map((p,i)=>playerBlock(i,p)).join('')+'</div>';
 
   if(state.phase==='ended'){

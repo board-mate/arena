@@ -1,0 +1,10 @@
+BoardMate Arena v11.4.26
+GitHub 저장소에서 아래 파일/폴더를 삭제하세요.
+
+online-pocketnova.html
+online-pokemon-minima.html
+pocketnova/index.html
+pokemon-minima.html
+solo-pocketnova.html
+solo-pokemon-minima.html
+test_solo_save_v25.py

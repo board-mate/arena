@@ -3,13 +3,13 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>사무라이 PVP 2-4인 온라인 · Board-Mate Arena</title>
+<title>사무라이 2-4인 온라인 · Board-Mate Arena</title>
 <meta name="board-mate-game-id" content="samurai-pvp"/>
-<meta name="board-mate-game-name" content="사무라이 PVP"/>
+<meta name="board-mate-game-name" content="사무라이"/>
 <meta name="board-mate-min-players" content="2"/>
 <meta name="board-mate-max-players" content="4"/>
 <meta name="board-mate-multiplayer" content="true"/>
-<script type="application/json" id="boardMateGameManifest">{"id":"samurai-pvp","name":"사무라이 PVP","version":"1.0.0","minPlayers":2,"maxPlayers":4,"multiplayer":true,"turnBased":true,"entry":"single-html","stateMode":"shared"}</script>
+<script type="application/json" id="boardMateGameManifest">{"id":"samurai-pvp","name":"사무라이","version":"2.0.0","minPlayers":2,"maxPlayers":4,"multiplayer":true,"turnBased":true,"entry":"single-html","stateMode":"shared"}</script>
 <style>
 :root{
   --ink:#2a1f1a;--muted:#7a6a62;--paper:#fdf8f0;--panel:#ffffffee;
@@ -211,8 +211,8 @@ if(roomId) window.addEventListener('DOMContentLoaded',()=>{
 <header class="topbar">
   <div class="brand">
     <div>
-      <h1>⛩️ 사무라이 PVP</h1>
-      <div class="sub">Reiner Knizia · 2-4인 · Board-Mate Arena 온라인 PVP</div>
+      <h1>⛩️ 사무라이</h1>
+      <div class="sub">Reiner Knizia · 2-4인 · BoardMate 온라인 · 겹침 없는 일본 열도 v2 맵</div>
     </div>
   </div>
   <div class="top-actions">
@@ -331,7 +331,7 @@ if(roomId) window.addEventListener('DOMContentLoaded',()=>{
    ② 게임 데이터 상수
 ══════════════════════════════════════════════════ */
 'use strict';
-const GAME_VERSION=1;
+const GAME_VERSION=2;
 const clone=x=>JSON.parse(JSON.stringify(x));
 
 // 플레이어 색상
@@ -400,128 +400,66 @@ const PLAYER_TOKEN_SET=[
 // 각 섬을 셀 목록으로 정의
 
 function buildMap(playerCount){
-  // 혼슈 (메인) - 항상 포함
-  const honshu=[
-    // id, col, row, type
-    // Edo (수도) - 3조각
-    {id:'edo',col:5,row:2,type:'edo',isIsland:'honshu'},
-    // Cities (2조각)
-    {id:'kyoto',col:4,row:1,type:'city',isIsland:'honshu'},
-    {id:'osaka',col:6,row:2,type:'city',isIsland:'honshu'},
-    {id:'nara',col:5,row:3,type:'city',isIsland:'honshu'},
-    {id:'nagoya',col:7,row:1,type:'city',isIsland:'honshu'},
-    {id:'kamakura',col:3,row:2,type:'city',isIsland:'honshu'},
-    // Villages (1조각)
-    {id:'v1',col:3,row:1,type:'village',isIsland:'honshu'},
-    {id:'v2',col:4,row:3,type:'village',isIsland:'honshu'},
-    {id:'v3',col:6,row:1,type:'village',isIsland:'honshu'},
-    {id:'v4',col:6,row:3,type:'village',isIsland:'honshu'},
-    {id:'v5',col:7,row:2,type:'village',isIsland:'honshu'},
-    {id:'v6',col:8,row:1,type:'village',isIsland:'honshu'},
-    {id:'v7',col:2,row:2,type:'village',isIsland:'honshu'},
-    {id:'v8',col:2,row:3,type:'village',isIsland:'honshu'},
-    {id:'v9',col:8,row:2,type:'village',isIsland:'honshu'},
-    // Land tiles
-    {id:'l1',col:4,row:2,type:'land',isIsland:'honshu'},
-    {id:'l2',col:5,row:1,type:'land',isIsland:'honshu'},
-    {id:'l3',col:3,row:3,type:'land',isIsland:'honshu'},
-    {id:'l4',col:7,row:3,type:'land',isIsland:'honshu'},
-    {id:'l5',col:1,row:2,type:'land',isIsland:'honshu'},
-    {id:'l6',col:9,row:1,type:'land',isIsland:'honshu'},
-    {id:'l7',col:9,row:2,type:'land',isIsland:'honshu'},
-    // Sea around honshu
-    {id:'s1',col:0,row:1,type:'sea',isIsland:'sea'},
-    {id:'s2',col:0,row:2,type:'sea',isIsland:'sea'},
-    {id:'s3',col:1,row:1,type:'sea',isIsland:'sea'},
-    {id:'s4',col:1,row:3,type:'sea',isIsland:'sea'},
-    {id:'s5',col:2,row:1,type:'sea',isIsland:'sea'},
-    {id:'s6',col:5,row:0,type:'sea',isIsland:'sea'},
-    {id:'s7',col:6,row:0,type:'sea',isIsland:'sea'},
-    {id:'s8',col:8,row:0,type:'sea',isIsland:'sea'},
-    {id:'s9',col:10,row:1,type:'sea',isIsland:'sea'},
-    {id:'s10',col:10,row:2,type:'sea',isIsland:'sea'},
-    {id:'s11',col:2,row:4,type:'sea',isIsland:'sea'},
-    {id:'s12',col:3,row:4,type:'sea',isIsland:'sea'},
-    {id:'s13',col:4,row:4,type:'sea',isIsland:'sea'},
-    {id:'s14',col:5,row:4,type:'sea',isIsland:'sea'},
-    {id:'s15',col:6,row:4,type:'sea',isIsland:'sea'},
-    {id:'s16',col:7,row:4,type:'sea',isIsland:'sea'},
-    {id:'s17',col:8,row:4,type:'sea',isIsland:'sea'},
+  // v2 map: 겹치는 좌표를 제거하고 일본 열도처럼 길게 이어지는 형태로 재배치.
+  // 조각 배치 슬롯도 공급량과 정확히 맞춘다.
+  // 2인: Edo 3 + (도시 5×2 + 마을 8) = 21
+  // 3인: 위 구성 + (도시 3×2 + 마을 3) = 30
+  // 4인: 위 구성 + (도시 3×2 + 마을 3) = 39
+  const cells=[],coord=new Map();
+  const add=(id,col,row,type,isIsland)=>{
+    const key=`${col},${row}`;
+    if(coord.has(key)) return coord.get(key);
+    const c={id,col,row,type,isIsland};cells.push(c);coord.set(key,c);return c;
+  };
+  const settlements=[
+    ['edo',5,3,'edo','honshu'],
+    ['kamakura',3,4,'city','honshu'],['nagoya',7,4,'city','honshu'],['kyoto',9,5,'city','honshu'],['osaka',11,6,'city','honshu'],['nara',9,7,'city','honshu'],
+    ['v1',2,5,'village','honshu'],['v2',4,5,'village','honshu'],['v3',6,5,'village','honshu'],['v4',7,6,'village','honshu'],
+    ['v5',8,3,'village','honshu'],['v6',10,4,'village','honshu'],['v7',12,5,'village','honshu'],['v8',13,7,'village','honshu']
   ];
+  if(playerCount>=3)settlements.push(
+    ['fukuoka',2,10,'city','kyushu'],['kagoshima',1,12,'city','kyushu'],['matsuyama',6,9,'city','shikoku'],
+    ['kyushu_v1',3,11,'village','kyushu'],['kyushu_v2',2,13,'village','kyushu'],['shikoku_v1',7,10,'village','shikoku']
+  );
+  if(playerCount>=4)settlements.push(
+    ['sapporo',14,1,'city','ezo'],['asahikawa',16,0,'city','ezo'],['hakodate',13,2,'city','ezo'],
+    ['ezo_v1',15,2,'village','ezo'],['ezo_v2',17,1,'village','ezo'],['ezo_v3',16,3,'village','ezo']
+  );
+  settlements.forEach(x=>add(...x));
 
-  // 규슈 (3인 이상)
-  const kyushu=[
-    {id:'kyushu_c1',col:2,row:6,type:'city',isIsland:'kyushu'},
-    {id:'kyushu_v1',col:1,row:6,type:'village',isIsland:'kyushu'},
-    {id:'kyushu_v2',col:3,row:6,type:'village',isIsland:'kyushu'},
-    {id:'kyushu_v3',col:2,row:7,type:'village',isIsland:'kyushu'},
-    {id:'kyushu_l1',col:1,row:7,type:'land',isIsland:'kyushu'},
-    {id:'kyushu_l2',col:3,row:7,type:'land',isIsland:'kyushu'},
-    {id:'ks1',col:0,row:6,type:'sea',isIsland:'sea'},
-    {id:'ks2',col:4,row:6,type:'sea',isIsland:'sea'},
-    {id:'ks3',col:0,row:7,type:'sea',isIsland:'sea'},
-    {id:'ks4',col:4,row:7,type:'sea',isIsland:'sea'},
-    {id:'ks5',col:2,row:8,type:'sea',isIsland:'sea'},
-    {id:'ks6',col:1,row:5,type:'sea',isIsland:'sea'},
-    {id:'ks7',col:2,row:5,type:'sea',isIsland:'sea'},
-    {id:'ks8',col:3,row:5,type:'sea',isIsland:'sea'},
-  ];
+  // 혼슈: 서남→동북으로 굽은 3칸 폭의 긴 육지 띠.
+  const centers={1:5,2:5,3:4,4:4,5:3,6:4,7:4,8:5,9:5,10:5,11:6,12:6,13:7,14:6};
+  Object.entries(centers).forEach(([cs,mid])=>{
+    const col=Number(cs);
+    for(let row=mid-1;row<=mid+1;row++)add(`h-land-${col}-${row}`,col,row,'land','honshu');
+    add(`h-sea-n-${col}`,col,mid-2,'sea','sea');add(`h-sea-s-${col}`,col,mid+2,'sea','sea');
+  });
+  // 혼슈 양 끝 바다
+  for(let r=3;r<=7;r++)add(`h-sea-w-${r}`,0,r,'sea','sea');
+  for(let r=4;r<=9;r++)add(`h-sea-e-${r}`,15,r,'sea','sea');
 
-  // 시코쿠 (3인 이상)
-  const shikoku=[
-    {id:'shikoku_c1',col:6,row:6,type:'city',isIsland:'shikoku'},
-    {id:'shikoku_v1',col:5,row:6,type:'village',isIsland:'shikoku'},
-    {id:'shikoku_v2',col:7,row:6,type:'village',isIsland:'shikoku'},
-    {id:'shikoku_l1',col:6,row:7,type:'land',isIsland:'shikoku'},
-    {id:'ss1',col:4,row:5,type:'sea',isIsland:'sea'},
-    {id:'ss2',col:5,row:5,type:'sea',isIsland:'sea'},
-    {id:'ss3',col:6,row:5,type:'sea',isIsland:'sea'},
-    {id:'ss4',col:7,row:5,type:'sea',isIsland:'sea'},
-    {id:'ss5',col:8,row:5,type:'sea',isIsland:'sea'},
-    {id:'ss6',col:4,row:6,type:'sea',isIsland:'sea'},
-    {id:'ss7',col:8,row:6,type:'sea',isIsland:'sea'},
-    {id:'ss8',col:5,row:7,type:'sea',isIsland:'sea'},
-    {id:'ss9',col:7,row:7,type:'sea',isIsland:'sea'},
-  ];
-
-  // 에조 (4인)
-  const ezo=[
-    {id:'ezo_c1',col:8,row:0,type:'city',isIsland:'ezo'},
-    {id:'ezo_v1',col:7,row:0,type:'village',isIsland:'ezo'},
-    {id:'ezo_v2',col:9,row:0,type:'village',isIsland:'ezo'},
-    {id:'ezo_l1',col:10,row:0,type:'land',isIsland:'ezo'},
-    {id:'es1',col:6,row:0,type:'sea',isIsland:'sea'},
-    {id:'es2',col:11,row:0,type:'sea',isIsland:'sea'},
-    {id:'es3',col:7,row:-1,type:'sea',isIsland:'sea'},
-    {id:'es4',col:10,row:-1,type:'sea',isIsland:'sea'},
-  ];
-
-  let cells=[...honshu];
-  if(playerCount>=3) cells=[...cells,...kyushu,...shikoku];
-  if(playerCount>=4) cells=[...cells,...ezo];
-
-  // 인접 계산 (오프셋 육각 그리드, 짝수 col은 row+0.5 오프셋)
-  const cellMap=new Map(cells.map(c=>[c.id,c]));
+  if(playerCount>=3){
+    // 규슈 블롭
+    [[1,10],[2,10],[3,10],[1,11],[2,11],[3,11],[1,12],[2,12],[3,12],[1,13],[2,13],[3,13]].forEach(([c,r])=>add(`k-land-${c}-${r}`,c,r,'land','kyushu'));
+    [[0,10],[0,11],[0,12],[0,13],[1,9],[2,9],[3,9],[4,10],[4,11],[4,12],[4,13],[1,14],[2,14],[3,14]].forEach(([c,r])=>add(`k-sea-${c}-${r}`,c,r,'sea','sea'));
+    // 시코쿠 블롭
+    [[5,9],[6,9],[7,9],[8,9],[5,10],[6,10],[7,10],[8,10]].forEach(([c,r])=>add(`s-land-${c}-${r}`,c,r,'land','shikoku'));
+    [[4,8],[5,8],[6,8],[7,8],[8,8],[9,9],[9,10],[5,11],[6,11],[7,11],[8,11]].forEach(([c,r])=>add(`s-sea-${c}-${r}`,c,r,'sea','sea'));
+  }
+  if(playerCount>=4){
+    // 에조/홋카이도: 혼슈와 겹치지 않는 북동쪽 별도 블롭
+    [[13,1],[14,1],[15,1],[16,1],[17,1],[13,2],[14,2],[15,2],[16,2],[17,2],[14,0],[15,0],[16,0],[17,0],[15,3],[16,3],[17,3]].forEach(([c,r])=>add(`e-land-${c}-${r}`,c,r,'land','ezo'));
+    [[12,0],[12,1],[12,2],[12,3],[13,-1],[14,-1],[15,-1],[16,-1],[17,-1],[18,0],[18,1],[18,2],[18,3],[14,4],[15,4],[16,4],[17,4]].forEach(([c,r])=>add(`e-sea-${c}-${r}`,c,r,'sea','sea'));
+  }
 
   function hexNeighbors(col,row){
     const isEven=col%2===0;
-    if(isEven){
-      return [[col-1,row-1],[col,row-1],[col+1,row-1],[col-1,row],[col+1,row],[col,row+1]];
-    }else{
-      return [[col-1,row],[col,row-1],[col+1,row],[col-1,row+1],[col+1,row+1],[col,row+1]];
-    }
+    return isEven
+      ?[[col-1,row-1],[col,row-1],[col+1,row-1],[col-1,row],[col+1,row],[col,row+1]]
+      :[[col-1,row],[col,row-1],[col+1,row],[col-1,row+1],[col+1,row+1],[col,row+1]];
   }
-
-  cells.forEach(c=>{
-    const neighbors=hexNeighbors(c.col,c.row);
-    c.adj=[];
-    cells.forEach(other=>{
-      if(neighbors.some(([nc,nr])=>nc===other.col&&nr===other.row)){
-        c.adj.push(other.id);
-      }
-    });
-  });
-
+  const byCoord=new Map(cells.map(c=>[`${c.col},${c.row}`,c]));
+  cells.forEach(c=>{c.adj=hexNeighbors(c.col,c.row).map(([x,y])=>byCoord.get(`${x},${y}`)?.id).filter(Boolean);});
   return cells;
 }
 
@@ -787,7 +725,7 @@ function placeFig(figType){
 function figTypeKo(cellId){
   const c=G.cells.find(x=>x.id===cellId);
   if(!c) return cellId;
-  const names={edo:'에도',kyoto:'교토',osaka:'오사카',nara:'나라',nagoya:'나고야',kamakura:'가마쿠라'};
+  const names={edo:'에도',kyoto:'교토',osaka:'오사카',nara:'나라',nagoya:'나고야',kamakura:'가마쿠라',fukuoka:'후쿠오카',kagoshima:'가고시마',matsuyama:'마쓰야마',sapporo:'삿포로',asahikawa:'아사히카와',hakodate:'하코다테'};
   return names[cellId]||cellId;
 }
 
@@ -1151,9 +1089,10 @@ const HEX_W=64, HEX_H=56;
 const HEX_STEP_X=52, HEX_STEP_Y=44;
 
 function hexPos(col,row){
-  // 짝수 col: row+0.5 오프셋
-  const x=col*HEX_STEP_X+20;
-  const y=row*HEX_STEP_Y+(col%2===0?HEX_STEP_Y/2:0)+20;
+  const minCol=G?.cells?.length?Math.min(...G.cells.map(c=>c.col)):0;
+  const minRow=G?.cells?.length?Math.min(...G.cells.map(c=>c.row)):0;
+  const x=(col-minCol)*HEX_STEP_X+20;
+  const y=(row-minRow)*HEX_STEP_Y+(col%2===0?HEX_STEP_Y/2:0)+20;
   return{x,y};
 }
 
@@ -1256,8 +1195,8 @@ function renderBoard(){
       const label=document.createElement('div');
       label.style.cssText='position:absolute;bottom:-2px;left:0;right:0;text-align:center;font-size:7px;font-weight:700;color:#4a3020;pointer-events:none;white-space:nowrap;overflow:hidden';
       const nameMap={edo:'에도',kyoto:'교토',osaka:'오사카',nara:'나라',nagoya:'나고야',kamakura:'가마쿠라',
-        kyushu_c1:'규슈',shikoku_c1:'시코쿠',ezo_c1:'에조',
-        v1:'마을',v2:'마을',v3:'마을',v4:'마을',v5:'마을',v6:'마을',v7:'마을',v8:'마을',v9:'마을'};
+        fukuoka:'후쿠오카',kagoshima:'가고시마',matsuyama:'마쓰야마',sapporo:'삿포로',asahikawa:'아사히카와',hakodate:'하코다테',
+        v1:'마을',v2:'마을',v3:'마을',v4:'마을',v5:'마을',v6:'마을',v7:'마을',v8:'마을',kyushu_v1:'마을',kyushu_v2:'마을',shikoku_v1:'마을',ezo_v1:'마을',ezo_v2:'마을',ezo_v3:'마을'};
       label.textContent=nameMap[cell.id]||'';
       div.style.position='relative';
       div.appendChild(label);

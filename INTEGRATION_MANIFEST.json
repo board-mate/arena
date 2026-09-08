@@ -1,43 +1,41 @@
 {
-  "release": "BoardMate Arena v11.4.24 INTEGRATED 2026-09-08",
+  "release": "BoardMate Arena v11.4.27 MERGED 2026-09-08",
   "date": "2026-09-08",
-  "base": "BoardMate_Arena_V11_4_23_GAME_UPDATES_FULL.zip",
-  "merged_from": "v11.4.21 new games corrected package",
-  "preserved_v23_updates": [
-    "social deduction unanimous cancel UI",
-    "Fantasy Realms hand preview",
-    "Pokemon Minima artwork/update",
-    "Plakoro V4",
-    "No-Touch Kraken overlays",
-    "Secret Hitler track labels"
+  "bases": [
+    "BoardMate_Arena_V11_4_26_GAME_POLISH_FULL.zip",
+    "BoardMate_Arena_V11_4_26_GAME_STATUS_CANCEL_FULL.zip"
   ],
-  "multiplayer_games": [
-    "maskmen",
-    "acquire",
-    "calico",
-    "cascadia",
-    "pocketnova",
-    "thegame",
-    "kraken",
-    "fantasyrealms",
-    "powergrid",
-    "avalon",
-    "secrethitler",
-    "onenightwerewolf",
-    "plakoro",
-    "quacks",
-    "mandom",
+  "preserved": [
+    "v11.4.26 game polish",
+    "PowerGrid Germany V32 current package",
+    "solo save/abandon",
+    "Fantasy/Werewolf fixes"
+  ],
+  "hub_updates": [
+    "top-right PWA install button",
+    "compact 4-column game picker",
+    "stable/alpha/beta grouping"
+  ],
+  "alpha": [
     "samurai",
     "eldorado",
-    "airlandsea"
+    "quacks"
   ],
-  "solo_added": [
-    "coffee-roaster"
+  "beta": [
+    "airlandsea",
+    "cascadia"
   ],
-  "social_action_signature": "public.boardmate_social_action(text,uuid,jsonb)",
+  "social_cancel": [
+    "avalon",
+    "secrethitler",
+    "onenightwerewolf"
+  ],
+  "removed_ui_games": [
+    "pokemon-minima",
+    "pocketnova"
+  ],
   "supabase_order": [
-    "SUPABASE_PLAKORO_PVP_V4.sql",
-    "SUPABASE_REPAIR_ALL_GAMES_V24.sql",
-    "SUPABASE_VERIFY_ALL_GAMES_V24.sql"
+    "SUPABASE_REPAIR_ALL_GAMES_V27.sql",
+    "SUPABASE_VERIFY_ALL_GAMES_V27.sql"
   ]
 }

@@ -1,0 +1,183 @@
+BoardMate Arena v11.4.27 validation
+Date: 2026-09-08
+
+== app.js syntax ==
+PASS app.js syntax
+
+== social-common syntax ==
+PASS social-common syntax
+
+== social game module syntax ==
+PASS online-avalon.html module syntax
+PASS online-secret-hitler.html module syntax
+PASS online-one-night-werewolf.html module syntax
+
+== v26 game-polish regression ==
+PASS Plakoro display name renamed
+PASS Samurai display name renamed
+PASS Pokemon Minima removed from Arena UI
+PASS Pokemon Minima deploy artifact removed: online-pokemon-minima.html
+PASS Pokemon Minima deploy artifact removed: online-pocketnova.html
+PASS Pokemon Minima deploy artifact removed: pokemon-minima.html
+PASS Pokemon Minima deploy artifact removed: solo-pokemon-minima.html
+PASS Pokemon Minima deploy artifact removed: solo-pocketnova.html
+PASS Pokemon Minima deploy artifact removed: pocketnova
+PASS Plakoro V5 creates setup table itself
+PASS Plakoro setup RPCs included
+PASS Plakoro default setup choice initialized
+PASS Plakoro missing-DB diagnostic included
+PASS El Dorado long default map enabled
+PASS El Dorado arena map block found
+PASS El Dorado has at least four blockade lines
+PASS El Dorado default map is at least 20 columns long
+PASS El Dorado blockade line is visually explicit
+PASS Quacks visual score/pot track added
+PASS Quacks end-of-round bag composition added
+PASS Quacks track covers 1 through 34
+PASS Mandom agreed turn order stored
+PASS Mandom draw-then-decide flow added
+PASS Mandom pending seen monster stored
+PASS Mandom first failure red-border state
+PASS Mandom last non-passer becomes challenger
+PASS Mandom host turn-order controls added
+PASS Mandom no longer forces challenger immediately when deck empties
+PASS Samurai map version bumped to 2
+PASS Samurai v2 map redesign present
+PASS Samurai buildMap executes
+PASS Samurai 2p has no overlapping coordinates
+PASS Samurai 2p figure slots match supply (21)
+PASS Samurai 3p has no overlapping coordinates
+PASS Samurai 3p figure slots match supply (30)
+PASS Samurai 4p has no overlapping coordinates
+PASS Samurai 4p figure slots match supply (39)
+PASS All-games V26 repair includes Plakoro setup table
+PASS V26 SQL display name: Plakoro Pokemon
+PASS V26 SQL display name: Samurai
+
+ALL V26 GAME POLISH STATIC TESTS PASSED
+
+== v27 solo save regression ==
+PASS common save UI has save button
+PASS common save UI has abandon button
+PASS solo-acquire.html loads common UI
+PASS solo-acquire.html installs controls
+PASS solo-etchinstone.html loads common UI
+PASS solo-etchinstone.html installs controls
+PASS solo-maskmen.html loads common UI
+PASS solo-maskmen.html installs controls
+PASS solo-thegame.html loads common UI
+PASS solo-thegame.html installs controls
+PASS solo-coffee-roaster.html loads common UI
+PASS solo-coffee-roaster.html installs controls
+PASS coffee save key
+PASS coffee autosave
+PASS coffee abandon removes save
+PASS acquire abandon prevents beforeunload resurrection
+PASS maskmen abandon prevents beforeunload resurrection
+PASS Pokemon Minima removed
+PASS service worker version
+PASS 19 checks
+
+== social deduction regression ==
+PASS: app.js registers avalon
+PASS: SQL registers avalon
+PASS: app.js registers secrethitler
+PASS: SQL registers secrethitler
+PASS: app.js registers onenightwerewolf
+PASS: SQL registers onenightwerewolf
+PASS: app.js uses room creator v10
+PASS: social rooms are realtime
+PASS: raw secret table is revoked from clients
+PASS: filtered view and server action RPCs exist
+PASS: Avalon role merlin exists
+PASS: Avalon role percival exists
+PASS: Avalon role assassin exists
+PASS: Avalon role morgana exists
+PASS: Avalon role mordred exists
+PASS: Avalon role oberon exists
+PASS: Avalon role loyal exists
+PASS: Avalon role minion_of_mordred exists
+PASS: Avalon has no excluded-role controls
+PASS: Avalon has always-available role composition button
+PASS: Avalon quest 4 requires two fails at 7+
+PASS: Avalon five rejected teams ends game
+PASS: Avalon stores chronological quest results
+PASS: Avalon publicly shows the completed team vote
+PASS: Avalon publicly shows quest success/fail card counts
+PASS: Avalon enforces the 5-player Percival companion-role note
+PASS: Secret Hitler page explicitly uses base game only
+PASS: Secret Hitler policy deck is 6 Liberal / 11 Fascist
+PASS: Secret Hitler base presidential powers exist
+PASS: Secret Hitler veto flow exists
+PASS: Secret Hitler license attribution shown
+PASS: Secret Hitler publicly shows completed Ja/Nein votes
+PASS: Secret Hitler resets election tracker when a policy is enacted
+PASS: Secret Hitler does not reset election tracker merely because a government is elected
+PASS: Secret Hitler confirms a non-Hitler Chancellor after 3+ Fascist policies
+PASS: ONUW role doppelganger exists in UI + server
+PASS: ONUW role werewolf exists in UI + server
+PASS: ONUW role minion exists in UI + server
+PASS: ONUW role mason exists in UI + server
+PASS: ONUW role seer exists in UI + server
+PASS: ONUW role robber exists in UI + server
+PASS: ONUW role troublemaker exists in UI + server
+PASS: ONUW role drunk exists in UI + server
+PASS: ONUW role insomniac exists in UI + server
+PASS: ONUW role villager exists in UI + server
+PASS: ONUW role tanner exists in UI + server
+PASS: ONUW role hunter exists in UI + server
+PASS: ONUW base card maxima are present
+PASS: ONUW Masons are enforced as a 0-or-2 pair
+PASS: ONUW enforces players + 3 cards
+PASS: ONUW has always-available role composition button
+PASS: ONUW automatic night-order state machine exists
+PASS: ONUW resolves moved Doppelganger card safely
+PASS: Power Grid SQL preserves social game registrations if rerun
+PASS: ONUW Doppelganger copied role is not returned to unrelated players
+PASS: ONUW has no raw copied-role leak in filtered views
+PASS: ONUW blank player/center selections are rejected client-side
+PASS: Avalon blank assassination target is rejected client-side
+PASS: Secret Hitler blank Chancellor nomination is rejected client-side
+
+All social deduction static checks passed.
+
+== v27 merge regression ==
+PASS top-right install button exists
+PASS install prompt handler exists
+PASS static webmanifest link exists
+PASS desktop game picker uses 4 columns
+PASS compact cards have reduced height
+PASS samurai marked alpha
+PASS eldorado marked alpha
+PASS quacks marked alpha
+PASS airlandsea marked beta
+PASS cascadia marked beta
+PASS stable/alpha/beta grouped picker
+PASS Plakoro Pokemon rename preserved
+PASS Samurai rename preserved
+PASS Pokemon Minima removed from app
+PASS online-pokemon-minima.html removed
+PASS online-pocketnova.html removed
+PASS pokemon-minima.html removed
+PASS solo-pokemon-minima.html removed
+PASS solo-pocketnova.html removed
+PASS Pocketnova directory removed
+PASS El Dorado long map preserved
+PASS Quacks track preserved
+PASS Mandom revised flow preserved
+PASS Samurai map v2 preserved
+PASS cancel status RPC client exists
+PASS cancel vote RPC client exists
+PASS online-avalon.html mounts cancel control
+PASS online-secret-hitler.html mounts cancel control
+PASS online-one-night-werewolf.html mounts cancel control
+PASS combined repair includes cancel table
+PASS combined repair includes cancel status RPC
+PASS combined repair includes cancel vote RPC
+PASS combined repair preserves Plakoro V5
+PASS service worker bumped to v11.4.27
+PASS PowerGrid V32 Germany map preserved
+ALL 35 V27 MERGE CHECKS PASSED
+
+== PowerGrid V32 file coherence ==
+PASS PowerGrid referenced files exist; Germany map v32 preserved

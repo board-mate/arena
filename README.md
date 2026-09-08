@@ -1,53 +1,29 @@
-# BoardMate Arena v11.4.25 솔로 저장/포기 업데이트
+# BoardMate Arena v11.4.27
 
-이 패키지는 사용자가 업로드한 **v11.4.23 GAME UPDATES FULL**을 베이스로 하고, 이전 v11.4.21에서 추가한 신규 게임 6종과 Supabase RPC/카탈로그 수정을 병합한 배포본입니다.
+Latest merged release: v11.4.26 game polish + top-right app install + compact 4-column game catalog + Stable/ALPHA/BETA grouping + unanimous cancellation for Avalon / Secret Hitler / One Night Werewolf. See `README_V11_4_27_MERGED.md`.
 
-## 보존된 v11.4.23 업데이트
-- 소셜 추리 3종: 만장일치 게임 취소 UI
-- 판타지 왕국: 능력 설정 중 자신의 손패 미리보기
-- 포켓몬 미니마: 카드/도감 이미지 및 기존 중복 선언 수정
-- 프라코로: V4 게임 업데이트
-- 노터치 크라켄: 라운드/게임 종료 오버레이
-- 시크릿 히틀러: 인원별 파시스트 트랙 효과 표시
+# BoardMate Arena v11.4.26
 
-## 함께 유지되는 신규 게임
-다인플: 돌팔이 약장수, 맨덤의 던전, 사무라이 PVP, 엘도라도, 에어 랜드 & 씨
+보드메이트 모임용 웹 보드게임 통합본입니다.
 
-1인플: 커피 로스터
+## v11.4.26 핵심 변경
+- `프라코로` 표시명 → **프라코로 포켓몬**
+- `사무라이 PVP` 표시명 → **사무라이**
+- **포켓몬 미니마 삭제**: 메뉴와 배포 런타임에서 제거했습니다. 기존 Supabase 행이 깨지지 않도록 legacy DB key `pocketnova`만 호환용으로 남습니다.
+- 프라코로 포켓몬: V5 SQL이 준비 테이블/RPC를 자체 생성하고, 기본 포켓몬 선택 초기화 및 오류 표시를 보강했습니다.
+- 엘도라도: 기본 맵을 21열 장거리 코스로 늘리고 봉쇄선을 붉은 점선으로 명확하게 표시합니다.
+- 돌팔이 약장수: 1~34칸 냄비 트랙과 라운드 종료 주머니 구성 보기를 추가했습니다.
+- 맨덤의 던전: 합의한 플레이 순서 설정, `카드 확인→던전/장비`, 패스, 승리 토큰/빨간 테두리/탈락 흐름으로 수정했습니다.
+- 사무라이: 좌표 겹침을 제거한 v2 일본 열도 맵으로 교체하고 2/3/4인 조각 배치 슬롯을 공급량과 맞췄습니다.
+- v11.4.25의 1인플 저장/게임 포기 기능은 그대로 유지합니다.
 
-## Supabase 적용 순서
-1. `SUPABASE_PLAKORO_PVP_V4.sql` 실행
-2. **`SUPABASE_REPAIR_ALL_GAMES_V24.sql`을 마지막으로 실행**
-3. `SUPABASE_VERIFY_ALL_GAMES_V24.sql` 실행
-4. 모든 `ok`가 `true`인지 확인
+## Supabase
+배포 후 SQL Editor에서 아래 순서로 실행하세요.
 
-`social action RPC exists`의 올바른 함수 시그니처는 **`boardmate_social_action(text,uuid,jsonb)`** 입니다. 이전에 사용된 4인자 검사는 잘못된 검사입니다.
+1. `SUPABASE_REPAIR_ALL_GAMES_V26.sql`
+2. `SUPABASE_VERIFY_ALL_GAMES_V26.sql`
+3. 검증 결과의 모든 `ok`가 `true`인지 확인
 
-통합본의 `SUPABASE_SOCIAL_DEDUCTION_V1.sql`, `SUPABASE_FANTASY_REALMS_UNIFIED.sql`, `SUPABASE_POWERGRID_UNIFIED.sql`, `SUPABASE_BOARDMATE_GAME_CATALOG_V2.sql`도 18개 다인플 게임 목록을 유지하도록 정리했기 때문에, 개별 SQL을 나중에 다시 실행해도 신규 게임 카탈로그를 과거 목록으로 축소하지 않습니다.
+특히 프라코로 포켓몬 준비 화면이 `동기화 오류`에서 멈췄던 설치는 V26 Repair가 `boardmate_plakoro_setups` 테이블까지 생성하면서 복구합니다.
 
-자세한 배포 순서는 `UPLOAD_TO_GITHUB_V24.md`를 확인하세요.
-
----
-
-# BoardMate Arena — app.js Power Grid merge
-
-Base: latest known v11.4.16 DIRECT_RESUME app.js.
-
-Merged only the Power Grid-specific change from the user-supplied app.js:
-- Power Grid display name: `파워그리드`
-- Player count: minimum 3, maximum 6
-- Entry page remains `online-powergrid.html`
-
-Other unrelated differences in the supplied app.js were intentionally not copied, so the latest BoardMate app features remain intact (Pokemon Minima replacement, Fantasy Realms, direct resume, home UI, etc.).
-
-Replace the repository-root `app.js` with this file.
-Supabase SQL is not changed by this app.js-only merge.
-
-
-## v11.4.25 추가
-- 자체 1인플 게임에 공통 `💾 저장` / `🏳 게임 포기` UI 추가
-- 커피 로스터 진행 상태 localStorage 자동 저장/복원 추가
-- 포켓몬 미니마 솔로 진행 상태 localStorage 자동 저장/복원 추가
-- Acquire/에친스톤/마스크맨/The Game의 기존 저장 기능을 공통 UI와 연결
-- 게임 포기 시 해당 게임의 저장 데이터를 삭제하고 초기 상태로 복귀
-- 캘리코/캐스캐디아는 외부 도메인 iframe이므로 저장은 외부 사이트 자체 기능에 따름
+세부 변경은 `README_V11_4_26_GAME_POLISH.md`, 배포 순서는 `UPLOAD_TO_GITHUB_V26.md`를 참고하세요.

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>BoardMate · 프라코로 배틀</title>
+<title>BoardMate · 프라코로 포켓몬 배틀</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="./config.js"></script>
 <style>
@@ -31,7 +31,7 @@
 <div class="app" id="app">불러오는 중…</div>
 
 <script type="module">
-import {configured,roomId,getMe,loadRoom,loadState,saveState,subscribeRoomBroadcast,sendRoomBroadcast,touchPresence,submitMatch,showFatal} from './multi-common.js?v=23';
+import {configured,roomId,getMe,loadRoom,loadState,saveState,subscribeRoomBroadcast,sendRoomBroadcast,touchPresence,submitMatch,showFatal} from './multi-common.js?v=26';
 
 (()=>{
 'use strict';
@@ -91,8 +91,9 @@ function facesToEnergyConfig(faces,pk){
 }
 function energyFaceLabel(t){return (TYPE[t]||t||'').replace(/[🌿🔥💧⚡🔮👊🌑🔩🐉🌬⬜]/g,'');}
 function renderSetup(){
-  const pid=setupChoice?.pokemon||Object.keys(STARTERS)[0], p=STARTERS[pid];
-  const mine=setupChoice||{pokemon:pid,attacks:[],energyConfig:defaultEnergyConfig(p)};
+  if(!setupChoice){const first=Object.keys(STARTERS)[0],pk=STARTERS[first];setupChoice={pokemon:first,attacks:[],energyConfig:defaultEnergyConfig(pk)};}
+  const pid=setupChoice.pokemon, p=STARTERS[pid];
+  const mine=setupChoice;
   if(!mine.energyConfig)mine.energyConfig=facesToEnergyConfig(mine.energyFaces,p);
   const selected=new Set(mine.attacks||[]);
   const oppSeat=mySeat===0?1:0, opp=members.find(m=>Number(m.seat)===oppSeat),readyMap=full?.setupReady||{};
@@ -308,24 +309,42 @@ async function sync(){
       }
     }
     if(full?.players)renderBattle();else renderSetup();
-    if(isHost){await drainSeat(0);await drainSeat(1);await maybeStart();}
-  }catch(e){console.warn('plakoro sync',e);const n=document.querySelector('#net');if(n)n.textContent='동기화 오류 · 재시도';}
+    if(isHost){
+      await drainSeat(0);await drainSeat(1);
+      try{await maybeStart();}
+      catch(startErr){
+        console.warn('plakoro setup start',startErr);
+        const n=document.querySelector('#net');
+        if(n){n.textContent='게임 준비 시작 실패 · '+String(startErr?.message||startErr).slice(0,36);n.title=String(startErr?.message||startErr);}
+      }
+    }
+  }catch(e){
+    console.warn('plakoro sync',e);
+    const n=document.querySelector('#net');
+    if(n){
+      const msg=String(e?.message||e||'');
+      n.textContent=(msg.includes('boardmate_plakoro_setups')||msg.includes('does not exist')||msg.includes('schema cache'))
+        ?'준비 DB 누락 · V5 SQL 필요'
+        :'동기화 오류 · '+(msg?msg.slice(0,42):'재시도');
+      n.title=msg;
+    }
+  }
 }
 
 async function boot(){
-  if(!configured()||!roomId)throw new Error('BoardMate 다인플 방에서 프라코로를 열어주세요.');
+  if(!configured()||!roomId)throw new Error('BoardMate 다인플 방에서 프라코로 포켓몬을 열어주세요.');
   me=await getMe(); if(!me)throw new Error('로그인이 필요합니다.');
   ({room,members}=await loadRoom());
-  if(room.game!==GAME)throw new Error('프라코로 방이 아닙니다.');
-  if(Number(members.length)!==2)throw new Error('프라코로는 온라인 2인 플레이입니다.');
+  if(room.game!==GAME)throw new Error('프라코로 포켓몬 방이 아닙니다.');
+  if(Number(members.length)!==2)throw new Error('프라코로 포켓몬은 온라인 2인 플레이입니다.');
   const found=members.find(m=>m.user_id===me.user_id); if(!found)throw new Error('이 방의 참가자가 아닙니다.');
   mySeat=Number(found.seat); isHost=room.host_id===me.user_id;
   document.querySelector('#app').innerHTML=`
-    <div class="top"><div class="brand"><h1>🎲 프라코로</h1><p>BoardMate 공통 방 · 2인 PvP · 제공 HTML 기반</p></div>
+    <div class="top"><div class="brand"><h1>🎲 프라코로 포켓몬</h1><p>BoardMate 공통 방 · 2인 PvP · 제공 HTML 기반</p></div>
       <div class="toolbar"><span class="badge" id="net">연결 확인 중…</span><a class="btn" href="./index.html#/room/${encodeURIComponent(room.id)}">← 방으로</a></div></div>
     <section class="panel" id="main"></section>
     <section class="panel"><div class="toolbar"><b>전투 로그</b><span class="small">공개된 전투 결과만 기록합니다.</span></div><div class="log" id="log"></div></section>
-    <section class="panel footer-note">이 페이지는 업로드된 프라코로 HTML을 BoardMate 2인 PvP에 연결한 버전입니다. 게임 상태의 최종 판정은 방장 브라우저에서 수행하며, 액션 원문은 전용 RPC 저장 후 Realtime 신호로 전달합니다.</section>`;
+    <section class="panel footer-note">이 페이지는 업로드된 프라코로 포켓몬 HTML을 BoardMate 2인 PvP에 연결한 버전입니다. 게임 상태의 최종 판정은 방장 브라우저에서 수행하며, 액션 원문은 전용 RPC 저장 후 Realtime 신호로 전달합니다.</section>`;
   if(!subscribed){
     subscribed=true;
     await subscribeRoomBroadcast('plakoro_setup_ready',msg=>{
@@ -339,7 +358,7 @@ async function boot(){
   actionPollTimer=setInterval(()=>{if(isHost){void drainSeat(0);void drainSeat(1);}},1500);
   setInterval(()=>void touchPresence(true),15000);
 }
-boot().catch(e=>{console.error(e);showFatal(e.message||'프라코로를 열 수 없습니다.');});
+boot().catch(e=>{console.error(e);showFatal(e.message||'프라코로 포켓몬을 열 수 없습니다.');});
 })();
 </script>
 </body>

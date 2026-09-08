@@ -1,1 +1,1 @@
-BoardMate Arena v11.4.24 — v11.4.23 game updates + v11.4.21 new-games integration + RPC verification repair
+BoardMate Arena v11.4.27 — merged release: v11.4.26 game polish + game status/cancel patch + top-right PWA install + compact 4-column catalog + PowerGrid Germany V32 preserved

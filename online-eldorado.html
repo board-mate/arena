@@ -9,7 +9,7 @@
 <meta name="board-mate-min-players" content="2" />
 <meta name="board-mate-max-players" content="4" />
 <meta name="board-mate-multiplayer" content="true" />
-<script type="application/json" id="boardMateGameManifest">{"id":"eldorado-pvp","name":"엘도라도 PVP","version":"1.1.0-arena","minPlayers":2,"maxPlayers":4,"multiplayer":true,"turnBased":true,"entry":"single-html","stateMode":"shared"}</script>
+<script type="application/json" id="boardMateGameManifest">{"id":"eldorado-pvp","name":"엘도라도 PVP","version":"1.2.0-long-map","minPlayers":2,"maxPlayers":4,"multiplayer":true,"turnBased":true,"entry":"single-html","stateMode":"shared"}</script>
 <style>
 :root{
   --ink:#1f2a24;--muted:#6d786f;--paper:#fffdf4;--panel:#fffef8;--line:#d9d4bf;
@@ -33,7 +33,7 @@ button,input{font:inherit} button{cursor:pointer} button:disabled{opacity:.45;cu
 .board-viewport{overflow:auto;border:1px solid #e0dccd;border-radius:16px;background:linear-gradient(#f8f4e6,#eef4e8);padding:12px}.board-stage{position:relative;width:800px;height:390px;margin:0 auto;min-width:800px}
 .hex{position:absolute;width:var(--hex-w);height:var(--hex-h);clip-path:polygon(25% 0,75% 0,100% 50%,75% 100%,25% 100%,0 50%);border:0;padding:0;display:grid;place-items:center;text-align:center;font-weight:950;line-height:1;color:#fff;filter:drop-shadow(0 2px 2px #0003);transition:transform .1s,filter .1s}.hex::after{content:"";position:absolute;inset:3px;clip-path:inherit;border:1px solid rgba(255,255,255,.66);pointer-events:none}.hex:hover:not(:disabled){transform:scale(1.055);filter:drop-shadow(0 0 8px #fff8)}.hex.green{background:var(--green)}.hex.yellow{background:var(--yellow);color:#4f3c10}.hex.blue{background:var(--blue)}.hex.red{background:var(--red)}.hex.gray{background:var(--gray)}.hex.mountain{background:linear-gradient(145deg,#4c5550,#28312d)}.hex.start{background:#d8c47c;color:#403715}.hex.finish{box-shadow:inset 0 0 0 4px #f2d167;background:linear-gradient(145deg,#d7a827,#7ca04b)}.hex .cost{font-size:1rem}.hex .label{font-size:.56rem;font-weight:850;margin-top:3px;opacity:.94}.hex.target{filter:drop-shadow(0 0 10px #fff) drop-shadow(0 0 8px #f1b738);transform:scale(1.07)}.hex.occupied::before{content:"";position:absolute;inset:8px;clip-path:inherit;background:#0002}
 .token{position:absolute;z-index:8;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;color:#fff;font-size:.7rem;font-weight:1000;border:3px solid #fff;box-shadow:0 3px 9px #0007;pointer-events:none;transform:translate(-50%,-50%)}.token.p0{background:#d4473d}.token.p1{background:#336bc4}.token.p2{background:#6f4aa3}.token.p3{background:#2b8b68}.token.second{transform:translate(-50%,-50%) translate(10px,10px);scale:.88}
-.gate{position:absolute;z-index:5;background:#fff7dc;border:2px solid #a8751b;border-radius:10px;padding:4px 7px;font-size:.66rem;font-weight:950;box-shadow:0 4px 10px #0002;white-space:nowrap;pointer-events:none}.gate.cleared{opacity:.35;text-decoration:line-through}.gate .sym{font-size:.9rem}
+.gate-line{position:absolute;z-index:4;width:0;border-left:4px dashed #b84b3f;pointer-events:none;filter:drop-shadow(0 0 2px #fff);opacity:.9}.gate-line::before{content:'봉쇄선';position:absolute;top:-14px;left:-27px;background:#8d3028;color:#fff;border-radius:999px;padding:2px 7px;font-size:.56rem;font-weight:1000;white-space:nowrap}.gate-line.cleared{border-left-color:#4f8f63;opacity:.32}.gate-line.cleared::before{content:'통과 완료';background:#3f7351}.gate{position:absolute;z-index:6;background:#fff7dc;border:2px solid #a8751b;border-radius:10px;padding:5px 8px;font-size:.68rem;font-weight:950;box-shadow:0 4px 10px #0002;white-space:nowrap;pointer-events:none;transform:translateX(-50%)}.gate.cleared{opacity:.45;text-decoration:line-through}.gate .sym{font-size:.9rem}
 .section-title{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px}.section-title h3{margin:0;font-size:1rem}.tiny{font-size:.73rem;color:var(--muted)}.map-meta{display:flex;gap:6px;align-items:center;flex-wrap:wrap}.pill{display:inline-flex;align-items:center;border:1px solid #d8d1bf;background:#fff;border-radius:999px;padding:3px 7px;font-size:.66rem;font-weight:850;color:#5a655d}.pack-badge{display:inline-block;margin-top:5px;border-radius:999px;background:#f2ecff;color:#704c91;padding:2px 6px;font-size:.58rem;font-weight:900}
 .market-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}.exp-card{position:relative;min-height:122px;border:2px solid #ddd4bf;border-radius:13px;background:#fff;padding:8px 8px 9px;text-align:left;box-shadow:0 2px 8px #0000000b;overflow:hidden}.exp-card:hover:not(:disabled){transform:translateY(-2px)}.exp-card.green{border-top:7px solid var(--green)}.exp-card.yellow{border-top:7px solid var(--yellow)}.exp-card.blue{border-top:7px solid var(--blue)}.exp-card.white{border-top:7px solid #a5a5a5}.exp-card.purple{border-top:7px solid var(--purple)}.exp-card.basic{border-top:7px solid #b7a673}.exp-card.selected{outline:3px solid #e0a526;outline-offset:1px}.exp-card .name{font-weight:950;font-size:.85rem}.exp-card .price{position:absolute;right:7px;top:7px;background:#e2aa31;color:#3c2b08;border-radius:999px;padding:2px 6px;font-size:.67rem;font-weight:1000}.exp-card .power{font-size:.76rem;font-weight:900;margin-top:7px}.exp-card .desc{font-size:.68rem;color:#62665f;line-height:1.25;margin-top:5px}.exp-card .count{position:absolute;right:7px;bottom:6px;font-size:.65rem;color:#7c766a}.exp-card .item{position:absolute;left:7px;bottom:6px;color:#a73f35;font-size:.62rem;font-weight:900}
 .reserve{margin-top:9px}.reserve summary{cursor:pointer;font-weight:900;color:#536157}.reserve-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:8px}
@@ -101,12 +101,12 @@ const CARDS={
 
 // 원본 보드 그림을 복제하지 않고, 업로드된 추천 루트의 난이도/흐름만 참고한 추상 헥스 코스다.
 const MAPS={
-  arena:{name:'아레나 기본 코스',difficulty:'보통',note:'기존 1차 버전 코스',gates:[3,6,9],rows:[
-    ['S','G1','G1','Y1','G2','B1','B2','G1','M','Y2','G2','G1','FG'],
-    ['S','G1','Y1','G2','M','B1','B2','G2','Y1','G1','B1','Y2','FY'],
-    ['S','Y1','G1','X1','G2','Y2','G1','R1','B1','B2','G2','Y2','FB'],
-    ['S','B1','B1','G1','G2','M','Y1','X2','G1','B1','Y2','G1',null],
-    ['S','G1','Y1','G2','B1','B2','G1','Y1','M','G2','B1','G1',null]
+  arena:{name:'아레나 장거리 코스',difficulty:'보통 · 장거리',note:'봉쇄선 4개와 긴 원정 루트',gates:[4,9,14,18],rows:[
+    ['S','G1','G1','Y1','G2','B1','B2','G1','M','Y2','G2','G1','B1','Y1','G2','B2','G1','X2','Y2','G2','FG'],
+    ['S','G1','Y1','G2','M','B1','B2','G2','Y1','G1','B1','Y2','G2','M','B1','Y1','G2','B2','Y2','G1','FY'],
+    ['S','Y1','G1','X1','G2','Y2','G1','R1','B1','B2','G2','Y2','G1','B1','X2','Y1','G2','R1','B2','Y2','FB'],
+    ['S','B1','B1','G1','G2','M','Y1','X2','G1','B1','Y2','G1','B2','G2','Y1','M','B1','G2','Y1','G1',null],
+    ['S','G1','Y1','G2','B1','B2','G1','Y1','M','G2','B1','G1','Y2','B2','G2','Y1','G1','X1','B1','G2',null]
   ]},
   hills:{name:'Hills of Gold',difficulty:'쉬움',note:'추천 루트 모티브',gates:[4,8,11],rows:[
     ['S','G1','Y1','G1','Y2','G1','B1','Y1','G2','B1','Y2','G1','G2','FG'],
@@ -305,11 +305,11 @@ function render(){
   if(!state)return renderWaiting();
   const seat=mySeat(),p=player(),mine=isMyTurn();
   app.innerHTML=`
-    <div class="topbar"><div class="brand"><h1>🧭 엘도라도 PVP</h1><div class="sub">이미지 미사용 · 기본판 + 추가/프로모 카드 · 다중 추상 맵 · 2–4인 BoardMate Arena</div></div><div class="top-actions"><a class="btn small" href="./index.html#/multi">← 방 목록</a>${room?.host_id===me?.user_id?'<button class="btn small" id="mapBtn">맵 선택</button>':''}<button class="btn small" id="rulesBtn">규칙 요약</button></div></div>
+    <div class="topbar"><div class="brand"><h1>🧭 엘도라도 PVP</h1><div class="sub">이미지 미사용 · 기본판 + 추가/프로모 카드 · 장거리 추상 맵 · 봉쇄선 강조 · 2–4인 BoardMate Arena</div></div><div class="top-actions"><a class="btn small" href="./index.html#/multi">← 방 목록</a>${room?.host_id===me?.user_id?'<button class="btn small" id="mapBtn">맵 선택</button>':''}<button class="btn small" id="rulesBtn">규칙 요약</button></div></div>
     <section class="card status"><div><div class="turn-title">${state.round}라운드 · ${esc(p.name)} 차례${mine?' · 내 차례':''}</div><div class="phase">${phaseText()}</div></div><span class="connection ok">Arena 동기화</span></section>
     <div class="players">${state.players.map((x,i)=>playerChip(x,i,seat)).join('')}</div>
     <div class="layout"><div class="left">
-      <section class="card board-card"><div class="board-head"><div><h2>탐험 지도</h2><div class="map-meta"><span class="pill">${esc(mapDef().name)}</span><span class="pill">${esc(mapDef().difficulty)}</span></div></div><div class="legend"><span><i class="dot" style="background:var(--green)"></i>🗡 정글</span><span><i class="dot" style="background:var(--yellow)"></i>🪙 마을</span><span><i class="dot" style="background:var(--blue)"></i>🛶 강</span><span><i class="dot" style="background:var(--gray)"></i>🪨 돌무더기</span><span><i class="dot" style="background:var(--red)"></i>🏕 베이스캠프</span></div></div><div class="board-viewport"><div class="board-stage" id="boardStage"></div></div></section>
+      <section class="card board-card"><div class="board-head"><div><h2>탐험 지도</h2><div class="map-meta"><span class="pill">${esc(mapDef().name)}</span><span class="pill">${esc(mapDef().difficulty)}</span></div></div><div class="legend"><span><i class="dot" style="background:var(--green)"></i>🗡 정글</span><span><i class="dot" style="background:var(--yellow)"></i>🪙 마을</span><span><i class="dot" style="background:var(--blue)"></i>🛶 강</span><span><i class="dot" style="background:var(--gray)"></i>🪨 돌무더기</span><span><i class="dot" style="background:var(--red)"></i>🏕 베이스캠프</span><span style="color:#9b342d;font-weight:900">┆ 봉쇄선 · 선을 넘을 때 표시된 기호/힘 필요</span></div></div><div class="board-viewport"><div class="board-stage" id="boardStage"></div></div></section>
       <section class="card"><div class="section-title"><h3>📜 진행 기록</h3><span class="tiny">최근 40개</span></div><div class="log">${(state.log||[]).map(x=>`<div>${esc(x)}</div>`).join('')}</div></section>
     </div><div class="right">
       ${state.gameOver?endPanelHtml():''}
@@ -388,7 +388,9 @@ function renderBoard(){
     b.innerHTML=`<div><div class="cost">${icon}${cell.cost&&cell.cost<90?` ${cell.cost}`:''}</div><div class="label">${cell.finish?'엘도라도':cell.label||''}</div></div>`;stage.appendChild(b);
   }
   state.board.gates.forEach((g,i)=>{
-    const c=g.afterCol+.5,{x,y}=pos(c,2.05);const el=document.createElement('div');el.className=`gate ${g.removed?'cleared':''}`;el.style.left=`${x-18}px`;el.style.top=`${y-13+(i-1)*18}px`;el.innerHTML=`<span class="sym">${SYMBOL[g.symbol]}</span> 봉쇄 ${g.cost}${g.removed?' ✓':''}`;stage.appendChild(el);
+    const boundaryX=originX+(g.afterCol+1)*stepX-8;
+    const line=document.createElement('div');line.className=`gate-line ${g.removed?'cleared':''}`;line.style.left=`${boundaryX}px`;line.style.top='12px';line.style.height=`${Math.max(330,parseFloat(stage.style.height)-28)}px`;stage.appendChild(line);
+    const el=document.createElement('div');el.className=`gate ${g.removed?'cleared':''}`;el.style.left=`${boundaryX}px`;el.style.top=`${48+(i%3)*72}px`;el.innerHTML=`<span class="sym">${SYMBOL[g.symbol]}</span> 봉쇄 ${i+1} · ${g.cost}${g.removed?' ✓':''}`;stage.appendChild(el);
   });
   state.players.forEach((p,si)=>p.positions.forEach((id,pi)=>{if(!id)return;const c=cellById(id);if(!c)return;const {x,y}=pos(c.c,c.r);const t=document.createElement('div');t.className=`token p${si} ${pi===1?'second':''}`;t.style.left=`${x+W/2}px`;t.style.top=`${y+H/2}px`;t.textContent=`${si+1}${p.positions.length>1?String.fromCharCode(65+pi):''}`;stage.appendChild(t)}));
 }

@@ -60,7 +60,7 @@ check('boardmate_social_init' in read('SUPABASE_REPAIR_ALL_GAMES_V24.sql') and '
       'Werewolf is wired to the repaired social RPC layer')
 
 sw = read('sw.js')
-check("boardmate-shell-v11.4.24" in sw, 'service worker cache bumped to v11.4.24')
+check("boardmate-shell-v11.4.26" in sw, 'service worker cache bumped to v11.4.26')
 
 verify = read('SUPABASE_VERIFY_ALL_GAMES_V24.sql')
 for fn in ['get_boardmate_fantasy_state','put_boardmate_fantasy_state','boardmate_social_init','boardmate_social_view','boardmate_social_action']:

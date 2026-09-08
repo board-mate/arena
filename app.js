@@ -37,16 +37,15 @@ function gameInfo(game){
     calico:{name:'캘리코',icon:'🧵',min:2,max:4},
     thegame:{name:'더 게임',icon:'🃏',min:2,max:5},
     kraken:{name:'노터치 크라켄',icon:'🐙',min:3,max:8},
-    cascadia:{name:'캐스캐디아',icon:'🌲',min:2,max:4},
-    pocketnova:{name:'포켓몬 미니마',icon:'⚡',min:2,max:2,page:'online-pokemon-minima.html'},
+    cascadia:{name:'캐스캐디아',icon:'🌲',min:2,max:4,tier:'beta'},
     fantasyrealms:{name:'판타지 왕국',icon:'🏰',min:3,max:6,page:'online-fantasy-realms.html'},
-    plakoro:{name:'프라코로',icon:'🎲',min:2,max:2,page:'online-plakoro.html'},
+    plakoro:{name:'프라코로 포켓몬',icon:'🎲',min:2,max:2,page:'online-plakoro.html'},
     powergrid:{name:'파워그리드',icon:'🔌',min:3,max:6,page:'online-powergrid.html'},
-    quacks:{name:'돌팔이 약장수',icon:'🧪',min:2,max:4,page:'online-quacks.html',mode:'realtime'},
+    quacks:{name:'돌팔이 약장수',icon:'🧪',min:2,max:4,page:'online-quacks.html',mode:'realtime',tier:'alpha'},
     mandom:{name:'맨덤의 던전',icon:'⚔️',min:2,max:4,page:'online-mandom.html'},
-    samurai:{name:'사무라이 PVP',icon:'⛩️',min:2,max:4,page:'online-samurai.html'},
-    eldorado:{name:'엘도라도',icon:'🧭',min:2,max:4,page:'online-eldorado.html'},
-    airlandsea:{name:'에어 랜드 & 씨',icon:'✈️',min:2,max:2,page:'online-airlandsea.html'},
+    samurai:{name:'사무라이',icon:'⛩️',min:2,max:4,page:'online-samurai.html',tier:'alpha'},
+    eldorado:{name:'엘도라도',icon:'🧭',min:2,max:4,page:'online-eldorado.html',tier:'alpha'},
+    airlandsea:{name:'에어 랜드 & 씨',icon:'✈️',min:2,max:2,page:'online-airlandsea.html',tier:'beta'},
     avalon:{name:'레지스탕스 아발론',icon:'⚔️',min:5,max:10,page:'online-avalon.html',mode:'realtime'},
     secrethitler:{name:'시크릿 히틀러',icon:'🗳️',min:5,max:10,page:'online-secret-hitler.html',mode:'realtime'},
     onenightwerewolf:{name:'한밤의 늑대인간',icon:'🌕',min:3,max:10,page:'online-one-night-werewolf.html',mode:'realtime'}
@@ -118,7 +117,7 @@ function renderInfoPage(kind){
     copyright:{title:'© 저작권 안내',lead:'BoardMate는 보드게임 모임용 비공식 커뮤니티 서비스입니다.',html:`
       <h2>원저작물</h2><p>각 게임의 이름, 규칙, 일러스트, 캐릭터, 상표 및 관련 지식재산권은 각 원저작권자에게 귀속됩니다. BoardMate는 해당 권리를 주장하지 않습니다.</p>
       <h2>비공식 디지털 구현</h2><p>BoardMate는 모임의 테스트·친목·플레이 편의를 위해 디지털 게임을 제공하며, 공식 게임 서비스나 공식 라이선스 제품을 의미하지 않습니다.</p>
-      <h2>프라코로</h2><p>프라코로 및 Pokémon 관련 명칭과 지식재산은 각 권리자에게 귀속됩니다. BoardMate의 프라코로 페이지는 커뮤니티용 비공식 디지털 구현입니다.</p>
+      <h2>프라코로 포켓몬</h2><p>프라코로 및 Pokémon 관련 명칭과 지식재산은 각 권리자에게 귀속됩니다. BoardMate의 프라코로 포켓몬 페이지는 커뮤니티용 비공식 디지털 구현입니다.</p>
       <h2>콘텐츠 삭제 요청</h2><p>권리자 또는 권한 있는 담당자가 삭제/수정이 필요한 콘텐츠를 발견한 경우 아래 문의 채널로 알려주세요.</p>`},
     contact:{title:'✉ 문의 안내',lead:'게임 오류, 회원 문제, 권리 관련 문의를 보내주세요.',html:`
       <h2>문의 채널</h2><p>가장 빠른 방법은 Board Mate 공식 소셜 채널을 이용하는 것입니다.</p>
@@ -136,7 +135,7 @@ function footer(){
 }
 function shell(content){
   ensureSiteFeatures();
-  app.innerHTML=`<div class="app-shell"><header class="topbar"><button class="brand-btn" id="homeBtn"><span class="brand-mark">●</span> BOARDMATE</button><nav class="topnav"><button data-nav="">미니게임</button><button data-nav="solo">1인플</button><button data-nav="multi">다인플</button><button data-nav="mypage">마이페이지</button></nav><button class="top-install" id="topInstallBtn">📲 앱 설치</button><div class="top-date">${formatDate(kstDate())}</div></header><main class="container">${content}${footer()}</main></div>`;
+  app.innerHTML=`<div class="app-shell"><header class="topbar"><button class="brand-btn" id="homeBtn"><span class="brand-mark">●</span> BOARDMATE</button><nav class="topnav"><button data-nav="">미니게임</button><button data-nav="solo">1인플</button><button data-nav="multi">다인플</button><button data-nav="mypage">마이페이지</button></nav><div class="top-date">${formatDate(kstDate())}</div><button class="top-install" id="topInstallBtn">📲 앱 설치</button></header><main class="container">${content}${footer()}</main></div>`;
   document.querySelector('#homeBtn')?.addEventListener('click',()=>location.hash='#/');
   document.querySelector('#topInstallBtn')?.addEventListener('click',installBoardMate);
   document.querySelectorAll('[data-nav]').forEach(b=>b.onclick=()=>location.hash=`#/${b.dataset.nav}`);
@@ -263,7 +262,7 @@ async function renderHome(){
   shell(`<section class="hero"><div><h1><span>BoardMate</span> Arcade</h1><p>보드메이트에서 같이 즐기는 웹 보드게임 공간.<br>미니게임, AI 연습, 로그인 기반 온라인 방을 한 곳에 모았습니다.</p><div class="social-links"><a class="social-link" href="${LINKS.instagram}" target="_blank" rel="noreferrer">📷 Instagram</a><a class="social-link" href="${LINKS.somoim}" target="_blank" rel="noreferrer">👥 소모임</a><a class="social-link" href="${LINKS.shop}" target="_blank" rel="noreferrer">🛍 마플샵</a></div></div><div class="hero-badge">🎲</div></section>
   <section id="homeActiveGamesWrap" class="active-games-wrap hidden"><div class="section-title"><h2>▶ 진행 중인 게임</h2><small>자동 저장 · 재접속</small></div><div id="homeActiveGameList"></div></section>
   <div class="section-title"><h2>미니게임</h2><small>${formatDate(kstDate())} · KST</small></div><section class="game-grid daily-two">${homeCard('pensterdam','🧩','펜토리니','도움칸 적게 사용 → 동률이면 먼저 클리어')} ${homeCard('yahtzee','🎲','Yahtzee','언제든 플레이 · 올타임 최고 점수')}</section>
-  <section class="home-mode-grid"><button class="mode-card" data-go="solo"><span>🧠</span><b>1인플 · AI/솔로</b><small>마스크맨 / 어콰이어 / 캘리코 / 캐스캐디아 / 포켓몬 미니마 / 더 게임 / 커피 로스터</small></button><button class="mode-card" data-go="multi"><span>🌐</span><b>다인플 · 온라인 방</b><small>자동 저장 · 재접속 · 게임별 티어</small></button></section>
+  <section class="home-mode-grid"><button class="mode-card" data-go="solo"><span>🧠</span><b>1인플 · AI/솔로</b><small>마스크맨 / 어콰이어 / 캘리코 / 캐스캐디아 / 더 게임 / 커피 로스터</small></button><button class="mode-card" data-go="multi"><span>🌐</span><b>다인플 · 온라인 방</b><small>자동 저장 · 재접속 · 게임별 티어</small></button></section>
     <div id="connection"></div>`);
 
   document.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>location.hash=`#/${b.dataset.go}`);
@@ -310,7 +309,6 @@ function renderSolo(){
     <article class="library-card acquire"><div class="library-icon">🏙️</div><h2>어콰이어</h2><p>타일 배치, 호텔 체인, 주식과 합병을 AI들과 연습합니다.</p><span class="save-badge">💾 로컬 자동 저장</span><a class="primary link-btn" href="./solo-acquire.html">AI와 대전</a></article>
     <article class="library-card calico"><div class="library-icon">🧵</div><h2>캘리코</h2><p>공개된 MyAutoma 구현을 BoardMate 상단바 안에서 엽니다.</p><span class="save-badge external">외부 게임 · BoardMate 저장 제외</span><a class="primary link-btn" href="./solo-calico.html">솔로 게임 열기</a></article>
     <article class="library-card cascadia"><div class="library-icon">🌲</div><h2>캐스캐디아</h2><p>공개 Cascadia 웹 구현을 BoardMate 상단바 안에서 엽니다.</p><span class="save-badge external">외부 게임 · BoardMate 저장 제외</span><a class="primary link-btn" href="./solo-cascadia.html">솔로 게임 열기</a></article>
-    <article class="library-card pocketnova"><div class="library-icon">⚡</div><h2>포켓몬 미니마</h2><p>1~2인용 포켓몬 미니마를 브라우저에서 플레이합니다.</p><span class="save-badge">💾 로컬 저장 · 1~2인</span><a class="primary link-btn" href="./solo-pokemon-minima.html">1인플 플레이</a></article>
     <article class="library-card thegame"><div class="library-icon">🃏</div><h2>더 게임</h2><p>업로드한 HTML로 1인 솔로 플레이. ±10 되돌리기 규칙을 지원합니다.</p><span class="save-badge">💾 로컬 자동 저장</span><a class="primary link-btn" href="./solo-thegame.html">솔로 플레이</a></article>
     <article class="library-card coffee-roaster"><div class="library-icon">☕</div><h2>커피 로스터</h2><p>원두 로스팅 1인 게임. 풀메뉴 또는 트라이얼로 플레이합니다.</p><span class="save-badge">💾 브라우저 내 플레이</span><a class="primary link-btn" href="./solo-coffee-roaster.html">솔로 플레이</a></article>
   </section>`);
@@ -355,8 +353,12 @@ async function renderMyPage(){
 
 async function renderCreateRoom(){
   if(!onlineConfigured())return renderMulti();const me=await authProfile();if(!me){location.hash='#/login';return;}
-  const games=['maskmen','acquire','calico','cascadia','pocketnova','plakoro','powergrid','quacks','mandom','samurai','eldorado','airlandsea','thegame','kraken','fantasyrealms','avalon','secrethitler','onenightwerewolf'];let selected='maskmen';
-  shell(`<div class="page-head"><div><h1>➕ 새 방 만들기</h1><p>게임을 고르고 바로 방을 만드세요. 제목을 비우면 닉네임과 게임 이름으로 자동 생성됩니다.</p></div><div class="actions"><button class="ghost" id="backMulti">← 방 목록</button></div></div><section class="room-maker"><label>방 제목 <small>선택 사항</small></label><input id="roomTitle" maxlength="40" placeholder="비워두면 예: ${esc(me.nickname)}의 마스크맨 한 판"><div class="turn-system-note"><b>⏳ 모든 게임은 BoardMate Supabase 방 + Realtime</b><span>판타지 왕국도 다른 게임과 동일한 방 생성·참가·재접속 흐름으로 운영됩니다.</span></div><h2>게임 선택</h2><div id="roomGameGrid" class="library-grid compact-games">${games.map(g=>{const x=gameInfo(g);return `<button class="library-card game-choice ${g==='maskmen'?'selected':''}" data-room-game="${g}"><div class="library-icon">${x.icon}</div><h2>${x.name}</h2><p>${x.min}명부터 · 최대 ${x.max}명</p></button>`;}).join('')}</div><button class="primary create-room-submit" id="createRoomBtn">선택한 게임으로 방 만들기</button><div id="roomStatus" class="bonus-note"></div></section>`);
+  const games=['maskmen','acquire','calico','cascadia','plakoro','powergrid','quacks','mandom','samurai','eldorado','airlandsea','thegame','kraken','fantasyrealms','avalon','secrethitler','onenightwerewolf'];let selected='maskmen';
+  const tierLabel=(x)=>x.tier==='alpha'?'ALPHA · 보완 필요':x.tier==='beta'?'BETA · 보완 중':'정상 작동';
+  const tierClass=(x)=>x.tier==='alpha'?'tier-alpha':x.tier==='beta'?'tier-beta':'tier-stable';
+  const renderGame=(g)=>{const x=gameInfo(g);return `<button class="library-card game-choice ${g==='maskmen'?'selected':''}" data-room-game="${g}"><div class="library-icon">${x.icon}</div><div class="game-tier ${tierClass(x)}">${tierLabel(x)}</div><h2>${x.name}</h2><p>${x.min}명부터 · 최대 ${x.max}명</p></button>`;};
+  const stable=games.filter(g=>!gameInfo(g).tier), alpha=games.filter(g=>gameInfo(g).tier==='alpha'), beta=games.filter(g=>gameInfo(g).tier==='beta');
+  shell(`<div class="page-head"><div><h1>➕ 새 방 만들기</h1><p>게임을 고르고 바로 방을 만드세요. 제목을 비우면 닉네임과 게임 이름으로 자동 생성됩니다.</p></div><div class="actions"><button class="ghost" id="backMulti">← 방 목록</button></div></div><section class="room-maker"><label>방 제목 <small>선택 사항</small></label><input id="roomTitle" maxlength="40" placeholder="비워두면 예: ${esc(me.nickname)}의 마스크맨 한 판"><div class="turn-system-note"><b>⏳ 모든 게임은 BoardMate Supabase 방 + Realtime</b><span>게임 상태에 따라 정상 작동 / ALPHA / BETA를 구분합니다.</span></div><h2>정상 작동 게임</h2><div class="game-tier-grid library-grid compact-games">${stable.map(renderGame).join('')}</div><h2 class="game-section-alpha">ALPHA · 보완 필요</h2><div class="game-tier-grid library-grid compact-games">${alpha.map(renderGame).join('')}</div><h2 class="game-section-beta">BETA · 보완 중</h2><div class="game-tier-grid library-grid compact-games">${beta.map(renderGame).join('')}</div><button class="primary create-room-submit" id="createRoomBtn">선택한 게임으로 방 만들기</button><div id="roomStatus" class="bonus-note"></div></section>`);
   document.querySelector('#backMulti').onclick=()=>location.hash='#/multi';
   document.querySelectorAll('[data-room-game]').forEach(b=>b.onclick=()=>{selected=b.dataset.roomGame;document.querySelectorAll('[data-room-game]').forEach(x=>x.classList.toggle('selected',x===b));const title=document.querySelector('#roomTitle');if(!title.value)title.placeholder=`비워두면 예: ${me.nickname}의 ${gameInfo(selected).name} 한 판`;});
   document.querySelector('#createRoomBtn').onclick=async()=>{
@@ -377,7 +379,7 @@ async function renderCreateRoom(){
         }
         if(!v10missing)throw v10e;
         if(social)throw new Error('소셜 디덕션 Supabase 업데이트가 필요합니다. SUPABASE_REPAIR_ALL_GAMES_V24.sql을 먼저 실행하세요.');
-        if(selected==='plakoro')throw new Error('프라코로용 Supabase 업데이트가 필요합니다. SUPABASE_REPAIR_ALL_GAMES_V24.sql을 먼저 실행하세요.');
+        if(selected==='plakoro')throw new Error('프라코로 포켓몬용 Supabase 업데이트가 필요합니다. SUPABASE_REPAIR_ALL_GAMES_V26.sql을 먼저 실행하세요.');
         try{id=await callRpc('create_boardmate_room_v9',{p_token:memberToken(),p_title:title,p_game:selected});}
         catch(v9e){
           const v9missing=/create_boardmate_room_v9|PGRST202|schema cache/i.test(String(v9e?.message||v9e));
