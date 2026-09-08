@@ -61,6 +61,10 @@ function destroySetupPreviews(){
 function setupMapPreview(boardId){
   const G=PowerGrid.mapData(boardId);
   const legend=G.REGION_ORDER.map(rid=>{const r=G.REGIONS[rid];return `<span style="--region:${esc(r.color)}"><i></i>${esc(r.shortName||r.name)}</span>`}).join('');
+  if(boardId==='germany'){
+    const image=(PowerGrid.BOARD_DEFS.germany&&PowerGrid.BOARD_DEFS.germany.image)||'./powergrid/assets/maps/germany.webp';
+    return `<div class="pg-map-choice-original pg-setup-germany"><img src="${esc(image)}" alt="Power Grid Germany board" loading="eager"></div><div class="pg-map-preview-legend">${legend}</div>`;
+  }
   return `<div class="pg-map-choice-leaflet" data-pg-preview="${esc(boardId)}"><div class="pg-map-loading">지도 불러오는 중…</div></div><div class="pg-map-preview-legend">${legend}</div>`;
 }
 function mountSetupMapPreviews(){
@@ -99,7 +103,7 @@ function setupView(){
   const boardMap=PowerGrid.mapData(boardId);
   const wanted=PowerGrid.defaultRegions(members.length,boardId).length;
   const defaults=new Set(PowerGrid.defaultRegions(members.length,boardId));
-  const mapCards=Object.values(PowerGrid.BOARD_DEFS).map(b=>`<button type="button" class="pg-map-choice${b.id===boardId?' selected':''}" data-board="${b.id}" aria-pressed="${b.id===boardId?'true':'false'}"><div class="pg-map-choice-preview ${b.id==='usa'?'landscape':'portrait'}">${setupMapPreview(b.id)}</div><div class="pg-map-choice-copy"><b>${esc(b.name)}</b><span>${esc((b.features||[])[0]||'맵을 선택합니다.')}</span></div></button>`).join('');
+  const mapCards=Object.values(PowerGrid.BOARD_DEFS).map(b=>`<button type="button" class="pg-map-choice${b.id===boardId?' selected':''}" data-board="${b.id}" aria-pressed="${b.id===boardId?'true':'false'}"><div class="pg-map-choice-preview ${b.id==='usa'?'landscape':'portrait'}${b.id==='germany'?' germany-preview':''}">${setupMapPreview(b.id)}</div><div class="pg-map-choice-copy"><b>${esc(b.name)}</b><span>${esc((b.features||[])[0]||'맵을 선택합니다.')}</span></div></button>`).join('');
   const regionHtml=boardMap.REGION_ORDER.map(rid=>{
     const r=boardMap.REGIONS[rid];
     return `<label class="pg-region-option"><input type="checkbox" value="${rid}" ${defaults.has(rid)?'checked':''}><i style="background:${r.color}"></i><span>${esc(r.name)}</span></label>`;

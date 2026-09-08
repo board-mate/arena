@@ -181,7 +181,7 @@
 
   var BOARD_DEFS = {
     germany: {
-      id:'germany', name:'독일', mode:'leaflet',
+      id:'germany', name:'독일', mode:'auto', image:'./powergrid/assets/maps/germany.webp',
       featureTitle:'독일맵 특징',
       rules:{ uraniumStopOnPlant39:true, usaCoalStorage:false },
       features:[

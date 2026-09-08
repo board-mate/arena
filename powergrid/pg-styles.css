@@ -539,3 +539,9 @@ a { color: var(--accent2); }
   .pg-city-count-btn{min-width:44px;height:44px;font-size:1.25rem}
   #pg-power-city-count{font-size:1.2rem;height:44px}
 }
+
+
+/* v30-fix: Germany uses the supplied 675x900 schematic board, not geographic lat/lng tiles. */
+.pg-map-choice-preview.germany-preview{aspect-ratio:3 / 4!important}
+.pg-setup-germany{position:absolute;inset:0;width:100%;height:100%;z-index:0;background:#0b0f14;overflow:hidden}
+.pg-setup-germany img{display:block;width:100%;height:100%;object-fit:contain;background:#0b0f14}

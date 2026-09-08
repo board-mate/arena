@@ -155,6 +155,7 @@
 
   function renderMap(state, mySeat, allowAct, actingSeats) {
     var boardId=(state.map && state.map.boardId) || 'germany';
+    if(boardId==='germany') return renderGermanyMap(state, mySeat, allowAct, actingSeats);
     var G=PG.mapData ? PG.mapData(boardId) : PG.GERMANY;
     var def=PG.BOARD_DEFS[boardId] || PG.BOARD_DEFS.germany;
     var selectedRegions=(state.map.regionIds||[]);
@@ -168,6 +169,59 @@
       '<div class="pg-map-note">선택 지역은 지역색 도시와 밝은 연결선으로 표시하고, 사용하지 않는 지역은 검정 음영 없이 도시·연결선만 흐리게 표시합니다. 연결비는 선 위 숫자로 확인할 수 있습니다. 지도 이동·축소는 해당 국가 범위 안으로 제한됩니다.</div></div>';
   }
 
+  function renderGermanyMap(state, mySeat, allowAct, actingSeats) {
+    var G=PG.mapData ? PG.mapData('germany') : PG.GERMANY;
+    var selected={};
+    (state.map.cityNames||[]).forEach(function(id){selected[id]=true;});
+    var selectedRegions=(state.map.regionIds||[]);
+    var canBuild=state.phase===4 && actingSeats[0]===mySeat && allowAct;
+    var myMoney=(canBuild && state.players[mySeat]) ? state.players[mySeat].money : -1;
+    var def=PG.BOARD_DEFS.germany || {};
+
+    var regionChips=selectedRegions.map(function(rid){
+      var r=G.REGIONS[rid];
+      return r ? '<span class="pg-region-chip" style="--region:'+esc(r.color)+'">'+esc(r.shortName||r.name)+'</span>' : '';
+    }).join('');
+
+    var markers='';
+    G.CITIES.forEach(function(city){
+      if(!selected[city.id])return;
+      var owners=state.cityOwners[city.id]||[];
+      var cost=canBuild ? PG.computeBuildCost(state,mySeat,city.id) : null;
+      var affordable=cost!=null && cost<=myMoney;
+      var clickable=canBuild && affordable;
+      var ownerDots=owners.map(function(seat){return '<i style="background:'+SEAT_COLORS[seat%6]+'"></i>';}).join('');
+      var title=city.name+(cost!=null?' · '+cost+'€':'');
+      markers+='<button class="pg-germany-city-marker'+(clickable?' can-build':'')+(owners.length?' occupied':'')+'" '+
+        'style="left:'+(city.x/G.BOARD_WIDTH*100).toFixed(3)+'%;top:'+(city.y/G.BOARD_HEIGHT*100).toFixed(3)+'%" '+
+        'title="'+esc(title)+'" aria-label="'+esc(title)+'" '+
+        (clickable?'data-action="buildCity" data-city="'+esc(city.id)+'"':'disabled')+'>'+ 
+        '<span class="pg-city-marker-core"></span><span class="pg-city-marker-owners">'+ownerDots+'</span>'+ 
+        (cost!=null?'<b>'+cost+'</b>':'')+'</button>';
+    });
+
+    var cityGroups='';
+    selectedRegions.forEach(function(rid){
+      var region=G.REGIONS[rid]; if(!region)return;
+      var buttons=G.CITIES.filter(function(c){return c.region===rid;}).map(function(city){
+        var owners=state.cityOwners[city.id]||[];
+        var cost=canBuild ? PG.computeBuildCost(state,mySeat,city.id) : null;
+        var affordable=cost!=null && cost<=myMoney;
+        var clickable=canBuild && affordable;
+        var dots=owners.map(function(seat){return '<i class="pg-city-owner-dot" style="background:'+SEAT_COLORS[seat%6]+'"></i>';}).join('');
+        var suffix=cost!=null ? '<span class="pg-city-cost">'+cost+'€</span>' : (owners.indexOf(mySeat)!==-1?'<span class="pg-city-status">내 도시</span>':'');
+        return '<button class="pg-city-choice'+(clickable?' can-build':'')+'" '+(clickable?'data-action="buildCity" data-city="'+esc(city.id)+'"':'disabled')+'>'+dots+'<span>'+esc(city.name)+'</span>'+suffix+'</button>';
+      }).join('');
+      cityGroups+='<section class="pg-city-group"><h4><i style="background:'+esc(region.color)+'"></i>'+esc(region.name)+'</h4><div class="pg-city-choice-grid">'+buttons+'</div></section>';
+    });
+
+    var image=(def.image||'./powergrid/assets/maps/germany.webp');
+    return '<div class="pg-real-map pg-germany-map"><div class="pg-real-map-head"><div><b>독일 보드</b><div class="pg-region-chips">'+regionChips+'</div></div><span class="pg-tag">42도시 · 83연결</span></div>'+ 
+      '<div class="pg-germany-board"><img src="'+esc(image)+'" alt="Power Grid Germany board" loading="eager">'+markers+'</div>'+ 
+      '<div class="pg-map-note">실물 독일 보드 이미지를 기준으로 도시 위치와 연결비를 표시합니다. 선택한 지역의 도시만 건설 가능하며, 연결비는 보드에 인쇄된 연결선을 기준으로 계산합니다.</div>'+ 
+      '<details class="pg-city-picker"'+(canBuild?' open':'')+'><summary>도시 목록'+(canBuild?' · 건설 가능 비용 보기':'')+'</summary>'+cityGroups+'</details></div>';
+  }
+
   function destroyLiveMap(){
     if(LIVE_MAP){try{LIVE_MAP.remove();}catch(_){ } LIVE_MAP=null;}
   }
@@ -178,6 +232,7 @@
     destroyLiveMap();
     if(!global.L){el.innerHTML='<div class="pg-map-loading">지도 모듈을 불러오지 못했습니다. 아래 도시 목록으로 계속 플레이할 수 있습니다.</div>';return;}
     var boardId=(state.map && state.map.boardId) || 'germany';
+    if(boardId==='germany') return;
     var G=PG.mapData ? PG.mapData(boardId) : PG.GERMANY;
     var selected={};(state.map.cityNames||[]).forEach(function(id){selected[id]=true;});
     var canBuild=state.phase===4 && actingSeats[0]===mySeat && allowAct;
