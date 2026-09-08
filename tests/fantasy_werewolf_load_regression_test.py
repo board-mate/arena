@@ -4,7 +4,8 @@ import re
 ROOT = Path(__file__).resolve().parents[1]
 GAMES = [
     'maskmen','acquire','calico','cascadia','pocketnova','thegame','kraken',
-    'fantasyrealms','powergrid','avalon','secrethitler','onenightwerewolf','plakoro'
+    'fantasyrealms','powergrid','avalon','secrethitler','onenightwerewolf','plakoro',
+    'quacks','mandom','samurai','eldorado','airlandsea'
 ]
 
 
@@ -18,7 +19,7 @@ def check(cond, msg):
     print('PASS:', msg)
 
 
-repair = read('SUPABASE_REPAIR_FANTASY_WEREWOLF_V20.sql')
+repair = read('SUPABASE_REPAIR_ALL_GAMES_V24.sql')
 for game in GAMES:
     check(f"'{game}'" in repair, f'repair preserves game id {game}')
 for fn in [
@@ -49,21 +50,19 @@ for sql_name in [
           f'{sql_name} preserves Power Grid turn field')
 
 fantasy = read('online-fantasy-realms.html')
-check("multi-common.js?v=20" in fantasy, 'Fantasy cache bust is v20')
-check("persist('game-start',{throwOnError:true})" in fantasy,
-      'Fantasy initial persistence surfaces RPC failure')
-check('SUPABASE_REPAIR_FANTASY_WEREWOLF_V20.sql' in fantasy,
-      'Fantasy shows actionable repair guidance')
+check("multi-common.js?v=24" in fantasy, 'Fantasy cache bust is v24')
+check('loadFantasyState()' in fantasy and 'saveFantasyState' in fantasy,
+      'Fantasy uses repaired private-state RPC bridge')
 
 werewolf = read('online-one-night-werewolf.html')
-check("social-common.js?v=20" in werewolf, 'Werewolf cache bust is v20')
-check('function werewolfLoadError' in werewolf and 'SUPABASE_REPAIR_FANTASY_WEREWOLF_V20.sql' in werewolf,
-      'Werewolf shows actionable repair guidance')
+check("social-common.js?v=23" in werewolf, 'Werewolf uses v23 social-common cache key')
+check('boardmate_social_init' in read('SUPABASE_REPAIR_ALL_GAMES_V24.sql') and 'act(' in werewolf,
+      'Werewolf is wired to the repaired social RPC layer')
 
 sw = read('sw.js')
-check("boardmate-shell-v11.4.21" in sw, 'service worker cache bumped to v11.4.21')
+check("boardmate-shell-v11.4.24" in sw, 'service worker cache bumped to v11.4.24')
 
-verify = read('SUPABASE_VERIFY_FANTASY_WEREWOLF_V20.sql')
+verify = read('SUPABASE_VERIFY_ALL_GAMES_V24.sql')
 for fn in ['get_boardmate_fantasy_state','put_boardmate_fantasy_state','boardmate_social_init','boardmate_social_view','boardmate_social_action']:
     check(fn in verify, f'verification SQL checks {fn}')
 

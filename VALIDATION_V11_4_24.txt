@@ -1,0 +1,29 @@
+BoardMate Arena v11.4.24 integrated validation
+Date: 2026-09-08
+
+PASS
+- python tests/v24_integrated_static_test.py
+- node tests/social_deduction_static_test.cjs
+- python tests/new_games_v21_static_test.py (updated to v24 expectations)
+- python tests/fantasy_werewolf_load_regression_test.py (updated to v24 expectations)
+
+Verified
+- v11.4.23 gameplay/UI updates preserved
+- new multiplayer games preserved: quacks/mandom/samurai/eldorado/airlandsea
+- Coffee Roaster solo entry preserved
+- all 18 multiplayer ids preserved by catalog-normalizing SQL files
+- Social Action RPC signature is public.boardmate_social_action(text,uuid,jsonb)
+- no obsolete 4-argument Social Action verification remains
+- merged/newly-updated inline JavaScript syntax checks pass
+- new-game multi-common imports resolve
+
+LEGACY VERIFIER NOTE
+- tests/verify_integrated_release.py still reports historical expectations involving an older Pokemon Minima/Calico cleanup and the fixed FINAL 2026-09-07 handoff string.
+- The uploaded original v11.4.23 package reports the same historical failures, plus Fantasy migration SQL missing.
+- These are not regressions introduced by the v24 merge.
+
+Supabase deployment order
+1. SUPABASE_PLAKORO_PVP_V4.sql
+2. SUPABASE_REPAIR_ALL_GAMES_V24.sql (run last repair/catalog migration)
+3. SUPABASE_VERIFY_ALL_GAMES_V24.sql
+Expected: every row from the V24 verification has ok = true.

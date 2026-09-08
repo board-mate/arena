@@ -372,16 +372,16 @@ async function renderCreateRoom(){
         const v10missing=/create_boardmate_room_v10|PGRST202|schema cache/i.test(msg);
         const catalogRejected=/지원하지 않는 게임|boardmate_rooms_game_check|violates check constraint/i.test(msg);
         if(v21Games.includes(selected)&&(v10missing||catalogRejected)){
-          throw new Error('새 게임용 Supabase 업데이트가 필요합니다. SUPABASE_REPAIR_ALL_GAMES_V21.sql을 SQL Editor에서 실행하세요.');
+          throw new Error('새 게임용 Supabase 업데이트가 필요합니다. SUPABASE_REPAIR_ALL_GAMES_V24.sql을 SQL Editor에서 실행하세요.');
         }
         if(!v10missing)throw v10e;
-        if(social)throw new Error('소셜 디덕션 Supabase 업데이트가 필요합니다. SUPABASE_REPAIR_ALL_GAMES_V21.sql을 먼저 실행하세요.');
-        if(selected==='plakoro')throw new Error('프라코로용 Supabase 업데이트가 필요합니다. SUPABASE_REPAIR_ALL_GAMES_V21.sql을 먼저 실행하세요.');
+        if(social)throw new Error('소셜 디덕션 Supabase 업데이트가 필요합니다. SUPABASE_REPAIR_ALL_GAMES_V24.sql을 먼저 실행하세요.');
+        if(selected==='plakoro')throw new Error('프라코로용 Supabase 업데이트가 필요합니다. SUPABASE_REPAIR_ALL_GAMES_V24.sql을 먼저 실행하세요.');
         try{id=await callRpc('create_boardmate_room_v9',{p_token:memberToken(),p_title:title,p_game:selected});}
         catch(v9e){
           const v9missing=/create_boardmate_room_v9|PGRST202|schema cache/i.test(String(v9e?.message||v9e));
           if(!v9missing)throw v9e;
-          if(selected==='powergrid')throw new Error('파워그리드용 Supabase 업데이트가 필요합니다. SUPABASE_REPAIR_ALL_GAMES_V21.sql을 먼저 실행하세요.');
+          if(selected==='powergrid')throw new Error('파워그리드용 Supabase 업데이트가 필요합니다. SUPABASE_REPAIR_ALL_GAMES_V24.sql을 먼저 실행하세요.');
           try{id=await callRpc('create_boardmate_room_v8',{p_token:memberToken(),p_title:title,p_game:selected});}
           catch(e){
             const missing=/create_boardmate_room_v8|PGRST202|schema cache/i.test(String(e?.message||e));
@@ -389,7 +389,7 @@ async function renderCreateRoom(){
             try{id=await callRpc('create_boardmate_room_v7',{p_token:memberToken(),p_title:title,p_game:selected,p_play_mode:'turn'});}
             catch(fallbackErr){
               const fallbackMissing=/create_boardmate_room_v7|PGRST202|schema cache|지원하지 않는 게임/i.test(String(fallbackErr?.message||fallbackErr));
-              if(fallbackMissing)throw new Error('Supabase 방 생성 RPC가 아직 적용되지 않았습니다. SUPABASE_REPAIR_ALL_GAMES_V21.sql을 적용한 뒤 다시 시도하세요.');
+              if(fallbackMissing)throw new Error('Supabase 방 생성 RPC가 아직 적용되지 않았습니다. SUPABASE_REPAIR_ALL_GAMES_V24.sql을 적용한 뒤 다시 시도하세요.');
               throw fallbackErr;
             }
           }

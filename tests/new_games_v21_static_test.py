@@ -14,7 +14,7 @@ def ok(cond,msg):
     if not cond: errors.append(msg)
 
 app=(ROOT/'app.js').read_text(encoding='utf-8')
-sql=(ROOT/'SUPABASE_REPAIR_ALL_GAMES_V21.sql').read_text(encoding='utf-8')
+sql=(ROOT/'SUPABASE_REPAIR_ALL_GAMES_V24.sql').read_text(encoding='utf-8')
 mc=(ROOT/'multi-common.js').read_text(encoding='utf-8')
 
 for gid,(fn,mn,mx) in expected.items():
@@ -26,11 +26,11 @@ for gid,(fn,mn,mx) in expected.items():
 ok((ROOT/'solo-coffee-roaster.html').exists(),'missing solo-coffee-roaster.html')
 ok('href="./solo-coffee-roaster.html"' in app,'coffee roaster solo menu link missing')
 ok("quacks:{name:'돌팔이 약장수'" in app and "mode:'realtime'" in app[app.find("quacks:{"):app.find("\n",app.find("quacks:{"))], 'quacks must be realtime in app catalog')
-ok("when p_game in ('avalon','secrethitler','onenightwerewolf','quacks') then 'realtime'" in sql,'quacks realtime SQL mode missing')
+ok("when p_game='quacks' then 'realtime'" in sql,'quacks realtime SQL mode missing')
 ok("if p_game in ('mandom','airlandsea') then" in sql and "currentTurn" in sql[sql.find("if p_game in ('mandom','airlandsea') then"):sql.find('end if;',sql.find("if p_game in ('mandom','airlandsea') then"))], 'mandom/airlandsea turn helper missing')
 ok("if p_game='samurai' then" in sql and "p_state->>'active'" in sql[sql.find("if p_game='samurai' then"):sql.find('end if;',sql.find("if p_game='samurai' then"))], 'samurai turn helper missing')
-ok("boardmate-shell-v11.4.21" in (ROOT/'sw.js').read_text(),'service worker version not bumped')
-ok('./app.js?v=16' in (ROOT/'index.html').read_text(),'index app cache key not bumped')
+ok("boardmate-shell-v11.4.24" in (ROOT/'sw.js').read_text(),'service worker version not bumped')
+ok('./app.js?v=17' in (ROOT/'index.html').read_text(),'index app cache key not bumped')
 
 exports=set(re.findall(r'export\s+(?:async\s+)?(?:function|const|let|var|class)\s+([A-Za-z_$][\w$]*)',mc))
 # export const a=... can have direct capture above; functions too.
@@ -61,4 +61,4 @@ if errors:
     print('FAIL')
     for e in errors: print('-',e)
     sys.exit(1)
-print('PASS: v11.4.21 new game integration static checks')
+print('PASS: v11.4.24 new game integration static checks')

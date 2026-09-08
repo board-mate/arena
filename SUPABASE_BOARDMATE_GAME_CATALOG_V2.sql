@@ -1,41 +1,44 @@
--- BoardMate Arena current game catalog / room migration
--- Apply AFTER the currently deployed v11.4.x + PowerGrid + Social Deduction SQL.
--- Safe migration: does not delete rooms or game state.
--- Adds Plakoro as a normal 2-player BoardMate room game and renames the
--- legacy pocketnova slot to 포켓몬 미니마 in generated room titles.
+-- BoardMate Arena v11.4.24: current game catalog / room migration (all-games-safe)
+-- Run this LAST in Supabase SQL Editor after deploying the v11.4.24 web files.
+-- Safe/idempotent for current v11.4.x installations. It does NOT delete rooms,
+-- ratings, member data, or saved game state.
+--
+-- Adds multiplayer game ids:
+--   quacks, mandom, samurai, eldorado, airlandsea
+-- Keeps every previously supported game and re-installs the Fantasy Realms /
+-- social-deduction repair RPCs from v11.4.20 so migration order cannot regress them.
 
 begin;
 
 -- -----------------------------------------------------------------------------
--- 1. Keep every currently supported game + add plakoro.
+-- 1. Unified multiplayer catalog (18 game ids)
 -- -----------------------------------------------------------------------------
 alter table public.boardmate_rooms drop constraint if exists boardmate_rooms_game_check;
 alter table public.boardmate_rooms add constraint boardmate_rooms_game_check
   check (game in (
     'maskmen','acquire','calico','cascadia','pocketnova','thegame','kraken',
-    'fantasyrealms','powergrid','avalon','secrethitler','onenightwerewolf','plakoro'
+    'fantasyrealms','powergrid','avalon','secrethitler','onenightwerewolf','plakoro',
+    'quacks','mandom','samurai','eldorado','airlandsea'
   ));
 
 alter table public.boardmate_ratings drop constraint if exists boardmate_ratings_game_check;
 alter table public.boardmate_ratings add constraint boardmate_ratings_game_check
   check (game in (
     'maskmen','acquire','calico','cascadia','pocketnova','thegame','kraken',
-    'fantasyrealms','powergrid','avalon','secrethitler','onenightwerewolf','plakoro'
+    'fantasyrealms','powergrid','avalon','secrethitler','onenightwerewolf','plakoro',
+    'quacks','mandom','samurai','eldorado','airlandsea'
   ));
 
--- -----------------------------------------------------------------------------
--- 2. Current min/max/player labels used by room creation.
--- -----------------------------------------------------------------------------
 create or replace function public.boardmate_game_max(p_game text)
 returns integer
 language sql immutable as $$
   select case
-    when p_game in ('calico','cascadia') then 4
+    when p_game in ('calico','cascadia','quacks','mandom','samurai','eldorado') then 4
     when p_game='pocketnova' then 2
+    when p_game in ('plakoro','airlandsea') then 2
     when p_game='thegame' then 5
     when p_game='kraken' then 8
     when p_game in ('fantasyrealms','powergrid') then 6
-    when p_game='plakoro' then 2
     when p_game in ('avalon','secrethitler','onenightwerewolf') then 10
     else 6
   end;
@@ -46,11 +49,10 @@ create or replace function public.boardmate_game_min(p_game text)
 returns integer
 language sql immutable as $$
   select case
-    when p_game in ('calico','cascadia','pocketnova','thegame','powergrid') then 2
-    when p_game in ('fantasyrealms','onenightwerewolf') then 3
-    when p_game='plakoro' then 2
+    when p_game in ('calico','cascadia','pocketnova','thegame','plakoro','quacks','mandom','samurai','eldorado','airlandsea') then 2
+    when p_game in ('maskmen','acquire','kraken','fantasyrealms','powergrid','onenightwerewolf') then 3
     when p_game in ('avalon','secrethitler') then 5
-    else 3
+    else 2
   end;
 $$;
 revoke all on function public.boardmate_game_min(text) from public, anon, authenticated;
@@ -72,14 +74,16 @@ language sql immutable as $$
     when 'secrethitler' then '시크릿 히틀러'
     when 'onenightwerewolf' then '한밤의 늑대인간'
     when 'plakoro' then '프라코로'
+    when 'quacks' then '돌팔이 약장수'
+    when 'mandom' then '맨덤의 던전'
+    when 'samurai' then '사무라이 PVP'
+    when 'eldorado' then '엘도라도'
+    when 'airlandsea' then '에어 랜드 & 씨'
     else '보드게임'
   end;
 $$;
 revoke all on function public.boardmate_game_ko(text) from public, anon, authenticated;
 
--- -----------------------------------------------------------------------------
--- 3. Unified room creation RPC.
--- -----------------------------------------------------------------------------
 create or replace function public.create_boardmate_room_v10(p_token text,p_title text,p_game text)
 returns uuid
 language plpgsql
@@ -94,7 +98,8 @@ begin
 
   if p_game not in (
     'maskmen','acquire','calico','cascadia','pocketnova','thegame','kraken',
-    'fantasyrealms','powergrid','avalon','secrethitler','onenightwerewolf','plakoro'
+    'fantasyrealms','powergrid','avalon','secrethitler','onenightwerewolf','plakoro',
+    'quacks','mandom','samurai','eldorado','airlandsea'
   ) then
     raise exception '지원하지 않는 게임입니다.';
   end if;
@@ -107,10 +112,7 @@ begin
   if char_length(ttl)>40 then ttl:=left(ttl,40); end if;
 
   mx:=public.boardmate_game_max(p_game);
-  mode:=case
-    when p_game in ('avalon','secrethitler','onenightwerewolf') then 'realtime'
-    else 'turn'
-  end;
+  mode:=case when p_game in ('avalon','secrethitler','onenightwerewolf') then 'realtime' when p_game='quacks' then 'realtime' else 'turn' end;
 
   insert into public.boardmate_rooms(title,game,max_players,host_id,play_mode)
   values(ttl,p_game,mx,uid,mode)
@@ -124,23 +126,19 @@ end;
 $$;
 grant execute on function public.create_boardmate_room_v10(text,text,text) to anon, authenticated;
 
--- -----------------------------------------------------------------------------
--- 4. Turn helper: keep all existing games + Plakoro current field.
--- -----------------------------------------------------------------------------
+-- Turn helper used by room list / direct-resume indicators.
 create or replace function public.boardmate_turn_seat(p_game text,p_state jsonb)
 returns integer
 language plpgsql immutable as $$
 declare
   seat integer; p jsonb; qi integer;
 begin
-  if p_game in ('avalon','secrethitler','onenightwerewolf') then return null; end if;
+  if p_game in ('avalon','secrethitler','onenightwerewolf','quacks') then return null; end if;
   if p_state is null then return null; end if;
   if coalesce((p_state->>'over')::boolean,false)
      or coalesce((p_state->>'gameOver')::boolean,false) then return null; end if;
 
-  if p_game='maskmen' then
-    return nullif(p_state->>'currentTurn','')::integer;
-  end if;
+  if p_game='maskmen' then return nullif(p_state->>'currentTurn','')::integer; end if;
 
   if p_game='acquire' then
     if p_state->>'phase'='resolve' then
@@ -159,20 +157,23 @@ begin
 
   if p_game='calico' then
     return coalesce(nullif(p_state->>'active','')::integer,
-                   nullif(p_state->>'current','')::integer);
+                    nullif(p_state->>'current','')::integer);
   end if;
 
-  if p_game in ('cascadia','thegame','kraken','fantasyrealms','plakoro') then
+  if p_game in ('cascadia','thegame','kraken','fantasyrealms','plakoro','eldorado') then
     return nullif(p_state->>'current','')::integer;
   end if;
 
-  if p_game='pocketnova' then
-    return nullif(p_state->>'currentPlayer','')::integer;
+  if p_game in ('mandom','airlandsea') then
+    return nullif(p_state->>'currentTurn','')::integer;
   end if;
 
-  if p_game='powergrid' then
-    return nullif(p_state->>'currentSeat','')::integer;
+  if p_game='samurai' then
+    return nullif(p_state->>'active','')::integer;
   end if;
+
+  if p_game='pocketnova' then return nullif(p_state->>'currentPlayer','')::integer; end if;
+  if p_game='powergrid' then return nullif(p_state->>'currentSeat','')::integer; end if;
 
   return null;
 exception when others then

@@ -1,1 +1,1 @@
-BoardMate Arena v11.4.21 — New games integration (Quacks / Mandom / Samurai / Eldorado / Air Land & Sea / Coffee Roaster)
+BoardMate Arena v11.4.24 — v11.4.23 game updates + v11.4.21 new-games integration + RPC verification repair

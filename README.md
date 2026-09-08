@@ -1,14 +1,31 @@
-# v11.4.21 신규 게임 통합
+# BoardMate Arena v11.4.24 통합 업데이트
 
-돌팔이 약장수 / 맨덤의 던전 / 사무라이 PVP / 엘도라도 / 에어 랜드 & 씨를 다인플에, 커피 로스터를 1인플에 추가했습니다.
+이 패키지는 사용자가 업로드한 **v11.4.23 GAME UPDATES FULL**을 베이스로 하고, 이전 v11.4.21에서 추가한 신규 게임 6종과 Supabase RPC/카탈로그 수정을 병합한 배포본입니다.
 
-배포 후 운영 Supabase에서 **`SUPABASE_REPAIR_ALL_GAMES_V21.sql`을 마지막으로 실행**하고 `SUPABASE_VERIFY_ALL_GAMES_V21.sql`로 검증하세요. 자세한 내용은 `NEW_GAMES_INTEGRATION_V11_4_21.md`를 확인하세요.
+## 보존된 v11.4.23 업데이트
+- 소셜 추리 3종: 만장일치 게임 취소 UI
+- 판타지 왕국: 능력 설정 중 자신의 손패 미리보기
+- 포켓몬 미니마: 카드/도감 이미지 및 기존 중복 선언 수정
+- 프라코로: V4 게임 업데이트
+- 노터치 크라켄: 라운드/게임 종료 오버레이
+- 시크릿 히틀러: 인원별 파시스트 트랙 효과 표시
 
----
+## 함께 유지되는 신규 게임
+다인플: 돌팔이 약장수, 맨덤의 던전, 사무라이 PVP, 엘도라도, 에어 랜드 & 씨
 
-# v11.4.20 current hotfix
+1인플: 커피 로스터
 
-판타지 왕국 / 한밤의 늑대인간 로딩 문제는 `FANTASY_WEREWOLF_LOAD_FIX_V11_4_20.md`를 먼저 확인하세요. 운영 Supabase에는 `SUPABASE_REPAIR_FANTASY_WEREWOLF_V20.sql` 실행 후 `SUPABASE_VERIFY_FANTASY_WEREWOLF_V20.sql`로 검증합니다.
+## Supabase 적용 순서
+1. `SUPABASE_PLAKORO_PVP_V4.sql` 실행
+2. **`SUPABASE_REPAIR_ALL_GAMES_V24.sql`을 마지막으로 실행**
+3. `SUPABASE_VERIFY_ALL_GAMES_V24.sql` 실행
+4. 모든 `ok`가 `true`인지 확인
+
+`social action RPC exists`의 올바른 함수 시그니처는 **`boardmate_social_action(text,uuid,jsonb)`** 입니다. 이전에 사용된 4인자 검사는 잘못된 검사입니다.
+
+통합본의 `SUPABASE_SOCIAL_DEDUCTION_V1.sql`, `SUPABASE_FANTASY_REALMS_UNIFIED.sql`, `SUPABASE_POWERGRID_UNIFIED.sql`, `SUPABASE_BOARDMATE_GAME_CATALOG_V2.sql`도 18개 다인플 게임 목록을 유지하도록 정리했기 때문에, 개별 SQL을 나중에 다시 실행해도 신규 게임 카탈로그를 과거 목록으로 축소하지 않습니다.
+
+자세한 배포 순서는 `UPLOAD_TO_GITHUB_V24.md`를 확인하세요.
 
 ---
 

@@ -1,38 +1,43 @@
 {
-  "release": "BoardMate Arena v11.4.21 NEW GAMES 2026-09-08",
+  "release": "BoardMate Arena v11.4.24 INTEGRATED 2026-09-08",
   "date": "2026-09-08",
-  "base": "BoardMate Arena v11.4.20 Fantasy/Werewolf load repair",
-  "components": {
-    "realtime": "existing v11.4 revision-only Broadcast + polling fallback preserved",
-    "fantasy_realms": "existing unified Supabase room/private state preserved",
-    "calico": "existing V8/mobile-fit file preserved byte-for-byte",
-    "powergrid": "existing Germany beta runtime preserved; unified migration made social-compatible",
-    "pokemon_minima": "replaces legacy Pocket Nova runtime; legacy DB key pocketnova retained; online 2-player",
-    "social_deduction": "Avalon + Secret Hitler base + One Night Werewolf",
-    "new_multiplayer_games": {
-      "quacks": "2-4 realtime/shared state",
-      "mandom": "2-4 turn/shared state",
-      "samurai": "2-4 turn/shared state",
-      "eldorado": "2-4 turn/shared state",
-      "airlandsea": "2 turn/shared state"
-    },
-    "new_solo_game": "Coffee Roaster (solo-coffee-roaster.html)"
-  },
-  "removed_runtime": [
-    "pocketnova/",
-    "online-pocketnova.html",
-    "solo-pocketnova.html",
-    "SOURCE_UPLOADS/pocketnova-v3.zip",
-    "docs/porknova-v11.7-handoff/"
+  "base": "BoardMate_Arena_V11_4_23_GAME_UPDATES_FULL.zip",
+  "merged_from": "v11.4.21 new games corrected package",
+  "preserved_v23_updates": [
+    "social deduction unanimous cancel UI",
+    "Fantasy Realms hand preview",
+    "Pokemon Minima artwork/update",
+    "Plakoro V4",
+    "No-Touch Kraken overlays",
+    "Secret Hitler track labels"
   ],
-  "pokemon_minima_state_kind": "pokemon-minima-v1-boardmate",
-  "pokemon_minima_db_key": "pocketnova",
-  "supabase_migration_required_for_social_games": "SUPABASE_SOCIAL_DEDUCTION_V1.sql",
-  "validation_commands": [
-    "python tests/new_games_v21_static_test.py",
-    "python tests/fantasy_werewolf_load_regression_test.py",
-    "node tests/social_deduction_static_test.cjs"
+  "multiplayer_games": [
+    "maskmen",
+    "acquire",
+    "calico",
+    "cascadia",
+    "pocketnova",
+    "thegame",
+    "kraken",
+    "fantasyrealms",
+    "powergrid",
+    "avalon",
+    "secrethitler",
+    "onenightwerewolf",
+    "plakoro",
+    "quacks",
+    "mandom",
+    "samurai",
+    "eldorado",
+    "airlandsea"
   ],
-  "live_e2e": "required after deployment on the user's Supabase project",
-  "supabase_migration_required_for_new_games": "SUPABASE_REPAIR_ALL_GAMES_V21.sql"
+  "solo_added": [
+    "coffee-roaster"
+  ],
+  "social_action_signature": "public.boardmate_social_action(text,uuid,jsonb)",
+  "supabase_order": [
+    "SUPABASE_PLAKORO_PVP_V4.sql",
+    "SUPABASE_REPAIR_ALL_GAMES_V24.sql",
+    "SUPABASE_VERIFY_ALL_GAMES_V24.sql"
+  ]
 }
