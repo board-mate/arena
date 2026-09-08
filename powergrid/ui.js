@@ -155,7 +155,6 @@
 
   function renderMap(state, mySeat, allowAct, actingSeats) {
     var boardId=(state.map && state.map.boardId) || 'germany';
-    if(boardId==='germany') return renderGermanyMap(state, mySeat, allowAct, actingSeats);
     var G=PG.mapData ? PG.mapData(boardId) : PG.GERMANY;
     var def=PG.BOARD_DEFS[boardId] || PG.BOARD_DEFS.germany;
     var selectedRegions=(state.map.regionIds||[]);
@@ -232,7 +231,6 @@
     destroyLiveMap();
     if(!global.L){el.innerHTML='<div class="pg-map-loading">지도 모듈을 불러오지 못했습니다. 아래 도시 목록으로 계속 플레이할 수 있습니다.</div>';return;}
     var boardId=(state.map && state.map.boardId) || 'germany';
-    if(boardId==='germany') return;
     var G=PG.mapData ? PG.mapData(boardId) : PG.GERMANY;
     var selected={};(state.map.cityNames||[]).forEach(function(id){selected[id]=true;});
     var canBuild=state.phase===4 && actingSeats[0]===mySeat && allowAct;

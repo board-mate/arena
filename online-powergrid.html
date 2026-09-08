@@ -12,7 +12,7 @@
 <body>
 <div class="pg-app" id="app">불러오는 중…</div>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="./powergrid/data/germany-map.js?v=30"></script>
+<script src="./powergrid/data/germany-map.js?v=32"></script>
 <script src="./powergrid/engine.js?v=30"></script>
 <script src="./powergrid/ui.js?v=30"></script>
 <script src="./powergrid/map-rules-v30.js?v=30"></script>
@@ -61,10 +61,6 @@ function destroySetupPreviews(){
 function setupMapPreview(boardId){
   const G=PowerGrid.mapData(boardId);
   const legend=G.REGION_ORDER.map(rid=>{const r=G.REGIONS[rid];return `<span style="--region:${esc(r.color)}"><i></i>${esc(r.shortName||r.name)}</span>`}).join('');
-  if(boardId==='germany'){
-    const image=(PowerGrid.BOARD_DEFS.germany&&PowerGrid.BOARD_DEFS.germany.image)||'./powergrid/assets/maps/germany.webp';
-    return `<div class="pg-map-choice-original pg-setup-germany"><img src="${esc(image)}" alt="Power Grid Germany board" loading="eager"></div><div class="pg-map-preview-legend">${legend}</div>`;
-  }
   return `<div class="pg-map-choice-leaflet" data-pg-preview="${esc(boardId)}"><div class="pg-map-loading">지도 불러오는 중…</div></div><div class="pg-map-preview-legend">${legend}</div>`;
 }
 function mountSetupMapPreviews(){

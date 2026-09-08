@@ -7,9 +7,9 @@
  * networks are community-entered and unverified; BoardMate therefore keeps
  * explicit regression tests and a visual audit checklist in the handoff docs.
  *
- * City x/y values below use BoardMate's 675 x 900 schematic coordinate system.
- * The same coordinates drive city markers, connection lines, labels and click targets,
- * so the visual board cannot drift out of sync with the route graph.
+ * x/y values preserve the legacy 675 x 900 graph coordinates.
+ * lat/lng values are used by the current Leaflet geographic map, matching the USA map presentation.
+ * The route graph remains the same 42-city / 83-edge Germany data.
  */
 (function (root, factory) {
   if (typeof module === 'object' && module.exports) module.exports = factory();
@@ -40,53 +40,53 @@
   // Index order intentionally follows the source dataset so that EDGE_INDEXES
   // can be compared against the published GEXF/YAML without name translation.
   var CITIES = [
-    {id:'FLENSBURG',name:'Flensburg',region:'green',x:275,y:43},
-    {id:'KIEL',name:'Kiel',region:'green',x:296,y:105},
-    {id:'CUXHAVEN',name:'Cuxhaven',region:'green',x:220,y:145},
-    {id:'HAMBURG',name:'Hamburg',region:'green',x:310,y:190},
-    {id:'WILHELMSHAVEN',name:'Wilhelmshaven',region:'green',x:185,y:175},
-    {id:'BREMEN',name:'Bremen',region:'green',x:225,y:238},
-    {id:'HANNOVER',name:'Hannover',region:'green',x:292,y:310},
+    {id:'FLENSBURG',name:'Flensburg',region:'green',x:275,y:43,lat:54.79370,lng:9.44690},
+    {id:'KIEL',name:'Kiel',region:'green',x:296,y:105,lat:54.32330,lng:10.12280},
+    {id:'CUXHAVEN',name:'Cuxhaven',region:'green',x:220,y:145,lat:53.86170,lng:8.69400},
+    {id:'HAMBURG',name:'Hamburg',region:'green',x:310,y:190,lat:53.55110,lng:9.99370},
+    {id:'WILHELMSHAVEN',name:'Wilhelmshaven',region:'green',x:185,y:175,lat:53.53230,lng:8.10690},
+    {id:'BREMEN',name:'Bremen',region:'green',x:225,y:238,lat:53.07930,lng:8.80170},
+    {id:'HANNOVER',name:'Hannover',region:'green',x:292,y:310,lat:52.37590,lng:9.73200},
 
-    {id:'LUBECK',name:'Lübeck',region:'brown',x:340,y:130},
-    {id:'ROSTOCK',name:'Rostock',region:'brown',x:430,y:120},
-    {id:'SCHWERIN',name:'Schwerin',region:'brown',x:390,y:190},
-    {id:'TORGELOW',name:'Torgelow',region:'brown',x:570,y:180},
-    {id:'MAGDEBURG',name:'Magdeburg',region:'brown',x:430,y:305},
-    {id:'BERLIN',name:'Berlin',region:'brown',x:500,y:275},
-    {id:'FRANKFURT_ODER',name:'Frankfurt (Oder)',region:'brown',x:580,y:315},
+    {id:'LUBECK',name:'Lübeck',region:'brown',x:340,y:130,lat:53.86550,lng:10.68660},
+    {id:'ROSTOCK',name:'Rostock',region:'brown',x:430,y:120,lat:54.09240,lng:12.09910},
+    {id:'SCHWERIN',name:'Schwerin',region:'brown',x:390,y:190,lat:53.63550,lng:11.40120},
+    {id:'TORGELOW',name:'Torgelow',region:'brown',x:570,y:180,lat:53.63300,lng:14.01330},
+    {id:'MAGDEBURG',name:'Magdeburg',region:'brown',x:430,y:305,lat:52.12050,lng:11.62760},
+    {id:'BERLIN',name:'Berlin',region:'brown',x:500,y:275,lat:52.52000,lng:13.40500},
+    {id:'FRANKFURT_ODER',name:'Frankfurt (Oder)',region:'brown',x:580,y:315,lat:52.34710,lng:14.55060},
 
-    {id:'OSNABRUCK',name:'Osnabrück',region:'red',x:180,y:305},
-    {id:'MUNSTER',name:'Münster',region:'red',x:158,y:355},
-    {id:'DUISBURG',name:'Duisburg',region:'red',x:55,y:365},
-    {id:'ESSEN',name:'Essen',region:'red',x:98,y:398},
-    {id:'DORTMUND',name:'Dortmund',region:'red',x:170,y:420},
-    {id:'KASSEL',name:'Kassel',region:'red',x:275,y:420},
-    {id:'DUSSELDORF',name:'Düsseldorf',region:'red',x:65,y:435},
+    {id:'OSNABRUCK',name:'Osnabrück',region:'red',x:180,y:305,lat:52.27990,lng:8.04720},
+    {id:'MUNSTER',name:'Münster',region:'red',x:158,y:355,lat:51.96070,lng:7.62610},
+    {id:'DUISBURG',name:'Duisburg',region:'red',x:55,y:365,lat:51.43440,lng:6.76230},
+    {id:'ESSEN',name:'Essen',region:'red',x:98,y:398,lat:51.45560,lng:7.01160},
+    {id:'DORTMUND',name:'Dortmund',region:'red',x:170,y:420,lat:51.51360,lng:7.46530},
+    {id:'KASSEL',name:'Kassel',region:'red',x:275,y:420,lat:51.31270,lng:9.47970},
+    {id:'DUSSELDORF',name:'Düsseldorf',region:'red',x:65,y:435,lat:51.22770,lng:6.77350},
 
-    {id:'HALLE',name:'Halle',region:'yellow',x:435,y:350},
-    {id:'LEIPZIG',name:'Leipzig',region:'yellow',x:470,y:400},
-    {id:'ERFURT',name:'Erfurt',region:'yellow',x:385,y:420},
-    {id:'DRESDEN',name:'Dresden',region:'yellow',x:560,y:445},
-    {id:'FULDA',name:'Fulda',region:'yellow',x:345,y:485},
-    {id:'WURZBURG',name:'Würzburg',region:'yellow',x:385,y:575},
-    {id:'NUREMBERG',name:'Nürnberg',region:'yellow',x:400,y:630},
+    {id:'HALLE',name:'Halle',region:'yellow',x:435,y:350,lat:51.49690,lng:11.96880},
+    {id:'LEIPZIG',name:'Leipzig',region:'yellow',x:470,y:400,lat:51.33970,lng:12.37310},
+    {id:'ERFURT',name:'Erfurt',region:'yellow',x:385,y:420,lat:50.98480,lng:11.02990},
+    {id:'DRESDEN',name:'Dresden',region:'yellow',x:560,y:445,lat:51.05040,lng:13.73730},
+    {id:'FULDA',name:'Fulda',region:'yellow',x:345,y:485,lat:50.55580,lng:9.68080},
+    {id:'WURZBURG',name:'Würzburg',region:'yellow',x:385,y:575,lat:49.79130,lng:9.95340},
+    {id:'NUREMBERG',name:'Nürnberg',region:'yellow',x:400,y:630,lat:49.45210,lng:11.07670},
 
-    {id:'AACHEN',name:'Aachen',region:'blue',x:55,y:500},
-    {id:'KOLN',name:'Köln',region:'blue',x:105,y:465},
-    {id:'TRIER',name:'Trier',region:'blue',x:80,y:585},
-    {id:'WIESBADEN',name:'Wiesbaden',region:'blue',x:180,y:570},
-    {id:'FRANKFURT_MAIN',name:'Frankfurt am Main',region:'blue',x:240,y:535},
-    {id:'SAARBRUCKEN',name:'Saarbrücken',region:'blue',x:145,y:640},
-    {id:'MANNHEIM',name:'Mannheim',region:'blue',x:240,y:625},
+    {id:'AACHEN',name:'Aachen',region:'blue',x:55,y:500,lat:50.77530,lng:6.08390},
+    {id:'KOLN',name:'Köln',region:'blue',x:105,y:465,lat:50.93750,lng:6.96030},
+    {id:'TRIER',name:'Trier',region:'blue',x:80,y:585,lat:49.74999,lng:6.63710},
+    {id:'WIESBADEN',name:'Wiesbaden',region:'blue',x:180,y:570,lat:50.07820,lng:8.23980},
+    {id:'FRANKFURT_MAIN',name:'Frankfurt am Main',region:'blue',x:240,y:535,lat:50.11090,lng:8.68210},
+    {id:'SAARBRUCKEN',name:'Saarbrücken',region:'blue',x:145,y:640,lat:49.24020,lng:6.99690},
+    {id:'MANNHEIM',name:'Mannheim',region:'blue',x:240,y:625,lat:49.48750,lng:8.46600},
 
-    {id:'STUTTGART',name:'Stuttgart',region:'purple',x:225,y:695},
-    {id:'AUGSBURG',name:'Augsburg',region:'purple',x:315,y:745},
-    {id:'REGENSBURG',name:'Regensburg',region:'purple',x:430,y:720},
-    {id:'FREIBURG',name:'Freiburg',region:'purple',x:180,y:780},
-    {id:'KONSTANZ',name:'Konstanz',region:'purple',x:250,y:820},
-    {id:'MUNICH',name:'München',region:'purple',x:420,y:785},
-    {id:'PASSAU',name:'Passau',region:'purple',x:555,y:740}
+    {id:'STUTTGART',name:'Stuttgart',region:'purple',x:225,y:695,lat:48.77580,lng:9.18290},
+    {id:'AUGSBURG',name:'Augsburg',region:'purple',x:315,y:745,lat:48.37050,lng:10.89780},
+    {id:'REGENSBURG',name:'Regensburg',region:'purple',x:430,y:720,lat:49.01340,lng:12.10160},
+    {id:'FREIBURG',name:'Freiburg',region:'purple',x:180,y:780,lat:47.99900,lng:7.84210},
+    {id:'KONSTANZ',name:'Konstanz',region:'purple',x:250,y:820,lat:47.67790,lng:9.17320},
+    {id:'MUNICH',name:'München',region:'purple',x:420,y:785,lat:48.13510,lng:11.58200},
+    {id:'PASSAU',name:'Passau',region:'purple',x:555,y:740,lat:48.56670,lng:13.43120}
   ];
 
   var EDGE_INDEXES = [
@@ -180,6 +180,9 @@
     EDGES:EDGES,
     normalizeCity:normalizeCity,
     citiesForRegions:citiesForRegions,
-    regionsConnected:regionsConnected
+    regionsConnected:regionsConnected,
+    GEO_CENTER:[51.1,10.4],
+    GEO_ZOOM:6,
+    GEO_BOUNDS:[[47.2,5.4],[55.3,15.6]]
   };
 });
