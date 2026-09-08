@@ -313,6 +313,7 @@ button { font: inherit; cursor: pointer; border: none; border-radius: 6px; }
 .counter-cell:last-child { border-right: none; }
 .counter-cell.current { background: var(--gold); color: #1a0800; font-weight: 900; }
 </style>
+<script src="./solo-save-ui.js"></script>
 </head>
 <body>
 
@@ -1663,8 +1664,30 @@ function renderFinal(app) {
   document.querySelector('#btn-again').onclick = () => { G = null; render(); };
 }
 
+// ── BoardMate v11.4.25: 솔로 진행 저장 ──
+const BOARDMATE_COFFEE_SAVE='boardmate:solo:coffee-roaster:v1';
+let __coffeeAbandon=false;
+function boardmateCoffeeSave(){
+  if(__coffeeAbandon||!G)return false;
+  localStorage.setItem(BOARDMATE_COFFEE_SAVE,JSON.stringify({G,logs,savedAt:new Date().toISOString()}));
+  return true;
+}
+function boardmateCoffeeRestore(){
+  const raw=localStorage.getItem(BOARDMATE_COFFEE_SAVE);if(!raw)return false;
+  const d=JSON.parse(raw);if(!d?.G)return false;G=d.G;logs=Array.isArray(d.logs)?d.logs:[];render();return true;
+}
+function boardmateCoffeeAbandon(){
+  __coffeeAbandon=true;localStorage.removeItem(BOARDMATE_COFFEE_SAVE);G=null;logs=[];location.reload();
+}
+setInterval(boardmateCoffeeSave,1500);
+window.addEventListener('beforeunload',boardmateCoffeeSave);
+document.addEventListener('visibilitychange',()=>{if(document.hidden)boardmateCoffeeSave();});
+
 // ── 시작 ──
-render();
+try{if(!boardmateCoffeeRestore())render();}catch(e){console.warn('coffee save restore:',e);localStorage.removeItem(BOARDMATE_COFFEE_SAVE);render();}
+window.addEventListener('DOMContentLoaded',()=>{
+  BoardMateSoloUI.install({save:()=>boardmateCoffeeSave(),abandon:()=>boardmateCoffeeAbandon()});
+});
 </script>
 </body>
 </html>

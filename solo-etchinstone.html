@@ -10,6 +10,7 @@
 @media(max-width:880px){.grid{grid-template-columns:1fr}.statbar{grid-template-columns:repeat(3,1fr)}.setup{grid-template-columns:1fr}.cards{grid-template-columns:repeat(2,minmax(0,1fr))}.mage{min-height:200px;padding:10px}.top{padding:10px 12px}.wrap{width:min(100% - 14px,1260px);margin-top:10px}.role-summary{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:520px){.cards{grid-template-columns:1fr 1fr;gap:7px}.mage{font-size:12px;min-height:190px}.mage .title{font-size:14px}.numbers{gap:3px}.num{padding:5px 1px}.hero{padding:18px}.panel{padding:12px}.statbar{gap:5px}.stat{padding:7px 4px}}
 </style>
+<script src="./solo-save-ui.js"></script>
 </head>
 <body>
 <header class="top"><a href="./index.html#/solo" class="brand">● BOARDMATE</a><span>› 에친스톤의 용들</span><div class="grow"></div><span class="save" id="saveState">💾 자동 저장</span><button class="ghost" onclick="showRules()">규칙 요약</button></header>
@@ -123,6 +124,16 @@ function startOver(){s=null;localStorage.removeItem(SAVE_KEY);render()}
 function showRules(){const w=window.open('','etchrules','width=720,height=820,scrollbars=yes');w.document.write(`<meta charset="utf-8"><style>body{font-family:system-ui;padding:25px;line-height:1.6;background:#11151d;color:#eee}h1,h2{color:#e9b75c}b{color:#fff}</style><h1>에친스톤 규칙 요약</h1><h2>지역 조우</h2><p>도전 → 행동 → 불이익 → 향상 → 정리. 손패에서 주문·원소·증폭 역할을 정하고, 남는 카드는 예비가 됩니다.</p><h2>적</h2><p>선제권을 비교하고 공격을 체력과 비교합니다. 체력 이상은 완벽, 절반(올림) 이상은 근소, 그 미만은 패배입니다. 완벽이 아니면 전투 피해를 받습니다.</p><h2>여정</h2><p>이동을 마력과 비교합니다. 마력 이상은 완벽, 절반 이상은 근소, 그 미만은 패배이며 근소/패배 시 시간 불이익을 받습니다.</p><h2>피해</h2><p>손패 카드를 강등해 방어만큼 흡수합니다. 공격 원소와 카드 원소가 일치하면 방어가 2배입니다(유리 대포 변형 제외). Lv.1 강등은 카드 제거입니다.</p><h2>향상</h2><p>이번 조우 경험치를 사용해 손패 카드를 향상합니다. 경험치는 다음 조우로 이월되지 않습니다.</p><h2>최후의 전투</h2><p>7장으로 최후의 여정에서 2개 행동 조합을 만든 뒤, 남은 카드로 최후의 적과 싸웁니다. 최종 공격이 체력 1등급보다 낮으면 즉시 패배합니다. 용의 피해를 모두 흡수하면 승리합니다.</p>`);w.document.close()}
 function bindAfterRender(){if(s.phase==='action'){const sel=$('#boostTarget');if(sel)sel.value=s.roles.boostTarget}}
 render();
+</script>
+<script>
+window.addEventListener('DOMContentLoaded',()=>{
+  BoardMateSoloUI.install({
+    save:()=>save(),
+    resume:()=>resumeGame(),
+    hasSave:()=>!!localStorage.getItem(SAVE_KEY),
+    abandon:()=>{localStorage.removeItem(SAVE_KEY);s=null;render();}
+  });
+});
 </script>
 </body>
 </html>

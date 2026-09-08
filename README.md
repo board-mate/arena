@@ -1,4 +1,4 @@
-# BoardMate Arena v11.4.24 통합 업데이트
+# BoardMate Arena v11.4.25 솔로 저장/포기 업데이트
 
 이 패키지는 사용자가 업로드한 **v11.4.23 GAME UPDATES FULL**을 베이스로 하고, 이전 v11.4.21에서 추가한 신규 게임 6종과 Supabase RPC/카탈로그 수정을 병합한 배포본입니다.
 
@@ -42,3 +42,12 @@ Other unrelated differences in the supplied app.js were intentionally not copied
 
 Replace the repository-root `app.js` with this file.
 Supabase SQL is not changed by this app.js-only merge.
+
+
+## v11.4.25 추가
+- 자체 1인플 게임에 공통 `💾 저장` / `🏳 게임 포기` UI 추가
+- 커피 로스터 진행 상태 localStorage 자동 저장/복원 추가
+- 포켓몬 미니마 솔로 진행 상태 localStorage 자동 저장/복원 추가
+- Acquire/에친스톤/마스크맨/The Game의 기존 저장 기능을 공통 UI와 연결
+- 게임 포기 시 해당 게임의 저장 데이터를 삭제하고 초기 상태로 복귀
+- 캘리코/캐스캐디아는 외부 도메인 iframe이므로 저장은 외부 사이트 자체 기능에 따름

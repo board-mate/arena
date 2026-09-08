@@ -49,6 +49,7 @@
       border-radius: 4px;
     }
   </style>
+<script src="./solo-save-ui.js"></script>
 </head>
 <body class="min-h-screen text-slate-900 flex flex-col justify-between overflow-x-hidden">
 
@@ -1965,7 +1966,7 @@ function boardmateMaskSnapshot(){
   const plain=JSON.parse(JSON.stringify(game,(k,v)=>v instanceof Set?[...v]:v));
   return {game:plain,selectedWrestler,selectedCount,handCardOrder,savedAt:new Date().toISOString()};
 }
-function boardmateMaskSave(){try{const d=boardmateMaskSnapshot();if(d)localStorage.setItem(BOARDMATE_MASK_SAVE,JSON.stringify(d));}catch(e){}}
+function boardmateMaskSave(){if(window.__boardmateSoloAbandon)return;try{const d=boardmateMaskSnapshot();if(d)localStorage.setItem(BOARDMATE_MASK_SAVE,JSON.stringify(d));}catch(e){}}
 function boardmateMaskRestore(){
   try{
     const raw=localStorage.getItem(BOARDMATE_MASK_SAVE);if(!raw)return;
@@ -1980,6 +1981,16 @@ function boardmateMaskRestore(){
 const _maskResume=document.getElementById('boardmate-mask-resume');
 if(_maskResume&&localStorage.getItem(BOARDMATE_MASK_SAVE)){_maskResume.style.display='inline-block';_maskResume.onclick=boardmateMaskRestore;}
 setInterval(boardmateMaskSave,1800);window.addEventListener('beforeunload',boardmateMaskSave);document.addEventListener('visibilitychange',()=>{if(document.hidden)boardmateMaskSave()});
+</script>
+<script>
+window.addEventListener('DOMContentLoaded',()=>{
+  BoardMateSoloUI.install({
+    save:()=>boardmateMaskSave(),
+    resume:()=>boardmateMaskRestore(),
+    hasSave:()=>!!localStorage.getItem(BOARDMATE_MASK_SAVE),
+    abandon:()=>{window.__boardmateSoloAbandon=true;if(aiTimeoutId)clearTimeout(aiTimeoutId);localStorage.removeItem(BOARDMATE_MASK_SAVE);location.reload();}
+  });
+});
 </script>
 </body>
 </html>

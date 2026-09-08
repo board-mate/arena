@@ -182,6 +182,7 @@ button:disabled{opacity:.4;cursor:not-allowed}
   .zoo-grid{grid-template-rows:repeat(3,70px)}
 }
 .pokemon-card-art{width:58px;height:58px;object-fit:contain;display:block;margin:-2px auto 4px;filter:drop-shadow(0 4px 5px rgba(0,0,0,.28))}.zoo-pokemon-art{width:52px;height:52px;object-fit:contain;display:block;margin:0 auto 3px;filter:drop-shadow(0 3px 4px rgba(0,0,0,.28))} .card-header{position:relative;min-height:64px}.card-header .pokemon-card-art{position:absolute;right:0;top:0;width:52px;height:52px}.card-header .card-name{padding-right:48px}</style>
+<script src="./solo-save-ui.js"></script>
 </head>
 <body>
 <div id="root"></div>
@@ -1712,15 +1713,34 @@ function publishResult() {
   window.parent.postMessage({ type: 'game_result', order: s }, '*');
 }
 
+
+// BoardMate v11.4.25: 포켓몬 미니마 솔로 저장
+const BOARDMATE_PM_SOLO_SAVE='boardmate:solo:pokemon-minima:v1';
+let __pmSoloAbandon=false;
+function boardmatePokemonSoloSave(){
+  if(!IS_SOLO_PARAM||IS_ONLINE_PARAM||__pmSoloAbandon||!G)return false;
+  try{localStorage.setItem(BOARDMATE_PM_SOLO_SAVE,JSON.stringify({G,uiState,savedAt:new Date().toISOString()}));return true;}catch(e){return false;}
+}
+function boardmatePokemonSoloRestore(){
+  if(!IS_SOLO_PARAM||IS_ONLINE_PARAM)return false;
+  const raw=localStorage.getItem(BOARDMATE_PM_SOLO_SAVE);if(!raw)return false;
+  try{const d=JSON.parse(raw);if(!d?.G)return false;G=d.G;if(d.uiState)uiState=d.uiState;render();return true;}catch(e){localStorage.removeItem(BOARDMATE_PM_SOLO_SAVE);return false;}
+}
+function boardmatePokemonSoloAbandon(){
+  __pmSoloAbandon=true;localStorage.removeItem(BOARDMATE_PM_SOLO_SAVE);window.top.location.href='./index.html#/solo';
+}
+
 // ─── 초기 실행 ───
 // 솔로 파라미터: 이름/모드 자동 설정
 if (IS_SOLO_PARAM && !G) {
-  // 설정 화면 건너뛰고 솔로 게임 바로 시작
-  G = newGame({ p1name: '트레이너', p2name: 'ARMIN', mode: 'solo', difficulty: 'normal' });
-  uiState = { selectedHandCard:null, selectedZooCells:[], pendingAction:null,
-    pendingCost:0, moneyCards:[], viewPlayer:0,
-    draftStep:0, draftCurrentPlayer:0, draftPassCards:[] };
-  startDraft();
+  if (!boardmatePokemonSoloRestore()) {
+    // 설정 화면 건너뛰고 솔로 게임 바로 시작
+    G = newGame({ p1name: '트레이너', p2name: 'ARMIN', mode: 'solo', difficulty: 'normal' });
+    uiState = { selectedHandCard:null, selectedZooCells:[], pendingAction:null,
+      pendingCost:0, moneyCards:[], viewPlayer:0,
+      draftStep:0, draftCurrentPlayer:0, draftPassCards:[] };
+    startDraft();
+  }
 }
 
 // 온라인 파라미터: 방장이면 설정, 게스트면 대기
@@ -1744,6 +1764,14 @@ if (IS_ONLINE_PARAM && !IS_ONLINE_IS_HOST) {
   render();
 }
 
+</script>
+<script>
+if(IS_SOLO_PARAM&&!IS_ONLINE_PARAM){
+  setInterval(boardmatePokemonSoloSave,1500);
+  window.addEventListener('beforeunload',boardmatePokemonSoloSave);
+  document.addEventListener('visibilitychange',()=>{if(document.hidden)boardmatePokemonSoloSave();});
+  window.addEventListener('DOMContentLoaded',()=>BoardMateSoloUI.install({save:()=>boardmatePokemonSoloSave(),abandon:()=>boardmatePokemonSoloAbandon()}));
+}
 </script>
 </body>
 </html>

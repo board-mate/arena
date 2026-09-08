@@ -131,6 +131,7 @@
     box-shadow: 0 4px 10px rgba(241, 196, 15, 0.4);
   }
 </style>
+<script src="./solo-save-ui.js"></script>
 </head>
 <body>
 <a href="./index.html#/solo" style="position:fixed;top:10px;left:10px;z-index:99;background:#111827;color:#fff;text-decoration:none;padding:8px 10px;border-radius:9px;font-weight:900;font-size:12px">← BoardMate 1인플</a>
@@ -415,5 +416,15 @@ function boardmateTheGameRestore(){try{const raw=localStorage.getItem(BOARDMATE_
 setInterval(boardmateTheGameSave,1500);window.addEventListener('beforeunload',boardmateTheGameSave);document.addEventListener('visibilitychange',()=>{if(document.hidden)boardmateTheGameSave()});
 </script>
 <div style="position:fixed;left:10px;top:10px;z-index:9999;display:flex;gap:6px"><a href="./index.html#/" style="background:#111827;color:white;border:2px solid #000;border-radius:999px;padding:8px 12px;font:800 12px system-ui;text-decoration:none;box-shadow:0 4px 12px #0004">← 홈</a><a href="./index.html#/solo" style="background:white;color:#111827;border:2px solid #000;border-radius:999px;padding:8px 12px;font:800 12px system-ui;text-decoration:none">1인플</a><button onclick="boardmateTheGameRestore()" style="background:#10b981;color:#052e16;border:2px solid #000;border-radius:999px;padding:7px 11px;font:900 12px system-ui;cursor:pointer">💾 이어하기</button></div>
+<script>
+window.addEventListener('DOMContentLoaded',()=>{
+  BoardMateSoloUI.install({
+    save:()=>boardmateTheGameSave(),
+    resume:()=>boardmateTheGameRestore(),
+    hasSave:()=>!!localStorage.getItem(BOARDMATE_THEGAME_SAVE),
+    abandon:()=>{G.active=false;localStorage.removeItem(BOARDMATE_THEGAME_SAVE);resetGame();}
+  });
+});
+</script>
 </body>
 </html>
