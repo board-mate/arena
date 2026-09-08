@@ -61,6 +61,39 @@ async function broadcastStateRevision(revision){
   }
 }
 
+// Fantasy Realms uses a private-per-room state row because player hands are secret.
+export async function loadFantasyState(){
+  const t=token();
+  if(!t)throw new Error('로그인이 필요합니다.');
+  await touchPresence();
+  return await rpc('get_boardmate_fantasy_state',{p_token:t,p_room_id:roomId});
+}
+export async function saveFantasyState(expectedRevision,publicState,privateStates){
+  const t=token();
+  if(!t)throw new Error('로그인이 필요합니다.');
+  await touchPresence();
+  const newRevision=await rpc('put_boardmate_fantasy_state',{
+    p_token:t,p_room_id:roomId,p_expected_revision:expectedRevision,
+    p_public_state:publicState,p_private_states:privateStates
+  });
+  void broadcastStateRevision(newRevision);
+  return Number(newRevision);
+}
+export async function sendRoomBroadcast(event,payload={}){
+  try{
+    const ch=await getStateChannel();
+    if(!ch)return false;
+    const result=await ch.send({type:'broadcast',event,payload});
+    return result==='ok';
+  }catch(e){console.warn(`[BoardMate Realtime] ${event} broadcast failed.`,e);return false;}
+}
+export async function subscribeRoomBroadcast(event,handler){
+  const ch=await getStateChannel();
+  if(!ch)return null;
+  ch.on('broadcast',{event},msg=>{try{handler(msg?.payload??msg);}catch(e){console.warn(`[BoardMate Realtime] ${event} handler failed.`,e);}});
+  return ch;
+}
+
 export async function saveState(expectedRevision,state){
   const t=token();
   if(!t)throw new Error('로그인이 필요합니다.');

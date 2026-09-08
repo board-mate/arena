@@ -9,8 +9,8 @@
 *{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at top,#26354d,#0f172a 58%);color:var(--text);font-family:system-ui,-apple-system,"Noto Sans KR",sans-serif;min-height:100vh}.app{max-width:1280px;margin:auto;padding:18px}.top{display:flex;gap:14px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-bottom:14px}.brand h1{font-size:clamp(24px,4vw,40px);margin:0;color:var(--gold);letter-spacing:-.04em}.brand p{margin:4px 0 0;color:var(--muted);font-size:14px}.badge{border:1px solid var(--line);background:#0b1220;border-radius:999px;padding:7px 11px;font-size:13px}.players{display:flex;flex-direction:column;gap:14px}.player-stack-panel{margin-top:14px}.player-stack-head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:0 2px 8px}.player-stack-head h2{margin:0;font-size:16px;color:var(--muted)}.player-row{width:100%;background:rgba(30,41,59,.94);border:1px solid var(--line);border-radius:14px;padding:12px;box-shadow:0 8px 24px rgba(0,0,0,.16)}.player-row.active{outline:2px solid var(--gold)}.player-head{display:flex;justify-content:space-between;align-items:center;gap:8px}.player-hand{display:flex;gap:8px;overflow-x:auto;overflow-y:hidden;padding:8px 2px 6px;min-height:190px;scrollbar-width:thin}.player-hand .card{flex:0 0 180px}.player.active{outline:2px solid var(--gold)}.player-head{display:flex;justify-content:space-between;align-items:center;gap:8px}.player-head h2{margin:0;font-size:19px}.score{font-size:22px;font-weight:800;color:var(--gold)}.hand{display:flex;gap:8px;overflow-x:auto;overflow-y:hidden;min-height:145px;margin-top:12px;padding:8px 2px 6px;scrollbar-width:thin}.card{width:122px;min-height:132px;border-radius:12px;border:1px solid rgba(255,255,255,.18);padding:9px;background:#374151;display:flex;flex-direction:column;justify-content:space-between;cursor:default;box-shadow:0 4px 10px rgba(0,0,0,.25);transition:.12s}.card.click{cursor:pointer}.card.click:hover{transform:translateY(-2px);outline:2px solid white}.card .name{font-weight:800;line-height:1.15}.card .effect{font-size:11px;line-height:1.35;margin-top:7px;padding-top:7px;border-top:1px solid rgba(255,255,255,.18)}.card .effect b{color:#fde68a}.card .pts{font-size:12px;font-weight:900;color:#fde68a;margin-top:5px}.card .configure{margin-top:7px;padding:5px 7px;border:0;border-radius:7px;font-weight:800;cursor:pointer;background:rgba(255,255,255,.18);color:white}.card.blanked-card{opacity:.52;filter:grayscale(.45)}.card .meta{font-size:12px;opacity:.9}.card .str{font-size:25px;font-weight:900}.land{background:#6b5b3e}.flood{background:#1d4e89}.weather{background:#586f7c}.flame{background:#8b2f2f}.army{background:#7f6b21}.wizard{background:#563d7c}.leader{background:#7c2d55}.beast{background:#3d6b45}.weapon{background:#4b5563}.artifact{background:#8a5a24}.wild{background:linear-gradient(135deg,#4c1d95,#0e7490)}.wide{margin-top:14px}.status{display:grid;grid-template-columns:1fr auto auto;gap:10px;align-items:center}.message{font-weight:800}.muted{color:var(--muted);font-weight:400;font-size:13px}.btn{border:0;border-radius:10px;padding:10px 13px;font-weight:800;cursor:pointer;background:#475569;color:white}.btn.primary{background:#a87907}.btn.good{background:#15803d}.btn.danger{background:#b91c1c}.btn:disabled{opacity:.45;cursor:not-allowed}.discard{display:flex;gap:8px;overflow-x:auto;overflow-y:hidden;padding:4px;scrollbar-width:thin}.discard .card{min-height:150px;width:180px}.hand .card{width:180px;min-height:175px;flex:0 0 180px}.rules{font-size:14px;line-height:1.6;color:#e2e8f0}.rules strong{color:var(--gold)}.setup{display:flex;align-items:end;gap:10px;flex-wrap:wrap}.field label{display:block;font-size:12px;color:var(--muted);margin-bottom:5px}.field select{min-width:140px}.turnshield{font-size:42px;text-align:center;margin:10px 0}.ranking{width:100%;border-collapse:collapse;margin-top:12px}.ranking th,.ranking td{padding:8px;border-bottom:1px solid var(--line);text-align:left}.ranking th:nth-child(n+2),.ranking td:nth-child(n+2){text-align:right}dialog{border:1px solid var(--line);border-radius:16px;background:#111827;color:white;max-width:720px;width:min(94vw,720px);padding:18px}dialog::backdrop{background:rgba(0,0,0,.82)}select,input{background:#0f172a;color:white;border:1px solid #475569;border-radius:8px;padding:9px;width:100%}.modal-row{margin:12px 0}.winner{font-size:28px;font-weight:900;color:var(--gold)}.small{font-size:12px;color:var(--muted)}@media(max-width:720px){.status{grid-template-columns:1fr}.player-hand .card,.hand .card{width:170px;min-width:170px;flex-basis:170px}.discard .card{width:150px;min-width:150px}.app{padding:10px}.panel{padding:11px}}
 </style>
 <script>var cursedHoardSuits=false; var playerCount=3;</script>
-<script src="https://fantasy-realms.github.io/js/deck.js?v=3" onerror="window.__bmFantasyDeckError=true"></script>
-<script src="https://fantasy-realms.github.io/js/hand.js?v=3" onerror="window.__bmFantasyHandError=true"></script>
+<script src="https://fantasy-realms.github.io/js/deck.js"></script>
+<script src="https://fantasy-realms.github.io/js/hand.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="./config.js"></script>
 </head>
@@ -29,7 +29,7 @@
       <a class="btn" href="./index.html#/multi">← 다인플</a>
     </div>
     <div id="seatList" style="margin-top:10px"></div>
-    <div class="small" id="roomHint" style="margin-top:8px">BoardMate 방 정보를 확인하는 중입니다…</div>
+    <div class="small" id="roomHint" style="margin-top:8px">공통 BoardMate 방 상태를 불러오는 중입니다.</div>
   </section>
 
   <section class="panel wide" id="gamePanel" style="display:none">
@@ -60,23 +60,8 @@
 <dialog id="actionDialog"><h2 id="actionTitle">특수 카드 설정</h2><div id="actionBody"></div><div style="display:flex;justify-content:flex-end;gap:8px"><button class="btn" id="skipAction">능력 사용 안 함</button><button class="btn good" id="saveAction">저장</button></div></dialog>
 <dialog id="endDialog"><div id="endBody"></div><div style="display:flex;justify-content:flex-end;margin-top:14px"><button class="btn primary" id="endClose">닫기</button></div></dialog>
 
-<script>
-window.__bmFantasyBootDone=false;
-window.__bmFantasyBootTimer=setTimeout(()=>{
-  if(window.__bmFantasyBootDone)return;
-  const hint=document.getElementById('roomHint');
-  const detail=window.__bmFantasyDeckError?'판타지 왕국 카드 데이터(js)를 불러오지 못했습니다.':
-               window.__bmFantasyHandError?'판타지 왕국 점수 데이터(js)를 불러오지 못했습니다.':
-               'BoardMate 공통 게임 데이터를 불러오지 못했습니다.';
-  if(hint){
-    hint.innerHTML='<b style="color:#fca5a5">'+detail+'</b><br><span>페이지를 새로고침하거나 다인플 방 목록에서 다시 들어와 주세요.</span>';
-    hint.insertAdjacentHTML('beforeend','<div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap"><button class="btn" type="button" onclick="location.reload()">↻ 다시 시도</button><a class="btn" href="./index.html#/multi">← 다인플</a></div>');
-  }
-  const badge=document.getElementById('netBadge'); if(badge) badge.textContent='불러오기 실패';
-},9000);
-</script>
 <script type="module">
-import {configured,roomId,getMe,loadRoom,loadFantasyState,saveFantasyState,submitMatch,subscribeRoomBroadcast,sendRoomBroadcast,touchPresence,showFatal} from './multi-common.js?v=18';
+import {configured,roomId,getMe,loadRoom,loadFantasyState,saveFantasyState,submitMatch,subscribeRoomBroadcast,sendRoomBroadcast,touchPresence,showFatal} from './multi-common.js?v=19';
 (() => {
 'use strict';
 const GAME_ID='fantasyrealms';
