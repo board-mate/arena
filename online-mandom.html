@@ -211,8 +211,6 @@ button { font: inherit; cursor: pointer; border: none; border-radius: 8px; }
 .result-panel p  { color: var(--text2); font-size: 13px; }
 
 /* ── 알림 배너 ───────────────────────────────────────── */
-.turn-order{display:grid;gap:7px;margin:12px auto;max-width:520px}.turn-order-row{display:flex;align-items:center;gap:8px;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:8px 10px;text-align:left}.turn-order-row .ord{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:var(--gold);color:#201500;font-weight:950}.turn-order-row .nm{flex:1;font-weight:850}.private-card{margin-top:12px;padding:14px;border:2px solid var(--gold);border-radius:14px;background:#171006;text-align:center}.private-card .monster-power{font-size:34px;font-weight:950;color:var(--accent)}.private-card .private-badge{font-size:11px;color:#ffd879;font-weight:900}.monster-list-card{margin-top:8px;border:2px solid #4b3a60;border-radius:10px;padding:7px 9px;font-size:11px;background:#120d19}.monster-list-card.warning{border-color:#d74b4b;background:#240b0b;color:#ffb5b5}.monster-list-card.dead{border-color:#6f1c1c;background:#090606;color:#a66;text-decoration:line-through}.own-secret{margin-top:8px;font-size:11px;color:#c9bdd8;line-height:1.55}
-
 .notice {
   background: #2a1838; border: 1px solid #5c4ea0;
   border-radius: 8px; padding: 10px 14px;
@@ -276,7 +274,7 @@ button { font: inherit; cursor: pointer; border: none; border-radius: 8px; }
 <script type="module">
 import {
   configured, roomId, getMe, loadRoom, loadState, saveState,
-  startStatePoll, esc, showFatal, endPanel
+  startStatePoll, esc, showFatal, endPanel, submitMatch
 } from './multi-common.js';
 
 if (!configured() || !roomId) showFatal('Supabase 설정 또는 room 주소가 없습니다.');
@@ -334,13 +332,13 @@ function calcHP(equippedItems) {
 
 // ── 초기 상태 ─────────────────────────────────────────────
 function setupState() {
-  return { kind: 'mandom-v2', setup: true, over: false, turnOrder: members.map((_,i)=>i), pendingDraws:{} };
+  return { kind: 'mandom-v1', setup: true, over: false };
 }
 
 function createGame() {
   const deck = shuffle(MONSTERS.map(m => m.id));
   return {
-    kind: 'mandom-v2',
+    kind: 'mandom-v1',
     setup: false,
     over: false,
     winner: null,
@@ -349,8 +347,6 @@ function createGame() {
     dungeon: [],       // 던전에 쌓인 몬스터 id 배열
     drawDeck: deck,    // 뽑을 덱
     withheld: {},      // { seat: [ {card, item} ] } — 제거된 카드+아이템
-    pendingDraws: {},   // seat -> 이번 턴에 본 몬스터. 화면에는 해당 플레이어에게만 표시
-    turnOrder: [],      // 플레이어들이 합의한 라운드 순서(seat 배열)
     // 플레이어 상태
     players: [],       // 세팅 후 채움
     currentTurn: 0,    // 현재 행동할 seat
@@ -374,6 +370,37 @@ function createGame() {
 let me, room, members, mySeat = -1;
 let state = null, revision = 0, saving = false;
 let pendingSwordResolve = null;
+let resultSubmitted = false;
+
+function monsterFamily(id) {
+  const raw = String(id || '');
+  const m = MONSTERS.find(x => x.id === raw);
+  if (!m) return raw.replace(/\d+$/, '');
+  return String(m.id).replace(/\d+$/, '');
+}
+function monsterFamilyLabel(family) {
+  const m = MONSTERS.find(x => monsterFamily(x.id) === family);
+  return m ? String(m.name).replace(/\s*[①②]\s*$/, '') : family;
+}
+async function maybeSubmitMandomResult() {
+  if (resultSubmitted || !state?.over || state.winner === null || room?.host_id !== me?.user_id) return;
+  resultSubmitted = true;
+  const winner = Number(state.winner);
+  const losers = state.players.map(p => Number(p.seat)).filter(seat => seat !== winner);
+  const orderSeats = [winner, ...losers];
+  const order = orderSeats.map(seat => members[seat]?.user_id).filter(Boolean);
+  if (order.length !== members.length) { resultSubmitted = false; return; }
+  try {
+    await submitMatch(order);
+    syncLabel('게임 종료 · 결과 반영');
+  } catch (e) {
+    if (!String(e?.message || e).toLowerCase().includes('already')) {
+      resultSubmitted = false;
+      syncLabel('게임 종료 · 결과 반영 재시도');
+      console.warn('Mandom match submit:', e);
+    }
+  }
+}
 
 // ── 상태 저장/갱신 ─────────────────────────────────────────
 async function mutate(fn) {
@@ -397,25 +424,12 @@ async function mutate(fn) {
 
 function syncLabel(t) { document.querySelector('#sync').textContent = t; }
 
-// ── 게임 시작 전 순서 정하기 ───────────────────────────────
-function moveSetupOrder(seat,delta){
-  if(room.host_id!==me.user_id||!state?.setup)return;
-  mutate(s=>{
-    const order=Array.isArray(s.turnOrder)&&s.turnOrder.length? [...s.turnOrder] : members.map((_,i)=>i);
-    const idx=order.indexOf(Number(seat)),ni=idx+Number(delta);
-    if(idx<0||ni<0||ni>=order.length)return;
-    [order[idx],order[ni]]=[order[ni],order[idx]];s.turnOrder=order;
-  });
-}
-
 // ── 게임 시작 (방장만) ────────────────────────────────────
 function startGame() {
   if (room.host_id !== me.user_id || !state.setup) return;
   mutate(s => {
-    const agreedOrder=(Array.isArray(s.turnOrder)&&s.turnOrder.length===members.length)?[...s.turnOrder]:members.map((_,i)=>i);
     Object.keys(s).forEach(k => delete s[k]);
     Object.assign(s, createGame());
-    s.turnOrder=agreedOrder;
     // 플레이어 초기화
     s.players = members.map((m, i) => ({
       user_id: m.user_id,
@@ -424,19 +438,17 @@ function startGame() {
       lives: 0,   // 0=fresh, 1=한번사망, 2=탈락
     }));
     s.scores = Object.fromEntries(members.map((m,i) => [i, {wins:0, lives:0}]));
-    s.currentTurn = s.turnOrder[0] ?? 0;
+    s.currentTurn = 0;
     s.passed = [];
   });
 }
 
 // ── 라운드 리셋 ───────────────────────────────────────────
 function resetRound(s) {
-  const previousChallenger=s.challenger;
   s.equippedItems = ITEMS.map(i => i.id);
   s.dungeon = [];
   s.drawDeck = shuffle(MONSTERS.map(m => m.id));
   s.withheld = {};
-  s.pendingDraws = {};
   s.passed = [];
   s.challenger = null;
   s.phase = 'betting';
@@ -445,12 +457,14 @@ function resetRound(s) {
   s.heroHP = BASE_HP;
   s.maxHP = BASE_HP;
   s.round++;
-  const aliveSet=new Set(s.players.filter(p => p.lives < 2).map(p => p.seat));
-  const order=(Array.isArray(s.turnOrder)&&s.turnOrder.length?s.turnOrder:s.players.map(p=>p.seat)).filter(x=>aliveSet.has(x));
-  if (!order.length) return;
-  const prevIdx=order.indexOf(previousChallenger);
-  s.currentTurn=order[(prevIdx>=0?prevIdx+1:0)%order.length];
-  s.logs.unshift(`── ${s.round}라운드 시작 · 순서 ${order.map(x=>members[x]?.nickname||x+1).join(' → ')}`);
+  // 다음 라운드 첫 플레이어 결정: 이전 도전자부터 (탈락하지 않은 다음 플레이어)
+  const alive = s.players.filter(p => p.lives < 2).map(p => p.seat);
+  if (alive.length === 0) return;
+  // 이전 도전자의 다음 살아있는 플레이어
+  let next = (s.challenger !== null ? s.challenger : 0);
+  next = alive.find(x => x > next) ?? alive[0];
+  s.currentTurn = next;
+  s.logs.unshift(`── ${s.round}라운드 시작`);
 }
 
 // ── 승리/탈락 체크 ────────────────────────────────────────
@@ -474,37 +488,30 @@ function checkEnd(s) {
 }
 
 // ── 플레이어 행동: 카드 뽑기 → 던전에 넣기 ───────────────
-function actionDrawMonster(){
-  mutate(s=>{
-    if(s.phase!=='betting'||s.currentTurn!==mySeat||s.pendingDraws?.[mySeat]||!s.drawDeck.length)return;
-    s.pendingDraws=s.pendingDraws||{};
-    s.pendingDraws[mySeat]=s.drawDeck.shift();
-    s.logs.unshift(`${members[mySeat].nickname} → 몬스터 카드 1장을 뽑아 확인`);
-  });
-}
-
-// 본 카드를 던전에 놓는다.
 function actionPlaceToDungeon() {
   mutate(s => {
     if (s.phase !== 'betting' || s.currentTurn !== mySeat) return;
-    const card=s.pendingDraws?.[mySeat]; if(!card)return;
-    s.dungeon.push(card); delete s.pendingDraws[mySeat];
-    s.logs.unshift(`${members[mySeat].nickname} → 확인한 몬스터를 던전에 추가 (${s.dungeon.length}장)`);
+    if (s.drawDeck.length === 0) return;
+    const card = s.drawDeck.shift();
+    s.dungeon.push(card);
+    const m = MONSTERS.find(x => x.id === card);
+    s.logs.unshift(`${members[mySeat].nickname} → 던전에 몬스터 카드 1장 추가 (${s.dungeon.length}장)`);
     advanceTurn(s);
   });
 }
 
-// 본 카드를 자기 앞에 두고 장비 토큰 하나를 함께 가져온다.
+// ── 플레이어 행동: 카드 뽑기 → 아이템 제거 ──────────────
 function actionRemoveItem(itemId) {
   mutate(s => {
     if (s.phase !== 'betting' || s.currentTurn !== mySeat) return;
-    const card=s.pendingDraws?.[mySeat]; if(!card)return;
     if (!s.equippedItems.includes(itemId)) return;
+    if (s.drawDeck.length === 0) return;
+    const card = s.drawDeck.shift();
     s.equippedItems = s.equippedItems.filter(x => x !== itemId);
     if (!s.withheld[mySeat]) s.withheld[mySeat] = [];
-    s.withheld[mySeat].push({ card, item: itemId }); delete s.pendingDraws[mySeat];
+    s.withheld[mySeat].push({ card, item: itemId });
     const item = ITEMS.find(x => x.id === itemId);
-    s.logs.unshift(`${members[mySeat].nickname} → 몬스터 1장과 [${item.name}]을 자기 앞에 가져감`);
+    s.logs.unshift(`${members[mySeat].nickname} → [${item.name}] 제거 (카드 1장 숨김)`);
     advanceTurn(s);
   });
 }
@@ -512,7 +519,7 @@ function actionRemoveItem(itemId) {
 // ── 패스 ─────────────────────────────────────────────────
 function actionPass() {
   mutate(s => {
-    if (s.phase !== 'betting' || s.currentTurn !== mySeat || s.pendingDraws?.[mySeat]) return;
+    if (s.phase !== 'betting' || s.currentTurn !== mySeat) return;
     if (!s.passed.includes(mySeat)) s.passed.push(mySeat);
     s.logs.unshift(`${members[mySeat].nickname} → 패스`);
     advanceTurn(s);
@@ -521,18 +528,39 @@ function actionPass() {
 
 // ── 턴 진행 로직 ──────────────────────────────────────────
 function advanceTurn(s) {
-  const aliveSet=new Set(s.players.filter(p => p.lives < 2).map(p => p.seat));
-  const order=(Array.isArray(s.turnOrder)&&s.turnOrder.length?s.turnOrder:s.players.map(p=>p.seat)).filter(x=>aliveSet.has(x));
-  const remaining = order.filter(x => !s.passed.includes(x));
+  const alive = s.players.filter(p => p.lives < 2).map(p => p.seat);
+  const remaining = alive.filter(x => !s.passed.includes(x));
 
-  // 다른 플레이어가 모두 패스하여 한 명만 남으면 그 플레이어가 용사다.
-  if (remaining.length === 1) { enterDungeon(s, remaining[0]); return; }
-  if (remaining.length === 0) return;
+  // 덱 소진: 강제 도전자 결정
+  if (s.drawDeck.length === 0 && remaining.length > 0) {
+    const c = remaining[0];
+    enterDungeon(s, c);
+    return;
+  }
 
-  let idx = order.indexOf(s.currentTurn), attempts = 0;
-  do { idx = (idx + 1) % order.length; attempts++; }
-  while (s.passed.includes(order[idx]) && attempts <= order.length);
-  s.currentTurn = order[idx];
+  // 1명 남은 경우: 도전자
+  if (remaining.length === 1) {
+    enterDungeon(s, remaining[0]);
+    return;
+  }
+
+  // 다음 살아있는 미패스 플레이어로 턴 이동
+  if (remaining.length === 0) {
+    // 전원 패스 — 마지막 행동 플레이어가 도전 (있을 경우)
+    const lastAlive = alive[alive.length - 1];
+    enterDungeon(s, lastAlive);
+    return;
+  }
+
+  // 순서대로 다음 미패스 플레이어 찾기
+  let idx = alive.indexOf(s.currentTurn);
+  let attempts = 0;
+  do {
+    idx = (idx + 1) % alive.length;
+    attempts++;
+  } while (s.passed.includes(alive[idx]) && attempts <= alive.length);
+
+  s.currentTurn = alive[idx];
 }
 
 // ── 던전 입장 ─────────────────────────────────────────────
@@ -573,7 +601,7 @@ function revealNextCard() {
     const cardId = s.dungeon.shift();
     const monster = MONSTERS.find(x => x.id === cardId);
     const blocked = itemBlocks(monster, s.equippedItems);
-    const namedHit = s.namedMonster === cardId;
+    const namedHit = Boolean(s.namedMonster) && monsterFamily(s.namedMonster) === monsterFamily(cardId);
     let damage = 0;
     if (!blocked && !namedHit) {
       damage = monster.power;
@@ -621,15 +649,16 @@ function render() {
     app.innerHTML = `
       <section class="card setup">
         <h2>⚔️ 맨덤의 던전</h2>
-        <p>플레이어끼리 행동 순서를 정한 뒤 시작합니다. 자신의 턴에는 <b>① 몬스터를 보고 던전에 놓기 ② 몬스터를 보고 자기 앞에 두며 장비 1개 가져오기 ③ 패스</b> 중 하나를 합니다.<br>다른 플레이어가 모두 패스하면 마지막 남은 플레이어가 용사가 되어 던전을 공략합니다.</p>
-        <div class="notice">던전 성공: 승리 토큰 ⭐ 1개 · 2개를 모으면 승리<br>던전 첫 실패: 몬스터 목록 카드가 🔴 빨간 테두리 · 다시 실패하면 탈락</div>
-        <div class="turn-order">${(state.turnOrder?.length?state.turnOrder:members.map((_,i)=>i)).map((seat,idx)=>`<div class="turn-order-row"><span class="ord">${idx+1}</span><span class="nm">${esc2(members[seat]?.nickname||`플레이어 ${seat+1}`)}</span>${room.host_id===me.user_id?`<button class="btn btn-ghost" data-order="${seat},-1" ${idx===0?'disabled':''}>↑</button><button class="btn btn-ghost" data-order="${seat},1" ${idx===(state.turnOrder?.length||members.length)-1?'disabled':''}>↓</button>`:''}</div>`).join('')}</div>
+        <p>던전을 두 번 정복하거나, 마지막에 살아남은 플레이어가 승리합니다.<br>
+        몬스터 카드를 보고 던전에 쌓거나 아이템을 제거하세요.<br>
+        아이템 제거 시 그 카드를 숨길 수 있습니다!</p>
         ${room.host_id === me.user_id
-          ? `<div class="row-btns" style="justify-content:center"><button class="btn btn-gold" id="start-btn">🗡️ 이 순서로 게임 시작</button></div>`
-          : `<p style="color:var(--muted);margin-top:12px">방장이 합의한 순서를 설정하고 게임을 시작할 때까지 기다리세요…</p>`}
+          ? `<div class="row-btns" style="justify-content:center">
+               <button class="btn btn-gold" id="start-btn">🗡️ 게임 시작</button>
+             </div>`
+          : `<p style="color:var(--muted);margin-top:12px">방장이 게임을 시작할 때까지 기다리세요…</p>`}
       </section>`;
     document.querySelector('#start-btn')?.addEventListener('click', startGame);
-    document.querySelectorAll('[data-order]').forEach(b=>b.addEventListener('click',()=>{const [seat,d]=b.dataset.order.split(',').map(Number);moveSetupOrder(seat,d);}));
     return;
   }
 
@@ -668,14 +697,13 @@ function render() {
     if (isMe) panelClass += ' is-me';
     if (eliminated) panelClass += ' eliminated';
 
-    const lifeStr = p.lives === 0 ? '몬스터 목록 카드 · 정상' : p.lives === 1 ? '몬스터 목록 카드 · 🔴 빨간 테두리' : '몬스터 목록 카드 · 탈락';
-    const lifeClass=p.lives===0?'':p.lives===1?'warning':'dead';
+    const lifeStr = p.lives === 0 ? '❤️❤️' : p.lives === 1 ? '💔❤️' : '☠️';
     const winStr  = '⭐'.repeat(p.wins) + '☆'.repeat(Math.max(0, 2 - p.wins));
 
     html += `<div class="${panelClass}">
       <h3>${esc2(members[i].nickname)}${isMe ? ' <small style="color:var(--muted)">(나)</small>' : ''}</h3>
       <div><span class="status-badge ${badgeClass}">${badgeText}</span></div>
-      <div class="monster-list-card ${lifeClass}">${lifeStr}</div><div style="font-size:13px;margin-top:6px">승리 토큰 ${winStr}</div>
+      <div style="font-size:13px;margin-top:6px">${lifeStr} ${winStr}</div>
     </div>`;
   });
   html += `</div></section>`;
@@ -699,20 +727,29 @@ function render() {
 
   /* ── 내 차례 행동 ── */
   if (isMyTurn && !state.over) {
-    const pendingId=state.pendingDraws?.[mySeat]||null;
-    const pending=MONSTERS.find(x=>x.id===pendingId);
-    if(!pendingId){
-      html += `<section class="my-turn-box"><h3>⚡ 내 차례 · 행동 1개 선택</h3>
-        <div class="notice">카드를 뽑으면 <b>그 카드 내용은 다른 플레이어 화면에는 표시하지 않음</b>됩니다. 확인 후 던전에 놓거나, 내 앞에 가져오면서 장비 1개를 가져가세요. 카드를 보기 전에 바로 패스할 수도 있습니다.</div>
-        <div class="row-btns"><button class="btn btn-primary" id="action-draw" ${!state.drawDeck.length?'disabled':''}>🃏 몬스터 카드 뽑아 확인</button><button class="btn btn-ghost" id="action-pass">🚪 패스</button></div>
-        ${!state.drawDeck.length?'<div class="notice">몬스터 덱이 비었습니다. 남은 플레이어들은 순서대로 패스하여 용사를 정합니다.</div>':''}</section>`;
-    }else{
-      html += `<section class="my-turn-box"><h3>👁️ 내가 뽑은 몬스터</h3><div class="private-card"><div class="private-badge">👁️ 내 화면 표시</div><div class="monster-power">${pending.power}</div><b>${esc2(pending.name)}</b><div style="margin-top:6px">${pending.icons.map(i=>ICON_MAP[i]).join(' ')||'장비 무력화 아이콘 없음'}</div></div>
-        <div class="row-btns" style="margin-top:10px"><button class="btn btn-primary" id="action-dungeon">🏰 이 몬스터를 던전에 놓기</button></div>
-        <div style="margin-top:10px;font-size:12px;color:var(--text2)">또는 이 몬스터를 내 앞에 가져오면서 장비 토큰 1개를 가져옵니다:</div><div class="items-row">${ITEMS.filter(item=>state.equippedItems.includes(item.id)).map(item=>`<button class="btn btn-danger" style="font-size:11px;padding:6px 10px" data-remove="${item.id}">${item.emoji} ${item.name} 가져오기</button>`).join('')}</div></section>`;
+    const canDraw = state.drawDeck.length > 0;
+    const canRemove = state.equippedItems.length > 0 && canDraw;
+    html += `<section class="my-turn-box">
+      <h3>⚡ 내 차례입니다!</h3>
+      <div class="row-btns">
+        <button class="btn btn-primary" id="action-dungeon" ${!canDraw ? 'disabled' : ''}>
+          🃏 카드 뽑아 던전에 추가
+        </button>
+        <button class="btn btn-ghost" id="action-pass">🚪 패스</button>
+      </div>`;
+    if (canRemove) {
+      html += `<div style="margin-top:10px;font-size:12px;color:var(--text2)">아이템 제거 (카드 뽑아 아이템 제거):</div>
+      <div class="items-row" id="remove-item-btns">`;
+      ITEMS.forEach(item => {
+        if (state.equippedItems.includes(item.id)) {
+          html += `<button class="btn btn-danger" style="font-size:11px;padding:6px 10px" data-remove="${item.id}">
+            ${item.emoji} ${item.name} 제거
+          </button>`;
+        }
+      });
+      html += `</div>`;
     }
-    const mineHidden=state.withheld?.[mySeat]||[];
-    if(mineHidden.length)html+=`<section class="card"><b>🔒 내가 앞에 가져온 몬스터</b><div class="own-secret">${mineHidden.map(x=>{const m=MONSTERS.find(v=>v.id===x.card),it=ITEMS.find(v=>v.id===x.item);return `${esc2(m?.name||x.card)} + ${it?.emoji||''}${esc2(it?.name||x.item)}`;}).join('<br>')}</div></section>`;
+    html += `</section>`;
   }
 
   /* ── 보검 선언 단계 ── */
@@ -721,9 +758,11 @@ function render() {
       <h3>⚔️ 용사의 검 — 몬스터 선언</h3>
       <p style="font-size:12px;color:var(--text2);margin-bottom:10px">무찌를 몬스터 1종을 선언하세요.</p>
       <div class="row-btns" id="sword-declare-btns">`;
-    MONSTERS.forEach(m => {
-      html += `<button class="btn btn-ghost" style="font-size:11px" data-sword="${m.id}">
-        ${m.name} (${m.power})
+    const swordFamilies = [...new Set(MONSTERS.map(m => monsterFamily(m.id)))];
+    swordFamilies.forEach(family => {
+      const representative = MONSTERS.find(m => monsterFamily(m.id) === family);
+      html += `<button class="btn btn-ghost" style="font-size:11px" data-sword="${representative.id}">
+        ${monsterFamilyLabel(family)} (${representative.power})
       </button>`;
     });
     html += `</div></section>`;
@@ -828,10 +867,10 @@ function render() {
   html += `</div></details></section>`;
 
   app.innerHTML = html;
+  if (state.over) void maybeSubmitMandomResult();
 
   /* ── 이벤트 바인딩 ── */
   document.querySelector('#start-btn')?.addEventListener('click', startGame);
-  document.querySelector('#action-draw')?.addEventListener('click', actionDrawMonster);
   document.querySelector('#action-dungeon')?.addEventListener('click', actionPlaceToDungeon);
   document.querySelector('#action-pass')?.addEventListener('click', actionPass);
   document.querySelectorAll('[data-remove]').forEach(btn => {
@@ -856,7 +895,6 @@ function render() {
     const row = await loadState();
     revision = row.revision;
     state = row.state;
-    if(state){state.turnOrder=Array.isArray(state.turnOrder)&&state.turnOrder.length?state.turnOrder:members.map((_,i)=>i);state.pendingDraws=state.pendingDraws||{};}
 
     if (!state && room.host_id === me.user_id) {
       state = setupState();

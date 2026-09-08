@@ -1,0 +1,9 @@
+BoardMate Arena v11.4.29 static validation
+- JS syntax: PASS for Mandom, Plakoro, Avalon, Secret Hitler, One Night Werewolf, multi-common, social-common
+- Mandom monster-family sword logic: PASS
+- Mandom result submission hook: PASS
+- Plakoro face-direction chips: PASS
+- Plakoro host direct roll + client retry: PASS
+- Plakoro setup SQL alias / current attack id validation: PASS
+- Universal cancel catalog includes Plakoro and current multiplayer ids: PASS
+- service worker cache key: boardmate-shell-v11.4.29

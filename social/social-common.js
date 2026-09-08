@@ -65,52 +65,26 @@ export function socialEndScreen({win,title='게임 종료',reason='',summary='',
 }
 
 
-/* ───────────────────── Social game unanimous cancel ───────────────────── */
-let socialCancelMounted=false,socialCancelTimer=null,socialCancelStopped=false,socialCancelClosed=false,socialCancelLatest=null;
-export async function cancelStatus(){
-  return await rpc('boardmate_get_cancel_status',{p_token:token(),p_room_id:roomId});
-}
-export async function setCancelVote(vote){
-  return await rpc('boardmate_set_cancel_vote',{p_token:token(),p_room_id:roomId,p_vote:Boolean(vote)});
-}
-function showSocialCancelled(){
-  if(socialCancelClosed)return;
-  socialCancelClosed=true;
-  socialCancelTimer&&clearInterval(socialCancelTimer);
-  const ov=document.createElement('div');
-  ov.style.cssText='position:fixed;inset:0;z-index:99999;background:#0f172aeF;display:grid;place-items:center;padding:18px;font-family:Pretendard,"Noto Sans KR",system-ui,sans-serif';
-  ov.innerHTML=`<section style="width:min(520px,100%);background:#fff;border-radius:22px;padding:28px;text-align:center;box-shadow:0 30px 90px #0006;color:#172033"><div style="font-size:48px">🛑</div><h2 style="margin:8px 0 6px">게임이 취소되었습니다</h2><p style="color:#64748b;line-height:1.6;margin:0">참가자 전원이 게임 취소에 동의했습니다.<br>이번 게임은 승패와 전적에 반영되지 않습니다.</p><div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:18px"><a href="./index.html#/" style="padding:10px 14px;border-radius:10px;background:#111827;color:#fff;font-weight:900">← 홈</a><a href="./index.html#/multi" style="padding:10px 14px;border-radius:10px;background:#f36f21;color:#fff;font-weight:900">다인플</a></div></section>`;
-  document.body.appendChild(ov);
-}
-export function mountSocialCancelControl(){
+// Universal unanimous cancellation for social-deduction games.
+let socialCancelMounted=false,socialCancelTimer=null;
+export async function mountSocialCancelControl(){
   if(socialCancelMounted||!roomId||!token()||!configured())return;
   socialCancelMounted=true;
   const wrap=document.createElement('div');
-  wrap.style.cssText='position:fixed;right:14px;bottom:14px;z-index:99990;font-family:Pretendard,"Noto Sans KR",system-ui,sans-serif';
-  wrap.innerHTML=`<button id="bmSocialCancelOpen" type="button" style="border:1px solid #fecaca;background:#fff;color:#b91c1c;border-radius:999px;padding:9px 12px;font-weight:900;box-shadow:0 8px 24px #0002;cursor:pointer">게임 취소</button>
-  <div id="bmSocialCancelPanel" hidden style="position:absolute;right:0;bottom:48px;width:min(340px,calc(100vw - 28px));background:#fff;color:#172033;border:1px solid #e5e7eb;border-radius:16px;padding:14px;box-shadow:0 18px 50px #0004">
-  <b style="display:block;margin-bottom:6px">🛑 게임 취소 투표</b>
-  <div id="bmSocialCancelText" style="font-size:12px;color:#64748b;line-height:1.55">투표 상태를 불러오는 중…</div>
-  <div id="bmSocialCancelVoters" style="font-size:11px;color:#94a3b8;margin-top:6px"></div>
-  <button id="bmSocialCancelVote" type="button" style="width:100%;margin-top:10px;border:0;border-radius:10px;padding:9px;font-weight:900;cursor:pointer;background:#fee2e2;color:#b91c1c">취소에 동의</button>
-  <button id="bmSocialCancelClose" type="button" style="width:100%;margin-top:6px;border:1px solid #e5e7eb;border-radius:10px;padding:8px;font-weight:800;cursor:pointer;background:#fff;color:#475569">닫기</button></div>`;
+  wrap.id='boardmate-social-cancel';
+  wrap.style.cssText='position:fixed;right:14px;bottom:14px;z-index:2147483000;font-family:Pretendard,"Noto Sans KR",system-ui,sans-serif';
+  wrap.innerHTML=`<button id="bmscOpen" type="button" style="border:1px solid #fecaca;background:#fff;color:#b91c1c;border-radius:999px;padding:9px 12px;font-weight:900;box-shadow:0 8px 24px #0002;cursor:pointer">게임 취소</button><div id="bmscPanel" hidden style="position:absolute;right:0;bottom:48px;width:min(330px,calc(100vw - 28px));background:white;color:#172033;border:1px solid #e5e7eb;border-radius:16px;padding:14px;box-shadow:0 18px 50px #0004"><b style="display:block;margin-bottom:5px">🛑 게임 취소 투표</b><div id="bmscText" style="font-size:12px;color:#64748b;line-height:1.55">투표 상태를 불러오는 중…</div><div id="bmscVoters" style="font-size:11px;color:#94a3b8;margin-top:6px"></div><button id="bmscVote" type="button" style="width:100%;margin-top:10px;border:0;border-radius:10px;padding:9px;font-weight:900;cursor:pointer;background:#fee2e2;color:#b91c1c">취소에 동의</button><button id="bmscClose" type="button" style="width:100%;margin-top:6px;border:1px solid #e5e7eb;border-radius:10px;padding:8px;font-weight:800;cursor:pointer;background:white;color:#475569">닫기</button></div>`;
   document.body.appendChild(wrap);
-  const open=wrap.querySelector('#bmSocialCancelOpen'),panel=wrap.querySelector('#bmSocialCancelPanel'),text=wrap.querySelector('#bmSocialCancelText'),voters=wrap.querySelector('#bmSocialCancelVoters'),voteBtn=wrap.querySelector('#bmSocialCancelVote'),close=wrap.querySelector('#bmSocialCancelClose');
-  open.onclick=()=>{panel.hidden=!panel.hidden;};
-  close.onclick=()=>{panel.hidden=true;};
-  voteBtn.onclick=async()=>{voteBtn.disabled=true;try{const nextVote=!Boolean(socialCancelLatest?.mine);const s=await setCancelVote(nextVote);renderCancelState(s);}catch(e){alert(e?.message||String(e));}finally{voteBtn.disabled=false;}};
-  function renderCancelState(s){
-    socialCancelLatest=s||null;
-    if(s?.cancelled){showSocialCancelled();return;}
-    const total=Number(s?.total||0),yes=Number(s?.yes||0),mine=Boolean(s?.mine);
-    text.textContent=`현재 ${yes}/${total}명 동의`;
-    voters.textContent=mine?'나는 취소에 동의한 상태입니다.':'아직 취소에 동의하지 않았습니다.';
-    voteBtn.textContent=mine?'동의 철회':'취소에 동의';
-    voteBtn.style.background=mine?'#f1f5f9':'#fee2e2';
-    voteBtn.style.color=mine?'#475569':'#b91c1c';
-    voteBtn.disabled=false;
-  }
-  const tick=async()=>{if(socialCancelStopped)return;try{renderCancelState(await cancelStatus());}catch(e){const m=String(e?.message||e);console.warn('[BoardMate social cancel]',e);if(/schema cache|boardmate_get_cancel_status|PGRST/i.test(m)){text.textContent='Supabase 게임 취소 RPC가 아직 적용되지 않았습니다.';voters.textContent='SUPABASE_REPAIR_ALL_GAMES_V27.sql을 실행하세요.';voteBtn.disabled=true;}}};
-  void tick();
-  socialCancelTimer=setInterval(tick,1500);
+  const panel=wrap.querySelector('#bmscPanel'),text=wrap.querySelector('#bmscText'),voters=wrap.querySelector('#bmscVoters'),vote=wrap.querySelector('#bmscVote');
+  let latest=null,busy=false;
+  const status=async()=>await rpc('boardmate_get_cancel_status',{p_token:token(),p_room_id:roomId});
+  const setVote=async(v)=>await rpc('boardmate_set_cancel_vote',{p_token:token(),p_room_id:roomId,p_vote:Boolean(v)});
+  const draw=st=>{latest=st;if(!st)return;const roomStatus=st.room_status||'';if(roomStatus!=='playing'){wrap.style.display='none';return;}wrap.style.display='block';text.textContent=`${Number(st.votes??st.yes??0)} / ${Number(st.members??st.total??0)}명 동의 · 전원이 동의하면 게임이 취소됩니다.`;voters.textContent=(st.voters||[]).length?`동의: ${(st.voters||[]).join(', ')}`:'';const mine=Boolean(st.mine);vote.textContent=mine?'동의 철회':'취소에 동의';vote.style.background=mine?'#f1f5f9':'#fee2e2';vote.style.color=mine?'#475569':'#b91c1c';};
+  const refresh=async()=>{if(busy)return;busy=true;try{draw(await status());}catch(e){wrap.style.display='block';text.textContent=`취소 투표를 불러오지 못했습니다: ${e.message||e}`; }finally{busy=false;}};
+  wrap.querySelector('#bmscOpen').onclick=()=>{panel.hidden=!panel.hidden;if(!panel.hidden)refresh();};
+  wrap.querySelector('#bmscClose').onclick=()=>panel.hidden=true;
+  vote.onclick=async()=>{if(busy)return;if(!latest?.mine&&!confirm('게임 취소에 동의할까요? 참가자 전원이 동의하면 이 게임은 승패 없이 종료됩니다.'))return;busy=true;vote.disabled=true;try{draw(await setVote(!latest?.mine));}catch(e){alert(e.message||e);}finally{busy=false;vote.disabled=false;}};
+  await refresh(); socialCancelTimer=setInterval(refresh,2500);
+  window.addEventListener('beforeunload',()=>socialCancelTimer&&clearInterval(socialCancelTimer),{once:true});
 }
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(()=>void mountSocialCancelControl(),0),{once:true});else setTimeout(()=>void mountSocialCancelControl(),0);
