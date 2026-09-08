@@ -41,12 +41,16 @@ function gameInfo(game){
     pocketnova:{name:'포켓몬 미니마',icon:'⚡',min:2,max:2,page:'online-pokemon-minima.html'},
     fantasyrealms:{name:'판타지 왕국',icon:'🏰',min:3,max:6,page:'online-fantasy-realms.html'},
     plakoro:{name:'프라코로',icon:'🎲',min:2,max:2,page:'online-plakoro.html'},
-    powergrid:{name:'파워그리드 독일 β',icon:'🔌',min:2,max:6,page:'online-powergrid.html'},
+    powergrid:{name:'파워그리드',icon:'🔌',min:3,max:6,page:'online-powergrid.html'},
     avalon:{name:'레지스탕스 아발론',icon:'⚔️',min:5,max:10,page:'online-avalon.html',mode:'realtime'},
     secrethitler:{name:'시크릿 히틀러',icon:'🗳️',min:5,max:10,page:'online-secret-hitler.html',mode:'realtime'},
     onenightwerewolf:{name:'한밤의 늑대인간',icon:'🌕',min:3,max:10,page:'online-one-night-werewolf.html',mode:'realtime'}
   };
   return map[game]||{name:game,icon:'🎲',min:2,max:6};
+}
+function gameEntryHref(room){
+  const gi=gameInfo(room.game);
+  return `./${gi.page||(`online-${room.game}.html`)}?room=${encodeURIComponent(room.id)}`;
 }
 
 function playerId(){
@@ -127,10 +131,9 @@ function footer(){
 }
 function shell(content){
   ensureSiteFeatures();
-  app.innerHTML=`<div class="app-shell"><header class="topbar"><button class="brand-btn" id="homeBtn"><span class="brand-mark">●</span> BOARDMATE</button><nav class="topnav"><button data-nav="">미니게임</button><button data-nav="solo">1인플</button><button data-nav="multi">다인플</button><button data-nav="mypage">마이페이지</button><button class="nav-install" id="topInstallBtn" type="button" title="BoardMate를 앱처럼 설치">📲 앱설치</button></nav><div class="top-date">${formatDate(kstDate())}</div></header><main class="container">${content}${footer()}</main></div>`;
+  app.innerHTML=`<div class="app-shell"><header class="topbar"><button class="brand-btn" id="homeBtn"><span class="brand-mark">●</span> BOARDMATE</button><nav class="topnav"><button data-nav="">미니게임</button><button data-nav="solo">1인플</button><button data-nav="multi">다인플</button><button data-nav="mypage">마이페이지</button></nav><div class="top-date">${formatDate(kstDate())}</div></header><main class="container">${content}${footer()}</main></div>`;
   document.querySelector('#homeBtn')?.addEventListener('click',()=>location.hash='#/');
   document.querySelectorAll('[data-nav]').forEach(b=>b.onclick=()=>location.hash=`#/${b.dataset.nav}`);
-  document.querySelector('#topInstallBtn')?.addEventListener('click',installBoardMate);
   const route=(location.hash||'#/').slice(2).split('/')[0];
   document.querySelectorAll('[data-nav]').forEach(b=>b.classList.toggle('active',(b.dataset.nav===''&&route==='')||b.dataset.nav===route));
 }
@@ -255,21 +258,9 @@ async function renderHome(){
   <section id="homeActiveGamesWrap" class="active-games-wrap hidden"><div class="section-title"><h2>▶ 진행 중인 게임</h2><small>자동 저장 · 재접속</small></div><div id="homeActiveGameList"></div></section>
   <div class="section-title"><h2>미니게임</h2><small>${formatDate(kstDate())} · KST</small></div><section class="game-grid daily-two">${homeCard('pensterdam','🧩','펜토리니','도움칸 적게 사용 → 동률이면 먼저 클리어')} ${homeCard('yahtzee','🎲','Yahtzee','언제든 플레이 · 올타임 최고 점수')}</section>
   <section class="home-mode-grid"><button class="mode-card" data-go="solo"><span>🧠</span><b>1인플 · AI/솔로</b><small>마스크맨 / 어콰이어 / 캘리코 / 캐스캐디아 / 포켓몬 미니마 / 더 게임</small></button><button class="mode-card" data-go="multi"><span>🌐</span><b>다인플 · 온라인 방</b><small>자동 저장 · 재접속 · 게임별 티어</small></button></section>
-  <section class="home-guide-grid" aria-label="BoardMate 안내">
-    <button class="home-guide-card install" type="button" data-guide="install"><span class="home-guide-icon">📲</span><div><b>앱 설치</b><small>브라우저에서 앱처럼 설치하기</small></div><em>›</em></button>
-    <button class="home-guide-card" type="button" data-guide="usage"><span class="home-guide-icon">📘</span><div><b>이용안내</b><small>회원가입 · 다인플 · 자동 저장 · 재접속</small></div><em>›</em></button>
-    <button class="home-guide-card" type="button" data-guide="copyright"><span class="home-guide-icon">©️</span><div><b>저작권 안내</b><small>비공식 커뮤니티 게임 서비스 안내</small></div><em>›</em></button>
-    <button class="home-guide-card" type="button" data-guide="contact"><span class="home-guide-icon">✉️</span><div><b>문의 안내</b><small>게임 오류 · 회원 문제 · 권리 문의</small></div><em>›</em></button>
-  </section>
-  <div id="connection"></div>`);
+    <div id="connection"></div>`);
 
   document.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>location.hash=`#/${b.dataset.go}`);
-  document.querySelectorAll('[data-guide]').forEach(b=>b.onclick=()=>{
-    const kind=b.dataset.guide;
-    if(kind==='install'){ installBoardMate(); return; }
-    location.hash=`#/${kind}`;
-  });
-
   const activeWrap=document.querySelector('#homeActiveGamesWrap');
   const activeList=document.querySelector('#homeActiveGameList');
   const loadHomeActiveGames=async()=>{
@@ -284,9 +275,9 @@ async function renderHome(){
       activeList.innerHTML=active.map(r=>{
         const gi=gameInfo(r.game);
         const myTurn=Boolean(r.turn_user_id===me.user_id);
-        return `<article class="room-row ${myTurn?'my-turn-room':''}"><div><div class="room-title"><span class="game-pill ${r.game}">${gi.icon} ${gi.name}</span><b>${esc(r.title)}</b>${myTurn?'<span class="turn-alert">내 차례</span>':''}</div><small>${esc(r.host_nickname||'방장')} · ${r.member_count}명${r.online_count!=null?` · 접속 ${r.online_count}명`:''} · 게임 중</small></div><button class="primary" data-home-room-action="${r.id}">${myTurn?'내 차례 플레이':'이어하기'}</button></article>`;
+        return `<article class="room-row ${myTurn?'my-turn-room':''}"><div><div class="room-title"><span class="game-pill ${r.game}">${gi.icon} ${gi.name}</span><b>${esc(r.title)}</b>${myTurn?'<span class="turn-alert">내 차례</span>':''}</div><small>${esc(r.host_nickname||'방장')} · ${r.member_count}명${r.online_count!=null?` · 접속 ${r.online_count}명`:''} · 게임 중</small></div><button class="primary" data-home-room-action="${r.id}" data-home-game-href="${gameEntryHref(r)}">${myTurn?'내 차례 플레이':'이어하기'}</button></article>`;
       }).join('');
-      activeList.querySelectorAll('[data-home-room-action]').forEach(b=>b.onclick=()=>location.hash=`#/room/${b.dataset.homeRoomAction}`);
+      activeList.querySelectorAll('[data-home-room-action]').forEach(b=>b.onclick=()=>{location.href=b.dataset.homeGameHref;});
     }catch(err){
       activeWrap.classList.add('hidden');
       console.warn('[BoardMate Home] active games load failed',err);
@@ -370,8 +361,8 @@ async function renderMulti(){
   shell(`<div class="page-head"><div><h1>🌐 다인플 · 온라인</h1><p>게임 상태는 행동마다 자동 저장됩니다. 브라우저를 닫아도 같은 방에서 이어할 수 있습니다.</p></div><div class="actions"><span class="login-chip">👤 ${esc(me.nickname)}</span><a class="ghost link-btn" href="#/mypage">마이페이지</a><a class="primary link-btn" href="#/new-room">＋ 방 만들기</a></div></div>
   <section id="activeGamesWrap" class="active-games-wrap hidden"><div class="section-title"><h2>▶ 진행 중인 게임</h2><small>자동 저장 · 재접속</small></div><div id="activeGameList"></div></section>
   <div class="section-title"><h2>열린 방</h2><button class="ghost mini" id="refreshRooms">새로고침</button></div><div id="roomList"><div class="empty">방을 불러오는 중…</div></div>`);
-  const roomCard=r=>{const gi=gameInfo(r.game),mine=Boolean(r.mine),full=Number(r.member_count)>=Number(r.max_players),playing=r.status==='playing',realtime=(r.play_mode==='realtime'||gi.mode==='realtime'),myTurn=!realtime&&playing&&mine&&r.turn_user_id===me.user_id,modeText=realtime?'⚡ 실시간':'⏳ 턴 기반';return `<article class="room-row ${playing&&mine?'resume-room':''} ${myTurn?'my-turn-room':''}"><div><div class="room-title"><span class="game-pill ${r.game}">${gi.icon} ${gi.name}</span><b>${esc(r.title)}</b>${myTurn?'<span class="turn-alert">내 차례</span>':''}</div><small>${modeText} · ${esc(r.host_nickname||'방장')} · ${r.member_count}명${r.online_count!=null?` · 접속 ${r.online_count}명`:''} · ${r.status==='open'?'대기 중':realtime?'실시간 진행 중':r.turn_nickname?`현재 ${esc(r.turn_nickname)} 차례`:'게임 중'}</small></div><button class="${mine?'primary':'ghost'}" data-room-action="${r.id}" data-mine="${mine?'1':'0'}" data-status="${r.status}" ${!mine&&r.status==='open'&&full?'disabled':''}>${mine?(playing?(myTurn?'내 차례 플레이':'이어하기'):'방으로'):r.status==='open'?(full?'가득 참':'참가'):'관전 불가'}</button></article>`;};
-  const bindRoomButtons=root=>root.querySelectorAll('[data-room-action]').forEach(b=>b.onclick=async()=>{if(b.dataset.mine==='1'){location.hash=`#/room/${b.dataset.roomAction}`;return;}if(b.dataset.status!=='open'||b.disabled)return;try{await callRpc('join_boardmate_room',{p_token:memberToken(),p_room_id:b.dataset.roomAction});location.hash=`#/room/${b.dataset.roomAction}`;}catch(err){toast(err.message);}});
+  const roomCard=r=>{const gi=gameInfo(r.game),mine=Boolean(r.mine),full=Number(r.member_count)>=Number(r.max_players),playing=r.status==='playing',realtime=(r.play_mode==='realtime'||gi.mode==='realtime'),myTurn=!realtime&&playing&&mine&&r.turn_user_id===me.user_id,modeText=realtime?'⚡ 실시간':'⏳ 턴 기반';return `<article class="room-row ${playing&&mine?'resume-room':''} ${myTurn?'my-turn-room':''}"><div><div class="room-title"><span class="game-pill ${r.game}">${gi.icon} ${gi.name}</span><b>${esc(r.title)}</b>${myTurn?'<span class="turn-alert">내 차례</span>':''}</div><small>${modeText} · ${esc(r.host_nickname||'방장')} · ${r.member_count}명${r.online_count!=null?` · 접속 ${r.online_count}명`:''} · ${r.status==='open'?'대기 중':realtime?'실시간 진행 중':r.turn_nickname?`현재 ${esc(r.turn_nickname)} 차례`:'게임 중'}</small></div><button class="${mine?'primary':'ghost'}" data-room-action="${r.id}" data-mine="${mine?'1':'0'}" data-status="${r.status}" data-game-href="${gameEntryHref(r)}" ${!mine&&r.status==='open'&&full?'disabled':''}>${mine?(playing?(myTurn?'내 차례 플레이':'이어하기'):'방으로'):r.status==='open'?(full?'가득 참':'참가'):'관전 불가'}</button></article>`;};
+  const bindRoomButtons=root=>root.querySelectorAll('[data-room-action]').forEach(b=>b.onclick=async()=>{if(b.dataset.mine==='1'){if(b.dataset.status==='playing'){location.href=b.dataset.gameHref;return;}location.hash=`#/room/${b.dataset.roomAction}`;return;}if(b.dataset.status!=='open'||b.disabled)return;try{await callRpc('join_boardmate_room',{p_token:memberToken(),p_room_id:b.dataset.roomAction});location.hash=`#/room/${b.dataset.roomAction}`;}catch(err){toast(err.message);}});
   const loadRooms=async()=>{const box=document.querySelector('#roomList'),activeBox=document.querySelector('#activeGameList'),wrap=document.querySelector('#activeGamesWrap');if(!box)return;try{const rooms=await callRpc('boardmate_list_rooms',{p_token:memberToken()})||[];const active=rooms.filter(r=>r.mine&&r.status==='playing'),open=rooms.filter(r=>r.status==='open');if(active.length){wrap.classList.remove('hidden');activeBox.innerHTML=active.map(roomCard).join('');bindRoomButtons(activeBox);}else wrap.classList.add('hidden');box.innerHTML=open.length?open.map(roomCard).join(''):'<div class="empty">현재 열린 방이 없습니다.</div>';bindRoomButtons(box);}catch(err){box.innerHTML=`<div class="empty">${esc(err.message)}</div>`;}};
   document.querySelector('#refreshRooms').onclick=loadRooms;await loadRooms();const timer=setInterval(loadRooms,3000);addCleanup(()=>clearInterval(timer));
 }
