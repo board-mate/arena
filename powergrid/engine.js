@@ -1,9 +1,9 @@
 /*!
- * BoardMate Power Grid Recharged - Multiplayer Core Engine v28
+ * BoardMate Power Grid Recharged - Multiplayer Core Engine v26
  * -----------------------------------------------------------------
  * 다인플 전용. 브라우저와 Node(CommonJS)에서 동일 규칙 엔진을 사용한다.
  * 독일 보드의 42개 도시 / 83개 연결비 그래프를 내장해 도시 건설 비용을
- * 자동 계산한다. 솔로/AI/미국/한국 지도 코드는 이 체크포인트에서 제외했다.
+ * 자동 계산한다. 다인플에서는 독일/미국 지도만 지원한다.
  *
  * Germany network data attribution is documented in
  * powergrid/data/germany-map.js and POWERGRID_GERMANY_DATA_AUDIT.md.
@@ -183,7 +183,7 @@
     germany: {
       id:'germany', name:'독일', mode:'leaflet',
       featureTitle:'독일맵 특징',
-      rules:{ uraniumStopOnPlant39:true, usaCoalStorage:false, koreaSplitMarkets:false },
+      rules:{ uraniumStopOnPlant39:true, usaCoalStorage:false },
       features:[
         '재충전 규칙: 누군가 시장에 나온 39번 발전소를 구매하면 이후 매 정리 단계 우라늄 보충이 영구 중단됩니다.',
         '39번 발전소가 팔리지 않거나 등장하지 않으면 우라늄 보충 중단은 적용되지 않습니다.',
@@ -195,25 +195,14 @@
     usa: {
       id:'usa', name:'미국', mode:'leaflet',
       featureTitle:'미국맵 특징',
-      rules:{ uraniumStopOnPlant39:false, usaCoalStorage:true, koreaSplitMarkets:false },
+      rules:{ uraniumStopOnPlant39:false, usaCoalStorage:true },
       features:[
         '실물 미국 보드 사진을 기준으로 재작성한 42개 도시 · 87개 연결 데이터를 사용합니다. 각 권역은 7개 도시입니다.',
         '미국 석탄 저장고: 시장과 별도로 저장고의 석탄을 1개당 8 Elektro로 구매할 수 있습니다.',
         '정리 단계의 석탄 보충은 저장고의 석탄을 시장으로 되돌립니다.',
-        '실물판에 인쇄된 연결선만 사용하며, 해주–고양 같은 비존재 연결은 추가하지 않습니다. 수도권의 인접 0원 연결도 실물판 선에 맞춰 반영합니다.',
-      ]
-    },
-    korea: {
-      id:'korea', name:'한국', mode:'leaflet',
-      featureTitle:'한국맵 특징',
-      rules:{ uraniumStopOnPlant39:false, usaCoalStorage:false, koreaSplitMarkets:true },
-      features:[
-        '실물 한국 보드 사진 기준 42개 도시 · 81개 연결 구조를 사용합니다. 각 권역은 7개 도시입니다.',
-        '실제 한국 지도를 배경으로 각 도시의 위경도 좌표에 마커를 표시합니다.',
-        '제주 권역은 전라 권역의 목포에서 19원으로 연결됩니다.',
         '연결비는 지도 선 위 숫자 배지와 화면 아래 연결비 표에서 확인할 수 있습니다.'
       ]
-    }
+    },
   };
 
   function makeGeneratedMap(boardId, boardName, regionNames, cityNames, edgesList) {
@@ -257,7 +246,7 @@
   }
 
   // ============================================================
-  // V26 real-board map rebuild: USA + Korea
+  // V29 supported board maps: Germany + USA
   // ============================================================
   var USA_MAP; (function buildUSAMap() {
     var regionIds = ['r0','r1','r2','r3','r4','r5'];
@@ -411,218 +400,7 @@
     USA_MAP={BOARD_WIDTH:900,BOARD_HEIGHT:900,REGIONS:REGIONS,REGION_ORDER:regionIds,REGION_ADJ:REGION_ADJ,REGION_SHADE_POLYGONS:null,CITIES:cityDefs,CITY_BY_ID:CITY_BY_ID,EDGES:edgeDefs,citiesForRegions:citiesForRegions,regionsConnected:regionsConnected,normalizeCity:normalizeCity,abstract:false,boardName:'미국',GEO_CENTER:[38.5,-96.5],GEO_ZOOM:4,GEO_BOUNDS:[[24.0,-125.5],[50.5,-66.0]]};
   })();
 
-  var KOREA_MAP; (function buildKOREAMap() {
-    // Power Grid: Korea — physical board graph (42 cities / 81 connections).
-    // The topology is transcribed from the uploaded Korean board photo and
-    // cross-checked against the public board-game-networks Korea dataset.
-    // IMPORTANT: only printed board connections are included; no inferred edges.
-    var regionIds = ['r0','r1','r2','r3','r4','r5'];
-    var REGIONS = {
-      r0:{ id:'r0', name:'북서 · 연보라', shortName:'북서', color:'#caa6d8' },
-      r1:{ id:'r1', name:'북동 · 적갈', shortName:'북동', color:'#b86b6b' },
-      r2:{ id:'r2', name:'수도권 · 보라', shortName:'수도권', color:'#9b78b3' },
-      r3:{ id:'r3', name:'중동부 · 갈색', shortName:'중동부', color:'#9c8169' },
-      r4:{ id:'r4', name:'호남 · 초록', shortName:'호남', color:'#6e9f62' },
-      r5:{ id:'r5', name:'영남 · 노랑', shortName:'영남', color:'#d5bd62' },
-    };
-
-    // Keep stable KR_* identifiers within this corrected V28 map snapshot.
-    // Region membership follows the physical board's six 7-city regions.
-    var cityDefs = [
-      // 북서 / Pink
-      {id:"KR_01",name:"신의주",lat:40.10000,lng:124.40000,region:'r0'},
-      {id:"KR_02",name:"강계",lat:40.97000,lng:126.60000,region:'r0'},
-      {id:"KR_03",name:"안주",lat:39.62000,lng:125.66000,region:'r0'},
-      {id:"KR_04",name:"평양",lat:39.04000,lng:125.76000,region:'r0'},
-      {id:"KR_05",name:"남포",lat:38.74000,lng:125.40000,region:'r0'},
-      {id:"KR_06",name:"황주",lat:38.68000,lng:125.77000,region:'r0'},
-      {id:"KR_07",name:"해주",lat:38.04000,lng:125.71000,region:'r0'},
-
-      // 북동 / Red
-      {id:"KR_08",name:"나진",lat:42.25000,lng:130.30000,region:'r1'},
-      {id:"KR_09",name:"청진",lat:41.78000,lng:129.78000,region:'r1'},
-      {id:"KR_10",name:"경성",lat:41.60000,lng:129.50000,region:'r1'},
-      {id:"KR_11",name:"혜산",lat:41.40000,lng:128.18000,region:'r1'},
-      {id:"KR_12",name:"김책",lat:40.67000,lng:129.20000,region:'r1'},
-      {id:"KR_13",name:"함흥",lat:39.91000,lng:127.54000,region:'r1'},
-      {id:"KR_14",name:"원산",lat:39.15000,lng:127.44000,region:'r1'},
-
-      // 수도권 / Purple
-      {id:"KR_15",name:"개성",lat:37.97000,lng:126.55000,region:'r2'},
-      {id:"KR_16",name:"서울",lat:37.57000,lng:126.98000,region:'r2'},
-      {id:"KR_17",name:"고양",lat:37.66000,lng:126.83000,region:'r2'},
-      {id:"KR_18",name:"인천",lat:37.46000,lng:126.71000,region:'r2'},
-      {id:"KR_19",name:"용인",lat:37.24000,lng:127.18000,region:'r2'},
-      {id:"KR_20",name:"안양",lat:37.39000,lng:126.96000,region:'r2'},
-      {id:"KR_21",name:"수원",lat:37.26000,lng:127.03000,region:'r2'},
-
-      // 중동부 / Brown
-      {id:"KR_22",name:"속초",lat:38.20700,lng:128.59100,region:'r3'},
-      {id:"KR_23",name:"춘천",lat:37.88000,lng:127.73000,region:'r3'},
-      {id:"KR_24",name:"강릉",lat:37.75000,lng:128.88000,region:'r3'},
-      {id:"KR_25",name:"원주",lat:37.34000,lng:127.92000,region:'r3'},
-      {id:"KR_26",name:"동해",lat:37.52000,lng:129.11000,region:'r3'},
-      {id:"KR_27",name:"삼척",lat:37.45000,lng:129.17000,region:'r3'},
-      {id:"KR_28",name:"태백",lat:37.16400,lng:128.98500,region:'r3'},
-
-      // 호남 / Green
-      {id:"KR_29",name:"충주",lat:36.97000,lng:127.93000,region:'r4'},
-      {id:"KR_30",name:"청주",lat:36.64000,lng:127.49000,region:'r4'},
-      {id:"KR_31",name:"대전",lat:36.35000,lng:127.38000,region:'r4'},
-      {id:"KR_32",name:"전주",lat:35.82000,lng:127.15000,region:'r4'},
-      {id:"KR_33",name:"광주",lat:35.16000,lng:126.85000,region:'r4'},
-      {id:"KR_34",name:"나주",lat:35.02000,lng:126.72000,region:'r4'},
-      {id:"KR_35",name:"제주",lat:33.50000,lng:126.53000,region:'r4'},
-
-      // 영남 / Yellow
-      {id:"KR_36",name:"안동",lat:36.57000,lng:128.73000,region:'r5'},
-      {id:"KR_37",name:"상주",lat:36.41000,lng:128.16000,region:'r5'},
-      {id:"KR_38",name:"경주",lat:35.86000,lng:129.22000,region:'r5'},
-      {id:"KR_39",name:"대구",lat:35.87000,lng:128.60000,region:'r5'},
-      {id:"KR_40",name:"울산",lat:35.54000,lng:129.31000,region:'r5'},
-      {id:"KR_41",name:"진주",lat:35.18000,lng:128.11000,region:'r5'},
-      {id:"KR_42",name:"부산",lat:35.18000,lng:129.08000,region:'r5'},
-    ];
-
-    // One entry per physical board edge. Reverse traversal is added by the
-    // engine's graph routines, so do not duplicate edges here.
-    var edgeDefs = [
-      // 북서
-      {a:"KR_02",b:"KR_11",cost:20},
-      {a:"KR_02",b:"KR_13",cost:19},
-      {a:"KR_02",b:"KR_03",cost:22},
-      {a:"KR_02",b:"KR_01",cost:25},
-      {a:"KR_01",b:"KR_03",cost:13},
-      {a:"KR_03",b:"KR_13",cost:20},
-      {a:"KR_03",b:"KR_04",cost:7},
-      {a:"KR_03",b:"KR_05",cost:10},
-      {a:"KR_04",b:"KR_13",cost:23},
-      {a:"KR_04",b:"KR_14",cost:18},
-      {a:"KR_04",b:"KR_15",cost:14},
-      {a:"KR_04",b:"KR_06",cost:4},
-      {a:"KR_04",b:"KR_05",cost:5},
-      {a:"KR_05",b:"KR_06",cost:4},
-      {a:"KR_06",b:"KR_07",cost:8},
-      {a:"KR_07",b:"KR_15",cost:8},
-
-      // 북동
-      {a:"KR_08",b:"KR_09",cost:8},
-      {a:"KR_09",b:"KR_10",cost:4},
-      {a:"KR_10",b:"KR_12",cost:16},
-      {a:"KR_10",b:"KR_11",cost:18},
-      {a:"KR_11",b:"KR_12",cost:14},
-      {a:"KR_11",b:"KR_13",cost:23},
-      {a:"KR_12",b:"KR_13",cost:17},
-      {a:"KR_13",b:"KR_14",cost:11},
-
-      // 수도권 / 북동·중동부와의 경계 연결 포함
-      {a:"KR_15",b:"KR_14",cost:18},
-      {a:"KR_15",b:"KR_23",cost:13},
-      {a:"KR_15",b:"KR_17",cost:7},
-      {a:"KR_16",b:"KR_23",cost:8},
-      {a:"KR_16",b:"KR_19",cost:2},
-      {a:"KR_16",b:"KR_17",cost:0},
-      {a:"KR_17",b:"KR_20",cost:0},
-      {a:"KR_17",b:"KR_18",cost:0},
-      {a:"KR_18",b:"KR_20",cost:0},
-      {a:"KR_19",b:"KR_23",cost:9},
-      {a:"KR_19",b:"KR_25",cost:8},
-      {a:"KR_19",b:"KR_29",cost:10},
-      {a:"KR_19",b:"KR_30",cost:10},
-      {a:"KR_19",b:"KR_21",cost:2},
-      {a:"KR_20",b:"KR_21",cost:3},
-      {a:"KR_21",b:"KR_30",cost:10},
-      {a:"KR_23",b:"KR_25",cost:7},
-      {a:"KR_23",b:"KR_14",cost:19},
-
-      // 중동부
-      {a:"KR_22",b:"KR_24",cost:6},
-      {a:"KR_22",b:"KR_25",cost:15},
-      {a:"KR_22",b:"KR_23",cost:10},
-      {a:"KR_22",b:"KR_14",cost:18},
-      {a:"KR_24",b:"KR_26",cost:4},
-      {a:"KR_24",b:"KR_25",cost:12},
-      {a:"KR_25",b:"KR_26",cost:14},
-      {a:"KR_25",b:"KR_28",cost:13},
-      {a:"KR_25",b:"KR_29",cost:5},
-      {a:"KR_28",b:"KR_27",cost:5},
-      {a:"KR_28",b:"KR_36",cost:8},
-      {a:"KR_28",b:"KR_29",cost:13},
-      {a:"KR_26",b:"KR_27",cost:0},
-
-      // 호남
-      {a:"KR_29",b:"KR_36",cost:11},
-      {a:"KR_29",b:"KR_37",cost:9},
-      {a:"KR_29",b:"KR_30",cost:7},
-      {a:"KR_30",b:"KR_37",cost:8},
-      {a:"KR_30",b:"KR_31",cost:4},
-      {a:"KR_31",b:"KR_37",cost:8},
-      {a:"KR_31",b:"KR_39",cost:15},
-      {a:"KR_31",b:"KR_32",cost:9},
-      {a:"KR_32",b:"KR_39",cost:16},
-      {a:"KR_32",b:"KR_41",cost:15},
-      {a:"KR_32",b:"KR_33",cost:11},
-      {a:"KR_33",b:"KR_41",cost:14},
-      {a:"KR_33",b:"KR_34",cost:2},
-      {a:"KR_34",b:"KR_41",cost:15},
-      {a:"KR_34",b:"KR_35",cost:19},
-
-      // 영남
-      {a:"KR_36",b:"KR_38",cost:11},
-      {a:"KR_36",b:"KR_39",cost:10},
-      {a:"KR_36",b:"KR_37",cost:6},
-      {a:"KR_37",b:"KR_39",cost:9},
-      {a:"KR_38",b:"KR_40",cost:3},
-      {a:"KR_38",b:"KR_39",cost:7},
-      {a:"KR_39",b:"KR_40",cost:10},
-      {a:"KR_39",b:"KR_42",cost:12},
-      {a:"KR_39",b:"KR_41",cost:11},
-      {a:"KR_40",b:"KR_42",cost:7},
-      {a:"KR_41",b:"KR_42",cost:11},
-    ];
-
-    // Defensive assertions catch accidental map drift immediately during load.
-    if (cityDefs.length !== 42) throw new Error('한국 지도 도시 수 오류: ' + cityDefs.length);
-    if (edgeDefs.length !== 81) throw new Error('한국 지도 연결 수 오류: ' + edgeDefs.length);
-
-    var CITY_BY_ID={}; cityDefs.forEach(function(c){CITY_BY_ID[c.id]=c;});
-    function regionAdjacency(){var out={};regionIds.forEach(function(r){out[r]=[];});edgeDefs.forEach(function(e){var ra=CITY_BY_ID[e.a].region,rb=CITY_BY_ID[e.b].region;if(ra===rb)return;if(out[ra].indexOf(rb)<0)out[ra].push(rb);if(out[rb].indexOf(ra)<0)out[rb].push(ra);});return out;}
-    var REGION_ADJ=regionAdjacency();
-    function regionsConnected(ids){ids=(ids||[]).filter(function(r,i,a){return REGIONS[r]&&a.indexOf(r)===i;});if(!ids.length)return false;var allow={},seen={},q=[ids[0]];ids.forEach(function(r){allow[r]=true;});seen[ids[0]]=true;while(q.length){var r=q.shift();(REGION_ADJ[r]||[]).forEach(function(n){if(allow[n]&&!seen[n]){seen[n]=true;q.push(n);}});}return ids.every(function(r){return seen[r];});}
-    function citiesForRegions(ids){var set={};(ids||[]).forEach(function(r){set[r]=true;});return cityDefs.filter(function(c){return set[c.region];}).map(function(c){return c.id;});}
-    function normalizeCity(v){var raw=String(v||'').trim().toUpperCase();for(var i=0;i<cityDefs.length;i++){if(cityDefs[i].id===raw||cityDefs[i].name.toUpperCase()===raw)return cityDefs[i].id;}if(raw==='나진')return 'KR_08';if(raw==='라선')return 'KR_08';return null;}
-    KOREA_MAP={BOARD_WIDTH:900,BOARD_HEIGHT:900,REGIONS:REGIONS,REGION_ORDER:regionIds,REGION_ADJ:REGION_ADJ,REGION_SHADE_POLYGONS:null,CITIES:cityDefs,CITY_BY_ID:CITY_BY_ID,EDGES:edgeDefs,citiesForRegions:citiesForRegions,regionsConnected:regionsConnected,normalizeCity:normalizeCity,abstract:false,boardName:'한국',GEO_CENTER:[37.6,127.5],GEO_ZOOM:6,GEO_BOUNDS:[[33.0,124.0],[42.8,131.0]]};
-  })();
-
-  // v19 geographic rendering metadata. Germany still uses attachGeo.
-  function attachGeo(map, coordByName, opts) {
-    map.CITIES.forEach(function(c){
-      var p=coordByName[c.name];
-      if (p) { c.lat=p[0]; c.lng=p[1]; }
-    });
-    map.GEO_CENTER=opts.center;
-    map.GEO_ZOOM=opts.zoom;
-    map.GEO_BOUNDS=opts.bounds;
-    return map;
-  }
-
-  attachGeo(GERMANY, {
-    'Flensburg':[54.7937,9.4469],'Kiel':[54.3233,10.1228],'Cuxhaven':[53.8593,8.6879],
-    'Hamburg':[53.5511,9.9937],'Wilhelmshaven':[53.5299,8.1122],'Bremen':[53.0793,8.8017],
-    'Hannover':[52.3759,9.7320],'Lübeck':[53.8655,10.6866],'Rostock':[54.0924,12.0991],
-    'Schwerin':[53.6355,11.4012],'Torgelow':[53.6347,14.0090],'Magdeburg':[52.1205,11.6276],
-    'Berlin':[52.5200,13.4050],'Frankfurt (Oder)':[52.3471,14.5506],'Osnabrück':[52.2799,8.0472],
-    'Münster':[51.9607,7.6261],'Duisburg':[51.4344,6.7623],'Essen':[51.4556,7.0116],
-    'Dortmund':[51.5136,7.4653],'Kassel':[51.3127,9.4797],'Düsseldorf':[51.2277,6.7735],
-    'Halle':[51.4969,11.9688],'Leipzig':[51.3397,12.3731],'Erfurt':[50.9848,11.0299],
-    'Dresden':[51.0504,13.7373],'Fulda':[50.5558,9.6808],'Würzburg':[49.7913,9.9534],
-    'Nürnberg':[49.4521,11.0767],'Aachen':[50.7753,6.0839],'Köln':[50.9375,6.9603],
-    'Trier':[49.7499,6.6371],'Wiesbaden':[50.0782,8.2398],'Frankfurt am Main':[50.1109,8.6821],
-    'Saarbrücken':[49.2402,6.9969],'Mannheim':[49.4875,8.4660],'Stuttgart':[48.7758,9.1829],
-    'Augsburg':[48.3705,10.8978],'Regensburg':[49.0134,12.1016],'Freiburg':[47.9990,7.8421],
-    'Konstanz':[47.6779,9.1732],'München':[48.1351,11.5820],'Passau':[48.5667,13.4319]
-  }, {center:[51.2,10.4],zoom:6,bounds:[[47.2,5.5],[55.3,15.6]]});
-  var BOARD_MAPS = { germany: GERMANY, usa: USA_MAP, korea: KOREA_MAP };
+  var BOARD_MAPS = { germany: GERMANY, usa: USA_MAP };
   function mapData(boardId){ return BOARD_MAPS[boardId || 'germany'] || GERMANY; }
 
   function adjacency() {
