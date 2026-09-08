@@ -181,7 +181,7 @@ button:disabled{opacity:.4;cursor:not-allowed}
   .game-area{grid-template-columns:1fr;grid-template-rows:auto}
   .zoo-grid{grid-template-rows:repeat(3,70px)}
 }
-</style>
+.pokemon-card-art{width:58px;height:58px;object-fit:contain;display:block;margin:-2px auto 4px;filter:drop-shadow(0 4px 5px rgba(0,0,0,.28))}.zoo-pokemon-art{width:52px;height:52px;object-fit:contain;display:block;margin:0 auto 3px;filter:drop-shadow(0 3px 4px rgba(0,0,0,.28))} .card-header{position:relative;min-height:64px}.card-header .pokemon-card-art{position:absolute;right:0;top:0;width:52px;height:52px}.card-header .card-name{padding-right:48px}</style>
 </head>
 <body>
 <div id="root"></div>
@@ -661,6 +661,24 @@ function icon(type){
   return `<span class="icon tooltip" style="background:${t.color}22;border:1px solid ${t.color}66;color:${t.color}" title="${t.ko}">${t.emoji}</span>`;
 }
 
+const POKEMON_ART={
+  c01:'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/133.png',
+  c02:'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/25.png',
+  c03:'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/4.png',
+  c04:'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/7.png',
+  c05:'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/1.png',
+  c06:'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/137.png',
+  c07:'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/6.png',
+  c08:'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/9.png',
+  c09:'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/3.png',
+  c10:'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/466.png',
+  c11:'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/59.png',
+  c12:'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/45.png',
+  c13:'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/131.png',
+  c14:'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/65.png',
+  c15:'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/94.png',
+  c16:'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/130.png'
+};
 function renderCard(cardId, opts={}){
   const card = cardById(cardId);
   if(!card) return '';
@@ -677,10 +695,12 @@ function renderCard(cardId, opts={}){
     small?'small-card':'',
   ].filter(Boolean).join(' ');
 
+  const art=POKEMON_ART[cardId];
   return `<div class="${cls}" data-card-id="${cardId}">
     <span class="card-state-badge ${stateClass[state]||'state-ready'}">${stateMap[state]||state}</span>
     <div class="card-header">
       <div class="card-name">${card.name}<small>${card.latin}</small></div>
+      ${art?`<img class="pokemon-card-art" src="${art}" alt="${card.name}" loading="lazy" onerror="this.style.display='none'">`:''}
       ${card.starter?'<span title="시작 카드">⚡</span>':''}
     </div>
     <div class="card-stats">
@@ -731,6 +751,7 @@ function renderZoo(player, playerIdx, interactive=false){
       const cls = ['zoo-cell','has-pokemon',cell.state==='conserved'?'conserved':''].join(' ');
       return `<div class="${cls}" data-cell="${idx}" data-player="${playerIdx}">
         <div class="cell-content">
+          ${POKEMON_ART[cell.cardId]?`<img class="zoo-pokemon-art" src="${POKEMON_ART[cell.cardId]}" alt="${card?.name||'포켓몬'}" loading="lazy" onerror="this.style.display='none'">`:''}
           <div class="cell-poke">${card?.name||'?'}<small>${card?.latin||''}</small></div>
           <div class="icon-row" style="justify-content:center">${(card?.icons||[]).map(ic=>icon(ic)).join('')}</div>
           <div style="font-size:.62rem;color:var(--muted)">${cell.state==='conserved'?'🔒보존':'🎟'+card?.appeal}</div>
@@ -1553,7 +1574,7 @@ function useXToken(){
   render();
 }
 
-function nextTurn(){
+function nextTurnCore(){
   const cp=G.currentPlayer;
   // 덱 체크
   if(G.deck.length===0){
@@ -1671,7 +1692,7 @@ if (IS_ONLINE_PARAM) {
 }
 
 // 상태 저장: 온라인 모드일 때 부모에 postMessage
-const _origNextTurn = nextTurn;
+const _origNextTurn = nextTurnCore;
 function nextTurn() {
   _origNextTurn();
   if (IS_ONLINE_PARAM && G) {

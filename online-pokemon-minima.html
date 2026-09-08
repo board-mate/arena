@@ -240,7 +240,7 @@ window.addEventListener('message', e => {
     frame = document.getElementById('gameFrame');
     const names   = encodeURIComponent(JSON.stringify(members.map(m => m.nickname)));
     const isHost  = room.host_id === me.user_id ? '1' : '0';
-    frame.src = `./pokemon-minima.html?online=1&seat=${mySeat}&host=${isHost}&names=${names}`;
+    frame.src = `./pokemon-minima.html?v=23&online=1&seat=${mySeat}&host=${isHost}&names=${names}`;
     frame.addEventListener('load', sendState);
 
     showEnd();
