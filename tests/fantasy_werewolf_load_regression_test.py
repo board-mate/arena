@@ -61,7 +61,7 @@ check('function werewolfLoadError' in werewolf and 'SUPABASE_REPAIR_FANTASY_WERE
       'Werewolf shows actionable repair guidance')
 
 sw = read('sw.js')
-check("boardmate-shell-v11.4.20" in sw, 'service worker cache bumped to v11.4.20')
+check("boardmate-shell-v11.4.21" in sw, 'service worker cache bumped to v11.4.21')
 
 verify = read('SUPABASE_VERIFY_FANTASY_WEREWOLF_V20.sql')
 for fn in ['get_boardmate_fantasy_state','put_boardmate_fantasy_state','boardmate_social_init','boardmate_social_view','boardmate_social_action']:

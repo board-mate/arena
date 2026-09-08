@@ -42,6 +42,11 @@ function gameInfo(game){
     fantasyrealms:{name:'판타지 왕국',icon:'🏰',min:3,max:6,page:'online-fantasy-realms.html'},
     plakoro:{name:'프라코로',icon:'🎲',min:2,max:2,page:'online-plakoro.html'},
     powergrid:{name:'파워그리드',icon:'🔌',min:3,max:6,page:'online-powergrid.html'},
+    quacks:{name:'돌팔이 약장수',icon:'🧪',min:2,max:4,page:'online-quacks.html',mode:'realtime'},
+    mandom:{name:'맨덤의 던전',icon:'⚔️',min:2,max:4,page:'online-mandom.html'},
+    samurai:{name:'사무라이 PVP',icon:'⛩️',min:2,max:4,page:'online-samurai.html'},
+    eldorado:{name:'엘도라도',icon:'🧭',min:2,max:4,page:'online-eldorado.html'},
+    airlandsea:{name:'에어 랜드 & 씨',icon:'✈️',min:2,max:2,page:'online-airlandsea.html'},
     avalon:{name:'레지스탕스 아발론',icon:'⚔️',min:5,max:10,page:'online-avalon.html',mode:'realtime'},
     secrethitler:{name:'시크릿 히틀러',icon:'🗳️',min:5,max:10,page:'online-secret-hitler.html',mode:'realtime'},
     onenightwerewolf:{name:'한밤의 늑대인간',icon:'🌕',min:3,max:10,page:'online-one-night-werewolf.html',mode:'realtime'}
@@ -257,7 +262,7 @@ async function renderHome(){
   shell(`<section class="hero"><div><h1><span>BoardMate</span> Arcade</h1><p>보드메이트에서 같이 즐기는 웹 보드게임 공간.<br>미니게임, AI 연습, 로그인 기반 온라인 방을 한 곳에 모았습니다.</p><div class="social-links"><a class="social-link" href="${LINKS.instagram}" target="_blank" rel="noreferrer">📷 Instagram</a><a class="social-link" href="${LINKS.somoim}" target="_blank" rel="noreferrer">👥 소모임</a><a class="social-link" href="${LINKS.shop}" target="_blank" rel="noreferrer">🛍 마플샵</a></div></div><div class="hero-badge">🎲</div></section>
   <section id="homeActiveGamesWrap" class="active-games-wrap hidden"><div class="section-title"><h2>▶ 진행 중인 게임</h2><small>자동 저장 · 재접속</small></div><div id="homeActiveGameList"></div></section>
   <div class="section-title"><h2>미니게임</h2><small>${formatDate(kstDate())} · KST</small></div><section class="game-grid daily-two">${homeCard('pensterdam','🧩','펜토리니','도움칸 적게 사용 → 동률이면 먼저 클리어')} ${homeCard('yahtzee','🎲','Yahtzee','언제든 플레이 · 올타임 최고 점수')}</section>
-  <section class="home-mode-grid"><button class="mode-card" data-go="solo"><span>🧠</span><b>1인플 · AI/솔로</b><small>마스크맨 / 어콰이어 / 캘리코 / 캐스캐디아 / 포켓몬 미니마 / 더 게임</small></button><button class="mode-card" data-go="multi"><span>🌐</span><b>다인플 · 온라인 방</b><small>자동 저장 · 재접속 · 게임별 티어</small></button></section>
+  <section class="home-mode-grid"><button class="mode-card" data-go="solo"><span>🧠</span><b>1인플 · AI/솔로</b><small>마스크맨 / 어콰이어 / 캘리코 / 캐스캐디아 / 포켓몬 미니마 / 더 게임 / 커피 로스터</small></button><button class="mode-card" data-go="multi"><span>🌐</span><b>다인플 · 온라인 방</b><small>자동 저장 · 재접속 · 게임별 티어</small></button></section>
     <div id="connection"></div>`);
 
   document.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>location.hash=`#/${b.dataset.go}`);
@@ -306,6 +311,7 @@ function renderSolo(){
     <article class="library-card cascadia"><div class="library-icon">🌲</div><h2>캐스캐디아</h2><p>공개 Cascadia 웹 구현을 BoardMate 상단바 안에서 엽니다.</p><span class="save-badge external">외부 게임 · BoardMate 저장 제외</span><a class="primary link-btn" href="./solo-cascadia.html">솔로 게임 열기</a></article>
     <article class="library-card pocketnova"><div class="library-icon">⚡</div><h2>포켓몬 미니마</h2><p>1~2인용 포켓몬 미니마를 브라우저에서 플레이합니다.</p><span class="save-badge">💾 로컬 저장 · 1~2인</span><a class="primary link-btn" href="./solo-pokemon-minima.html">1인플 플레이</a></article>
     <article class="library-card thegame"><div class="library-icon">🃏</div><h2>더 게임</h2><p>업로드한 HTML로 1인 솔로 플레이. ±10 되돌리기 규칙을 지원합니다.</p><span class="save-badge">💾 로컬 자동 저장</span><a class="primary link-btn" href="./solo-thegame.html">솔로 플레이</a></article>
+    <article class="library-card coffee-roaster"><div class="library-icon">☕</div><h2>커피 로스터</h2><p>원두 로스팅 1인 게임. 풀메뉴 또는 트라이얼로 플레이합니다.</p><span class="save-badge">💾 브라우저 내 플레이</span><a class="primary link-btn" href="./solo-coffee-roaster.html">솔로 플레이</a></article>
   </section>`);
   document.querySelector('#backHome').onclick=()=>location.hash='#/';
 }
@@ -348,11 +354,50 @@ async function renderMyPage(){
 
 async function renderCreateRoom(){
   if(!onlineConfigured())return renderMulti();const me=await authProfile();if(!me){location.hash='#/login';return;}
-  const games=['maskmen','acquire','calico','cascadia','pocketnova','plakoro','powergrid','thegame','kraken','fantasyrealms','avalon','secrethitler','onenightwerewolf'];let selected='maskmen';
+  const games=['maskmen','acquire','calico','cascadia','pocketnova','plakoro','powergrid','quacks','mandom','samurai','eldorado','airlandsea','thegame','kraken','fantasyrealms','avalon','secrethitler','onenightwerewolf'];let selected='maskmen';
   shell(`<div class="page-head"><div><h1>➕ 새 방 만들기</h1><p>게임을 고르고 바로 방을 만드세요. 제목을 비우면 닉네임과 게임 이름으로 자동 생성됩니다.</p></div><div class="actions"><button class="ghost" id="backMulti">← 방 목록</button></div></div><section class="room-maker"><label>방 제목 <small>선택 사항</small></label><input id="roomTitle" maxlength="40" placeholder="비워두면 예: ${esc(me.nickname)}의 마스크맨 한 판"><div class="turn-system-note"><b>⏳ 모든 게임은 BoardMate Supabase 방 + Realtime</b><span>판타지 왕국도 다른 게임과 동일한 방 생성·참가·재접속 흐름으로 운영됩니다.</span></div><h2>게임 선택</h2><div id="roomGameGrid" class="library-grid compact-games">${games.map(g=>{const x=gameInfo(g);return `<button class="library-card game-choice ${g==='maskmen'?'selected':''}" data-room-game="${g}"><div class="library-icon">${x.icon}</div><h2>${x.name}</h2><p>${x.min}명부터 · 최대 ${x.max}명</p></button>`;}).join('')}</div><button class="primary create-room-submit" id="createRoomBtn">선택한 게임으로 방 만들기</button><div id="roomStatus" class="bonus-note"></div></section>`);
   document.querySelector('#backMulti').onclick=()=>location.hash='#/multi';
   document.querySelectorAll('[data-room-game]').forEach(b=>b.onclick=()=>{selected=b.dataset.roomGame;document.querySelectorAll('[data-room-game]').forEach(x=>x.classList.toggle('selected',x===b));const title=document.querySelector('#roomTitle');if(!title.value)title.placeholder=`비워두면 예: ${me.nickname}의 ${gameInfo(selected).name} 한 판`;});
-  document.querySelector('#createRoomBtn').onclick=async()=>{const title=document.querySelector('#roomTitle').value.trim(),st=document.querySelector('#roomStatus');st.textContent='';const social=['avalon','secrethitler','onenightwerewolf'].includes(selected);try{let id;try{id=await callRpc('create_boardmate_room_v10',{p_token:memberToken(),p_title:title,p_game:selected});}catch(v10e){const v10missing=/create_boardmate_room_v10|PGRST202|schema cache/i.test(String(v10e?.message||v10e));if(!v10missing)throw v10e;if(social)throw new Error('소셜 디덕션 Supabase 업데이트가 필요합니다. SUPABASE_SOCIAL_DEDUCTION_V1.sql을 먼저 실행하세요.');if(selected==='plakoro')throw new Error('프라코로용 Supabase 업데이트가 필요합니다. SUPABASE_BOARDMATE_GAME_CATALOG_V2.sql을 먼저 실행하세요.');try{id=await callRpc('create_boardmate_room_v9',{p_token:memberToken(),p_title:title,p_game:selected});}catch(v9e){const v9missing=/create_boardmate_room_v9|PGRST202|schema cache/i.test(String(v9e?.message||v9e));if(!v9missing)throw v9e;if(selected==='powergrid')throw new Error('파워그리드용 Supabase 업데이트가 필요합니다. SUPABASE_POWERGRID_UNIFIED.sql을 먼저 실행하세요.');try{id=await callRpc('create_boardmate_room_v8',{p_token:memberToken(),p_title:title,p_game:selected});}catch(e){const missing=/create_boardmate_room_v8|PGRST202|schema cache/i.test(String(e?.message||e));if(!missing)throw e;try{id=await callRpc('create_boardmate_room_v7',{p_token:memberToken(),p_title:title,p_game:selected,p_play_mode:'turn'});}catch(fallbackErr){const fallbackMissing=/create_boardmate_room_v7|PGRST202|schema cache|지원하지 않는 게임/i.test(String(fallbackErr?.message||fallbackErr));if(fallbackMissing)throw new Error('Supabase 방 생성 RPC가 아직 적용되지 않았습니다. SQL 업데이트를 적용한 뒤 다시 시도하세요.');throw fallbackErr;}}}}location.hash=`#/room/${id}`;}catch(e){st.textContent=e.message;}};
+  document.querySelector('#createRoomBtn').onclick=async()=>{
+    const title=document.querySelector('#roomTitle').value.trim(),st=document.querySelector('#roomStatus');
+    st.textContent='';
+    const social=['avalon','secrethitler','onenightwerewolf'].includes(selected);
+    const v21Games=['quacks','mandom','samurai','eldorado','airlandsea'];
+    try{
+      let id;
+      try{
+        id=await callRpc('create_boardmate_room_v10',{p_token:memberToken(),p_title:title,p_game:selected});
+      }catch(v10e){
+        const msg=String(v10e?.message||v10e);
+        const v10missing=/create_boardmate_room_v10|PGRST202|schema cache/i.test(msg);
+        const catalogRejected=/지원하지 않는 게임|boardmate_rooms_game_check|violates check constraint/i.test(msg);
+        if(v21Games.includes(selected)&&(v10missing||catalogRejected)){
+          throw new Error('새 게임용 Supabase 업데이트가 필요합니다. SUPABASE_REPAIR_ALL_GAMES_V21.sql을 SQL Editor에서 실행하세요.');
+        }
+        if(!v10missing)throw v10e;
+        if(social)throw new Error('소셜 디덕션 Supabase 업데이트가 필요합니다. SUPABASE_REPAIR_ALL_GAMES_V21.sql을 먼저 실행하세요.');
+        if(selected==='plakoro')throw new Error('프라코로용 Supabase 업데이트가 필요합니다. SUPABASE_REPAIR_ALL_GAMES_V21.sql을 먼저 실행하세요.');
+        try{id=await callRpc('create_boardmate_room_v9',{p_token:memberToken(),p_title:title,p_game:selected});}
+        catch(v9e){
+          const v9missing=/create_boardmate_room_v9|PGRST202|schema cache/i.test(String(v9e?.message||v9e));
+          if(!v9missing)throw v9e;
+          if(selected==='powergrid')throw new Error('파워그리드용 Supabase 업데이트가 필요합니다. SUPABASE_REPAIR_ALL_GAMES_V21.sql을 먼저 실행하세요.');
+          try{id=await callRpc('create_boardmate_room_v8',{p_token:memberToken(),p_title:title,p_game:selected});}
+          catch(e){
+            const missing=/create_boardmate_room_v8|PGRST202|schema cache/i.test(String(e?.message||e));
+            if(!missing)throw e;
+            try{id=await callRpc('create_boardmate_room_v7',{p_token:memberToken(),p_title:title,p_game:selected,p_play_mode:'turn'});}
+            catch(fallbackErr){
+              const fallbackMissing=/create_boardmate_room_v7|PGRST202|schema cache|지원하지 않는 게임/i.test(String(fallbackErr?.message||fallbackErr));
+              if(fallbackMissing)throw new Error('Supabase 방 생성 RPC가 아직 적용되지 않았습니다. SUPABASE_REPAIR_ALL_GAMES_V21.sql을 적용한 뒤 다시 시도하세요.');
+              throw fallbackErr;
+            }
+          }
+        }
+      }
+      location.hash=`#/room/${id}`;
+    }catch(e){st.textContent=e.message;}
+  };
 }
 
 async function renderMulti(){
@@ -381,7 +426,7 @@ async function renderRoom(roomId){
     shell(`<div class="page-head"><div><h1>${gi.icon} ${esc(room.title)}</h1><p>${gi.name} · ${modeText} · 현재 ${members.length}명 · ${room.status==='open'?'대기 중':room.status==='playing'?'게임 중':'종료'}</p></div><div class="actions"><button class="ghost" id="backMulti">← 방 목록</button></div></div>
     <section class="lobby-card"><h2>참여 인원</h2><div class="member-list">${members.map(m=>{const t=tierInfo(m),online=Boolean(m.connected);return `<div class="member-row"><span class="seat-no">${Number(m.seat)+1}</span><span class="presence ${online?'online':'offline'}">${online?'● 접속':'○ 끊김'}</span><span class="tier ${t.cls}" title="${esc(t.title||'')}">${t.text}</span><b>${esc(m.nickname)}</b>${m.user_id===room.host_id?'<small>방장</small>':''}${room.status==='open'&&isHost&&m.user_id!==room.host_id?`<button class="kick-btn" data-kick="${m.user_id}">강퇴</button>`:''}</div>`;}).join('')}</div>
     <div class="lobby-actions">${room.status==='open'&&isHost?`<button class="primary" id="startRoom" ${members.length<min?'disabled':''}>${members.length<min?`${min}명부터 시작 가능`:'게임 시작'}</button>`:''}${room.status==='open'?'<button class="danger" id="leaveRoom">방 나가기</button>':''}${room.status==='playing'?`<a class="primary link-btn" href="./${gameInfo(room.game).page||(`online-${room.game}.html`)}?room=${encodeURIComponent(room.id)}">이어하기 / 게임 입장</a><button class="ghost" id="disconnectRoom">나가기 (게임 저장 유지)</button>`:''}</div>
-    <p class="pento-tip">게임 상태는 행동할 때마다 Supabase에 자동 저장됩니다. 브라우저를 닫거나 다른 페이지로 나가도 참가 자리는 남으며, 다인플의 ‘진행 중인 게임’에서 다시 들어올 수 있습니다.</p><p class="pento-tip">${realtime?'이 게임은 실시간 소셜 디덕션 게임입니다. 역할·투표·정책/야간 정보는 각 참가자에게 필요한 정보만 표시됩니다.':'모두가 동시에 접속할 필요는 없습니다. 방 목록에서 ‘내 차례’를 확인하고 자기 차례에 들어오면 됩니다. 모두 접속해 빠르게 진행해도 같은 방식으로 동작합니다.'} 방장은 대기실에서 참가자를 강퇴할 수 있습니다.</p></section>`);
+    <p class="pento-tip">게임 상태는 행동할 때마다 Supabase에 자동 저장됩니다. 브라우저를 닫거나 다른 페이지로 나가도 참가 자리는 남으며, 다인플의 ‘진행 중인 게임’에서 다시 들어올 수 있습니다.</p><p class="pento-tip">${['avalon','secrethitler','onenightwerewolf'].includes(room.game)?'이 게임은 실시간 소셜 디덕션 게임입니다. 역할·투표·정책/야간 정보는 각 참가자에게 필요한 정보만 표시됩니다.':room.game==='quacks'?'돌팔이 약장수는 여러 플레이어가 같은 라운드에서 각자 행동하는 동시 진행형 게임입니다. 상태 변경은 자동 동기화됩니다.':'모두가 동시에 접속할 필요는 없습니다. 방 목록에서 ‘내 차례’를 확인하고 자기 차례에 들어오면 됩니다. 모두 접속해 빠르게 진행해도 같은 방식으로 동작합니다.'} 방장은 대기실에서 참가자를 강퇴할 수 있습니다.</p></section>`);
     document.querySelector('#backMulti').onclick=()=>location.hash='#/multi';
     document.querySelector('#startRoom')?.addEventListener('click',async()=>{try{await callRpc('start_boardmate_room',{p_token:memberToken(),p_room_id:roomId});location.href=`./${gameInfo(room.game).page||(`online-${room.game}.html`)}?room=${encodeURIComponent(room.id)}`;}catch(e){toast(e.message);}});
     document.querySelector('#leaveRoom')?.addEventListener('click',async()=>{try{await callRpc('leave_boardmate_room',{p_token:memberToken(),p_room_id:roomId});location.hash='#/multi';}catch(e){toast(e.message);}});

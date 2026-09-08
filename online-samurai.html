@@ -1,0 +1,1597 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>사무라이 PVP 2-4인 온라인 · Board-Mate Arena</title>
+<meta name="board-mate-game-id" content="samurai-pvp"/>
+<meta name="board-mate-game-name" content="사무라이 PVP"/>
+<meta name="board-mate-min-players" content="2"/>
+<meta name="board-mate-max-players" content="4"/>
+<meta name="board-mate-multiplayer" content="true"/>
+<script type="application/json" id="boardMateGameManifest">{"id":"samurai-pvp","name":"사무라이 PVP","version":"1.0.0","minPlayers":2,"maxPlayers":4,"multiplayer":true,"turnBased":true,"entry":"single-html","stateMode":"shared"}</script>
+<style>
+:root{
+  --ink:#2a1f1a;--muted:#7a6a62;--paper:#fdf8f0;--panel:#ffffffee;
+  --accent:#8b1a1a;--accent2:#d4841a;--gold:#c8922a;
+  --line:#e8ddd5;--shadow:0 14px 36px rgba(80,40,20,.14);
+  --sea:#b8d4e8;--land:#e8dfc8;--village:#f5e8c0;--city:#e0c890;--edo:#d4a840;
+}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;font-family:system-ui,-apple-system,"Segoe UI","Noto Sans KR",sans-serif;color:var(--ink);
+  background:radial-gradient(circle at 10% 10%,rgba(200,146,42,.18),transparent 24%),
+  radial-gradient(circle at 90% 5%,rgba(139,26,26,.14),transparent 22%),
+  linear-gradient(135deg,#fdf8f0,#f5ede0 55%,#eef0e8)}
+button,input,select{font:inherit}button{cursor:pointer}button:disabled{cursor:not-allowed;opacity:.45}
+.hidden{display:none!important}
+.app{max-width:1400px;margin:0 auto;padding:16px}
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;flex-wrap:wrap}
+.brand h1{font-size:clamp(1.3rem,3vw,2rem);margin:0;color:#6b1414;font-weight:900}
+.brand .sub{font-size:.85rem;color:var(--muted);margin-top:3px}
+.top-actions{display:flex;flex-wrap:wrap;gap:7px;justify-content:flex-end}
+.btn{border:1px solid #c4b0a0;background:#fff;color:var(--ink);border-radius:10px;padding:8px 12px;font-weight:700;box-shadow:0 2px 6px rgba(80,40,20,.06);transition:all .12s}
+.btn:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 4px 12px rgba(80,40,20,.10)}
+.btn.primary{border-color:#8b1a1a;background:linear-gradient(135deg,#9e2020,#6b1414);color:#fff}
+.btn.warn{border-color:#c8922a;background:#fff8ec;color:#7a5010}
+.btn.danger{border-color:#cc6060;background:#fff0f0;color:#8b1414}
+.btn.small{padding:5px 9px;border-radius:8px;font-size:.82rem}
+.card{background:var(--panel);border:1px solid rgba(180,150,120,.22);border-radius:18px;box-shadow:var(--shadow);padding:16px;backdrop-filter:blur(6px)}
+.section-title{margin:0 0 10px;font-size:1.15rem;color:#6b1414;font-weight:900}
+.arena-connection{display:inline-flex;align-items:center;gap:6px;padding:5px 9px;border-radius:999px;border:1px solid #ddd;background:#fff;font-size:.75rem;font-weight:800;color:var(--muted)}
+.arena-connection::before{content:"";width:7px;height:7px;border-radius:50%;background:#bbb}
+.arena-connection.connected{color:#2a6040;border-color:#a8d4b8;background:#f0faf4}
+.arena-connection.connected::before{background:#3a9060}
+.arena-connection.waiting{color:#7a5010;border-color:#e8c880;background:#fff8ec}
+.arena-connection.waiting::before{background:#c8922a;animation:pulse 1.2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.setup-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.field{margin-bottom:14px}
+.field label,.field .label{display:block;font-weight:800;margin-bottom:6px}
+.segmented{display:flex;gap:6px;flex-wrap:wrap}
+.segmented button{min-width:56px}
+.segmented button.active{background:#8b1a1a;color:#fff;border-color:#8b1a1a}
+input[type=text],select{width:100%;border:1px solid #d0c0b0;border-radius:9px;padding:8px 10px;background:#fff;color:var(--ink)}
+.setup-note{background:#fdf5e8;border:1px dashed #c8922a;border-radius:14px;padding:12px;line-height:1.55;color:#4a3820}
+.setup-note strong{color:#6b1414}
+.player-inputs{display:grid;gap:8px}
+.player-row{display:grid;grid-template-columns:30px 1fr;gap:8px;align-items:center}
+.player-row .num{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font-weight:900;font-size:.85rem}
+/* ─── 게임 레이아웃 ─── */
+.game-layout{display:grid;grid-template-columns:1fr 340px;gap:14px;align-items:start}
+.left-col,.right-col{display:grid;gap:12px}
+.status-card{padding:10px 14px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.turn-badge{display:flex;align-items:center;gap:8px;font-weight:900}
+.turn-dot{width:11px;height:11px;border-radius:50%}
+.phase-txt{font-size:.83rem;color:var(--muted)}
+/* ─── 보드 (육각 그리드) ─── */
+.board-wrap{overflow:auto;padding:8px}
+.hex-board{position:relative;margin:0 auto}
+.hex-cell{position:absolute;cursor:default;user-select:none}
+.hex-cell svg{display:block;transition:filter .12s,transform .12s}
+.hex-cell.playable{cursor:pointer}
+.hex-cell.playable svg:hover{filter:brightness(1.12) drop-shadow(0 0 5px rgba(200,146,42,.7));transform:scale(1.04)}
+.hex-cell.selected svg{filter:drop-shadow(0 0 8px rgba(200,146,42,.9));transform:scale(1.06)}
+.hex-cell.last-played svg{filter:drop-shadow(0 0 5px rgba(139,26,26,.7))}
+/* ─── 손패 ─── */
+.hand-grid{display:flex;flex-wrap:wrap;gap:8px}
+.token-card{width:82px;border:2px solid #d0c0b0;border-radius:10px;padding:6px;background:#fff;text-align:center;cursor:default;transition:all .12s}
+.token-card.selectable{cursor:pointer}
+.token-card.selectable:hover{border-color:#c8922a;background:#fff8ec;transform:translateY(-2px)}
+.token-card.selected-token{border-color:#8b1a1a;background:#fdf0e8;box-shadow:0 0 0 2px rgba(139,26,26,.2)}
+.token-icon{font-size:1.6rem;line-height:1.2}
+.token-name{font-size:.65rem;font-weight:800;color:#5a4030;margin-top:2px}
+.token-str{font-size:1rem;font-weight:900;color:#8b1a1a}
+.token-affects{font-size:.58rem;color:var(--muted);line-height:1.2}
+/* ─── 획득한 조각 ─── */
+.captured-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.fig-chip{display:inline-flex;align-items:center;gap:3px;padding:3px 7px;border-radius:999px;font-size:.72rem;font-weight:800;border:1px solid}
+.fig-chip.helmet{background:#e8eef8;border-color:#a0b0d0;color:#304080}
+.fig-chip.buddha{background:#e8f4e8;border-color:#80b080;color:#205020}
+.fig-chip.rice{background:#f8f0e0;border-color:#c8a060;color:#604010}
+/* ─── 플레이어 탭 ─── */
+.player-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.ptab{border:1px solid #d0c0b0;border-radius:10px;padding:7px 10px;background:#fff;min-width:110px;text-align:left;cursor:pointer;transition:all .12s}
+.ptab.active-turn{border-color:#8b1a1a;box-shadow:inset 0 0 0 1.5px #8b1a1a}
+.ptab.me{background:#fdf5e8}
+.ptab-name{font-weight:900;font-size:.85rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ptab-score{font-size:.72rem;color:var(--muted)}
+/* ─── 컨트롤 ─── */
+.action-note{padding:9px 11px;border-radius:11px;background:#fdf5e8;border:1px solid #e8d0a0;font-size:.84rem;line-height:1.45;margin-bottom:8px}
+/* ─── 보드 옆 정보 ─── */
+.side-info{font-size:.78rem;line-height:1.5;color:#5a4030}
+.supply-row{display:flex;gap:8px;flex-wrap:wrap;margin:4px 0}
+.supply-chip{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:999px;font-size:.75rem;font-weight:700;border:1px solid}
+.aside-row{display:flex;gap:6px;flex-wrap:wrap;margin:4px 0}
+/* ─── 오버레이 ─── */
+.overlay{position:fixed;inset:0;background:rgba(20,10,5,.6);z-index:50;display:flex;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(4px)}
+.modal{width:min(700px,95vw);max-height:90vh;overflow:auto;background:#fff;border-radius:18px;box-shadow:0 20px 60px rgba(0,0,0,.28);padding:20px}
+.modal h2{margin:0 0 10px;color:#6b1414}
+.modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:12px;flex-wrap:wrap}
+.score-table{width:100%;border-collapse:collapse;font-size:.88rem}
+.score-table th,.score-table td{border-bottom:1px solid #e8ddd5;padding:8px 7px;text-align:center}
+.score-table th:first-child,.score-table td:first-child{text-align:left}
+.winner-row{background:#fff8e8}
+.winner-row td:first-child::before{content:"🏆 "}
+.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:80;background:#2a1f1a;color:#fff;padding:9px 14px;border-radius:999px;box-shadow:0 8px 28px rgba(0,0,0,.22);font-weight:800;font-size:.84rem;max-width:90vw;text-align:center;animation:toastIn .16s ease-out}
+@keyframes toastIn{from{opacity:0;transform:translate(-50%,8px)}to{opacity:1;transform:translate(-50%,0)}}
+/* ─── 초기 배치 단계 ─── */
+.fig-placement-note{padding:8px 12px;background:#f0f8e8;border:1px solid #88b868;border-radius:10px;font-size:.82rem;margin-bottom:8px}
+/* ─── 반응형 ─── */
+@media(max-width:900px){.game-layout{grid-template-columns:1fr}.setup-grid{grid-template-columns:1fr}}
+@media(max-width:560px){.app{padding:8px}.token-card{width:72px}.ptab{min-width:88px}}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="./config.js"></script>
+<script type="module">
+import {configured,roomId,getMe,loadRoom,loadState,saveState,startStatePoll,submitMatch,ratingBadges,showFatal} from './multi-common.js';
+
+/* ══════════════════════════════════════════════════
+   ① Arena 브릿지
+══════════════════════════════════════════════════ */
+const GAME_ID='samurai-pvp';
+let revision=0,room=null,members=[],me=null,badges={},callbacks=[];
+let saveChain=Promise.resolve(),pendingSaves=0,matchSubmitted=false,pollStarted=false;
+let ctxPromise=null;
+const clone=x=>JSON.parse(JSON.stringify(x));
+
+async function context(){
+  if(ctxPromise) return ctxPromise;
+  ctxPromise=(async()=>{
+    if(!configured()||!roomId) showFatal('Supabase 설정 또는 room 주소가 없습니다.');
+    me=await getMe(); if(!me) showFatal('로그인이 필요합니다.');
+    ({room,members}=await loadRoom());
+    if(room.game!=='samurai') showFatal('사무라이 방이 아닙니다.');
+    const playerIndex=members.findIndex(m=>m.user_id===me.user_id);
+    if(playerIndex<0) showFatal('이 방의 참가자가 아닙니다.');
+    badges=await ratingBadges('samurai',members.map(m=>m.user_id)).catch(()=>({}));
+    const row=await loadState(); revision=Number(row?.revision||0);
+    const players=members.map((m,i)=>({
+      id:m.user_id,userId:m.user_id,index:i,
+      name:`${badges[m.user_id]?.text||'🥉'} ${m.nickname}`,
+      nickname:m.nickname
+    }));
+    const out={roomId,playerId:me.user_id,playerIndex,isHost:room.host_id===me.user_id,players,state:row?.state||null};
+    if(!pollStarted){
+      pollStarted=true;
+      startStatePoll(async r=>{
+        revision=Math.max(revision,Number(r?.revision||0));
+        if(r?.state && pendingSaves===0) callbacks.forEach(cb=>{try{cb(clone(r.state));}catch(e){console.warn(e);}});
+      },{interval:8000});
+    }
+    return out;
+  })();
+  return ctxPromise;
+}
+
+async function maybeSubmit(snap){
+  if(matchSubmitted||!snap?.gameOver||!Array.isArray(snap.finalOrder)) return;
+  const c=await context(); if(!c.isHost) return;
+  const order=snap.finalOrder.map(i=>members[Number(i)]?.user_id).filter(Boolean);
+  if(order.length!==members.length) return;
+  matchSubmitted=true;
+  try{await submitMatch(order);}catch(e){if(!String(e?.message||e).toLowerCase().includes('already')){matchSubmitted=false;}}
+}
+
+function queueSave(snap){
+  const s=clone(snap); pendingSaves++;
+  saveChain=saveChain.then(async()=>{
+    try{
+      for(let i=0;i<4;i++){
+        try{
+          const next=await saveState(revision,s);
+          revision=Number(next??revision+1);
+          await maybeSubmit(s); return;
+        }catch(e){
+          const row=await loadState().catch(()=>null);
+          if(row) revision=Number(row?.revision||revision);
+          if(row?.state) callbacks.forEach(cb=>{try{cb(clone(row.state));}catch(err){}});
+          throw e;
+        }
+      }
+    }catch(e){console.warn('samurai save:',e);}
+    finally{pendingSaves=Math.max(0,pendingSaves-1);}
+  });
+  return saveChain;
+}
+
+if(roomId) window.BoardMateArena={
+  async getContext(){const c=await context();return{roomId:c.roomId,playerId:c.playerId,playerIndex:c.playerIndex,isHost:c.isHost,players:c.players,gameState:c.state,state:c.state};},
+  setGameState(s){queueSave(s);return true;},
+  onGameState(cb){callbacks.push(cb);return()=>{callbacks=callbacks.filter(x=>x!==cb);};}
+};
+if(roomId) window.addEventListener('DOMContentLoaded',()=>{
+  const a=document.createElement('a');a.href='./index.html#/multi';a.textContent='← BoardMate';
+  a.style.cssText='position:fixed;left:10px;bottom:10px;z-index:2147482000;text-decoration:none;background:#172033;color:#fff;border-radius:999px;padding:8px 11px;font:800 12px system-ui;box-shadow:0 6px 18px #0003';
+  document.body.appendChild(a);
+});
+</script>
+</head>
+<body>
+<div class="app">
+<header class="topbar">
+  <div class="brand">
+    <div>
+      <h1>⛩️ 사무라이 PVP</h1>
+      <div class="sub">Reiner Knizia · 2-4인 · Board-Mate Arena 온라인 PVP</div>
+    </div>
+  </div>
+  <div class="top-actions">
+    <span class="arena-connection waiting" id="arenaConn">Arena 연결 중</span>
+    <button class="btn small" id="rulesBtn">규칙 요약</button>
+    <button class="btn small danger hidden" id="newGameBtn">새 게임</button>
+  </div>
+</header>
+
+<!-- 설정 화면 -->
+<main id="setupScreen">
+  <div class="setup-grid">
+    <section class="card">
+      <h2 class="section-title">게임 설정</h2>
+      <div id="arenaSetupNote" class="setup-note" style="margin-bottom:12px">
+        <strong>Arena 모드:</strong> 방의 플레이어 정보를 불러오는 중입니다. 연결 후 호스트가 게임을 시작하면 모든 참가자 화면이 동기화됩니다.
+      </div>
+      <div class="field">
+        <span class="label">플레이어 수</span>
+        <div class="segmented" id="playerCountBtns">
+          <button class="btn active" data-c="2">2인</button>
+          <button class="btn" data-c="3">3인</button>
+          <button class="btn" data-c="4">4인</button>
+        </div>
+      </div>
+      <div class="field">
+        <span class="label">플레이어 이름</span>
+        <div class="player-inputs" id="playerInputs"></div>
+      </div>
+      <button class="btn primary" id="startSetupBtn" style="margin-top:8px">조각 배치 시작</button>
+    </section>
+    <section class="card">
+      <h2 class="section-title">사무라이 규칙 요약</h2>
+      <div class="setup-note">
+        <strong>목표:</strong> 헬멧·불상·논(쌀) 세 종류의 조각을 포획하세요.<br><br>
+        <strong>포획:</strong> 마을·도시의 모든 인접 육지 칸이 타일로 덮이면 즉시 포획됩니다. 영향력 합계가 가장 높은 플레이어가 조각을 가져갑니다. 동점이면 보드 옆에 제거됩니다.<br><br>
+        <strong>턴:</strong> 일본 문자(侍) 타일은 여러 장 동시에 낼 수 있고, 일반 타일은 한 장만 낼 수 있습니다. 매 턴 후 손패를 5장으로 보충합니다.<br><br>
+        <strong>종료:</strong> 한 종류의 조각이 전부 없어지거나, 무승부 제거 조각이 4개가 되면 게임 종료.<br><br>
+        <strong>승리:</strong> 2~3종류 최다 보유 → 즉시 승리. 그 외는 단계적 타이브레이크.
+      </div>
+    </section>
+  </div>
+</main>
+
+<!-- 게임 화면 -->
+<main id="gameScreen" class="hidden">
+  <!-- 상태바 -->
+  <div class="card status-card" style="margin-bottom:10px">
+    <div class="turn-badge">
+      <span class="turn-dot" id="turnDot"></span>
+      <span id="turnTxt"></span>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+      <span class="arena-connection waiting" id="arenaGameConn">Arena 연결 중</span>
+      <span class="phase-txt" id="phaseTxt"></span>
+    </div>
+  </div>
+
+  <!-- 플레이어 탭 -->
+  <div class="player-tabs" id="playerTabs"></div>
+
+  <div class="game-layout">
+    <!-- 왼쪽: 보드 -->
+    <div class="left-col">
+      <!-- 보드 -->
+      <section class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:6px">
+          <h2 class="section-title" style="margin:0">🗺️ 일본 지도</h2>
+          <div style="display:flex;gap:6px;flex-wrap:wrap">
+            <span class="side-info" id="supplyInfo"></span>
+            <span class="side-info" id="asideInfo"></span>
+          </div>
+        </div>
+        <div class="fig-placement-note hidden" id="figPlacementNote"></div>
+        <div class="board-wrap" id="boardWrap">
+          <div class="hex-board" id="hexBoard"></div>
+        </div>
+      </section>
+
+      <!-- 손패 -->
+      <section class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <h3 class="section-title" style="margin:0">🃏 내 손패 <span id="handCount" style="font-size:.8rem;font-weight:400;color:var(--muted)"></span></h3>
+          <span style="font-size:.78rem;color:var(--muted)" id="handHint"></span>
+        </div>
+        <div class="hand-grid" id="handGrid"></div>
+      </section>
+    </div>
+
+    <!-- 오른쪽: 컨트롤 + 점수 -->
+    <div class="right-col">
+      <!-- 컨트롤 -->
+      <section class="card" id="controlCard">
+        <h3 class="section-title">행동</h3>
+        <div class="action-note" id="actionNote">게임을 불러오는 중...</div>
+        <div id="actionBtns" style="display:flex;gap:7px;flex-wrap:wrap;margin-top:8px"></div>
+      </section>
+
+      <!-- 점수판 -->
+      <section class="card" id="scoreCard">
+        <h3 class="section-title">점수판</h3>
+        <div id="scoreBoard"></div>
+      </section>
+    </div>
+  </div>
+</main>
+</div>
+
+<!-- 모달 -->
+<div class="overlay hidden" id="modalOverlay">
+  <div class="modal" id="modalContent"></div>
+</div>
+
+<script>
+/* ══════════════════════════════════════════════════
+   ② 게임 데이터 상수
+══════════════════════════════════════════════════ */
+'use strict';
+const GAME_VERSION=1;
+const clone=x=>JSON.parse(JSON.stringify(x));
+
+// 플레이어 색상
+const PLAYER_COLORS=['#8b1a1a','#1a4a8b','#1a6b2a','#7a4a00'];
+const PLAYER_NAMES_KO=['빨강','파랑','초록','갈색'];
+
+// 조각 종류
+const FIG={HELMET:'helmet',BUDDHA:'buddha',RICE:'rice'};
+const FIG_KO={helmet:'헬멧',buddha:'불상',rice:'논'};
+const FIG_ICON={helmet:'⛩️',buddha:'☸️',rice:'🌾'};
+const FIG_COUNT={2:7,3:10,4:13};
+
+/* ─── 토큰 정의 ─── */
+// fast:true = 일본 문자(侍) → 여러 장 가능
+// affects: 영향 주는 조각 종류 (null = 전체)
+const TOKEN_TYPES=[
+  // ── 일반 타일 (턴당 1장) ──
+  {id:'helmet2',name:'헬멧',str:2,affects:[FIG.HELMET],fast:false,icon:'⛩️',ko:'헬멧2'},
+  {id:'helmet3',name:'헬멧',str:3,affects:[FIG.HELMET],fast:false,icon:'⛩️',ko:'헬멧3'},
+  {id:'helmet4',name:'헬멧',str:4,affects:[FIG.HELMET],fast:false,icon:'⛩️',ko:'헬멧4'},
+  {id:'buddha2',name:'불상',str:2,affects:[FIG.BUDDHA],fast:false,icon:'☸️',ko:'불상2'},
+  {id:'buddha3',name:'불상',str:3,affects:[FIG.BUDDHA],fast:false,icon:'☸️',ko:'불상3'},
+  {id:'buddha4',name:'불상',str:4,affects:[FIG.BUDDHA],fast:false,icon:'☸️',ko:'불상4'},
+  {id:'rice2',name:'논',str:2,affects:[FIG.RICE],fast:false,icon:'🌾',ko:'논2'},
+  {id:'rice3',name:'논',str:3,affects:[FIG.RICE],fast:false,icon:'🌾',ko:'논3'},
+  {id:'rice4',name:'논',str:4,affects:[FIG.RICE],fast:false,icon:'🌾',ko:'논4'},
+  {id:'samurai2',name:'사무라이',str:2,affects:null,fast:false,icon:'⚔️',ko:'사무라이2'},
+  {id:'samurai3',name:'사무라이',str:3,affects:null,fast:false,icon:'⚔️',ko:'사무라이3'},
+  {id:'exchange',name:'조각교환',str:0,affects:null,fast:false,icon:'🔄',ko:'조각교환',special:'exchange'},
+  {id:'tokenswap',name:'타일교환',str:0,affects:null,fast:false,icon:'♻️',ko:'타일교환',special:'tokenswap'},
+  {id:'samurai1b',name:'사무라이',str:1,affects:null,fast:false,icon:'⚔️',ko:'사무라이1'},
+  {id:'samurai1c',name:'사무라이',str:1,affects:null,fast:false,icon:'⚔️',ko:'사무라이1'},
+  // ── 빠른 타일 (侍, 여러 장 가능) ──
+  {id:'ship1a',name:'함선',str:1,affects:null,fast:true,icon:'⛵',ko:'함선1',sea:true},
+  {id:'ship1b',name:'함선',str:1,affects:null,fast:true,icon:'⛵',ko:'함선1',sea:true},
+  {id:'ship2',name:'함선',str:2,affects:null,fast:true,icon:'⛵',ko:'함선2',sea:true},
+  {id:'ronin1a',name:'로닌',str:1,affects:null,fast:true,icon:'🏇',ko:'로닌1'},
+  {id:'ronin1b',name:'로닌',str:1,affects:null,fast:true,icon:'🏇',ko:'로닌1'},
+  // 조각교환·타일교환도 빠른 타일
+];
+
+// 각 플레이어에게 나눠주는 20개 토큰 세트 (id 배열)
+const PLAYER_TOKEN_SET=[
+  'helmet2','helmet3','helmet4',
+  'buddha2','buddha3','buddha4',
+  'rice2','rice3','rice4',
+  'samurai2','samurai3',
+  'samurai1b','samurai1c',
+  'exchange','tokenswap',
+  'ship1a','ship1b','ship2',
+  'ronin1a','ronin1b'
+];
+
+/* ─── 보드 맵 정의 ─── */
+// 4인용 기준 전체 맵 (혼슈+규슈+시코쿠+에조) 를 간략화한 육각 그리드
+// type: 'sea'|'land'|'village'|'city'|'edo'
+// figs: 초기 조각 배치 목록 (배치 단계에서 채워짐)
+// adj: 인접 셀 id 목록
+
+// 2인: 혼슈만, 3인: 혼슈+규슈+시코쿠, 4인: 전부
+// 편의상 (col, row) 좌표로 표현, 짝수 열은 아래 오프셋
+
+// ───── 맵 생성 함수 ─────
+// 실제 사무라이 보드를 간략화한 육각 그리드
+// col 0~11, row 0~8 범위의 육각 배열
+// 각 섬을 셀 목록으로 정의
+
+function buildMap(playerCount){
+  // 혼슈 (메인) - 항상 포함
+  const honshu=[
+    // id, col, row, type
+    // Edo (수도) - 3조각
+    {id:'edo',col:5,row:2,type:'edo',isIsland:'honshu'},
+    // Cities (2조각)
+    {id:'kyoto',col:4,row:1,type:'city',isIsland:'honshu'},
+    {id:'osaka',col:6,row:2,type:'city',isIsland:'honshu'},
+    {id:'nara',col:5,row:3,type:'city',isIsland:'honshu'},
+    {id:'nagoya',col:7,row:1,type:'city',isIsland:'honshu'},
+    {id:'kamakura',col:3,row:2,type:'city',isIsland:'honshu'},
+    // Villages (1조각)
+    {id:'v1',col:3,row:1,type:'village',isIsland:'honshu'},
+    {id:'v2',col:4,row:3,type:'village',isIsland:'honshu'},
+    {id:'v3',col:6,row:1,type:'village',isIsland:'honshu'},
+    {id:'v4',col:6,row:3,type:'village',isIsland:'honshu'},
+    {id:'v5',col:7,row:2,type:'village',isIsland:'honshu'},
+    {id:'v6',col:8,row:1,type:'village',isIsland:'honshu'},
+    {id:'v7',col:2,row:2,type:'village',isIsland:'honshu'},
+    {id:'v8',col:2,row:3,type:'village',isIsland:'honshu'},
+    {id:'v9',col:8,row:2,type:'village',isIsland:'honshu'},
+    // Land tiles
+    {id:'l1',col:4,row:2,type:'land',isIsland:'honshu'},
+    {id:'l2',col:5,row:1,type:'land',isIsland:'honshu'},
+    {id:'l3',col:3,row:3,type:'land',isIsland:'honshu'},
+    {id:'l4',col:7,row:3,type:'land',isIsland:'honshu'},
+    {id:'l5',col:1,row:2,type:'land',isIsland:'honshu'},
+    {id:'l6',col:9,row:1,type:'land',isIsland:'honshu'},
+    {id:'l7',col:9,row:2,type:'land',isIsland:'honshu'},
+    // Sea around honshu
+    {id:'s1',col:0,row:1,type:'sea',isIsland:'sea'},
+    {id:'s2',col:0,row:2,type:'sea',isIsland:'sea'},
+    {id:'s3',col:1,row:1,type:'sea',isIsland:'sea'},
+    {id:'s4',col:1,row:3,type:'sea',isIsland:'sea'},
+    {id:'s5',col:2,row:1,type:'sea',isIsland:'sea'},
+    {id:'s6',col:5,row:0,type:'sea',isIsland:'sea'},
+    {id:'s7',col:6,row:0,type:'sea',isIsland:'sea'},
+    {id:'s8',col:8,row:0,type:'sea',isIsland:'sea'},
+    {id:'s9',col:10,row:1,type:'sea',isIsland:'sea'},
+    {id:'s10',col:10,row:2,type:'sea',isIsland:'sea'},
+    {id:'s11',col:2,row:4,type:'sea',isIsland:'sea'},
+    {id:'s12',col:3,row:4,type:'sea',isIsland:'sea'},
+    {id:'s13',col:4,row:4,type:'sea',isIsland:'sea'},
+    {id:'s14',col:5,row:4,type:'sea',isIsland:'sea'},
+    {id:'s15',col:6,row:4,type:'sea',isIsland:'sea'},
+    {id:'s16',col:7,row:4,type:'sea',isIsland:'sea'},
+    {id:'s17',col:8,row:4,type:'sea',isIsland:'sea'},
+  ];
+
+  // 규슈 (3인 이상)
+  const kyushu=[
+    {id:'kyushu_c1',col:2,row:6,type:'city',isIsland:'kyushu'},
+    {id:'kyushu_v1',col:1,row:6,type:'village',isIsland:'kyushu'},
+    {id:'kyushu_v2',col:3,row:6,type:'village',isIsland:'kyushu'},
+    {id:'kyushu_v3',col:2,row:7,type:'village',isIsland:'kyushu'},
+    {id:'kyushu_l1',col:1,row:7,type:'land',isIsland:'kyushu'},
+    {id:'kyushu_l2',col:3,row:7,type:'land',isIsland:'kyushu'},
+    {id:'ks1',col:0,row:6,type:'sea',isIsland:'sea'},
+    {id:'ks2',col:4,row:6,type:'sea',isIsland:'sea'},
+    {id:'ks3',col:0,row:7,type:'sea',isIsland:'sea'},
+    {id:'ks4',col:4,row:7,type:'sea',isIsland:'sea'},
+    {id:'ks5',col:2,row:8,type:'sea',isIsland:'sea'},
+    {id:'ks6',col:1,row:5,type:'sea',isIsland:'sea'},
+    {id:'ks7',col:2,row:5,type:'sea',isIsland:'sea'},
+    {id:'ks8',col:3,row:5,type:'sea',isIsland:'sea'},
+  ];
+
+  // 시코쿠 (3인 이상)
+  const shikoku=[
+    {id:'shikoku_c1',col:6,row:6,type:'city',isIsland:'shikoku'},
+    {id:'shikoku_v1',col:5,row:6,type:'village',isIsland:'shikoku'},
+    {id:'shikoku_v2',col:7,row:6,type:'village',isIsland:'shikoku'},
+    {id:'shikoku_l1',col:6,row:7,type:'land',isIsland:'shikoku'},
+    {id:'ss1',col:4,row:5,type:'sea',isIsland:'sea'},
+    {id:'ss2',col:5,row:5,type:'sea',isIsland:'sea'},
+    {id:'ss3',col:6,row:5,type:'sea',isIsland:'sea'},
+    {id:'ss4',col:7,row:5,type:'sea',isIsland:'sea'},
+    {id:'ss5',col:8,row:5,type:'sea',isIsland:'sea'},
+    {id:'ss6',col:4,row:6,type:'sea',isIsland:'sea'},
+    {id:'ss7',col:8,row:6,type:'sea',isIsland:'sea'},
+    {id:'ss8',col:5,row:7,type:'sea',isIsland:'sea'},
+    {id:'ss9',col:7,row:7,type:'sea',isIsland:'sea'},
+  ];
+
+  // 에조 (4인)
+  const ezo=[
+    {id:'ezo_c1',col:8,row:0,type:'city',isIsland:'ezo'},
+    {id:'ezo_v1',col:7,row:0,type:'village',isIsland:'ezo'},
+    {id:'ezo_v2',col:9,row:0,type:'village',isIsland:'ezo'},
+    {id:'ezo_l1',col:10,row:0,type:'land',isIsland:'ezo'},
+    {id:'es1',col:6,row:0,type:'sea',isIsland:'sea'},
+    {id:'es2',col:11,row:0,type:'sea',isIsland:'sea'},
+    {id:'es3',col:7,row:-1,type:'sea',isIsland:'sea'},
+    {id:'es4',col:10,row:-1,type:'sea',isIsland:'sea'},
+  ];
+
+  let cells=[...honshu];
+  if(playerCount>=3) cells=[...cells,...kyushu,...shikoku];
+  if(playerCount>=4) cells=[...cells,...ezo];
+
+  // 인접 계산 (오프셋 육각 그리드, 짝수 col은 row+0.5 오프셋)
+  const cellMap=new Map(cells.map(c=>[c.id,c]));
+
+  function hexNeighbors(col,row){
+    const isEven=col%2===0;
+    if(isEven){
+      return [[col-1,row-1],[col,row-1],[col+1,row-1],[col-1,row],[col+1,row],[col,row+1]];
+    }else{
+      return [[col-1,row],[col,row-1],[col+1,row],[col-1,row+1],[col+1,row+1],[col,row+1]];
+    }
+  }
+
+  cells.forEach(c=>{
+    const neighbors=hexNeighbors(c.col,c.row);
+    c.adj=[];
+    cells.forEach(other=>{
+      if(neighbors.some(([nc,nr])=>nc===other.col&&nr===other.row)){
+        c.adj.push(other.id);
+      }
+    });
+  });
+
+  return cells;
+}
+
+/* ─── 마을/도시 목록 ─── */
+function getSettlements(cells){
+  return cells.filter(c=>['village','city','edo'].includes(c.type));
+}
+function getLandCells(cells){
+  return cells.filter(c=>c.type!=='sea');
+}
+
+/* ══════════════════════════════════════════════════
+   ③ 게임 상태
+══════════════════════════════════════════════════ */
+let G=null; // 공유 게임 상태
+let myIdx=null;
+let selectedTokenIdx=null; // 손패에서 선택된 타일 인덱스
+let selectedCellId=null;
+let viewedPlayer=0;
+let exchangeStep=null; // {type:'exchange'|'tokenswap', step, ...}
+let arenaReady=false;
+
+/* ── 공유 상태 수신 ── */
+function receiveState(next){
+  if(!next||!Array.isArray(next.players)) return false;
+  G=clone(next);
+  renderAll();
+  return true;
+}
+
+/* ══════════════════════════════════════════════════
+   ④ 초기화 및 Arena 연결
+══════════════════════════════════════════════════ */
+window.addEventListener('DOMContentLoaded',async()=>{
+  // 버튼 바인딩
+  document.querySelectorAll('#playerCountBtns button').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      document.querySelectorAll('#playerCountBtns button').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      renderPlayerInputs(Number(btn.dataset.c));
+    });
+  });
+  renderPlayerInputs(2);
+  document.getElementById('startSetupBtn').addEventListener('click',onSetupStart);
+  document.getElementById('rulesBtn').addEventListener('click',showRules);
+  document.getElementById('newGameBtn').addEventListener('click',()=>{if(confirm('새 게임을 시작하시겠습니까?'))initNewGame();});
+
+  // Arena 연결 시도
+  try{
+    const arena=window.BoardMateArena;
+    if(arena){
+      const ctx=await arena.getContext();
+      myIdx=ctx.playerIndex;
+      arenaReady=true;
+      updateArenaUI(true);
+
+      if(ctx.gameState){
+        // 기존 상태 있으면 복원
+        receiveState(ctx.gameState);
+        document.getElementById('setupScreen').classList.add('hidden');
+        document.getElementById('gameScreen').classList.remove('hidden');
+      } else if(ctx.isHost){
+        // 호스트이면 설정 화면 활성화
+        populateArenaSetup(ctx);
+      } else {
+        showToast('호스트가 게임을 시작하기를 기다리는 중...');
+      }
+
+      // 상태 변경 구독
+      arena.onGameState(next=>{
+        receiveState(next);
+        document.getElementById('setupScreen').classList.add('hidden');
+        document.getElementById('gameScreen').classList.remove('hidden');
+        updateArenaUI(true);
+      });
+    }
+  }catch(e){
+    console.warn('Arena not available, standalone mode:',e);
+    updateArenaUI(false);
+  }
+});
+
+function populateArenaSetup(ctx){
+  const count=ctx.players.length;
+  document.querySelectorAll('#playerCountBtns button').forEach(b=>{
+    b.classList.toggle('active',Number(b.dataset.c)===count);
+    if(Number(b.dataset.c)!==count) b.disabled=true;
+  });
+  renderPlayerInputs(count,ctx.players.map(p=>p.nickname||p.name));
+  document.getElementById('startSetupBtn').disabled=!ctx.isHost;
+  if(!ctx.isHost){
+    document.getElementById('startSetupBtn').textContent='호스트 대기 중...';
+    document.getElementById('arenaSetupNote').textContent='호스트가 게임을 시작할 때까지 기다려 주세요.';
+  }
+}
+
+function updateArenaUI(connected){
+  ['arenaConn','arenaGameConn'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(!el) return;
+    el.className='arena-connection '+(connected?'connected':'');
+    el.textContent=connected?'Arena 연결됨':'오프라인 모드';
+  });
+}
+
+function renderPlayerInputs(count,names=[]){
+  const wrap=document.getElementById('playerInputs');
+  wrap.innerHTML='';
+  for(let i=0;i<count;i++){
+    const row=document.createElement('div');
+    row.className='player-row';
+    row.innerHTML=`
+      <div class="num" style="background:${PLAYER_COLORS[i]}22;color:${PLAYER_COLORS[i]}">${i+1}</div>
+      <input type="text" placeholder="플레이어 ${i+1}" value="${names[i]||''}">
+    `;
+    wrap.appendChild(row);
+  }
+}
+
+/* ══════════════════════════════════════════════════
+   ⑤ 게임 초기화
+══════════════════════════════════════════════════ */
+function onSetupStart(){
+  const countBtn=document.querySelector('#playerCountBtns button.active');
+  const count=Number(countBtn?.dataset.c||2);
+  const names=[...document.querySelectorAll('#playerInputs input')].map((inp,i)=>inp.value.trim()||`플레이어 ${i+1}`);
+  initNewGame(count,names);
+}
+
+function initNewGame(count,names){
+  if(!count){
+    const cb=document.querySelector('#playerCountBtns button.active');
+    count=Number(cb?.dataset.c||2);
+  }
+  if(!names){
+    names=[...document.querySelectorAll('#playerInputs input')].map((inp,i)=>inp.value.trim()||`플레이어 ${i+1}`);
+  }
+
+  const cells=buildMap(count);
+  const figCount=FIG_COUNT[count];
+  const supply={helmet:figCount,buddha:figCount,rice:figCount};
+
+  // 각 플레이어 토큰 세트 셔플
+  function shuffle(arr){for(let i=arr.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]];}return arr;}
+
+  const players=names.slice(0,count).map((name,i)=>{
+    const deck=shuffle([...PLAYER_TOKEN_SET]);
+    const hand=deck.splice(0,5);
+    return{
+      id:i,name,color:PLAYER_COLORS[i],
+      hand, // 손패 (토큰 id 목록)
+      deck, // 나머지 덱
+      captured:{helmet:0,buddha:0,rice:0},
+    };
+  });
+
+  G={
+    version:GAME_VERSION,
+    gameId:'samurai-pvp',
+    players,
+    cells, // 맵
+    placed:{}, // cellId → {playerId, tokenId, str, affects, sea}
+    figures:{}, // cellId → [fig종류] (조각 배치)
+    supply,
+    aside:{helmet:0,buddha:0,rice:0}, // 무승부로 제거된 조각
+    active:0,
+    phase:'fig-place', // fig-place | play-token | game-over
+    figPlaceQueue:buildFigPlaceQueue(cells,count),
+    figPlaceIdx:0,
+    playedFastThisTurn:false,
+    playedSlowThisTurn:false,
+    log:[],
+    gameOver:false,
+    finalOrder:null,
+  };
+
+  // Edo에 각 조각 1개씩 배치
+  const edo=cells.find(c=>c.type==='edo');
+  if(edo){
+    G.figures[edo.id]=[FIG.HELMET,FIG.BUDDHA,FIG.RICE];
+    G.supply.helmet--; G.supply.buddha--; G.supply.rice--;
+  }
+
+  document.getElementById('setupScreen').classList.add('hidden');
+  document.getElementById('gameScreen').classList.remove('hidden');
+  document.getElementById('newGameBtn').classList.remove('hidden');
+
+  renderAll();
+  publishState('new-game');
+}
+
+// 도시→마을 순서의 조각 배치 큐 생성
+function buildFigPlaceQueue(cells,count){
+  const settlements=getSettlements(cells).filter(c=>c.type!=='edo');
+  // 도시 먼저, 마을 나중 (각각 라운드로빈)
+  const cities=settlements.filter(c=>c.type==='city');
+  const villages=settlements.filter(c=>c.type==='village');
+
+  // 각 도시에 2개 조각, 각 마을에 1개 조각
+  const citySlots=cities.flatMap(c=>[c.id,c.id]);
+  const villageSlots=villages.map(c=>c.id);
+
+  // 플레이어 순서로 배분 (도시 전부 → 마을 전부)
+  return [...citySlots,...villageSlots];
+}
+
+/* ══════════════════════════════════════════════════
+   ⑥ 게임 로직
+══════════════════════════════════════════════════ */
+
+function isMyTurn(){
+  if(!G) return false;
+  if(myIdx!==null) return G.active===myIdx;
+  return true; // 오프라인
+}
+
+function getActiveFigs(){
+  // 현재 배치 큐 위치의 cellId
+  if(!G||G.phase!=='fig-place') return null;
+  return G.figPlaceQueue[G.figPlaceIdx];
+}
+
+function getAvailableFigs(){
+  // 현재 배치할 수 있는 조각 종류 목록
+  const {supply,figures}=G;
+  const targetId=getActiveFigs();
+  if(!targetId) return [];
+  const existing=(figures[targetId]||[]);
+  // 도시: 2개, 같은 종류 안됨
+  // 마을: 1개
+  const cell=G.cells.find(c=>c.id===targetId);
+  const avail=[];
+  if(supply.helmet>0&&!existing.includes(FIG.HELMET)) avail.push(FIG.HELMET);
+  if(supply.buddha>0&&!existing.includes(FIG.BUDDHA)) avail.push(FIG.BUDDHA);
+  if(supply.rice>0&&!existing.includes(FIG.RICE)) avail.push(FIG.RICE);
+  return avail;
+}
+
+function placeFig(figType){
+  if(G.phase!=='fig-place') return;
+  if(!isMyTurn()&&myIdx!==null) return;
+  const targetId=G.figPlaceQueue[G.figPlaceIdx];
+  if(!targetId) return;
+  if(!G.figures[targetId]) G.figures[targetId]=[];
+  G.figures[targetId].push(figType);
+  G.supply[figType]--;
+  addLog(`${G.players[G.active].name}이(가) ${figTypeKo(targetId)} ${FIG_KO[figType]} 배치`);
+
+  G.figPlaceIdx++;
+  // 도시 슬롯: 같은 셀이 2회 → 두 번째는 다음 플레이어
+  G.active=(G.active+1)%G.players.length;
+
+  if(G.figPlaceIdx>=G.figPlaceQueue.length){
+    G.phase='play-token';
+    G.active=0;
+    addLog('─ 조각 배치 완료, 게임 시작 ─');
+  }
+
+  renderAll();
+  publishState('fig-place');
+}
+
+function figTypeKo(cellId){
+  const c=G.cells.find(x=>x.id===cellId);
+  if(!c) return cellId;
+  const names={edo:'에도',kyoto:'교토',osaka:'오사카',nara:'나라',nagoya:'나고야',kamakura:'가마쿠라'};
+  return names[cellId]||cellId;
+}
+
+// 타일을 셀에 놓기
+function placeToken(tokenIdx,cellId){
+  if(!isMyTurn()||G.phase!=='play-token') return;
+  const player=G.players[G.active];
+  if(tokenIdx>=player.hand.length) return;
+  const tokenId=player.hand[tokenIdx];
+  const tk=TOKEN_TYPES.find(t=>t.id===tokenId);
+  if(!tk) return;
+  const cell=G.cells.find(c=>c.id===cellId);
+  if(!cell) return;
+
+  // 유효성 검사
+  if(tk.sea&&cell.type!=='sea') return;
+  if(!tk.sea&&cell.type==='sea') return;
+  if(['village','city','edo'].includes(cell.type)) return;
+  if(G.placed[cellId]) return; // 이미 타일 있음
+  if(!tk.fast&&G.playedSlowThisTurn){showToast('이번 턴에 일반 타일은 1장만 낼 수 있습니다.');return;}
+
+  // 특수 타일 처리
+  if(tk.special==='exchange'){
+    exchangeStep={type:'exchange',step:1,first:null};
+    player.hand.splice(tokenIdx,1);
+    G.playedFastThisTurn=true; // exchange는 빠른 타일처럼 처리
+    renderAll();
+    showToast('교환할 첫 번째 조각이 있는 마을/도시를 클릭하세요');
+    return;
+  }
+  if(tk.special==='tokenswap'){
+    exchangeStep={type:'tokenswap',step:1,first:null};
+    player.hand.splice(tokenIdx,1);
+    G.playedFastThisTurn=true;
+    renderAll();
+    showToast('교체할 내 기존 타일 위치를 클릭하세요 (일반 타일만 가능)');
+    return;
+  }
+
+  // 타일 배치
+  G.placed[cellId]={playerId:G.active,tokenId,str:tk.str,affects:tk.affects,sea:!!tk.sea};
+  player.hand.splice(tokenIdx,1);
+  if(tk.fast) G.playedFastThisTurn=true;
+  else G.playedSlowThisTurn=true;
+
+  addLog(`${player.name}: ${tk.ko} → ${cellId}`);
+
+  // 포획 체크
+  checkCaptures(cellId);
+
+  // 게임 종료 체크
+  if(!checkGameOver()){
+    selectedTokenIdx=null;
+    selectedCellId=null;
+    renderAll();
+    publishState('token-placed');
+  }
+}
+
+// 인접한 마을/도시가 포획 조건인지 확인
+function checkCaptures(lastCellId){
+  const lastCell=G.cells.find(c=>c.id===lastCellId);
+  if(!lastCell) return;
+
+  // 방금 놓은 타일에 인접한 마을/도시만 체크
+  const toCheck=new Set();
+  lastCell.adj.forEach(adjId=>{
+    const adj=G.cells.find(c=>c.id===adjId);
+    if(adj&&['village','city','edo'].includes(adj.type)) toCheck.add(adjId);
+  });
+  // 방금 놓은 셀 자체가 마을/도시 옆에 있는 경우도 체크
+  G.cells.forEach(c=>{
+    if(['village','city','edo'].includes(c.type)){
+      if(c.adj.includes(lastCellId)) toCheck.add(c.id);
+    }
+  });
+
+  toCheck.forEach(settId=>{
+    tryCapture(settId);
+  });
+}
+
+function tryCapture(settId){
+  const sett=G.cells.find(c=>c.id===settId);
+  if(!sett) return;
+  if(!(G.figures[settId]||[]).length) return; // 조각 없음
+
+  // 모든 인접 육지 칸이 타일로 덮였는지 확인
+  const landAdj=sett.adj.filter(adjId=>{
+    const adj=G.cells.find(c=>c.id===adjId);
+    return adj&&adj.type!=='sea';
+  });
+  const allCovered=landAdj.every(adjId=>G.placed[adjId]);
+  if(!allCovered) return;
+
+  // 각 조각별로 영향력 계산
+  const figs=G.figures[settId]||[];
+  figs.forEach(fig=>{
+    captureFigure(settId,fig,landAdj);
+  });
+  delete G.figures[settId]; // 조각 모두 제거
+}
+
+function captureFigure(settId,fig,landAdj){
+  // 각 플레이어의 영향력 합산
+  const influence=G.players.map((_,pi)=>{
+    return landAdj.reduce((sum,adjId)=>{
+      const p=G.placed[adjId];
+      if(!p||p.playerId!==pi) return sum;
+      // affects null = 전체, 아니면 해당 조각만
+      if(p.affects===null||p.affects.includes(fig)) return sum+p.str;
+      return sum;
+    },0);
+  });
+
+  const maxInf=Math.max(...influence);
+  if(maxInf===0){
+    G.aside[fig]++;
+    addLog(`${settId}의 ${FIG_ICON[fig]}${FIG_KO[fig]} → 무승부 제거`);
+    return;
+  }
+  const winners=G.players.filter((_,i)=>influence[i]===maxInf);
+  if(winners.length>1){
+    G.aside[fig]++;
+    addLog(`${settId}의 ${FIG_ICON[fig]}${FIG_KO[fig]} → 동점(${winners.map(p=>p.name).join(',')}) 제거`);
+  }else{
+    const winner=winners[0];
+    winner.captured[fig]++;
+    addLog(`${settId}의 ${FIG_ICON[fig]}${FIG_KO[fig]} → ${winner.name} 포획!`);
+  }
+}
+
+// 조각교환 처리
+function handleExchangeClick(cellId){
+  if(!exchangeStep) return false;
+  const cell=G.cells.find(c=>c.id===cellId);
+
+  if(exchangeStep.type==='exchange'){
+    if(!['village','city','edo'].includes(cell?.type)) return true;
+    if(!(G.figures[cellId]||[]).length) return true;
+
+    if(exchangeStep.step===1){
+      exchangeStep.first=cellId;
+      exchangeStep.step=2;
+      showToast('두 번째 조각이 있는 마을/도시를 클릭하세요 (다른 종류)');
+      renderAll();
+      return true;
+    }else{
+      // 두 번째 조각 선택
+      if(cellId===exchangeStep.first){showToast('다른 마을/도시를 선택하세요.');return true;}
+      const figs1=G.figures[exchangeStep.first]||[];
+      const figs2=G.figures[cellId]||[];
+      // 간략화: 첫 번째 조각과 두 번째 첫 조각을 교환
+      if(!figs1.length||!figs2.length){showToast('조각이 없는 곳을 선택했습니다.');exchangeStep=null;return true;}
+      // 같은 종류면 불가
+      if(figs1[0]===figs2[0]&&figs1.length===1&&figs2.length===1){
+        showToast('같은 종류의 조각은 교환할 수 없습니다 (도시에서 같은 종류 제한).');
+        exchangeStep=null;return true;
+      }
+      // 교환
+      const tmp=G.figures[exchangeStep.first];
+      G.figures[exchangeStep.first]=G.figures[cellId];
+      G.figures[cellId]=tmp;
+      addLog(`${G.players[G.active].name}: 조각교환 ${exchangeStep.first} ↔ ${cellId}`);
+      exchangeStep=null;
+      checkGameOver();
+      renderAll();
+      publishState('exchange');
+      return true;
+    }
+  }
+
+  if(exchangeStep.type==='tokenswap'){
+    // 내 기존 타일 위치 클릭
+    if(exchangeStep.step===1){
+      const p=G.placed[cellId];
+      if(!p||p.playerId!==G.active){showToast('내가 놓은 일반 타일만 선택할 수 있습니다.');return true;}
+      const tk=TOKEN_TYPES.find(t=>t.id===p.tokenId);
+      if(tk?.fast){showToast('빠른 타일(侍)은 교체할 수 없습니다.');return true;}
+      exchangeStep.first=cellId;
+      exchangeStep.firstToken=p.tokenId;
+      exchangeStep.step=2;
+      showToast('이 타일을 교체할 새 위치를 클릭하세요');
+      renderAll();
+      return true;
+    }else{
+      // 새 위치
+      if(G.placed[cellId]){showToast('이미 타일이 있습니다.');return true;}
+      const tk=TOKEN_TYPES.find(t=>t.id===exchangeStep.firstToken);
+      if(!tk) return true;
+      if(tk.sea&&cell.type!=='sea'){showToast('함선은 바다에만.');return true;}
+      if(!tk.sea&&cell.type==='sea'){showToast('육지 타일을 바다에 놓을 수 없습니다.');return true;}
+      if(['village','city','edo'].includes(cell.type)){showToast('마을/도시에는 배치 불가.');return true;}
+      // 교체
+      const oldPlace=G.placed[exchangeStep.first];
+      G.placed[exchangeStep.first]={playerId:G.active,tokenId:'tokenswap_marker',str:0,affects:null};
+      G.placed[cellId]=oldPlace;
+      addLog(`${G.players[G.active].name}: 타일교환 ${exchangeStep.first} → ${cellId}`);
+      // 타일교환 마커 처리: tokenswap 타일이 strength 0으로 교체됨 (규칙대로)
+      // 포획 재체크
+      checkCaptures(cellId);
+      checkCaptures(exchangeStep.first);
+      exchangeStep=null;
+      checkGameOver();
+      renderAll();
+      publishState('tokenswap');
+      return true;
+    }
+  }
+  return false;
+}
+
+function endTurn(){
+  if(!isMyTurn()||G.phase!=='play-token') return;
+  const player=G.players[G.active];
+  if(!G.playedFastThisTurn&&!G.playedSlowThisTurn){
+    showToast('최소 1장의 타일을 내야 합니다.');return;
+  }
+  // 손패 보충
+  const needed=5-player.hand.length;
+  for(let i=0;i<needed&&player.deck.length;i++){
+    player.hand.push(player.deck.shift());
+  }
+  G.active=(G.active+1)%G.players.length;
+  G.playedFastThisTurn=false;
+  G.playedSlowThisTurn=false;
+  selectedTokenIdx=null;
+  selectedCellId=null;
+  addLog(`─ 턴 종료 → ${G.players[G.active].name}의 턴 ─`);
+  renderAll();
+  publishState('turn-end');
+}
+
+function checkGameOver(){
+  if(!G) return false;
+  const types=[FIG.HELMET,FIG.BUDDHA,FIG.RICE];
+  const allSupplyGone=types.some(t=>G.supply[t]===0&&!Object.values(G.figures).some(arr=>arr.includes(t)));
+  const tooManyAside=Object.values(G.aside).reduce((s,v)=>s+v,0)>=4;
+  if(allSupplyGone||tooManyAside){
+    G.phase='game-over';
+    G.gameOver=true;
+    computeFinalOrder();
+    renderAll();
+    publishState('game-over');
+    setTimeout(showEndModal,500);
+    return true;
+  }
+  return false;
+}
+
+function computeFinalOrder(){
+  // 승자 결정 (룰북 로직)
+  const players=G.players;
+  const types=[FIG.HELMET,FIG.BUDDHA,FIG.RICE];
+
+  // 각 종류별 최다 보유자
+  const mostOf=t=>{
+    const max=Math.max(...players.map(p=>p.captured[t]));
+    return players.filter(p=>p.captured[t]===max&&max>0);
+  };
+
+  const helmWinners=mostOf(FIG.HELMET);
+  const buddhWinners=mostOf(FIG.BUDDHA);
+  const riceWinners=mostOf(FIG.RICE);
+
+  // 2~3종류 최다 보유하면 즉시 승리
+  for(const p of players){
+    const wins=types.filter(t=>mostOf(t).length===1&&mostOf(t)[0].id===p.id);
+    if(wins.length>=2){
+      G.winner=[p.id];
+      G.finalOrder=rankPlayersSimple(p.id);
+      addLog(`🏆 ${p.name} 승리! (${wins.map(t=>FIG_KO[t]).join(',')} 최다)`);
+      return;
+    }
+  }
+
+  // 한 종류 이상 최다 보유자 중 선택
+  const eligible=players.filter(p=>types.some(t=>mostOf(t).length===1&&mostOf(t)[0].id===p.id));
+  if(!eligible.length){
+    // 아무도 단독 최다 없으면 전체 조각 합산
+    const sorted=[...players].sort((a,b)=>totalFigs(b)-totalFigs(a));
+    G.winner=[sorted[0].id];
+    G.finalOrder=sorted.map(p=>p.id);
+    addLog(`🏆 ${sorted[0].name} 승리! (총 조각 최다)`);
+    return;
+  }
+
+  // eligible 중 다른 종류 합산 최다
+  const withOthers=eligible.map(p=>{
+    const myBest=types.find(t=>mostOf(t).length===1&&mostOf(t)[0].id===p.id);
+    const others=types.filter(t=>t!==myBest).reduce((s,t)=>s+p.captured[t],0);
+    return{p,others};
+  }).sort((a,b)=>b.others-a.others);
+
+  if(withOthers[0].others>withOthers[1]?.others){
+    G.winner=[withOthers[0].p.id];
+    G.finalOrder=eligible.map(e=>e.p.id);
+    addLog(`🏆 ${withOthers[0].p.name} 승리! (다른 조각 최다)`);
+    return;
+  }
+
+  // 동점이면 전체 합산
+  const tieSorted=[...eligible].sort((a,b)=>totalFigs(b)-totalFigs(a));
+  G.winner=[tieSorted[0].id];
+  G.finalOrder=tieSorted.map(p=>p.id);
+  addLog(`🏆 ${tieSorted[0].name} 승리! (전체 조각 최다)`);
+}
+
+function totalFigs(p){return p.captured.helmet+p.captured.buddha+p.captured.rice;}
+function rankPlayersSimple(winnerId){
+  const rest=G.players.filter(p=>p.id!==winnerId).sort((a,b)=>totalFigs(b)-totalFigs(a));
+  return [winnerId,...rest.map(p=>p.id)];
+}
+
+function addLog(msg){
+  if(!G.log) G.log=[];
+  G.log.push(msg);
+  if(G.log.length>50) G.log.shift();
+}
+
+/* ══════════════════════════════════════════════════
+   ⑦ 렌더링
+══════════════════════════════════════════════════ */
+function renderAll(){
+  if(!G) return;
+  renderTurnBar();
+  renderPlayerTabs();
+  renderBoard();
+  renderHand();
+  renderControl();
+  renderScoreCard();
+}
+
+function renderTurnBar(){
+  const player=G.players[G.active];
+  document.getElementById('turnDot').style.background=player?.color||'#888';
+  let txt=`${player?.name||'?'} 의 턴`;
+  if(G.phase==='fig-place') txt+=' · 조각 배치 중';
+  else if(G.phase==='game-over') txt=' 게임 종료!';
+  document.getElementById('turnTxt').textContent=txt;
+  const phaseMap={'fig-place':'📌 조각 배치 단계','play-token':'🀄 타일 플레이 단계','game-over':'🏆 게임 종료'};
+  document.getElementById('phaseTxt').textContent=phaseMap[G.phase]||G.phase;
+}
+
+function renderPlayerTabs(){
+  const wrap=document.getElementById('playerTabs');
+  wrap.innerHTML='';
+  G.players.forEach((p,i)=>{
+    const div=document.createElement('div');
+    div.className='ptab'+(i===G.active?' active-turn':'')+(i===myIdx?' me':'');
+    div.innerHTML=`
+      <div class="ptab-name" style="color:${p.color}">${p.name}${i===myIdx?'<span style="font-size:.6rem;background:'+p.color+';color:#fff;border-radius:999px;padding:1px 5px;margin-left:4px">나</span>':''}</div>
+      <div class="ptab-score">⛩️${p.captured.helmet} ☸️${p.captured.buddha} 🌾${p.captured.rice} · 패:${p.hand.length}</div>
+    `;
+    wrap.appendChild(div);
+  });
+}
+
+/* ─── 보드 렌더링 ─── */
+const HEX_W=64, HEX_H=56;
+const HEX_STEP_X=52, HEX_STEP_Y=44;
+
+function hexPos(col,row){
+  // 짝수 col: row+0.5 오프셋
+  const x=col*HEX_STEP_X+20;
+  const y=row*HEX_STEP_Y+(col%2===0?HEX_STEP_Y/2:0)+20;
+  return{x,y};
+}
+
+function makeSvgHex(fill,stroke,opacity=1){
+  const w=HEX_W,h=HEX_H;
+  const pts=`${w/2},0 ${w},${h*0.25} ${w},${h*0.75} ${w/2},${h} 0,${h*0.75} 0,${h*0.25}`;
+  return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">
+    <polygon points="${pts}" fill="${fill}" stroke="${stroke}" stroke-width="1.5" opacity="${opacity}"/>
+  </svg>`;
+}
+
+function cellFill(cell){
+  const TYPE_COLORS={sea:'#b8d4e8',land:'#e8dfc8',village:'#f5e8c0',city:'#e0c890',edo:'#d4a840'};
+  return TYPE_COLORS[cell.type]||'#ccc';
+}
+
+function renderBoard(){
+  const board=document.getElementById('hexBoard');
+  board.innerHTML='';
+
+  if(!G||!G.cells) return;
+
+  let maxX=0,maxY=0;
+  G.cells.forEach(cell=>{
+    const {x,y}=hexPos(cell.col,cell.row);
+    if(x+HEX_W>maxX) maxX=x+HEX_W;
+    if(y+HEX_H>maxY) maxY=y+HEX_H;
+  });
+  board.style.width=(maxX+20)+'px';
+  board.style.height=(maxY+20)+'px';
+
+  G.cells.forEach(cell=>{
+    const {x,y}=hexPos(cell.col,cell.row);
+    const div=document.createElement('div');
+    div.className='hex-cell';
+    div.style.left=x+'px';
+    div.style.top=y+'px';
+    div.dataset.id=cell.id;
+
+    const isPlayable=canPlaceHere(cell);
+    const isExchangeTarget=isExchangeClickable(cell);
+    if(isPlayable||isExchangeTarget) div.classList.add('playable');
+
+    const placed=G.placed[cell.id];
+    const figs=G.figures[cell.id]||[];
+    const fill=cellFill(cell);
+    const stroke=placed?G.players[placed.playerId]?.color||'#888':'#a0886060';
+    const strokeW=placed?2.5:1.5;
+
+    let innerHtml=`<svg width="${HEX_W}" height="${HEX_H}" viewBox="0 0 ${HEX_W} ${HEX_H}">`;
+    const pts=`${HEX_W/2},0 ${HEX_W},${HEX_H*0.25} ${HEX_W},${HEX_H*0.75} ${HEX_W/2},${HEX_H} 0,${HEX_H*0.75} 0,${HEX_H*0.25}`;
+    innerHtml+=`<polygon points="${pts}" fill="${fill}" stroke="${stroke}" stroke-width="${strokeW}"/>`;
+
+    // 타일 표시
+    if(placed){
+      const tk=TOKEN_TYPES.find(t=>t.id===placed.tokenId);
+      innerHtml+=`<text x="${HEX_W/2}" y="${HEX_H*0.45}" text-anchor="middle" dominant-baseline="middle" font-size="14">${tk?.icon||'?'}</text>`;
+      innerHtml+=`<text x="${HEX_W/2}" y="${HEX_H*0.72}" text-anchor="middle" dominant-baseline="middle" font-size="10" font-weight="bold" fill="${G.players[placed.playerId]?.color||'#333'}">${placed.str}</text>`;
+    }
+
+    // 조각 표시
+    if(figs.length){
+      const figX=[HEX_W/2,HEX_W*0.3,HEX_W*0.7];
+      figs.forEach((fig,i)=>{
+        innerHtml+=`<text x="${figX[i]||HEX_W/2}" y="${HEX_H*0.38}" text-anchor="middle" font-size="12">${FIG_ICON[fig]}</text>`;
+      });
+    }
+
+    // 타입 아이콘
+    if(!placed&&!figs.length){
+      if(cell.type==='sea') innerHtml+=`<text x="${HEX_W/2}" y="${HEX_H/2+4}" text-anchor="middle" font-size="10" fill="#6090b0">〰</text>`;
+    }
+
+    // 하이라이트
+    if(isPlayable||isExchangeTarget){
+      innerHtml+=`<polygon points="${pts}" fill="rgba(200,146,42,.18)" stroke="rgba(200,146,42,.7)" stroke-width="2" stroke-dasharray="4,2"/>`;
+    }
+    if(selectedCellId===cell.id){
+      innerHtml+=`<polygon points="${pts}" fill="rgba(139,26,26,.1)" stroke="#8b1a1a" stroke-width="2.5"/>`;
+    }
+    // 교환 단계에서 첫번째 선택한 조각 위치 강조
+    if(exchangeStep?.first===cell.id){
+      innerHtml+=`<polygon points="${pts}" fill="rgba(139,26,26,.2)" stroke="#8b1a1a" stroke-width="3"/>`;
+    }
+
+    innerHtml+='</svg>';
+
+    // 레이블
+    if(['village','city','edo'].includes(cell.type)){
+      const label=document.createElement('div');
+      label.style.cssText=`position:absolute;bottom:0;left:0;right:0;text-align:center;font-size:8px;font-weight:700;color:#4a3020;pointer-events:none;line-height:1`;
+      label.textContent=cell.id.length>8?cell.id.slice(0,6):cell.id;
+      div.appendChild(label);
+    }
+
+    div.innerHTML=innerHtml+(div.querySelector?'':div.innerHTML||'');
+    // 재설정
+    div.innerHTML=innerHtml;
+    if(['village','city','edo'].includes(cell.type)){
+      const label=document.createElement('div');
+      label.style.cssText='position:absolute;bottom:-2px;left:0;right:0;text-align:center;font-size:7px;font-weight:700;color:#4a3020;pointer-events:none;white-space:nowrap;overflow:hidden';
+      const nameMap={edo:'에도',kyoto:'교토',osaka:'오사카',nara:'나라',nagoya:'나고야',kamakura:'가마쿠라',
+        kyushu_c1:'규슈',shikoku_c1:'시코쿠',ezo_c1:'에조',
+        v1:'마을',v2:'마을',v3:'마을',v4:'마을',v5:'마을',v6:'마을',v7:'마을',v8:'마을',v9:'마을'};
+      label.textContent=nameMap[cell.id]||'';
+      div.style.position='relative';
+      div.appendChild(label);
+    }
+
+    div.addEventListener('click',()=>onCellClick(cell.id));
+    board.appendChild(div);
+  });
+}
+
+function canPlaceHere(cell){
+  if(!isMyTurn()||G.phase!=='play-token') return false;
+  if(!selectedTokenIdx!==false&&selectedTokenIdx===null) return false;
+  if(selectedTokenIdx===null) return false;
+  if(G.placed[cell.id]) return false;
+  if(['village','city','edo'].includes(cell.type)) return false;
+
+  const player=G.players[G.active];
+  if(selectedTokenIdx>=player.hand.length) return false;
+  const tokenId=player.hand[selectedTokenIdx];
+  const tk=TOKEN_TYPES.find(t=>t.id===tokenId);
+  if(!tk) return false;
+  if(tk.special) return false;
+  if(tk.sea&&cell.type!=='sea') return false;
+  if(!tk.sea&&cell.type==='sea') return false;
+  return true;
+}
+
+function isExchangeClickable(cell){
+  if(!exchangeStep) return false;
+  if(exchangeStep.type==='exchange'){
+    return ['village','city','edo'].includes(cell.type)&&(G.figures[cell.id]||[]).length>0;
+  }
+  if(exchangeStep.type==='tokenswap'){
+    if(exchangeStep.step===1){
+      const p=G.placed[cell.id];
+      if(!p||p.playerId!==G.active) return false;
+      const tk=TOKEN_TYPES.find(t=>t.id===p.tokenId);
+      return !tk?.fast;
+    }else{
+      return !G.placed[cell.id]&&!['village','city','edo'].includes(cell.type)&&(()=>{
+        const tk=TOKEN_TYPES.find(t=>t.id===exchangeStep.firstToken);
+        if(!tk) return false;
+        if(tk.sea&&cell.type!=='sea') return false;
+        if(!tk.sea&&cell.type==='sea') return false;
+        return true;
+      })();
+    }
+  }
+  return false;
+}
+
+function onCellClick(cellId){
+  if(exchangeStep){
+    handleExchangeClick(cellId);
+    return;
+  }
+  if(!isMyTurn()||G.phase!=='play-token') return;
+  if(selectedTokenIdx===null){showToast('먼저 손패에서 타일을 선택하세요.');return;}
+
+  const player=G.players[G.active];
+  const tokenId=player.hand[selectedTokenIdx];
+  const tk=TOKEN_TYPES.find(t=>t.id===tokenId);
+
+  // 특수 타일은 셀 클릭 없이 선택 즉시 처리
+  if(tk?.special){
+    placeToken(selectedTokenIdx,cellId);
+    return;
+  }
+
+  placeToken(selectedTokenIdx,cellId);
+}
+
+/* ─── 손패 렌더링 ─── */
+function renderHand(){
+  const grid=document.getElementById('handGrid');
+  grid.innerHTML='';
+
+  if(!G) return;
+  const me=myIdx!==null?myIdx:G.active;
+  const player=G.players[me];
+  if(!player) return;
+
+  const isMyPhase=isMyTurn()&&G.phase==='play-token';
+
+  document.getElementById('handCount').textContent=`(${player.hand.length}장)`;
+  document.getElementById('handHint').textContent=isMyPhase?'타일을 선택하고 보드를 클릭':'';
+
+  player.hand.forEach((tokenId,i)=>{
+    const tk=TOKEN_TYPES.find(t=>t.id===tokenId)||{id:tokenId,ko:tokenId,icon:'?',str:'?',affects:null,fast:false};
+    const div=document.createElement('div');
+    div.className='token-card'+(isMyPhase?' selectable':'')+(i===selectedTokenIdx?' selected-token':'');
+    div.innerHTML=`
+      <div class="token-icon">${tk.icon||'?'}</div>
+      <div class="token-name">${tk.ko||tk.id}</div>
+      <div class="token-str">${tk.str}</div>
+      <div class="token-affects">${tk.affects?tk.affects.map(f=>FIG_ICON[f]).join(''):''} ${tk.fast?'<span style="color:#8b1a1a;font-size:.6rem">侍</span>':''}</div>
+    `;
+    if(isMyPhase){
+      div.addEventListener('click',()=>{
+        selectedTokenIdx=(selectedTokenIdx===i)?null:i;
+        // 특수 타일이면 바로 실행
+        const selectedTk=TOKEN_TYPES.find(t=>t.id===tokenId);
+        if(selectedTk?.special&&selectedTokenIdx===i){
+          placeToken(i,'__special__');
+        }
+        renderAll();
+      });
+    }
+    grid.appendChild(div);
+  });
+
+  // 덱 남은 수
+  if(player.deck.length){
+    const deckDiv=document.createElement('div');
+    deckDiv.className='token-card';
+    deckDiv.style.opacity='.5';
+    deckDiv.innerHTML=`<div class="token-icon">🂠</div><div class="token-name">덱</div><div class="token-str">${player.deck.length}</div>`;
+    grid.appendChild(deckDiv);
+  }
+}
+
+/* ─── 컨트롤 카드 ─── */
+function renderControl(){
+  const note=document.getElementById('actionNote');
+  const btns=document.getElementById('actionBtns');
+  btns.innerHTML='';
+
+  if(!G){note.textContent='게임을 불러오는 중...';return;}
+
+  if(G.phase==='game-over'){
+    note.textContent='게임이 종료되었습니다!';
+    const b=document.createElement('button');
+    b.className='btn primary';b.textContent='최종 점수 보기';
+    b.addEventListener('click',showEndModal);
+    btns.appendChild(b);
+    return;
+  }
+
+  if(G.phase==='fig-place'){
+    const targetId=G.figPlaceQueue[G.figPlaceIdx];
+    const cell=G.cells.find(c=>c.id===targetId);
+    const note2=document.getElementById('figPlacementNote');
+    const avail=getAvailableFigs();
+    if(isMyTurn()&&myIdx!==null||myIdx===null){
+      note.textContent=`📌 ${G.players[G.active].name}: "${targetId}" 에 배치할 조각을 선택하세요`;
+      note2.classList.remove('hidden');
+      note2.textContent=`배치 위치: ${targetId}(${cell?.type==='city'?'도시':'마을'}) · 기존: ${(G.figures[targetId]||[]).map(f=>FIG_ICON[f]).join('')||'없음'}`;
+      avail.forEach(fig=>{
+        const b=document.createElement('button');
+        b.className='btn';
+        b.innerHTML=`${FIG_ICON[fig]} ${FIG_KO[fig]}`;
+        b.addEventListener('click',()=>placeFig(fig));
+        btns.appendChild(b);
+      });
+    }else{
+      note.textContent=`${G.players[G.active].name}이(가) 조각을 배치하는 중...`;
+      note2.classList.add('hidden');
+    }
+    return;
+  }
+
+  // play-token 단계
+  const player=G.players[G.active];
+  if(!isMyTurn()){
+    note.textContent=`${player.name}의 턴 (기다리는 중...)`;
+    return;
+  }
+
+  if(exchangeStep){
+    const msgs={
+      'exchange-1':'교환할 첫 번째 조각 위치 클릭',
+      'exchange-2':'교환할 두 번째 조각 위치 클릭',
+      'tokenswap-1':'교체할 내 기존 타일 위치 클릭',
+      'tokenswap-2':'새로 놓을 위치 클릭',
+    };
+    const key=`${exchangeStep.type}-${exchangeStep.step}`;
+    note.textContent=msgs[key]||'보드에서 클릭';
+    const cancel=document.createElement('button');
+    cancel.className='btn warn';cancel.textContent='취소';
+    cancel.addEventListener('click',()=>{exchangeStep=null;renderAll();});
+    btns.appendChild(cancel);
+    return;
+  }
+
+  if(selectedTokenIdx!==null){
+    const tokenId=player.hand[selectedTokenIdx];
+    const tk=TOKEN_TYPES.find(t=>t.id===tokenId);
+    note.textContent=tk?`선택됨: ${tk.icon} ${tk.ko} (강도 ${tk.str}) · 보드의 빈 칸을 클릭`:'보드를 클릭';
+  }else{
+    const can=G.playedFastThisTurn||G.playedSlowThisTurn;
+    note.textContent=can?'더 낼 수 있습니다 (侍 타일) · 또는 턴 종료':'손패에서 타일을 선택하세요';
+  }
+
+  if(G.playedFastThisTurn||G.playedSlowThisTurn){
+    const endBtn=document.createElement('button');
+    endBtn.className='btn primary';endBtn.textContent='턴 종료';
+    endBtn.addEventListener('click',endTurn);
+    btns.appendChild(endBtn);
+  }
+}
+
+/* ─── 점수 카드 ─── */
+function renderScoreCard(){
+  const div=document.getElementById('scoreBoard');
+  div.innerHTML='';
+  if(!G) return;
+
+  G.players.forEach(p=>{
+    const row=document.createElement('div');
+    row.style.cssText='display:flex;align-items:center;gap:8px;margin-bottom:7px;flex-wrap:wrap';
+    row.innerHTML=`
+      <span style="font-weight:900;color:${p.color};min-width:80px;font-size:.85rem">${p.name}</span>
+      <span class="fig-chip helmet">${FIG_ICON.helmet}${p.captured.helmet}</span>
+      <span class="fig-chip buddha">${FIG_ICON.buddha}${p.captured.buddha}</span>
+      <span class="fig-chip rice">${FIG_ICON.rice}${p.captured.rice}</span>
+      <span style="font-size:.72rem;color:var(--muted)">패${p.hand.length}/덱${p.deck.length}</span>
+    `;
+    div.appendChild(row);
+  });
+
+  // 공급량 및 제거된 조각
+  const info=document.createElement('div');
+  info.style.cssText='margin-top:8px;padding-top:8px;border-top:1px solid var(--line);font-size:.76rem;color:var(--muted)';
+  info.innerHTML=`
+    <div><strong>공급:</strong> ${FIG_ICON.helmet}${G.supply.helmet} ${FIG_ICON.buddha}${G.supply.buddha} ${FIG_ICON.rice}${G.supply.rice}</div>
+    <div><strong>제거됨:</strong> ${FIG_ICON.helmet}${G.aside.helmet} ${FIG_ICON.buddha}${G.aside.buddha} ${FIG_ICON.rice}${G.aside.rice} (합계${Object.values(G.aside).reduce((s,v)=>s+v,0)}/4)</div>
+  `;
+  document.getElementById('supplyInfo').innerHTML=`공급: ${FIG_ICON.helmet}${G.supply.helmet} ${FIG_ICON.buddha}${G.supply.buddha} ${FIG_ICON.rice}${G.supply.rice}`;
+  document.getElementById('asideInfo').innerHTML=`제거: ${FIG_ICON.helmet}${G.aside.helmet}+${FIG_ICON.buddha}${G.aside.buddha}+${FIG_ICON.rice}${G.aside.rice}=${Object.values(G.aside).reduce((s,v)=>s+v,0)}`;
+  div.appendChild(info);
+
+  // 최근 로그 (마지막 5줄)
+  if(G.log?.length){
+    const logDiv=document.createElement('div');
+    logDiv.style.cssText='margin-top:8px;padding-top:8px;border-top:1px solid var(--line);font-size:.72rem;color:var(--muted);line-height:1.6';
+    logDiv.innerHTML='<strong>최근 로그</strong><br>'+G.log.slice(-5).reverse().map(l=>`• ${l}`).join('<br>');
+    div.appendChild(logDiv);
+  }
+}
+
+/* ─── 규칙 모달 ─── */
+function showRules(){
+  const m=document.getElementById('modalContent');
+  m.innerHTML=`
+    <h2>⛩️ 사무라이 규칙 요약</h2>
+    <h3>목표</h3>
+    <p>헬멧(⛩️), 불상(☸️), 논(🌾) 세 종류의 조각을 포획해 가장 많은 종류의 "최다 보유자"가 되세요.</p>
+    <h3>타일 종류</h3>
+    <ul>
+      <li><strong>일반 타일</strong> (턴당 1장): 헬멧/불상/논 전용 2~4, 사무라이(전체), 조각교환, 타일교환</li>
+      <li><strong>빠른 타일(侍)</strong> (무제한): 함선(바다만), 로닌(육지)</li>
+    </ul>
+    <h3>포획</h3>
+    <p>마을/도시/에도에 인접한 모든 육지 칸이 타일로 덮이면 즉시 포획됩니다. 바다 칸은 무시합니다. 영향력 최다 플레이어가 조각을 가져갑니다. 동점이면 조각은 보드 옆으로 제거됩니다.</p>
+    <h3>특수 타일</h3>
+    <ul>
+      <li><strong>조각교환(🔄):</strong> 보드 위 임의 두 조각의 위치를 바꿉니다 (같은 종류 불가).</li>
+      <li><strong>타일교환(♻️):</strong> 내가 이미 놓은 일반 타일(侍 제외)을 다른 위치로 이동합니다.</li>
+    </ul>
+    <h3>게임 종료</h3>
+    <p>한 종류의 조각이 전부 없어지거나, 무승부 제거 조각 합계가 4개 이상이 되면 종료됩니다.</p>
+    <h3>승리 결정</h3>
+    <ol>
+      <li>2~3종류 단독 최다 보유 → 즉시 승리</li>
+      <li>한 종류만 단독 최다인 플레이어 중, 나머지 두 종류 합계가 많은 플레이어 승리</li>
+      <li>동점이면 전체 조각 수가 많은 플레이어 승리</li>
+    </ol>
+    <div class="modal-actions"><button class="btn primary" onclick="document.getElementById('modalOverlay').classList.add('hidden')">닫기</button></div>
+  `;
+  document.getElementById('modalOverlay').classList.remove('hidden');
+}
+
+function showEndModal(){
+  if(!G) return;
+  const m=document.getElementById('modalContent');
+  const winner=G.winner?.[0];
+  const winnerPlayer=G.players.find(p=>p.id===winner);
+
+  let rows=G.players.map(p=>`
+    <tr class="${p.id===winner?'winner-row':''}">
+      <td style="color:${p.color};font-weight:900">${p.name}</td>
+      <td>${p.captured.helmet}</td>
+      <td>${p.captured.buddha}</td>
+      <td>${p.captured.rice}</td>
+      <td>${totalFigs(p)}</td>
+    </tr>
+  `).join('');
+
+  m.innerHTML=`
+    <h2>🏆 게임 종료!</h2>
+    ${winnerPlayer?`<p style="font-size:1.2rem;font-weight:900;color:${winnerPlayer.color}">승자: ${winnerPlayer.name}</p>`:''}
+    <table class="score-table">
+      <thead><tr><th>플레이어</th><th>⛩️헬멧</th><th>☸️불상</th><th>🌾논</th><th>합계</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    <p style="font-size:.78rem;color:var(--muted);margin-top:8px">제거됨: ⛩️${G.aside.helmet} ☸️${G.aside.buddha} 🌾${G.aside.rice}</p>
+    <div class="modal-actions">
+      <button class="btn" onclick="document.getElementById('modalOverlay').classList.add('hidden')">닫기</button>
+    </div>
+  `;
+  document.getElementById('modalOverlay').classList.remove('hidden');
+}
+
+/* ══════════════════════════════════════════════════
+   ⑧ Arena 상태 발행
+══════════════════════════════════════════════════ */
+function publishState(reason){
+  const arena=window.BoardMateArena;
+  if(!arena||!G) return;
+  const snap=clone(G);
+  snap.version=GAME_VERSION;
+  snap.gameId='samurai-pvp';
+  try{arena.setGameState(snap);}catch(e){console.warn('publish:',e);}
+}
+
+/* ══════════════════════════════════════════════════
+   ⑨ 유틸
+══════════════════════════════════════════════════ */
+let toastTimer=null;
+function showToast(msg,dur=2400){
+  let t=document.querySelector('.toast');
+  if(!t){t=document.createElement('div');t.className='toast';document.body.appendChild(t);}
+  t.textContent=msg;t.style.display='block';
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>{t.style.display='none';},dur);
+}
+
+// 모달 닫기 (오버레이 클릭)
+document.addEventListener('DOMContentLoaded',()=>{
+  document.getElementById('modalOverlay').addEventListener('click',e=>{
+    if(e.target===document.getElementById('modalOverlay')) document.getElementById('modalOverlay').classList.add('hidden');
+  });
+});
+</script>
+</body>
+</html>

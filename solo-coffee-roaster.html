@@ -1,0 +1,1670 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BoardMate Solo · 커피 로스터</title>
+<style>
+/* ── 토큰 ── */
+:root {
+  --bg:      #1a1208;
+  --bg2:     #241a0e;
+  --bg3:     #2e2014;
+  --border:  #4a3520;
+  --cream:   #f0e8d0;
+  --brown:   #6b3a1f;
+  --dark:    #3a2010;
+  --red:     #8b1a1a;
+  --gold:    #c8941a;
+  --green:   #2a6a2a;
+  --blue:    #1a4a7a;
+  --text:    #e8dcc8;
+  --text2:   #a8987a;
+  --muted:   #6a5840;
+  font-family: Pretendard, "Noto Sans KR", system-ui, sans-serif;
+  color: var(--text);
+  background: var(--bg);
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text); min-height: 100vh; }
+button { font: inherit; cursor: pointer; border: none; border-radius: 6px; }
+
+/* ── 상단 바 ── */
+.bar {
+  position: sticky; top: 0; z-index: 40;
+  background: #100a04;
+  padding: 8px 14px;
+  display: flex; justify-content: space-between; align-items: center;
+  border-bottom: 1px solid var(--border);
+}
+.bar a { color: var(--text); text-decoration: none; font-weight: 700; font-size: 13px; }
+.bar-title { font-weight: 900; font-size: 14px; color: var(--gold); }
+
+/* ── 레이아웃 ── */
+.wrap { width: min(1100px, calc(100% - 16px)); margin: 12px auto; }
+.card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px;
+  margin-bottom: 10px;
+}
+.card-title {
+  font-size: 12px; font-weight: 900; color: var(--text2);
+  margin-bottom: 8px; letter-spacing: .04em;
+}
+
+/* ── 버튼 ── */
+.btn { padding: 8px 14px; font-weight: 800; font-size: 12px; border-radius: 7px; }
+.btn-primary { background: var(--brown); color: var(--cream); }
+.btn-gold { background: var(--gold); color: #1a0800; }
+.btn-ghost { background: var(--bg3); color: var(--text2); border: 1px solid var(--border); }
+.btn-red { background: var(--red); color: #ffc8c8; }
+.btn-green { background: #1e4a1e; color: #a0d8a0; border: 1px solid #2a6a2a; }
+.btn-sm { padding: 5px 10px; font-size: 11px; }
+.btn:disabled { opacity: .35; cursor: not-allowed; }
+.btn:hover:not(:disabled) { filter: brightness(1.15); }
+.row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+
+/* ── 토큰 표시 ── */
+.token {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 38px; height: 38px; border-radius: 50%;
+  font-size: 13px; font-weight: 900; cursor: default;
+  border: 2px solid transparent; position: relative;
+  flex-shrink: 0;
+  transition: transform .1s, border-color .1s;
+}
+.token.clickable { cursor: pointer; }
+.token.clickable:hover { transform: scale(1.12); border-color: var(--gold) !important; }
+.token.selected { border-color: var(--gold) !important; box-shadow: 0 0 8px #c8941a66; transform: scale(1.08); }
+
+/* 토큰 색상 */
+.tk-hard    { background: #2a2a2a; border-color: #555; color: #aaa; }
+.tk-r0      { background: #f0e8d8; border-color: #c8b890; color: #4a3010; }
+.tk-r1      { background: #e8d8b0; border-color: #b89850; color: #3a2008; }
+.tk-r2      { background: #c8a060; border-color: #8a6830; color: #2a1004; }
+.tk-r3      { background: #8a5530; border-color: #5a3010; color: #f0d8c0; }
+.tk-r4      { background: #4a2818; border-color: #3a1808; color: #f0c8a0; }
+.tk-burnt   { background: #1a0c04; border-color: #3a1a0a; color: #ff8060; }
+.tk-smoke   { background: #303030; border-color: #505050; color: #b0b0b0; }
+.tk-reject  { background: #4a1010; border-color: #8a2020; color: #ff9090; }
+.tk-moisture{ background: #1a3060; border-color: #3060a0; color: #80c0ff; }
+.tk-body    { background: #4a1a2a; border-color: #8a3050; color: #ff90a0; }
+.tk-acidity { background: #1a3a1a; border-color: #3a7a3a; color: #90e090; }
+.tk-aroma   { background: #1a2a4a; border-color: #3a5a9a; color: #90a0ff; }
+.tk-wild    { background: #3a2a0a; border-color: #7a5a1a; color: var(--gold); }
+
+/* ── 원두 백 시각화 ── */
+.bag-visual {
+  display: flex; flex-wrap: wrap; gap: 4px;
+  padding: 10px; background: #100a04;
+  border-radius: 8px; min-height: 60px;
+}
+.bag-count-table { font-size: 11px; }
+.bag-count-table td { padding: 2px 6px; }
+.bag-count-table .cnt { font-weight: 900; color: var(--gold); }
+
+/* ── 드로우 영역 ── */
+.drawn-area {
+  display: flex; flex-wrap: wrap; gap: 6px; min-height: 50px;
+  padding: 8px; background: #100a04; border-radius: 8px;
+}
+
+/* ── 로스팅 보드 ── */
+.roast-board {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.board-half {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px;
+}
+.board-half-title { font-size: 11px; font-weight: 900; margin-bottom: 8px; }
+.board-half.left .board-half-title { color: #e09060; }
+.board-half.right .board-half-title { color: var(--gold); }
+
+/* ── 즉시 효과 슬롯 ── */
+.effect-slot {
+  border: 1.5px dashed var(--border);
+  border-radius: 8px; padding: 6px 8px;
+  margin-bottom: 6px; font-size: 10px;
+  display: flex; align-items: center; gap: 8px;
+  min-height: 44px;
+}
+.effect-slot.used { border-color: #2a2010; opacity: .45; }
+.effect-slot.active { border-color: var(--gold); background: #2a1a00; }
+.effect-slot .slot-label { font-weight: 900; min-width: 70px; font-size: 11px; }
+.effect-slot .slot-desc { color: var(--text2); font-size: 10px; line-height: 1.4; flex: 1; }
+.effect-slot .slot-token { margin-left: auto; }
+
+/* ── 오른쪽 보드 (플레이버 효과) ── */
+.flavor-row {
+  border: 1.5px dashed var(--border);
+  border-radius: 8px; padding: 6px 8px;
+  margin-bottom: 6px;
+  display: flex; align-items: center; gap: 6px;
+}
+.flavor-row.earned { border-color: #5a7a2a; background: #0e1e0a; }
+.flavor-slot {
+  width: 34px; height: 34px; border-radius: 50%;
+  border: 1.5px dashed #4a3a28;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px; color: var(--muted);
+}
+.flavor-slot.filled { border-style: solid; }
+.unique-token-area { margin-left: auto; display: flex; align-items: center; gap: 4px; }
+
+/* ── 온도/턴 디스크 ── */
+.temp-gauge {
+  display: flex; gap: 0;
+  background: var(--bg3);
+  border-radius: 6px; overflow: hidden;
+  border: 1px solid var(--border);
+}
+.temp-cell {
+  flex: 1; text-align: center;
+  padding: 5px 2px;
+  font-size: 11px; font-weight: 900;
+  border-right: 1px solid var(--border);
+  position: relative;
+}
+.temp-cell:last-child { border-right: none; }
+.temp-cell.current { background: var(--red); color: #fff; }
+.temp-cell.smoke { background: #303030; }
+.temp-cell.draw-num { font-size: 13px; color: var(--gold); }
+.temp-cell .smoke-marker { font-size: 8px; display: block; color: #888; }
+
+/* ── 컵 테스트 ── */
+.cup-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 4px;
+  padding: 10px;
+  background: #100a04;
+  border-radius: 8px;
+  max-width: 280px;
+}
+.cup-slot {
+  width: 48px; height: 48px;
+  border-radius: 50%;
+  border: 1.5px dashed #4a3a28;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px; color: var(--muted);
+}
+.cup-slot.filled { border-style: solid; border-color: transparent; }
+.cup-slot.tray { border-color: #5a4a30; border-style: dashed; border-radius: 6px; }
+.cup-slot.tray.filled { border-radius: 6px; }
+.cup-layout { display: flex; gap: 14px; align-items: flex-start; flex-wrap: wrap; }
+.tray-area { display: flex; gap: 4px; flex-direction: column; }
+.tray-row { display: flex; gap: 4px; }
+
+/* ── 채점 ── */
+.score-breakdown {
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  gap: 8px; margin-top: 8px;
+}
+.score-box {
+  text-align: center; padding: 10px;
+  background: var(--bg3); border-radius: 8px;
+  border: 1px solid var(--border);
+}
+.score-box .score-val { font-size: 24px; font-weight: 900; }
+.score-box .score-label { font-size: 10px; color: var(--text2); margin-top: 2px; }
+.score-box.pos .score-val { color: var(--gold); }
+.score-box.neg .score-val { color: #ff7070; }
+
+/* ── 원두 카드 선택 ── */
+.bean-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 8px;
+}
+.bean-card {
+  background: var(--bg3); border: 1.5px solid var(--border);
+  border-radius: 8px; padding: 10px; cursor: pointer;
+  transition: border-color .15s, background .15s;
+}
+.bean-card:hover { border-color: var(--gold); background: #2a1c10; }
+.bean-card.selected { border-color: var(--gold); background: #2a1c10; }
+.bean-card .bc-group { font-size: 9px; color: var(--text2); margin-bottom: 2px; }
+.bean-card .bc-name { font-size: 13px; font-weight: 900; color: var(--cream); margin-bottom: 4px; }
+.bean-card .bc-origin { font-size: 10px; color: var(--text2); margin-bottom: 6px; }
+.bean-card .bc-contents { font-size: 10px; line-height: 1.6; color: var(--text2); }
+.bean-card .bc-roast-row { display: flex; gap: 4px; font-size: 10px; margin-top: 6px; flex-wrap: wrap; }
+.bean-card .bc-diff { font-size: 9px; padding: 2px 6px; border-radius: 4px; }
+.bean-card .bc-diff.beginner { background: #1a3a1a; color: #70d070; }
+.bean-card .bc-diff.advanced { background: #1a2a3a; color: #70a0d0; }
+.bean-card .bc-diff.expert { background: #3a1a1a; color: #d07070; }
+
+/* ── 모달 ── */
+.modal-overlay {
+  position: fixed; inset: 0; background: #00000099;
+  display: flex; align-items: center; justify-content: center;
+  z-index: 100;
+}
+.modal-box {
+  background: var(--bg2); border: 2px solid var(--border);
+  border-radius: 10px; padding: 20px;
+  max-width: 440px; width: 92%; max-height: 85vh; overflow-y: auto;
+}
+.modal-box h3 { color: var(--gold); margin-bottom: 10px; font-size: 14px; }
+.modal-box p { font-size: 12px; color: var(--text2); line-height: 1.6; margin-bottom: 10px; }
+
+/* ── 게임 메뉴 ── */
+.home-screen { text-align: center; padding: 30px; }
+.home-screen h1 { font-size: 28px; color: var(--gold); margin-bottom: 8px; }
+.home-screen p { color: var(--text2); font-size: 13px; margin-bottom: 20px; line-height: 1.7; }
+.menu-btns { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+.menu-btn { padding: 14px 24px; font-size: 14px; font-weight: 900; border-radius: 10px; }
+
+/* ── 로그 ── */
+.log-box {
+  max-height: 100px; overflow-y: auto;
+  background: #080604; border-radius: 6px;
+  padding: 6px 8px; font-size: 10px; color: var(--text2); line-height: 1.7;
+}
+.log-box div::before { content: '▸ '; color: var(--muted); }
+
+/* ── 라운드 진행 표시 ── */
+.round-dots { display: flex; gap: 6px; }
+.round-dot {
+  width: 16px; height: 16px; border-radius: 50%;
+  border: 2px solid var(--border); background: transparent;
+}
+.round-dot.done { background: var(--gold); border-color: var(--gold); }
+.round-dot.current { border-color: var(--gold); }
+
+/* ── 점수 기록표 ── */
+.score-sheet table { width: 100%; border-collapse: collapse; font-size: 11px; }
+.score-sheet th { background: var(--bg3); color: var(--text2); padding: 5px 8px; text-align: center; border: 1px solid var(--border); }
+.score-sheet td { padding: 5px 8px; border: 1px solid var(--border); text-align: center; }
+.score-sheet tr.total td { background: var(--bg3); font-weight: 900; color: var(--gold); }
+
+/* ── 반응형 ── */
+@media(max-width:640px) {
+  .roast-board { grid-template-columns: 1fr; }
+  .score-breakdown { grid-template-columns: repeat(2, 1fr); }
+  .temp-gauge { flex-wrap: wrap; }
+}
+
+/* ── 알림 배너 ── */
+.notice {
+  background: #1a1004; border: 1px solid #4a3010;
+  border-radius: 8px; padding: 8px 12px;
+  font-size: 11px; color: var(--text2); line-height: 1.5;
+  margin: 6px 0;
+}
+.notice.action { border-color: var(--gold); background: #1e1400; color: var(--cream); }
+.notice.warn { border-color: var(--red); background: #1e0808; color: #ff9090; }
+
+/* ── 카운터 바 ── */
+.roast-counter-bar {
+  display: flex; gap: 0; overflow-x: auto;
+  background: var(--bg3); border-radius: 6px; border: 1px solid var(--border);
+}
+.counter-cell {
+  flex-shrink: 0; width: 24px; text-align: center; padding: 3px 0;
+  font-size: 9px; border-right: 1px solid var(--border);
+}
+.counter-cell:last-child { border-right: none; }
+.counter-cell.current { background: var(--gold); color: #1a0800; font-weight: 900; }
+</style>
+</head>
+<body>
+
+<header class="bar">
+  <a href="./index.html#/">← 홈</a>
+  <span class="bar-title">☕ 커피 로스터</span>
+  <span style="font-size:10px;color:var(--muted)">솔로 게임</span>
+</header>
+
+<main class="wrap" id="app">불러오는 중…</main>
+
+<div id="modal" style="display:none"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+// 원두 데이터 (22종)
+// ═══════════════════════════════════════════════════════
+const BEANS = [
+  // GROUP 1 (연갈색)
+  { id:'sao_paulo', group:1, origin:'브라질', name:'상파울루', diff:'beginner',
+    contents: { hard:13, r0:3, moisture:3, reject:3, body:0, acidity:2, aroma:2, smoke:0, burnt:0 },
+    total:27,
+    roastPoints: {11:4,12:4,13:6,14:10,15:7,16:6,17:4,18:4},
+    flavorReq: ['body','acidity','aroma'], // 필요 플레이버
+    flavorPoints: {1:1,2:3,3:6,4:10},
+    roastRange: [11,18],
+  },
+  { id:'bugara', group:1, origin:'파나마', name:'부가라', diff:'beginner',
+    contents: { hard:15, r0:0, moisture:2, reject:0, body:2, acidity:2, aroma:2, smoke:0 },
+    total:27,
+    roastPoints: {11:0,12:2,13:5,14:10,15:6,16:4,17:0,18:0},
+    flavorReq: ['body','acidity','aroma'],
+    flavorPoints: {1:1,2:3,3:6,4:10},
+    roastRange: [11,18],
+  },
+  { id:'boquete_shb', group:1, origin:'파나마', name:'보케테 SHB', diff:'beginner',
+    contents: { hard:14, r0:1, moisture:3, reject:1, body:1, acidity:3, aroma:2, smoke:0 },
+    total:35,
+    roastPoints: {11:0,12:4,13:7,14:10,15:6,16:4,17:0,18:0},
+    flavorReq: ['body','acidity','aroma'],
+    flavorPoints: {1:1,2:3,3:6,4:10},
+    roastRange: [11,18],
+  },
+  { id:'volcan_candela_shb', group:1, origin:'파나마', name:'볼칸 칸델라 SHB', diff:'beginner',
+    contents: { hard:13, r0:1, moisture:5, reject:1, body:2, acidity:2, aroma:2, smoke:0 },
+    total:26,
+    roastPoints: {11:0,12:3,13:7,14:10,15:7,16:4,17:0,18:0},
+    flavorReq: ['body','acidity','aroma'],
+    flavorPoints: {1:1,2:3,3:6,4:10},
+    roastRange: [11,18],
+  },
+  { id:'sierra_maestra', group:1, origin:'쿠바', name:'시에라 마에스트라', diff:'beginner',
+    contents: { hard:11, r0:0, moisture:5, reject:2, body:2, acidity:2, aroma:2, smoke:0 },
+    total:26,
+    roastPoints: {11:0,12:4,13:7,14:10,15:6,16:3,17:0,18:0},
+    flavorReq: ['body','acidity','aroma'],
+    flavorPoints: {1:1,2:3,3:6,4:10},
+    roastRange: [11,18],
+  },
+  { id:'kona_extra_fancy', group:1, origin:'하와이', name:'코나 엑스트라 팬시', diff:'advanced',
+    contents: { hard:14, r0:0, moisture:7, reject:0, body:4, acidity:4, aroma:2, smoke:0 },
+    total:37,
+    roastPoints: {11:0,12:0,13:4,14:7,15:10,16:6,17:4,18:0},
+    flavorReq: ['body','acidity','aroma'],
+    flavorPoints: {1:1,2:3,3:6,4:10},
+    roastRange: [11,18],
+  },
+  { id:'tres_rios_shb', group:1, origin:'코스타리카', name:'트레스 리오스 SHB', diff:'advanced',
+    contents: { hard:13, r0:0, moisture:6, reject:0, body:3, acidity:3, aroma:3, smoke:0 },
+    total:34,
+    roastPoints: {11:0,12:0,13:4,14:8,15:10,16:7,17:5,18:4},
+    flavorReq: ['body','acidity','aroma'],
+    flavorPoints: {1:1,2:3,3:6,4:10},
+    roastRange: [11,18],
+  },
+
+  // GROUP 2 (갈색)
+  { id:'kasama_aa', group:2, origin:'잠비아', name:'카사마 AA', diff:'beginner',
+    contents: { hard:14, r0:1, moisture:2, reject:2, body:2, acidity:2, aroma:2, smoke:0 },
+    total:26,
+    roastPoints: {13:0,14:4,15:7,16:10,17:5,18:4,19:0,20:0},
+    flavorReq: ['body','acidity','aroma'],
+    flavorPoints: {1:1,2:3,3:6,4:10},
+    roastRange: [13,20],
+  },
+  { id:'renacimiento', group:2, origin:'파나마', name:'레나시미엔토', diff:'beginner',
+    contents: { hard:12, r0:2, moisture:2, reject:2, body:2, acidity:2, aroma:2, smoke:0 },
+    total:37,
+    roastPoints: {13:0,14:3,15:6,16:10,17:7,18:5,19:4,20:0},
+    flavorReq: ['body','acidity','aroma'],
+    flavorPoints: {1:1,2:3,3:6,4:10},
+    roastRange: [13,20],
+  },
+  { id:'armenia_supremo', group:2, origin:'콜롬비아', name:'아르메니아 수프레모', diff:'advanced',
+    contents: { hard:11, r0:2, moisture:4, reject:1, body:3, acidity:3, aroma:3, smoke:0 },
+    total:40,
+    roastPoints: {13:0,14:0,15:4,16:7,17:10,18:7,19:5,20:4},
+    flavorReq: ['body','acidity','aroma'],
+    flavorPoints: {1:1,2:3,3:6,4:10},
+    roastRange: [13,20],
+  },
+  { id:'dhamar', group:2, origin:'예멘', name:'다마르', diff:'advanced',
+    contents: { hard:12, r0:1, moisture:3, reject:2, body:2, acidity:3, aroma:3, smoke:0 },
+    total:38,
+    roastPoints: {13:0,14:0,15:4,16:7,17:10,18:6,19:4,20:0},
+    flavorReq: ['body','acidity','aroma'],
+    flavorPoints: {1:1,2:3,3:6,4:10},
+    roastRange: [13,20],
+  },
+  { id:'kilimanjaro_aa', group:2, origin:'탄자니아', name:'킬리만자로 AA', diff:'advanced',
+    contents: { hard:11, r0:2, moisture:4, reject:1, body:3, acidity:3, aroma:3, smoke:0 },
+    total:36,
+    roastPoints: {13:0,14:0,15:3,16:6,17:10,18:7,19:5,20:4},
+    flavorReq: ['body','acidity','aroma'],
+    flavorPoints: {1:1,2:3,3:6,4:10},
+    roastRange: [13,20],
+  },
+  { id:'ngozi_aa', group:2, origin:'부룬디', name:'은고지 AA', diff:'advanced',
+    contents: { hard:10, r0:2, moisture:5, reject:1, body:3, acidity:3, aroma:3, smoke:0 },
+    total:34,
+    roastPoints: {13:0,14:0,15:3,16:7,17:10,18:7,19:5,20:4},
+    flavorReq: ['body','acidity','aroma'],
+    flavorPoints: {1:1,2:3,3:6,4:10},
+    roastRange: [13,20],
+  },
+  { id:'espirito_santo', group:2, origin:'브라질', name:'에스피리토 산토', diff:'advanced',
+    contents: { hard:10, r0:2, moisture:4, reject:2, body:3, acidity:3, aroma:3, smoke:0 },
+    total:35,
+    roastPoints: {13:0,14:0,15:4,16:7,17:10,18:7,19:5,20:4},
+    flavorReq: ['body','acidity','aroma'],
+    flavorPoints: {1:1,2:3,3:6,4:10},
+    roastRange: [13,20],
+  },
+  { id:'antigua_shb', group:2, origin:'과테말라', name:'안티구아 SHB', diff:'expert',
+    contents: { hard:9, r0:2, moisture:5, reject:1, body:4, acidity:4, aroma:4, smoke:0 },
+    total:35,
+    roastPoints: {13:0,14:0,15:0,16:4,17:7,18:10,19:7,20:5},
+    flavorReq: ['body','acidity','aroma'],
+    flavorPoints: {1:1,2:3,3:6,4:10},
+    roastRange: [13,20],
+  },
+
+  // GROUP 3 (다크 브라운)
+  { id:'mount_elgon_pb', group:3, origin:'우간다', name:'마운트 엘곤 PB', diff:'expert',
+    contents: { hard:8, r0:2, moisture:5, reject:1, body:4, acidity:4, aroma:4, smoke:0 },
+    total:38,
+    roastPoints: {15:0,16:0,17:4,18:7,19:10,20:7,21:5,22:4},
+    flavorReq: ['body','acidity','aroma','sweetness'],
+    flavorPoints: {1:1,2:3,3:6,4:10},
+    roastRange: [15,22],
+  },
+  { id:'tuno_aa', group:3, origin:'에티오피아', name:'투노 AA', diff:'expert',
+    contents: { hard:7, r0:2, moisture:5, reject:1, body:5, acidity:4, aroma:4, smoke:0 },
+    total:34,
+    roastPoints: {15:0,16:0,17:3,18:7,19:10,20:7,21:5,22:4},
+    flavorReq: ['body','acidity','aroma','sweetness'],
+    flavorPoints: {1:1,2:3,3:6,4:10},
+    roastRange: [15,22],
+  },
+  { id:'kerala_aa', group:3, origin:'인도', name:'케랄라 AA', diff:'expert',
+    contents: { hard:7, r0:2, moisture:6, reject:1, body:5, acidity:4, aroma:4, smoke:0 },
+    total:40,
+    roastPoints: {15:0,16:0,17:4,18:7,19:10,20:7,21:5,22:4},
+    flavorReq: ['body','acidity','aroma','sweetness'],
+    flavorPoints: {1:1,2:3,3:6,4:10},
+    roastRange: [15,22],
+  },
+  { id:'sumatra', group:3, origin:'인도네시아', name:'수마트라', diff:'expert',
+    contents: { hard:7, r0:2, moisture:6, reject:2, body:4, acidity:4, aroma:4, smoke:0 },
+    total:39,
+    roastPoints: {15:0,16:0,17:3,18:6,19:10,20:7,21:5,22:4},
+    flavorReq: ['body','acidity','aroma','sweetness'],
+    flavorPoints: {1:1,2:3,3:6,4:10},
+    roastRange: [15,22],
+  },
+  { id:'lima', group:3, origin:'페루', name:'리마', diff:'expert',
+    contents: { hard:8, r0:2, moisture:5, reject:1, body:5, acidity:5, aroma:4, smoke:0 },
+    total:27,
+    roastPoints: {15:0,16:0,17:4,18:7,19:10,20:7,21:5,22:4},
+    flavorReq: ['body','acidity','aroma','sweetness'],
+    flavorPoints: {1:1,2:3,3:6,4:10},
+    roastRange: [15,22],
+  },
+  { id:'punzaa', group:3, origin:'에티오피아', name:'펀자', diff:'expert',
+    contents: { hard:8, r0:2, moisture:5, reject:1, body:5, acidity:4, aroma:4, smoke:0 },
+    total:34,
+    roastPoints: {15:0,16:0,17:4,18:7,19:10,20:7,21:5,22:4},
+    flavorReq: ['body','acidity','aroma','sweetness'],
+    flavorPoints: {1:1,2:3,3:6,4:10},
+    roastRange: [15,22],
+  },
+];
+
+// 온도 게이지: 턴 디스크 위치 → 뽑을 토큰 수
+// 위치 6~14, 빨간 구역은 11,12 (첫 번째 크랙)
+const TEMP_DRAW = {6:6,7:7,8:8,9:9,10:10,11:11,12:12,13:13,14:14};
+const RED_ZONES = [11, 12]; // 이 위치에서는 로스트 +2
+// 연기 토큰 배치: 턴 디스크 위치 10,12에 스택 배치
+const SMOKE_POSITIONS = [10, 12]; // 각각 2개, 3개 스택
+
+// 토큰 타입 정의
+const TOKEN_TYPES = {
+  hard: { label: '하드 원두', cls: 'tk-hard', symbol: '◈', roastLevel: null },
+  r0:   { label: '생두 0', cls: 'tk-r0', symbol: '0', roastLevel: 0 },
+  r1:   { label: '원두 1', cls: 'tk-r1', symbol: '1', roastLevel: 1 },
+  r2:   { label: '원두 2', cls: 'tk-r2', symbol: '2', roastLevel: 2 },
+  r3:   { label: '원두 3', cls: 'tk-r3', symbol: '3', roastLevel: 3 },
+  r4:   { label: '원두 4', cls: 'tk-r4', symbol: '4', roastLevel: 4 },
+  burnt:    { label: '버닝', cls: 'tk-burnt', symbol: '✕', roastLevel: null },
+  smoke:    { label: '연기', cls: 'tk-smoke', symbol: '⋈', roastLevel: null },
+  reject:   { label: '불량', cls: 'tk-reject', symbol: '✗', roastLevel: null },
+  moisture: { label: '수분', cls: 'tk-moisture', symbol: '💧', roastLevel: null },
+  body:    { label: 'Body', cls: 'tk-body', symbol: 'B', roastLevel: null },
+  acidity: { label: 'Acidity', cls: 'tk-acidity', symbol: 'A', roastLevel: null },
+  aroma:   { label: 'Aroma', cls: 'tk-aroma', symbol: 'R', roastLevel: null },
+  wild:    { label: 'Wild', cls: 'tk-wild', symbol: 'W', roastLevel: null },
+};
+
+function tkCls(type) { return TOKEN_TYPES[type]?.cls || 'tk-r0'; }
+function tkSym(type) { return TOKEN_TYPES[type]?.symbol || '?'; }
+function roastCls(level) {
+  if (level === 0) return 'tk-r0';
+  if (level === 1) return 'tk-r1';
+  if (level === 2) return 'tk-r2';
+  if (level === 3) return 'tk-r3';
+  if (level === 4) return 'tk-r4';
+  return 'tk-burnt';
+}
+
+// ═══════════════════════════════════════════════════════
+// 게임 상태
+// ═══════════════════════════════════════════════════════
+let G = null; // 전역 게임 상태
+let logs = [];
+
+function addLog(msg) {
+  logs.unshift(msg);
+  if (logs.length > 50) logs.pop();
+}
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function buildBag(bean) {
+  const c = bean.contents;
+  const bag = [];
+  for (let i = 0; i < (c.hard || 0); i++) bag.push('hard');
+  for (let i = 0; i < (c.r0 || 0); i++) bag.push('r0');
+  for (let i = 0; i < (c.moisture || 0); i++) bag.push('moisture');
+  for (let i = 0; i < (c.reject || 0); i++) bag.push('reject');
+  for (let i = 0; i < (c.body || 0); i++) bag.push('body');
+  for (let i = 0; i < (c.acidity || 0); i++) bag.push('acidity');
+  for (let i = 0; i < (c.aroma || 0); i++) bag.push('aroma');
+  for (let i = 0; i < (c.burnt || 0); i++) bag.push('burnt');
+  for (let i = 0; i < (c.smoke || 0); i++) bag.push('smoke');
+  return shuffle(bag);
+}
+
+function initChallenge(bean) {
+  const bag = buildBag(bean);
+  const moisture = bean.contents.moisture || 0;
+  // 턴 디스크 시작 위치: 수분 토큰 수에 따라
+  let startPos = 6;
+  if (moisture <= 2) startPos = 6;
+  else if (moisture <= 4) startPos = 7;
+  else if (moisture <= 6) startPos = 8;
+  else startPos = 9;
+  // 연기 토큰 보드에 배치
+  const smokeOnBoard = { 10: 2, 12: 3 };
+
+  return {
+    bean,
+    bag,
+    turnPos: startPos, // 현재 턴 디스크 위치
+    firstTurn: true,
+    drawn: [],         // 이번 턴 뽑은 토큰
+    roastCounter: 0,
+    phase: 'roasting', // 'roasting' | 'cup_test' | 'scoring'
+    turnNum: 0,
+    smokeOnBoard,
+    // 즉시 효과 사용 여부 (1회)
+    usedEffects: {
+      redraw2: false,
+      draw2extra: false,
+      drawing5: false,
+      cleanup: false,
+      wildcard: false,
+    },
+    wildcardOnBoard: true, // 처음엔 보드에 있음
+    wildcardInHand: false, // 손에 들어왔으면
+    // 오른쪽 보드 플레이버 슬롯 (각 행: body×2, acidity×2, aroma×2)
+    rightBoard: {
+      body:    [null, null],
+      acidity: [null, null],
+      aroma:   [null, null],
+    },
+    // 유니크 효과 토큰 획득 여부
+    uniqueTokens: {
+      r3extra: false,    // 로스트 레벨 3 추가 토큰
+      sweetness: false,  // 스위트니스
+      drawSelect: false, // 뽑아서 선택
+      redraw2cup: false, // 재뽑기 2 (컵)
+      extraTray: false,  // 추가 트레이
+    },
+    // 컵 테스트
+    cup: [],    // 10칸 (상단 2칸: r3extra, sweetness 예약)
+    tray: [],   // 기본 2칸, extraTray시 +2칸
+    // 보드에 배치된 특수 토큰 초기값
+    specialOnBoard: {
+      r3extra: true,
+      sweetness: true,
+      drawSelect: true,
+      redraw2cup: true,
+      extraTray: true,
+    },
+    // UI 상태
+    selectedDrawn: [],  // drawn 에서 선택한 인덱스들
+    actionStep: 'start', // 'start' | 'immediate' | 'flavor' | 'roast_up' | 'done'
+    pendingFlavorEffect: null, // {type, targets:[]}
+    roundScore: null,
+  };
+}
+
+function initGame(mode, beanChoice) {
+  logs = [];
+  addLog(`게임 시작: ${mode === 'full' ? '풀 메뉴' : '트라이얼'}`);
+  return {
+    mode,             // 'full' | 'trial'
+    menuRound: 0,     // 0~2 (풀메뉴)
+    beanGroups: [[],[],[]], // 각 그룹에서 선택된 원두
+    scores: [],       // 각 라운드 채점 결과
+    challenge: null,  // 현재 챌린지
+    screen: 'bean_select', // 'bean_select' | 'game' | 'score' | 'final'
+    selectedBean: beanChoice || null,
+    prevScore: null,
+  };
+}
+
+// ═══════════════════════════════════════════════════════
+// 게임 로직
+// ═══════════════════════════════════════════════════════
+function drawTokens(challenge) {
+  const pos = challenge.turnPos;
+  let numToDraw = TEMP_DRAW[pos] || 6;
+  if (challenge.bag.length < numToDraw) numToDraw = challenge.bag.length;
+  const drawn = [];
+  const bagCopy = [...challenge.bag];
+  const removed = [];
+  for (let i = 0; i < numToDraw; i++) {
+    const idx = Math.floor(Math.random() * bagCopy.length);
+    const token = bagCopy.splice(idx, 1)[0];
+    if (token === 'moisture') {
+      removed.push(token);
+      addLog('💧 수분 토큰 → 자동 제거');
+    } else {
+      drawn.push(token);
+    }
+  }
+  challenge.bag = bagCopy;
+  challenge.drawn = drawn;
+  addLog(`${numToDraw}개 뽑음 (수분 ${removed.length}개 제거) → 손: ${drawn.length}개`);
+}
+
+function advanceTurnDisc(challenge) {
+  if (!challenge.firstTurn) {
+    challenge.turnPos = Math.min(14, challenge.turnPos + 1);
+  }
+  // 연기 토큰: 해당 위치에 연기가 있으면 백에 넣음
+  if (challenge.smokeOnBoard[challenge.turnPos]) {
+    const cnt = challenge.smokeOnBoard[challenge.turnPos];
+    for (let i = 0; i < cnt; i++) challenge.bag.push('smoke');
+    delete challenge.smokeOnBoard[challenge.turnPos];
+    addLog(`🌫️ 연기 ${cnt}개 → 백에 추가`);
+  }
+  challenge.firstTurn = false;
+  challenge.turnNum++;
+}
+
+function roastToken(type, inRedZone) {
+  // 토큰 로스트 레벨 +1 (또는 +2 적색 구역)
+  const levelMap = { r0:1, r1:2, r2:3, r3:4, r4:null };
+  if (type === 'hard') return { newType:'r0', delta:0 }; // 하드 → r0 (카운터 변화 없음)
+  if (type === 'burnt' || type === 'smoke' || type === 'reject' || type === 'body' || type === 'acidity' || type === 'aroma' || type === 'wild') {
+    return { newType: type, delta: 0, unchanged: true };
+  }
+  const curLevel = TOKEN_TYPES[type]?.roastLevel;
+  if (curLevel === null) return { newType: type, delta: 0, unchanged: true };
+  const inc = inRedZone ? 2 : 1;
+  const newLevel = curLevel + inc;
+  if (newLevel >= 5) {
+    return { newType: 'burnt', delta: -(curLevel) }; // 버닝 될 때 카운터 감소
+  }
+  const newType = `r${newLevel}`;
+  return { newType, delta: inRedZone ? 2 : 1 };
+}
+
+function calcRoastSum(cup) {
+  let sum = 0;
+  for (const t of cup) {
+    if (!t) continue;
+    if (t === 'r3_extra') { sum += 3; continue; }
+    const tl = TOKEN_TYPES[t]?.roastLevel;
+    if (tl !== null && tl !== undefined) sum += tl;
+  }
+  return sum;
+}
+
+function calcScore(challenge) {
+  const bean = challenge.bean;
+  const cup = challenge.cup;
+
+  // 1) 로스트 점수
+  const roastSum = calcRoastSum(cup);
+  const roastPts = bean.roastPoints[roastSum] || 0;
+
+  // 2) 플레이버 점수
+  const desired = bean.flavorReq;
+  const hasBody = cup.filter(t => t === 'body' || t === 'wild').length;
+  const hasAcidity = cup.filter(t => t === 'acidity' || t === 'wild').length;
+  const hasAroma = cup.filter(t => t === 'aroma' || t === 'wild').length;
+  const hasSweetness = cup.filter(t => t === 'sweetness').length;
+
+  let flavorCount = 0;
+  if (desired.includes('body') && hasBody > 0) flavorCount++;
+  if (desired.includes('acidity') && hasAcidity > 0) flavorCount++;
+  if (desired.includes('aroma') && hasAroma > 0) flavorCount++;
+  if (desired.includes('sweetness')) {
+    if (hasSweetness > 0 || (hasBody > 0 && hasAcidity > 0 && hasAroma > 0)) flavorCount++;
+  }
+  const flavorMap = {1:1,2:3,3:6,4:10};
+  const flavorPts = flavorMap[flavorCount] || 0;
+
+  // 3) 스킬 점수 (같은 로스트 레벨 3개 이상)
+  const levelCounts = {};
+  for (const t of cup) {
+    if (!t) continue;
+    const tl = TOKEN_TYPES[t]?.roastLevel;
+    if (tl !== null && tl !== undefined && tl >= 1 && tl <= 4) {
+      levelCounts[tl] = (levelCounts[tl] || 0) + 1;
+    }
+  }
+  const skillMap = {3:1,4:2,5:3,6:4,7:5};
+  let skillPts = 0;
+  for (const cnt of Object.values(levelCounts)) {
+    const pts = cnt >= 7 ? 5 : (skillMap[cnt] || 0);
+    skillPts += pts;
+  }
+
+  // 4) 마이너스 점수
+  let minusPts = 0;
+  const tokenCount = cup.filter(t => t).length;
+  if (tokenCount < 10) { minusPts += 5; addLog('⚠️ 컵 10칸 미달 → -5점'); }
+  const hasMinFlavor = flavorCount >= 1;
+  if (!hasMinFlavor) { minusPts += 3; addLog('⚠️ 플레이버 없음 → -3점'); }
+  for (const t of cup) {
+    if (!t) continue;
+    if (t === 'hard' || t === 'burnt' || t === 'smoke') minusPts += 1;
+    if (t === 'reject') minusPts += 2;
+  }
+
+  return {
+    roastSum, roastPts, flavorPts, skillPts, minusPts,
+    total: roastPts + flavorPts + skillPts - minusPts,
+    flavorCount,
+  };
+}
+
+// ═══════════════════════════════════════════════════════
+// 렌더 함수
+// ═══════════════════════════════════════════════════════
+function tokenHTML(type, extra = '', size = 38) {
+  const cls = tkCls(type);
+  const sym = tkSym(type);
+  return `<span class="token ${cls}" style="width:${size}px;height:${size}px" ${extra}>${sym}</span>`;
+}
+
+function bagSummaryHTML(bag) {
+  const counts = {};
+  for (const t of bag) counts[t] = (counts[t] || 0) + 1;
+  const order = ['hard','r0','r1','r2','r3','r4','burnt','smoke','reject','moisture','body','acidity','aroma','wild'];
+  return `<table class="bag-count-table"><tr>` +
+    order.filter(t => counts[t]).map(t =>
+      `<td>${tokenHTML(t,'',28)}<br><b class="cnt">${counts[t]}</b></td>`
+    ).join('') +
+    `</tr></table>`;
+}
+
+function beanCardHTML(bean, selected = false) {
+  const c = bean.contents;
+  const contentsStr = [
+    c.hard ? `하드 ${c.hard}` : '',
+    c.r0 ? `생두 ${c.r0}` : '',
+    c.moisture ? `수분 ${c.moisture}` : '',
+    c.reject ? `불량 ${c.reject}` : '',
+    c.body ? `Body ${c.body}` : '',
+    c.acidity ? `Acidity ${c.acidity}` : '',
+    c.aroma ? `Aroma ${c.aroma}` : '',
+  ].filter(Boolean).join(' · ');
+
+  const diffLabel = bean.diff === 'beginner' ? '초보자' : bean.diff === 'advanced' ? '중급자' : '전문가';
+  const roastVals = Object.entries(bean.roastPoints).filter(([,v]) => v > 0).map(([k,v]) => `${k}:${v}`).join(' ');
+
+  return `<div class="bean-card ${selected ? 'selected' : ''}" data-bean-id="${bean.id}">
+    <div class="bc-group">그룹 ${bean.group}</div>
+    <div class="bc-name">${bean.name}</div>
+    <div class="bc-origin">🌍 ${bean.origin}</div>
+    <div class="bc-contents">${contentsStr}<br>합계: ${bean.total}</div>
+    <div class="bc-roast-row">
+      <span class="bc-diff ${bean.diff}">${diffLabel}</span>
+      <span style="font-size:9px;color:var(--muted)">로스트: ${roastVals}</span>
+    </div>
+  </div>`;
+}
+
+// ═══════════════════════════════════════════════════════
+// 메인 렌더
+// ═══════════════════════════════════════════════════════
+function render() {
+  const app = document.querySelector('#app');
+  if (!G) { renderHome(app); return; }
+  if (G.screen === 'bean_select') { renderBeanSelect(app); return; }
+  if (G.screen === 'game') { renderGame(app); return; }
+  if (G.screen === 'scoring') { renderScoring(app); return; }
+  if (G.screen === 'final') { renderFinal(app); return; }
+}
+
+// ── 홈 ──
+function renderHome(app) {
+  app.innerHTML = `
+  <div class="home-screen card">
+    <h1>☕ 커피 로스터</h1>
+    <p>당신은 원두 로스터입니다. 백에서 원두를 뽑아 로스팅하고,<br>
+    컵 테스트로 완벽한 커피를 완성하세요!<br>
+    <small style="color:var(--muted)">1인 플레이 · 솔로 게임 시뮬레이터</small></p>
+    <div class="menu-btns">
+      <button class="btn btn-gold menu-btn" id="btn-trial">☕ 트라이얼 (1종)</button>
+      <button class="btn btn-primary menu-btn" id="btn-full">📋 풀 메뉴 (3종)</button>
+    </div>
+  </div>`;
+  document.querySelector('#btn-trial').onclick = () => {
+    G = initGame('trial', null);
+    G.screen = 'bean_select';
+    render();
+  };
+  document.querySelector('#btn-full').onclick = () => {
+    G = initGame('full', null);
+    G.screen = 'bean_select';
+    render();
+  };
+}
+
+// ── 원두 선택 ──
+function renderBeanSelect(app) {
+  const grp = G.mode === 'full' ? G.menuRound + 1 : null;
+  let eligibleBeans = BEANS;
+  if (G.mode === 'full') {
+    eligibleBeans = BEANS.filter(b => b.group === grp);
+    // 그룹 2,3: 이전 점수로 난이도 결정
+    if (grp >= 2 && G.prevScore !== null) {
+      let targetDiff;
+      if (G.prevScore >= 15) targetDiff = 'expert';
+      else if (G.prevScore >= 10) targetDiff = 'advanced';
+      else targetDiff = 'beginner';
+      eligibleBeans = eligibleBeans.filter(b => b.diff === targetDiff);
+    } else if (grp === 1) {
+      eligibleBeans = eligibleBeans.filter(b => b.diff === 'beginner');
+    }
+  }
+
+  const selectedId = G.selectedBean?.id;
+
+  app.innerHTML = `
+  <div class="card">
+    <div class="card-title">☕ 원두 선택${G.mode === 'full' ? ` — 그룹 ${grp}` : ' (트라이얼)'}</div>
+    ${G.mode === 'full' && G.prevScore !== null ? `<div class="notice">이전 라운드 점수: ${G.prevScore}점 → 난이도 결정됨</div>` : ''}
+    <div class="bean-grid" id="bean-grid">
+      ${eligibleBeans.map(b => beanCardHTML(b, b.id === selectedId)).join('')}
+    </div>
+    <div class="row" style="margin-top:12px">
+      <button class="btn btn-gold" id="btn-start-roast" ${!G.selectedBean ? 'disabled' : ''}>🔥 로스팅 시작</button>
+      <button class="btn btn-ghost" id="btn-home">← 홈</button>
+    </div>
+  </div>`;
+
+  document.querySelectorAll('.bean-card').forEach(el => {
+    el.addEventListener('click', () => {
+      G.selectedBean = BEANS.find(b => b.id === el.dataset.beanId);
+      render();
+    });
+  });
+  document.querySelector('#btn-start-roast').onclick = () => {
+    G.challenge = initChallenge(G.selectedBean);
+    G.screen = 'game';
+    addLog(`원두 선택: ${G.selectedBean.name}`);
+    render();
+  };
+  document.querySelector('#btn-home').onclick = () => { G = null; render(); };
+}
+
+// ── 게임 화면 ──
+function renderGame(app) {
+  const ch = G.challenge;
+  if (!ch) { renderHome(app); return; }
+
+  const inRedZone = RED_ZONES.includes(ch.turnPos);
+  const canDraw = ch.bag.length > 0 && ch.drawn.length === 0 && ch.phase === 'roasting';
+  const hasDrawn = ch.drawn.length > 0;
+
+  // 백 요약
+  const bagHTML = bagSummaryHTML(ch.bag);
+
+  // 뽑힌 토큰
+  const drawnHTML = ch.drawn.map((t, i) =>
+    `<span class="token ${tkCls(t)} ${ch.selectedDrawn.includes(i) ? 'selected' : ''} clickable"
+      data-drawn-idx="${i}" style="width:42px;height:42px;font-size:15px">${tkSym(t)}</span>`
+  ).join('');
+
+  // 온도 게이지
+  const tempHTML = Array.from({length:9}, (_,i) => {
+    const pos = 6 + i;
+    const isCurrent = pos === ch.turnPos;
+    const isSmoke = ch.smokeOnBoard[pos];
+    const drawNum = TEMP_DRAW[pos];
+    const isRed = RED_ZONES.includes(pos);
+    return `<div class="temp-cell ${isCurrent ? 'current' : ''} ${isSmoke ? 'smoke' : ''}">
+      <div class="draw-num">${drawNum}</div>
+      <div style="font-size:8px;color:${isRed?'#ff8080':'var(--muted)'}">${isRed?'🔴':pos}</div>
+      ${isSmoke ? `<div class="smoke-marker">연기${ch.smokeOnBoard[pos]}</div>` : ''}
+    </div>`;
+  }).join('');
+
+  // 로스트 카운터
+  const counterHTML = Array.from({length:41}, (_,i) => {
+    const val = i;
+    return `<div class="counter-cell ${ch.roastCounter === val ? 'current' : ''}">${val}</div>`;
+  }).join('');
+
+  // 즉시 효과 (왼쪽 보드)
+  const effects = [
+    { key:'redraw2', label:'2개 재뽑기', desc:'뽑은 토큰 중 2개 선택→백에 넣고 2개 새로 뽑기' },
+    { key:'draw2extra', label:'+2 추가 뽑기', desc:'백에서 2개 추가로 뽑기' },
+    { key:'drawing5', label:'5개 뽑아 2제거', desc:'백에서 5개 뽑아 2개 제거, 나머지 백으로' },
+    { key:'cleanup', label:'청소', desc:'뽑힌 연기/불량/버닝 모두 제거' },
+    { key:'wildcard', label:'와일드 카드', desc:'와일드 플레이버 토큰 획득 (한 번만)' },
+  ];
+  const leftBoardHTML = effects.map(e => {
+    const used = ch.usedEffects[e.key];
+    const canUse = !used && hasDrawn;
+    return `<div class="effect-slot ${used ? 'used' : canUse ? 'active' : ''}">
+      <div class="slot-label">${e.label}</div>
+      <div class="slot-desc">${e.desc}</div>
+      ${canUse ? `<button class="btn btn-sm btn-green effect-btn" data-effect="${e.key}">사용</button>` : ''}
+    </div>`;
+  }).join('');
+
+  // 오른쪽 보드 (플레이버 효과)
+  const rightBoardHTML = ['body','acidity','aroma'].map(ftype => {
+    const slots = ch.rightBoard[ftype];
+    const ftypeLabel = ftype === 'body' ? 'Body (농축)' : ftype === 'acidity' ? 'Acidity (보존)' : 'Aroma (분산)';
+    const ftypeDesc = ftype === 'body' ? '원두 2개 → 합산 1개' : ftype === 'acidity' ? '원두 2개 로스팅 건너뜀' : '원두 1개 → 2개로 분리';
+    const bothFilled = slots[0] && slots[1];
+    // 유니크 토큰 이름
+    const uniqueNames = { body:'농축 토큰', acidity:'보존 토큰', aroma:'분산 토큰' };
+    return `<div class="flavor-row ${bothFilled ? 'earned' : ''}">
+      <span class="token ${tkCls(ftype)}" style="width:30px;height:30px;font-size:11px">${tkSym(ftype)}</span>
+      <div style="flex:1">
+        <div style="font-size:10px;font-weight:900;color:var(--text2)">${ftypeLabel}</div>
+        <div style="font-size:9px;color:var(--muted)">${ftypeDesc}</div>
+      </div>
+      <div style="display:flex;gap:4px">
+        <div class="flavor-slot ${slots[0] ? 'filled' : ''}">
+          ${slots[0] ? `<span class="token ${tkCls(slots[0])}" style="width:28px;height:28px;font-size:10px">${tkSym(slots[0])}</span>` : '·'}
+        </div>
+        <div class="flavor-slot ${slots[1] ? 'filled' : ''}">
+          ${slots[1] ? `<span class="token ${tkCls(slots[1])}" style="width:28px;height:28px;font-size:10px">${tkSym(slots[1])}</span>` : '·'}
+        </div>
+      </div>
+      <div class="unique-token-area">
+        ${bothFilled ? `<span style="font-size:10px;color:#70d070">✔ 획득</span>` : ''}
+      </div>
+      ${hasDrawn && !bothFilled ? `
+        <button class="btn btn-sm btn-gold flavor-btn" data-flavor="${ftype}" style="margin-left:4px">효과</button>
+      ` : ''}
+    </div>`;
+  }).join('');
+
+  app.innerHTML = `
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+    <div>
+      <b style="color:var(--gold)">${ch.bean.name}</b>
+      <span style="font-size:11px;color:var(--text2);margin-left:8px">${ch.bean.origin} · 그룹 ${ch.bean.group}</span>
+    </div>
+    <div class="row">
+      <span style="font-size:11px;color:var(--muted)">라운드 ${ch.turnNum}</span>
+      ${G.mode === 'full' ? `<div class="round-dots">
+        ${[0,1,2].map(i => `<div class="round-dot ${i < G.menuRound ? 'done' : i === G.menuRound ? 'current' : ''}"></div>`).join('')}
+      </div>` : ''}
+    </div>
+  </div>
+
+  <!-- 온도 게이지 -->
+  <div class="card" style="padding:8px">
+    <div class="card-title">🌡️ 온도 게이지 · 턴 디스크</div>
+    <div class="temp-gauge">${tempHTML}</div>
+    <div style="font-size:10px;color:var(--muted);margin-top:4px">🔴 빨간 구역: 로스트 +2 | 현재 뽑을 수: ${TEMP_DRAW[ch.turnPos]}</div>
+  </div>
+
+  <!-- 로스트 카운터 -->
+  <div class="card" style="padding:8px">
+    <div class="card-title">📊 로스트 카운터: ${ch.roastCounter}</div>
+    <div class="roast-counter-bar">${counterHTML}</div>
+  </div>
+
+  <!-- 백 현황 -->
+  <div class="card">
+    <div class="card-title">🎒 백 (${ch.bag.length}개)</div>
+    ${bagHTML}
+  </div>
+
+  <!-- 뽑힌 토큰 -->
+  <div class="card">
+    <div class="card-title">🖐 이번 턴 뽑힌 토큰 (${ch.drawn.length}개)</div>
+    <div class="drawn-area">${drawnHTML || '<span style="color:var(--muted);font-size:11px">아직 뽑지 않았습니다</span>'}</div>
+    <div class="row" style="margin-top:8px">
+      ${canDraw ? `<button class="btn btn-gold" id="btn-draw">🎲 토큰 뽑기</button>` : ''}
+      ${hasDrawn ? `<button class="btn btn-primary" id="btn-roast-up">⬆️ 로스팅 (레벨 상승)</button>` : ''}
+      ${hasDrawn ? `<button class="btn btn-green" id="btn-end-turn">✅ 턴 종료 (백으로 반납)</button>` : ''}
+    </div>
+  </div>
+
+  <!-- 로스팅 보드 -->
+  <div class="card">
+    <div class="card-title">📋 로스팅 보드</div>
+    <div class="roast-board">
+      <div class="board-half left">
+        <div class="board-half-title">왼쪽 · 즉시 효과 (각 1회)</div>
+        ${leftBoardHTML}
+      </div>
+      <div class="board-half right">
+        <div class="board-half-title">오른쪽 · 플레이버 효과 → 유니크 토큰</div>
+        ${rightBoardHTML}
+      </div>
+    </div>
+  </div>
+
+  <!-- 행동 버튼 -->
+  <div class="card">
+    <div class="row">
+      ${!hasDrawn && ch.phase === 'roasting' ? `<button class="btn btn-gold" id="btn-draw2">🎲 뽑기 시작</button>` : ''}
+      ${ch.phase === 'roasting' ? `<button class="btn btn-primary" id="btn-go-cup">☕ 컵 테스트로 이동</button>` : ''}
+      <button class="btn btn-ghost" id="btn-home2">← 홈</button>
+    </div>
+  </div>
+
+  <!-- 로그 -->
+  <div class="card">
+    <div class="card-title">📋 로그</div>
+    <div class="log-box">${logs.map(l=>`<div>${l}</div>`).join('')}</div>
+  </div>
+  `;
+
+  // 이벤트
+  const bindClick = (sel, fn) => { const el = document.querySelector(sel); if (el) el.onclick = fn; };
+  bindClick('#btn-draw', startTurn);
+  bindClick('#btn-draw2', startTurn);
+  bindClick('#btn-roast-up', doRoastUp);
+  bindClick('#btn-end-turn', endTurn);
+  bindClick('#btn-go-cup', () => {
+    ch.phase = 'cup_test';
+    G.screen = 'game'; // cup test는 같은 화면 내 다른 phase
+    renderCupTest(app);
+  });
+  bindClick('#btn-home2', () => {
+    if (confirm('게임을 종료하고 홈으로 돌아가시겠습니까?')) { G = null; render(); }
+  });
+
+  document.querySelectorAll('[data-drawn-idx]').forEach(el => {
+    el.onclick = () => {
+      const idx = Number(el.dataset.drawnIdx);
+      if (ch.selectedDrawn.includes(idx)) {
+        ch.selectedDrawn = ch.selectedDrawn.filter(i => i !== idx);
+      } else {
+        ch.selectedDrawn.push(idx);
+      }
+      render();
+    };
+  });
+
+  document.querySelectorAll('.effect-btn').forEach(btn => {
+    btn.onclick = () => useImmediateEffect(btn.dataset.effect);
+  });
+
+  document.querySelectorAll('.flavor-btn').forEach(btn => {
+    btn.onclick = () => showFlavorModal(btn.dataset.flavor);
+  });
+}
+
+function startTurn() {
+  const ch = G.challenge;
+  advanceTurnDisc(ch);
+  drawTokens(ch);
+  ch.selectedDrawn = [];
+  render();
+}
+
+function doRoastUp() {
+  const ch = G.challenge;
+  const inRedZone = RED_ZONES.includes(ch.turnPos);
+  const newDrawn = [];
+  for (const t of ch.drawn) {
+    if (t === 'moisture') { addLog('수분 → 제거'); continue; }
+    const result = roastToken(t, inRedZone);
+    if (result.unchanged) {
+      newDrawn.push(t);
+      if (t === 'hard') {
+        // 하드 → r0, 카운터 변화 없음
+        ch.bag.push('r0');
+        addLog(`하드 원두 → 생두(0)로 변환`);
+      }
+    } else if (result.newType === 'burnt') {
+      const oldLevel = TOKEN_TYPES[t]?.roastLevel || 0;
+      ch.roastCounter = Math.max(0, ch.roastCounter - oldLevel);
+      ch.bag.push('burnt');
+      addLog(`원두 ${t} → 버닝! 카운터 -${oldLevel}`);
+    } else {
+      const delta = result.delta;
+      ch.roastCounter += delta;
+      ch.bag.push(result.newType);
+      addLog(`${t} → ${result.newType} (+${delta})`);
+    }
+  }
+  ch.drawn = [];
+  ch.selectedDrawn = [];
+  addLog(`턴 ${ch.turnNum} 로스팅 완료. 카운터: ${ch.roastCounter}`);
+  render();
+}
+
+function endTurn() {
+  const ch = G.challenge;
+  // 뽑힌 토큰 모두 백으로
+  for (const t of ch.drawn) {
+    if (t !== 'moisture') ch.bag.push(t);
+  }
+  ch.drawn = [];
+  ch.selectedDrawn = [];
+  addLog('턴 종료. 토큰 백으로 반납.');
+  render();
+}
+
+function useImmediateEffect(effectKey) {
+  const ch = G.challenge;
+  if (ch.usedEffects[effectKey]) return;
+  ch.usedEffects[effectKey] = true;
+
+  switch(effectKey) {
+    case 'redraw2': {
+      const sel = ch.selectedDrawn.slice(0, 2);
+      if (sel.length < 2) { alert('2개 선택 후 사용하세요.'); ch.usedEffects[effectKey] = false; return; }
+      const removed = sel.map(i => ch.drawn[i]);
+      ch.drawn = ch.drawn.filter((_, i) => !sel.includes(i));
+      for (const t of removed) ch.bag.push(t);
+      // 2개 새로 뽑기
+      for (let k = 0; k < 2 && ch.bag.length > 0; k++) {
+        const idx = Math.floor(Math.random() * ch.bag.length);
+        const t = ch.bag.splice(idx, 1)[0];
+        if (t === 'moisture') { addLog('수분 → 자동 제거'); k--; continue; }
+        ch.drawn.push(t);
+      }
+      ch.selectedDrawn = [];
+      addLog('2개 재뽑기 효과 사용');
+      break;
+    }
+    case 'draw2extra': {
+      if (ch.bag.length < 2) { alert('백에 토큰이 2개 미만입니다.'); ch.usedEffects[effectKey] = false; return; }
+      for (let k = 0; k < 2 && ch.bag.length > 0; k++) {
+        const idx = Math.floor(Math.random() * ch.bag.length);
+        const t = ch.bag.splice(idx, 1)[0];
+        if (t === 'moisture') { addLog('수분 → 자동 제거'); k--; continue; }
+        ch.drawn.push(t);
+      }
+      addLog('+2 추가 뽑기 사용');
+      break;
+    }
+    case 'drawing5': {
+      if (ch.bag.length < 5) { alert('백에 토큰이 5개 미만입니다.'); ch.usedEffects[effectKey] = false; return; }
+      const five = [];
+      const bagCopy = [...ch.bag];
+      for (let k = 0; k < 5; k++) {
+        const idx = Math.floor(Math.random() * bagCopy.length);
+        five.push(bagCopy.splice(idx, 1)[0]);
+      }
+      showDrawing5Modal(five);
+      break;
+    }
+    case 'cleanup': {
+      const before = ch.drawn.length;
+      ch.drawn = ch.drawn.filter(t => t !== 'smoke' && t !== 'reject' && t !== 'burnt');
+      addLog(`청소 효과: ${before - ch.drawn.length}개 제거`);
+      break;
+    }
+    case 'wildcard': {
+      if (!ch.wildcardOnBoard) { alert('이미 사용했습니다.'); ch.usedEffects[effectKey] = false; return; }
+      ch.wildcardOnBoard = false;
+      ch.wildcardInHand = true;
+      ch.drawn.push('wild');
+      addLog('와일드 플레이버 토큰 획득!');
+      break;
+    }
+  }
+  render();
+}
+
+function showDrawing5Modal(five) {
+  const modal = document.querySelector('#modal');
+  modal.style.display = 'block';
+  modal.innerHTML = `<div class="modal-overlay">
+    <div class="modal-box">
+      <h3>🎲 5개 뽑기 → 2개 제거</h3>
+      <p>뽑힌 5개 토큰에서 제거할 2개를 선택하세요. 나머지 3개는 백으로 돌아갑니다.</p>
+      <div class="drawn-area" id="d5-tokens">
+        ${five.map((t,i) => `<span class="token ${tkCls(t)} clickable" data-d5-idx="${i}" style="width:44px;height:44px;font-size:16px">${tkSym(t)}</span>`).join('')}
+      </div>
+      <div style="margin-top:10px;font-size:11px;color:var(--text2)">선택된 제거 항목: <span id="d5-selected-count">0</span>/2</div>
+      <div class="row" style="margin-top:12px">
+        <button class="btn btn-red" id="d5-confirm">제거 확인</button>
+        <button class="btn btn-ghost" id="d5-cancel">취소</button>
+      </div>
+    </div>
+  </div>`;
+
+  let d5Selected = [];
+  const updateD5 = () => {
+    document.querySelector('#d5-selected-count').textContent = d5Selected.length;
+    document.querySelectorAll('[data-d5-idx]').forEach(el => {
+      el.classList.toggle('selected', d5Selected.includes(Number(el.dataset.d5Idx)));
+    });
+  };
+  document.querySelectorAll('[data-d5-idx]').forEach(el => {
+    el.onclick = () => {
+      const idx = Number(el.dataset.d5Idx);
+      if (d5Selected.includes(idx)) d5Selected = d5Selected.filter(i => i !== idx);
+      else if (d5Selected.length < 2) d5Selected.push(idx);
+      updateD5();
+    };
+  });
+  document.querySelector('#d5-confirm').onclick = () => {
+    if (d5Selected.length !== 2) { alert('정확히 2개를 선택하세요.'); return; }
+    const ch = G.challenge;
+    const toRemove = new Set(d5Selected);
+    const toReturn = five.filter((_, i) => !toRemove.has(i));
+    for (const t of toReturn) {
+      if (t !== 'moisture') ch.bag.push(t);
+    }
+    // 제거된 토큰에 대해 카운터 조정
+    for (const idx of d5Selected) {
+      const t = five[idx];
+      const lvl = TOKEN_TYPES[t]?.roastLevel;
+      if (lvl !== null && lvl !== undefined && lvl >= 1) {
+        ch.roastCounter = Math.max(0, ch.roastCounter - lvl);
+      }
+    }
+    addLog(`5개 뽑기: ${five.filter((_,i) => toRemove.has(i)).map(t=>TOKEN_TYPES[t].label).join(',')} 제거`);
+    modal.style.display = 'none'; modal.innerHTML = '';
+    render();
+  };
+  document.querySelector('#d5-cancel').onclick = () => {
+    G.challenge.usedEffects.drawing5 = false;
+    modal.style.display = 'none'; modal.innerHTML = '';
+    render();
+  };
+}
+
+function showFlavorModal(flavorType) {
+  const ch = G.challenge;
+  const modal = document.querySelector('#modal');
+  modal.style.display = 'block';
+  const labelMap = { body:'Body - 농축', acidity:'Acidity - 보존', aroma:'Aroma - 분산' };
+  const descMap = {
+    body: '원두 2개(레벨 1~3, 합산 ≤4)를 1개로 합칩니다. (1+1=2, 1+2=3, 1+3=4, 2+2=4)',
+    acidity: '원두 2개(레벨 0~4)를 로스팅 없이 백으로 보냅니다.',
+    aroma: '원두 1개(레벨 2~4)를 2개로 분리합니다. (2→1+1, 3→1+2 또는 1+2, 4→1+3 또는 2+2)',
+  };
+
+  const beanTokens = ch.drawn.filter(t => ['r0','r1','r2','r3','r4'].includes(t));
+  const beanTokensHTML = ch.drawn.map((t, i) => {
+    const isBean = ['r0','r1','r2','r3','r4'].includes(t) || t === 'wild';
+    if (!isBean) return '';
+    return `<span class="token ${tkCls(t)} clickable" data-fl-idx="${i}" style="width:44px;height:44px;font-size:16px">${tkSym(t)}</span>`;
+  }).join('');
+
+  modal.innerHTML = `<div class="modal-overlay">
+    <div class="modal-box">
+      <h3>🌿 ${labelMap[flavorType]}</h3>
+      <p>${descMap[flavorType]}</p>
+      <p style="color:var(--text2)">대상 원두 토큰을 선택하세요:</p>
+      <div class="drawn-area" id="fl-tokens">${beanTokensHTML}</div>
+      <div style="margin-top:8px;font-size:11px;color:var(--text2)">선택: <span id="fl-sel-count">0</span>개</div>
+      <div class="row" style="margin-top:12px">
+        <button class="btn btn-gold" id="fl-confirm">효과 적용</button>
+        <button class="btn btn-ghost" id="fl-cancel">취소</button>
+      </div>
+    </div>
+  </div>`;
+
+  let flSelected = [];
+  const updateFl = () => {
+    document.querySelector('#fl-sel-count').textContent = flSelected.length;
+    document.querySelectorAll('[data-fl-idx]').forEach(el => {
+      el.classList.toggle('selected', flSelected.includes(Number(el.dataset.flIdx)));
+    });
+  };
+  document.querySelectorAll('[data-fl-idx]').forEach(el => {
+    el.onclick = () => {
+      const idx = Number(el.dataset.flIdx);
+      if (flSelected.includes(idx)) flSelected = flSelected.filter(i => i !== idx);
+      else flSelected.push(idx);
+      updateFl();
+    };
+  });
+  document.querySelector('#fl-confirm').onclick = () => {
+    applyFlavorEffect(flavorType, flSelected);
+    modal.style.display = 'none'; modal.innerHTML = '';
+  };
+  document.querySelector('#fl-cancel').onclick = () => {
+    modal.style.display = 'none'; modal.innerHTML = '';
+  };
+}
+
+function applyFlavorEffect(flavorType, selectedIdxs) {
+  const ch = G.challenge;
+  const selected = selectedIdxs.map(i => ({ idx: i, type: ch.drawn[i] }));
+
+  // 오른쪽 보드에 플레이버 토큰 배치
+  const slot = ch.rightBoard[flavorType];
+  const placeToken = flavorType; // body, acidity, aroma
+  if (!slot[0]) slot[0] = placeToken;
+  else if (!slot[1]) slot[1] = placeToken;
+
+  // 유니크 토큰 획득 체크
+  if (slot[0] && slot[1]) {
+    addLog(`✨ ${flavorType} 유니크 토큰 획득!`);
+  }
+
+  if (flavorType === 'body') {
+    // 농축: 2개 → 1개
+    if (selected.length !== 2) { alert('정확히 2개 선택'); return; }
+    const l1 = TOKEN_TYPES[selected[0].type]?.roastLevel || 0;
+    const l2 = TOKEN_TYPES[selected[1].type]?.roastLevel || 0;
+    const sum = l1 + l2;
+    if (sum > 4 || !['r1','r2','r3'].includes(selected[0].type) || !['r1','r2','r3'].includes(selected[1].type)) {
+      alert('조건 미충족: 레벨 1-3짜리 2개, 합계 ≤4'); return;
+    }
+    const newType = `r${sum}`;
+    // 제거
+    ch.drawn = ch.drawn.filter((_, i) => !selectedIdxs.includes(i));
+    ch.bag.push(newType);
+    addLog(`농축: ${selected[0].type}+${selected[1].type} → ${newType} 백에 추가`);
+  } else if (flavorType === 'acidity') {
+    // 보존: 2개 로스팅 없이 백으로
+    if (selected.length !== 2) { alert('정확히 2개 선택'); return; }
+    ch.drawn = ch.drawn.filter((_, i) => !selectedIdxs.includes(i));
+    for (const s of selected) ch.bag.push(s.type);
+    addLog(`보존: ${selected.map(s=>s.type).join(',')} 그대로 백으로`);
+  } else if (flavorType === 'aroma') {
+    // 분산: 1개 → 2개
+    if (selected.length !== 1) { alert('1개 선택'); return; }
+    const lvl = TOKEN_TYPES[selected[0].type]?.roastLevel;
+    if (!lvl || lvl < 2 || lvl > 4) { alert('레벨 2-4 원두만 분산 가능'); return; }
+    // 분리 선택 모달
+    showDispersionModal(selected[0], () => {
+      ch.drawn = ch.drawn.filter((_, i) => !selectedIdxs.includes(i));
+      render();
+    });
+    return;
+  }
+  render();
+}
+
+function showDispersionModal(target, callback) {
+  const ch = G.challenge;
+  const lvl = TOKEN_TYPES[target.type]?.roastLevel;
+  const modal = document.querySelector('#modal');
+  modal.style.display = 'block';
+  // 가능한 분리 조합
+  const combos = [];
+  for (let a = 1; a < lvl; a++) {
+    const b = lvl - a;
+    if (a <= 4 && b <= 4) combos.push([a, b]);
+  }
+  const uniqueCombos = combos.filter((c, i, arr) =>
+    arr.findIndex(x => x[0] === c[0] && x[1] === c[1]) === i
+  );
+
+  modal.innerHTML = `<div class="modal-overlay">
+    <div class="modal-box">
+      <h3>🌿 분산: ${target.type} → 2개</h3>
+      <p>분리 방법을 선택하세요:</p>
+      <div class="row">
+        ${uniqueCombos.map(([a,b]) =>
+          `<button class="btn btn-gold disperse-btn" data-a="${a}" data-b="${b}">
+            ${tokenHTML(`r${a}`,'')} + ${tokenHTML(`r${b}`,'')}
+          </button>`
+        ).join('')}
+      </div>
+      <button class="btn btn-ghost" style="margin-top:10px" id="disp-cancel">취소</button>
+    </div>
+  </div>`;
+  document.querySelectorAll('.disperse-btn').forEach(btn => {
+    btn.onclick = () => {
+      const a = Number(btn.dataset.a), b = Number(btn.dataset.b);
+      ch.bag.push(`r${a}`, `r${b}`);
+      ch.drawn.splice(target.idx, 1);
+      addLog(`분산: ${target.type} → r${a} + r${b} 백에 추가`);
+      modal.style.display = 'none'; modal.innerHTML = '';
+      callback();
+    };
+  });
+  document.querySelector('#disp-cancel').onclick = () => {
+    modal.style.display = 'none'; modal.innerHTML = '';
+  };
+}
+
+// ── 컵 테스트 ──
+function renderCupTest(app) {
+  const ch = G.challenge;
+  ch.cup = [];
+  ch.tray = [];
+
+  // 특수 토큰 자리 설정 (상단 2칸)
+  if (ch.uniqueTokens.r3extra) ch.cup.push('r3_extra');
+  else ch.cup.push(null);
+  if (ch.uniqueTokens.sweetness) ch.cup.push('sweetness');
+  else ch.cup.push(null);
+
+  // 컵 채우기 시뮬레이션
+  let filledCount = ch.cup.filter(t => t !== null).length;
+  const maxTray = ch.uniqueTokens.extraTray ? 4 : 2;
+
+  const drawAndFill = () => {
+    if (filledCount >= 10 || ch.bag.length === 0) {
+      addLog(`컵 테스트 완료. 컵 토큰 수: ${ch.cup.filter(t=>t).length}`);
+      G.screen = 'scoring';
+      renderScoring(app);
+      return;
+    }
+    const idx = Math.floor(Math.random() * ch.bag.length);
+    const t = ch.bag.splice(idx, 1)[0];
+    if (t === 'moisture') {
+      addLog('수분 → 컵 테스트 중 제거');
+      drawAndFill();
+      return;
+    }
+    renderCupFillStep(app, t, () => drawAndFill());
+  };
+
+  // 즉시 컵 채우기 시작
+  addLog('컵 테스트 시작!');
+  fillCupAuto(ch, app);
+}
+
+function fillCupAuto(ch, app) {
+  // 간소화: 자동으로 최적 배치 (실제 게임은 플레이어 선택)
+  // 백 전체에서 토큰 뽑아 컵 채우기
+  const maxTray = ch.uniqueTokens.extraTray ? 4 : 2;
+  let cupCount = ch.cup.filter(t => t !== null).length;
+  const tray = [];
+
+  while (cupCount < 10 && ch.bag.length > 0) {
+    const idx = Math.floor(Math.random() * ch.bag.length);
+    const t = ch.bag.splice(idx, 1)[0];
+    if (t === 'moisture') continue;
+    // 트레이에 있으면 사용
+    if (tray.length < maxTray && ['smoke','reject','burnt','hard'].includes(t)) {
+      tray.push(t); // 나쁜 토큰은 트레이로
+    } else {
+      ch.cup.push(t);
+      cupCount++;
+    }
+  }
+  // 10개 미달이면 나머지를 컵으로
+  while (cupCount < 10 && tray.length > 0) {
+    ch.cup.push(tray.shift());
+    cupCount++;
+  }
+  ch.tray = tray;
+
+  addLog(`컵 채움: ${ch.cup.filter(t=>t).length}개 / 트레이: ${ch.tray.length}개`);
+  G.screen = 'scoring';
+  renderScoring(app);
+}
+
+// ── 채점 화면 ──
+function renderScoring(app) {
+  const ch = G.challenge;
+  const score = calcScore(ch);
+  ch.roundScore = score;
+
+  // 채점 결과 저장
+  if (!G.scores) G.scores = [];
+  G.scores.push({ bean: ch.bean, score });
+
+  const cupHTML = ch.cup.map((t, i) => {
+    if (!t) return `<div class="cup-slot" style="opacity:.3">·</div>`;
+    const cls = t === 'r3_extra' ? 'tk-r3' : t === 'sweetness' ? 'tk-wild' : tkCls(t);
+    const sym = t === 'r3_extra' ? '3★' : t === 'sweetness' ? 'S' : tkSym(t);
+    return `<div class="cup-slot filled"><span class="token ${cls}" style="width:44px;height:44px;font-size:14px">${sym}</span></div>`;
+  }).join('');
+
+  const trayHTML = ch.tray.map(t =>
+    `<div class="cup-slot tray filled"><span class="token ${tkCls(t)}" style="width:40px;height:40px;font-size:13px">${tkSym(t)}</span></div>`
+  ).join('');
+
+  const nextBtnLabel = G.mode === 'full' && G.menuRound < 2 ? '다음 원두로 →' : '최종 결과 보기';
+
+  app.innerHTML = `
+  <div class="card">
+    <div class="card-title">☕ 채점 — ${ch.bean.name}</div>
+
+    <div class="cup-layout">
+      <div>
+        <div style="font-size:11px;color:var(--text2);margin-bottom:6px">컵 (${ch.cup.filter(t=>t).length}/10)</div>
+        <div class="cup-grid">${cupHTML}</div>
+      </div>
+      ${ch.tray.length > 0 ? `
+      <div>
+        <div style="font-size:11px;color:var(--text2);margin-bottom:6px">트레이</div>
+        <div class="tray-row">${trayHTML}</div>
+      </div>` : ''}
+    </div>
+
+    <div class="score-breakdown">
+      <div class="score-box pos">
+        <div class="score-val">${score.roastPts}</div>
+        <div class="score-label">로스트 점수<br><small>합계 ${score.roastSum}</small></div>
+      </div>
+      <div class="score-box pos">
+        <div class="score-val">${score.flavorPts}</div>
+        <div class="score-label">플레이버 점수<br><small>${score.flavorCount}개 충족</small></div>
+      </div>
+      <div class="score-box pos">
+        <div class="score-val">${score.skillPts}</div>
+        <div class="score-label">스킬 점수</div>
+      </div>
+      <div class="score-box neg">
+        <div class="score-val">-${score.minusPts}</div>
+        <div class="score-label">마이너스</div>
+      </div>
+    </div>
+
+    <div style="text-align:center;margin-top:14px">
+      <div style="font-size:28px;font-weight:900;color:var(--gold)">${score.total}점</div>
+      <div style="font-size:11px;color:var(--text2);margin-top:2px">${rankLabel(score.total)}</div>
+    </div>
+
+    <!-- 로스트 포인트 표 -->
+    <div style="margin-top:12px">
+      <div class="card-title">📊 로스트 포인트 참조</div>
+      <div style="display:flex;gap:4px;flex-wrap:wrap">
+        ${Object.entries(ch.bean.roastPoints).map(([lvl,pts]) =>
+          `<div style="text-align:center;padding:4px 8px;background:${score.roastSum==Number(lvl)?'var(--gold)':'var(--bg3)'};
+            color:${score.roastSum==Number(lvl)?'#1a0800':'var(--text2)'};border-radius:6px;font-size:11px">
+            <b>${lvl}</b><br><small>${pts}점</small>
+          </div>`
+        ).join('')}
+      </div>
+    </div>
+
+    <div class="row" style="margin-top:14px">
+      <button class="btn btn-gold" id="btn-next">${nextBtnLabel}</button>
+      <button class="btn btn-ghost" id="btn-retry">다시 시작</button>
+    </div>
+  </div>`;
+
+  document.querySelector('#btn-next').onclick = () => {
+    G.prevScore = score.total;
+    if (G.mode === 'full' && G.menuRound < 2) {
+      G.menuRound++;
+      G.selectedBean = null;
+      G.screen = 'bean_select';
+      render();
+    } else {
+      G.screen = 'final';
+      render();
+    }
+  };
+  document.querySelector('#btn-retry').onclick = () => {
+    G = null; render();
+  };
+}
+
+function rankLabel(total) {
+  if (total >= 60) return '🏆 마스터';
+  if (total >= 53) return '👑 탑 로스터';
+  if (total >= 47) return '🥇 마을 최고 장인';
+  if (total >= 40) return '🥈 고급 로스터';
+  if (total >= 35) return '🥉 중급 로스터';
+  if (total >= 28) return '⭐ 유망주';
+  if (total >= 20) return '입문 로스터';
+  return '견습 로스터';
+}
+
+// ── 최종 결과 ──
+function renderFinal(app) {
+  const totalScore = G.scores.reduce((s, r) => s + r.score.total, 0);
+
+  app.innerHTML = `
+  <div class="card">
+    <div class="card-title">🏁 최종 결과 — 풀 메뉴</div>
+    <div class="score-sheet">
+      <table>
+        <thead><tr>
+          <th>원두</th><th>로스트</th><th>플레이버</th><th>스킬</th><th>마이너스</th><th>합계</th>
+        </tr></thead>
+        <tbody>
+          ${G.scores.map((r, i) => `<tr>
+            <td>${r.bean.name}</td>
+            <td>${r.score.roastPts}</td>
+            <td>${r.score.flavorPts}</td>
+            <td>${r.score.skillPts}</td>
+            <td>-${r.score.minusPts}</td>
+            <td><b>${r.score.total}</b></td>
+          </tr>`).join('')}
+        </tbody>
+        <tfoot><tr class="total">
+          <td colspan="5">총점</td>
+          <td>${totalScore}</td>
+        </tr></tfoot>
+      </table>
+    </div>
+    <div style="text-align:center;margin:20px 0">
+      <div style="font-size:36px;font-weight:900;color:var(--gold)">${totalScore}점</div>
+      <div style="font-size:16px;color:var(--text2);margin-top:4px">${rankLabel(totalScore)}</div>
+    </div>
+    <div style="background:var(--bg3);border-radius:8px;padding:12px;font-size:11px;color:var(--text2)">
+      <b>랭크 기준:</b> 19↓ 견습 · 20~27 입문 · 28~34 유망 · 35~39 중급 · 40~46 고급 · 47~52 마을장인 · 53~59 탑 · 60+ 마스터
+    </div>
+    <div class="row" style="margin-top:14px">
+      <button class="btn btn-gold" id="btn-again">🔄 다시 시작</button>
+    </div>
+  </div>`;
+
+  document.querySelector('#btn-again').onclick = () => { G = null; render(); };
+}
+
+// ── 시작 ──
+render();
+</script>
+</body>
+</html>

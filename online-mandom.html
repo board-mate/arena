@@ -1,0 +1,880 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BoardMate Online · 맨덤의 던전</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="./config.js"></script>
+<style>
+/* ── 토큰 ─────────────────────────────────────────────── */
+:root {
+  --bg:       #0d0a12;
+  --bg2:      #17111f;
+  --bg3:      #221830;
+  --border:   #3a2a52;
+  --accent:   #c94040;
+  --gold:     #e8c84a;
+  --muted:    #8878a8;
+  --text:     #ede8f5;
+  --text2:    #b8aed4;
+  --green:    #4ecb71;
+  --radius:   12px;
+  font-family: Pretendard, "Noto Sans KR", system-ui, sans-serif;
+  color: var(--text);
+  background: var(--bg);
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text); }
+button { font: inherit; cursor: pointer; border: none; border-radius: 8px; }
+
+/* ── 상단 바 ──────────────────────────────────────────── */
+.bar {
+  position: sticky; top: 0; z-index: 30;
+  background: #09060f;
+  padding: 10px 16px;
+  display: flex; justify-content: space-between; align-items: center;
+  border-bottom: 1px solid var(--border);
+}
+.bar a { color: var(--text); text-decoration: none; font-weight: 700; font-size: 13px; }
+#bar-title { font-weight: 900; font-size: 15px; color: var(--gold); letter-spacing: .02em; }
+#sync { font-size: 11px; color: var(--muted); }
+
+/* ── 레이아웃 ─────────────────────────────────────────── */
+.wrap { width: min(960px, calc(100% - 24px)); margin: 16px auto; }
+.card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 12px;
+}
+
+/* ── 버튼 ─────────────────────────────────────────────── */
+.btn { padding: 10px 18px; font-weight: 800; font-size: 13px; }
+.btn-primary  { background: var(--accent); color: #fff; }
+.btn-gold     { background: var(--gold); color: #1a1200; }
+.btn-ghost    { background: var(--bg3); color: var(--text2); border: 1px solid var(--border); }
+.btn-danger   { background: #6e1c1c; color: #fbb; border: 1px solid #9b2c2c; }
+.btn:disabled { opacity: .4; cursor: not-allowed; }
+.btn:hover:not(:disabled) { filter: brightness(1.12); }
+.row-btns { display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* ── 세팅 화면 ────────────────────────────────────────── */
+.setup { text-align: center; padding: 24px; }
+.setup h2 { font-size: 22px; color: var(--gold); margin-bottom: 8px; }
+.setup p { color: var(--text2); font-size: 13px; line-height: 1.7; margin-bottom: 16px; }
+
+/* ── 플레이어 패널 ────────────────────────────────────── */
+.players-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 10px;
+}
+.player-panel {
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px;
+  background: var(--bg3);
+  transition: border-color .2s;
+}
+.player-panel.is-challenger { border-color: var(--gold); box-shadow: 0 0 18px #e8c84a28; }
+.player-panel.is-me { border-color: #5c4ea0; }
+.player-panel.eliminated { opacity: .45; }
+.player-panel h3 { font-size: 14px; margin-bottom: 6px; }
+.status-badge {
+  display: inline-block;
+  font-size: 10px; font-weight: 900;
+  padding: 2px 7px; border-radius: 999px;
+  margin-top: 4px;
+}
+.badge-fresh    { background: #1c3a2a; color: #5ddb8e; }
+.badge-used     { background: #3a2004; color: #f0a34a; }
+.badge-dead     { background: #3a0a0a; color: #e07070; }
+.badge-winner   { background: #1a1500; color: var(--gold); }
+.badge-passed   { background: #222; color: var(--muted); }
+.badge-dungeon  { background: #2e0b1a; color: var(--accent); }
+
+/* ── 아이템 타일 ──────────────────────────────────────── */
+.items-row { display: flex; gap: 8px; flex-wrap: wrap; margin: 10px 0; }
+.item-tile {
+  display: flex; flex-direction: column; align-items: center;
+  gap: 4px;
+  background: var(--bg3);
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 10px 8px;
+  min-width: 72px;
+  font-size: 22px;
+  cursor: pointer;
+  transition: border-color .15s, transform .15s;
+  position: relative;
+}
+.item-tile:hover:not(.removed):not(.used-tile) { border-color: var(--gold); transform: translateY(-3px); }
+.item-tile.removed { opacity: .25; cursor: default; pointer-events: none; }
+.item-tile.used-tile { opacity: .35; cursor: default; }
+.item-tile small { font-size: 10px; color: var(--text2); font-weight: 700; text-align: center; line-height: 1.3; }
+
+/* ── 던전 카드 더미 ───────────────────────────────────── */
+.dungeon-area {
+  display: flex; align-items: center; gap: 16px;
+  flex-wrap: wrap;
+}
+.dungeon-pile {
+  position: relative;
+  width: 80px; height: 110px;
+}
+.dungeon-card-back {
+  position: absolute;
+  width: 80px; height: 110px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #2a1040, #1a0820);
+  border: 2px solid var(--accent);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 28px;
+  color: var(--accent);
+  box-shadow: 0 4px 16px #c9404033;
+}
+.dungeon-card-back.stacked { top: -4px; left: 4px; z-index: 0; opacity: .5; }
+.dungeon-card-back.main { z-index: 1; }
+
+.draw-deck-area {
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+}
+.deck-pile {
+  position: relative; width: 72px; height: 100px;
+}
+.deck-back {
+  position: absolute;
+  width: 72px; height: 100px; border-radius: 8px;
+  background: linear-gradient(135deg, #1a0838, #0d0620);
+  border: 2px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 24px; color: var(--muted);
+}
+.deck-back.stk { top: -3px; left: 3px; z-index: 0; opacity: .4; }
+
+/* ── 몬스터 카드 (공개) ───────────────────────────────── */
+.monster-card {
+  border-radius: 10px;
+  padding: 12px 10px;
+  min-width: 90px;
+  text-align: center;
+  background: var(--bg3);
+  border: 1.5px solid var(--border);
+}
+.monster-card .m-power { font-size: 22px; font-weight: 900; color: var(--accent); }
+.monster-card .m-name  { font-size: 11px; color: var(--text2); margin: 4px 0 6px; font-weight: 700; }
+.monster-card .m-icons { font-size: 14px; display: flex; gap: 4px; justify-content: center; flex-wrap: wrap; }
+.monster-card.blocked  { border-color: var(--green); background: #0a2018; }
+.monster-card.hit      { border-color: var(--accent); background: #200a0a; }
+.monster-card.named    { border-color: var(--gold); background: #1a1500; }
+
+/* ── 행동 선택 (내 턴) ───────────────────────────────── */
+.my-turn-box {
+  background: #1a0a2e;
+  border: 2px solid #5c4ea0;
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 12px;
+}
+.my-turn-box h3 { color: var(--gold); margin-bottom: 10px; font-size: 15px; }
+
+/* ── 로그 ─────────────────────────────────────────────── */
+.log-box {
+  max-height: 150px; overflow-y: auto;
+  background: #07050e;
+  border-radius: 10px; padding: 10px;
+  font-size: 11px; color: var(--text2);
+  line-height: 1.7;
+}
+.log-box div::before { content: '▸ '; color: var(--muted); }
+
+/* ── HP 바 ────────────────────────────────────────────── */
+.hp-bar-wrap { display: flex; align-items: center; gap: 8px; margin: 8px 0; }
+.hp-bar-bg { flex: 1; height: 10px; background: #2a1838; border-radius: 5px; overflow: hidden; }
+.hp-bar-fill { height: 100%; border-radius: 5px; background: linear-gradient(90deg, var(--green), #2a9a4a); transition: width .4s; }
+.hp-bar-fill.low { background: linear-gradient(90deg, #e05050, #a02020); }
+.hp-label { font-size: 13px; font-weight: 900; color: var(--text); min-width: 54px; }
+
+/* ── 결과 패널 ───────────────────────────────────────── */
+.result-panel {
+  text-align: center; padding: 24px;
+  border-radius: var(--radius);
+  background: var(--bg2);
+  border: 2px solid var(--border);
+  margin-bottom: 12px;
+}
+.result-panel.win  { border-color: var(--gold); background: #120f02; }
+.result-panel.lose { border-color: var(--accent); background: #120202; }
+.result-panel h2 { font-size: 26px; margin-bottom: 8px; }
+.result-panel p  { color: var(--text2); font-size: 13px; }
+
+/* ── 알림 배너 ───────────────────────────────────────── */
+.notice {
+  background: #2a1838; border: 1px solid #5c4ea0;
+  border-radius: 8px; padding: 10px 14px;
+  font-size: 12px; color: var(--text2);
+  line-height: 1.6; margin: 8px 0;
+}
+
+/* ── 보검 모달 ───────────────────────────────────────── */
+.modal-overlay {
+  position: fixed; inset: 0; background: #00000099;
+  display: flex; align-items: center; justify-content: center;
+  z-index: 100;
+}
+.modal-box {
+  background: var(--bg2); border: 2px solid var(--border);
+  border-radius: var(--radius); padding: 24px; max-width: 380px; width: 90%;
+}
+.modal-box h3 { color: var(--gold); margin-bottom: 12px; }
+.modal-box .monster-btns { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+.modal-box .monster-btns button {
+  padding: 8px 12px; font-size: 12px; font-weight: 700;
+  background: var(--bg3); color: var(--text);
+  border: 1px solid var(--border); border-radius: 8px; cursor: pointer;
+}
+.modal-box .monster-btns button:hover { border-color: var(--gold); color: var(--gold); }
+
+/* ── 반응형 ───────────────────────────────────────────── */
+@media(max-width:560px) {
+  .players-grid { grid-template-columns: 1fr; }
+  .item-tile { min-width: 60px; font-size: 18px; }
+}
+</style>
+</head>
+<body>
+
+<header class="bar">
+  <span style="display:flex;gap:8px">
+    <a href="./index.html#/">← 홈</a>
+    <a href="./index.html#/multi">다인플</a>
+  </span>
+  <span id="bar-title">⚔️ 맨덤의 던전</span>
+  <span id="sync">연결 중…</span>
+</header>
+
+<main class="wrap">
+  <div id="app">불러오는 중…</div>
+</main>
+
+<!-- 보검 선언 모달 -->
+<div id="sword-modal" class="modal-overlay" style="display:none">
+  <div class="modal-box">
+    <h3>⚔️ 용사의 검 — 몬스터 선언</h3>
+    <p style="font-size:12px;color:var(--text2);margin-bottom:14px">던전에 입장하기 전, 무찌를 몬스터 한 종류를 선언하세요. 해당 몬스터가 던전에 있으면 피해를 받지 않습니다.</p>
+    <div class="monster-btns" id="sword-monster-list"></div>
+    <div style="text-align:center;margin-top:14px">
+      <button class="btn btn-ghost" id="sword-cancel-btn" style="font-size:12px">취소</button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import {
+  configured, roomId, getMe, loadRoom, loadState, saveState,
+  startStatePoll, esc, showFatal, endPanel
+} from './multi-common.js';
+
+if (!configured() || !roomId) showFatal('Supabase 설정 또는 room 주소가 없습니다.');
+
+// ── 상수 ──────────────────────────────────────────────────
+const MONSTERS = [
+  { id:'goblin1',  name:'고블린 ①', power:1,  icons:['torch'] },
+  { id:'goblin2',  name:'고블린 ②', power:1,  icons:['torch'] },
+  { id:'skeleton1',name:'스켈레톤 ①', power:2, icons:['torch','grail'] },
+  { id:'skeleton2',name:'스켈레톤 ②', power:2, icons:['torch','grail'] },
+  { id:'ork1',     name:'오크 ①',   power:3,  icons:['torch'] },
+  { id:'ork2',     name:'오크 ②',   power:3,  icons:['torch'] },
+  { id:'vampire1', name:'뱀파이어 ①',power:4, icons:['grail'] },
+  { id:'vampire2', name:'뱀파이어 ②',power:4, icons:['grail'] },
+  { id:'golem1',   name:'골렘 ①',   power:5,  icons:[] },
+  { id:'golem2',   name:'골렘 ②',   power:5,  icons:[] },
+  { id:'lich',     name:'리치',      power:6,  icons:['grail'] },
+  { id:'demon',    name:'데몬',      power:7,  icons:[] },
+  { id:'dragon',   name:'드래곤',    power:9,  icons:['lance'] },
+];
+
+// 아이템 정의
+const ITEMS = [
+  { id:'torch',  emoji:'🔦', name:'횃불',     desc:'공격력 3 미만 몬스터 무력화 (고블린·스켈레톤·오크)' },
+  { id:'grail',  emoji:'🏆', name:'성배',     desc:'짝수 번호 언데드 무력화 (스켈레톤·뱀파이어·리치)' },
+  { id:'lance',  emoji:'🗡️', name:'창',       desc:'드래곤 무력화' },
+  { id:'sword',  emoji:'⚔️', name:'용사의 검',desc:'입장 전 몬스터 1종 선언 → 무력화' },
+  { id:'shield', emoji:'🛡️', name:'방패',     desc:'HP +3' },
+  { id:'armor',  emoji:'🥻', name:'갑옷',     desc:'HP +5' },
+];
+
+const ICON_MAP = { torch:'🔦', grail:'🏆', lance:'🗡️' };
+const BASE_HP = 3;
+
+// ── 유틸 ──────────────────────────────────────────────────
+const clone   = x => JSON.parse(JSON.stringify(x));
+const shuffle = a => { for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}; return a; };
+const esc2    = s => String(s).replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));
+
+function itemBlocks(monster, equippedItems) {
+  // torch: power < 3 → 고블린(1), 스켈레톤(2) — 실제 룰: torch = 공격력 2 이하
+  // 룰북 v1.1: torch = power < 3 (1,2 해당)
+  if (equippedItems.includes('torch') && monster.power < 3) return true;
+  if (equippedItems.includes('grail') && monster.icons.includes('grail')) return true;
+  if (equippedItems.includes('lance') && monster.icons.includes('lance')) return true;
+  return false;
+}
+
+function calcHP(equippedItems) {
+  let hp = BASE_HP;
+  if (equippedItems.includes('shield')) hp += 3;
+  if (equippedItems.includes('armor'))  hp += 5;
+  return hp;
+}
+
+// ── 초기 상태 ─────────────────────────────────────────────
+function setupState() {
+  return { kind: 'mandom-v1', setup: true, over: false };
+}
+
+function createGame() {
+  const deck = shuffle(MONSTERS.map(m => m.id));
+  return {
+    kind: 'mandom-v1',
+    setup: false,
+    over: false,
+    winner: null,
+    // 전역 상태
+    equippedItems: ITEMS.map(i => i.id),  // 현재 라운드 장착 아이템
+    dungeon: [],       // 던전에 쌓인 몬스터 id 배열
+    drawDeck: deck,    // 뽑을 덱
+    withheld: {},      // { seat: [ {card, item} ] } — 제거된 카드+아이템
+    // 플레이어 상태
+    players: [],       // 세팅 후 채움
+    currentTurn: 0,    // 현재 행동할 seat
+    passed: [],        // 패스한 seat 목록
+    challenger: null,  // 던전에 입장한 seat
+    phase: 'betting',  // 'betting' | 'challenge' | 'resolve' | 'roundend'
+    namedMonster: null,// 보검 선언 몬스터 id
+    // 라운드 내 공개 목록 (challenge 단계)
+    revealedCards: [], // { id, blocked, namedHit, damage }
+    heroHP: BASE_HP,   // 현재 HP
+    maxHP: BASE_HP,
+    // 점수: { seat: { wins, lives } }  lives: 0=fresh, 1=용사의죽음한번, 2=탈락
+    scores: {},
+    // 라운드
+    round: 1,
+    logs: ['게임 시작! 첫 라운드가 시작됩니다.'],
+  };
+}
+
+// ── 전역 변수 ──────────────────────────────────────────────
+let me, room, members, mySeat = -1;
+let state = null, revision = 0, saving = false;
+let pendingSwordResolve = null;
+
+// ── 상태 저장/갱신 ─────────────────────────────────────────
+async function mutate(fn) {
+  if (saving || !state) return;
+  saving = true;
+  const next = clone(state);
+  try {
+    fn(next);
+    const nr = await saveState(revision, next);
+    revision = nr;
+    state = next;
+    render();
+    syncLabel('저장됨');
+  } catch(e) {
+    syncLabel('재동기화 중…');
+    const row = await loadState();
+    revision = row.revision; state = row.state;
+    render();
+  } finally { saving = false; }
+}
+
+function syncLabel(t) { document.querySelector('#sync').textContent = t; }
+
+// ── 게임 시작 (방장만) ────────────────────────────────────
+function startGame() {
+  if (room.host_id !== me.user_id || !state.setup) return;
+  mutate(s => {
+    Object.keys(s).forEach(k => delete s[k]);
+    Object.assign(s, createGame());
+    // 플레이어 초기화
+    s.players = members.map((m, i) => ({
+      user_id: m.user_id,
+      seat: i,
+      wins: 0,
+      lives: 0,   // 0=fresh, 1=한번사망, 2=탈락
+    }));
+    s.scores = Object.fromEntries(members.map((m,i) => [i, {wins:0, lives:0}]));
+    s.currentTurn = 0;
+    s.passed = [];
+  });
+}
+
+// ── 라운드 리셋 ───────────────────────────────────────────
+function resetRound(s) {
+  s.equippedItems = ITEMS.map(i => i.id);
+  s.dungeon = [];
+  s.drawDeck = shuffle(MONSTERS.map(m => m.id));
+  s.withheld = {};
+  s.passed = [];
+  s.challenger = null;
+  s.phase = 'betting';
+  s.namedMonster = null;
+  s.revealedCards = [];
+  s.heroHP = BASE_HP;
+  s.maxHP = BASE_HP;
+  s.round++;
+  // 다음 라운드 첫 플레이어 결정: 이전 도전자부터 (탈락하지 않은 다음 플레이어)
+  const alive = s.players.filter(p => p.lives < 2).map(p => p.seat);
+  if (alive.length === 0) return;
+  // 이전 도전자의 다음 살아있는 플레이어
+  let next = (s.challenger !== null ? s.challenger : 0);
+  next = alive.find(x => x > next) ?? alive[0];
+  s.currentTurn = next;
+  s.logs.unshift(`── ${s.round}라운드 시작`);
+}
+
+// ── 승리/탈락 체크 ────────────────────────────────────────
+function checkEnd(s) {
+  const alive = s.players.filter(p => p.lives < 2);
+  if (alive.length === 1) {
+    s.over = true; s.winner = alive[0].seat;
+    s.phase = 'roundend';
+    s.logs.unshift(`🏆 ${members[alive[0].seat].nickname} 최후 생존자 승리!`);
+    return true;
+  }
+  const winners = alive.filter(p => p.wins >= 2);
+  if (winners.length > 0) {
+    const w = winners[0];
+    s.over = true; s.winner = w.seat;
+    s.phase = 'roundend';
+    s.logs.unshift(`🏆 ${members[w.seat].nickname} 던전 2회 정복 승리!`);
+    return true;
+  }
+  return false;
+}
+
+// ── 플레이어 행동: 카드 뽑기 → 던전에 넣기 ───────────────
+function actionPlaceToDungeon() {
+  mutate(s => {
+    if (s.phase !== 'betting' || s.currentTurn !== mySeat) return;
+    if (s.drawDeck.length === 0) return;
+    const card = s.drawDeck.shift();
+    s.dungeon.push(card);
+    const m = MONSTERS.find(x => x.id === card);
+    s.logs.unshift(`${members[mySeat].nickname} → 던전에 몬스터 카드 1장 추가 (${s.dungeon.length}장)`);
+    advanceTurn(s);
+  });
+}
+
+// ── 플레이어 행동: 카드 뽑기 → 아이템 제거 ──────────────
+function actionRemoveItem(itemId) {
+  mutate(s => {
+    if (s.phase !== 'betting' || s.currentTurn !== mySeat) return;
+    if (!s.equippedItems.includes(itemId)) return;
+    if (s.drawDeck.length === 0) return;
+    const card = s.drawDeck.shift();
+    s.equippedItems = s.equippedItems.filter(x => x !== itemId);
+    if (!s.withheld[mySeat]) s.withheld[mySeat] = [];
+    s.withheld[mySeat].push({ card, item: itemId });
+    const item = ITEMS.find(x => x.id === itemId);
+    s.logs.unshift(`${members[mySeat].nickname} → [${item.name}] 제거 (카드 1장 숨김)`);
+    advanceTurn(s);
+  });
+}
+
+// ── 패스 ─────────────────────────────────────────────────
+function actionPass() {
+  mutate(s => {
+    if (s.phase !== 'betting' || s.currentTurn !== mySeat) return;
+    if (!s.passed.includes(mySeat)) s.passed.push(mySeat);
+    s.logs.unshift(`${members[mySeat].nickname} → 패스`);
+    advanceTurn(s);
+  });
+}
+
+// ── 턴 진행 로직 ──────────────────────────────────────────
+function advanceTurn(s) {
+  const alive = s.players.filter(p => p.lives < 2).map(p => p.seat);
+  const remaining = alive.filter(x => !s.passed.includes(x));
+
+  // 덱 소진: 강제 도전자 결정
+  if (s.drawDeck.length === 0 && remaining.length > 0) {
+    const c = remaining[0];
+    enterDungeon(s, c);
+    return;
+  }
+
+  // 1명 남은 경우: 도전자
+  if (remaining.length === 1) {
+    enterDungeon(s, remaining[0]);
+    return;
+  }
+
+  // 다음 살아있는 미패스 플레이어로 턴 이동
+  if (remaining.length === 0) {
+    // 전원 패스 — 마지막 행동 플레이어가 도전 (있을 경우)
+    const lastAlive = alive[alive.length - 1];
+    enterDungeon(s, lastAlive);
+    return;
+  }
+
+  // 순서대로 다음 미패스 플레이어 찾기
+  let idx = alive.indexOf(s.currentTurn);
+  let attempts = 0;
+  do {
+    idx = (idx + 1) % alive.length;
+    attempts++;
+  } while (s.passed.includes(alive[idx]) && attempts <= alive.length);
+
+  s.currentTurn = alive[idx];
+}
+
+// ── 던전 입장 ─────────────────────────────────────────────
+function enterDungeon(s, seat) {
+  s.challenger = seat;
+  s.phase = 'challenge';
+  s.maxHP = calcHP(s.equippedItems);
+  s.heroHP = s.maxHP;
+  s.logs.unshift(`⚔️ ${members[seat].nickname} 던전에 입장! HP: ${s.maxHP}`);
+  // 보검이 장착돼 있으면 선언 단계 필요 → 클라이언트에서 처리
+  // phase를 'sword' 로 설정해 선언을 기다림
+  if (s.equippedItems.includes('sword')) {
+    s.phase = 'sword';
+    s.logs.unshift('용사의 검 → 몬스터를 선언하세요!');
+  }
+}
+
+// ── 보검 선언 ─────────────────────────────────────────────
+function actionNameMonster(monsterId) {
+  mutate(s => {
+    if (s.phase !== 'sword' || s.challenger !== mySeat) return;
+    s.namedMonster = monsterId;
+    const m = MONSTERS.find(x => x.id === monsterId);
+    s.phase = 'challenge';
+    s.logs.unshift(`용사의 검: "${m.name}" 선언`);
+  });
+}
+
+// ── 던전 카드 한 장 공개 ──────────────────────────────────
+function revealNextCard() {
+  mutate(s => {
+    if (s.phase !== 'challenge' || s.challenger !== mySeat) return;
+    if (s.dungeon.length === 0) {
+      // 모두 공개 → 생존 성공
+      dungeonSuccess(s);
+      return;
+    }
+    const cardId = s.dungeon.shift();
+    const monster = MONSTERS.find(x => x.id === cardId);
+    const blocked = itemBlocks(monster, s.equippedItems);
+    const namedHit = s.namedMonster === cardId;
+    let damage = 0;
+    if (!blocked && !namedHit) {
+      damage = monster.power;
+      s.heroHP -= damage;
+    }
+    s.revealedCards.push({ id: cardId, blocked, namedHit, damage });
+    const statusText = blocked ? '🛡️ 막힘' : namedHit ? '⚔️ 검으로 처치' : `💢 -${damage}HP`;
+    s.logs.unshift(`공개: ${monster.name} (${monster.power}) → ${statusText}`);
+
+    if (s.heroHP <= 0) {
+      dungeonFail(s);
+    } else if (s.dungeon.length === 0) {
+      dungeonSuccess(s);
+    }
+  });
+}
+
+function dungeonSuccess(s) {
+  const seat = s.challenger;
+  s.players[seat].wins++;
+  s.phase = 'roundend';
+  s.logs.unshift(`✅ ${members[seat].nickname} 던전 정복 성공! (${s.players[seat].wins}/2)`);
+  if (!checkEnd(s)) resetRound(s);
+}
+
+function dungeonFail(s) {
+  const seat = s.challenger;
+  s.players[seat].lives++;
+  s.phase = 'roundend';
+  s.logs.unshift(`💀 ${members[seat].nickname} 던전에서 사망… (사망 ${s.players[seat].lives}/2)`);
+  if (s.players[seat].lives >= 2) {
+    s.logs.unshift(`☠️ ${members[seat].nickname} 탈락!`);
+  }
+  if (!checkEnd(s)) resetRound(s);
+}
+
+// ── 렌더 ──────────────────────────────────────────────────
+function render() {
+  if (!state) return;
+  document.querySelector('#bar-title').textContent = `⚔️ ${esc2(room.title)}`;
+  const app = document.querySelector('#app');
+
+  /* 설정 화면 */
+  if (state.setup) {
+    app.innerHTML = `
+      <section class="card setup">
+        <h2>⚔️ 맨덤의 던전</h2>
+        <p>던전을 두 번 정복하거나, 마지막에 살아남은 플레이어가 승리합니다.<br>
+        몬스터 카드를 보고 던전에 쌓거나 아이템을 제거하세요.<br>
+        아이템 제거 시 그 카드를 숨길 수 있습니다!</p>
+        ${room.host_id === me.user_id
+          ? `<div class="row-btns" style="justify-content:center">
+               <button class="btn btn-gold" id="start-btn">🗡️ 게임 시작</button>
+             </div>`
+          : `<p style="color:var(--muted);margin-top:12px">방장이 게임을 시작할 때까지 기다리세요…</p>`}
+      </section>`;
+    document.querySelector('#start-btn')?.addEventListener('click', startGame);
+    return;
+  }
+
+  const isChallenger = state.challenger === mySeat;
+  const isMyTurn = state.currentTurn === mySeat && state.phase === 'betting';
+  const isSwordPhase = state.phase === 'sword' && isChallenger;
+  const isChallengePhase = state.phase === 'challenge' && isChallenger;
+
+  let html = '';
+
+  /* ── 플레이어 상태 ── */
+  html += `<section class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <span style="font-weight:900;font-size:15px;color:var(--gold)">라운드 ${state.round}</span>
+      <span style="font-size:12px;color:var(--muted)">던전: ${state.dungeon.length}장 | 덱: ${state.drawDeck.length}장</span>
+    </div>
+    <div class="players-grid">`;
+  state.players.forEach((p, i) => {
+    const isMe = i === mySeat;
+    const isCurrentTurn = state.currentTurn === i && state.phase === 'betting';
+    const isThisChallenger = state.challenger === i;
+    const hasPassed = state.passed.includes(i);
+    const eliminated = p.lives >= 2;
+
+    let badgeClass = 'badge-fresh';
+    let badgeText = '대기';
+    if (eliminated)       { badgeClass = 'badge-dead'; badgeText = '탈락'; }
+    else if (p.wins >= 2) { badgeClass = 'badge-winner'; badgeText = '승자!'; }
+    else if (isThisChallenger && (state.phase === 'challenge' || state.phase === 'sword')) {
+      badgeClass = 'badge-dungeon'; badgeText = '던전 입장 중';
+    } else if (hasPassed)  { badgeClass = 'badge-passed'; badgeText = '패스'; }
+    else if (isCurrentTurn){ badgeClass = 'badge-used'; badgeText = '내 차례'; }
+
+    let panelClass = 'player-panel';
+    if (isThisChallenger && !eliminated) panelClass += ' is-challenger';
+    if (isMe) panelClass += ' is-me';
+    if (eliminated) panelClass += ' eliminated';
+
+    const lifeStr = p.lives === 0 ? '❤️❤️' : p.lives === 1 ? '💔❤️' : '☠️';
+    const winStr  = '⭐'.repeat(p.wins) + '☆'.repeat(Math.max(0, 2 - p.wins));
+
+    html += `<div class="${panelClass}">
+      <h3>${esc2(members[i].nickname)}${isMe ? ' <small style="color:var(--muted)">(나)</small>' : ''}</h3>
+      <div><span class="status-badge ${badgeClass}">${badgeText}</span></div>
+      <div style="font-size:13px;margin-top:6px">${lifeStr} ${winStr}</div>
+    </div>`;
+  });
+  html += `</div></section>`;
+
+  /* ── 아이템 현황 ── */
+  html += `<section class="card">
+    <div style="font-weight:900;font-size:13px;margin-bottom:10px;color:var(--text2)">🎒 장착 아이템</div>
+    <div class="items-row">`;
+  ITEMS.forEach(item => {
+    const equipped = state.equippedItems.includes(item.id);
+    html += `<div class="item-tile ${equipped ? '' : 'removed'}" title="${esc2(item.desc)}"
+       data-item="${item.id}">
+      ${item.emoji}
+      <small>${item.name}${item.id === 'shield' ? '\n+3HP' : item.id === 'armor' ? '\n+5HP' : ''}</small>
+    </div>`;
+  });
+  const totalHP = calcHP(state.equippedItems);
+  html += `</div>
+    <div style="font-size:12px;color:var(--muted)">기본 HP 3 + 장착 보너스 = 총 <b style="color:var(--gold)">${totalHP} HP</b></div>
+  </section>`;
+
+  /* ── 내 차례 행동 ── */
+  if (isMyTurn && !state.over) {
+    const canDraw = state.drawDeck.length > 0;
+    const canRemove = state.equippedItems.length > 0 && canDraw;
+    html += `<section class="my-turn-box">
+      <h3>⚡ 내 차례입니다!</h3>
+      <div class="row-btns">
+        <button class="btn btn-primary" id="action-dungeon" ${!canDraw ? 'disabled' : ''}>
+          🃏 카드 뽑아 던전에 추가
+        </button>
+        <button class="btn btn-ghost" id="action-pass">🚪 패스</button>
+      </div>`;
+    if (canRemove) {
+      html += `<div style="margin-top:10px;font-size:12px;color:var(--text2)">아이템 제거 (카드 뽑아 아이템 제거):</div>
+      <div class="items-row" id="remove-item-btns">`;
+      ITEMS.forEach(item => {
+        if (state.equippedItems.includes(item.id)) {
+          html += `<button class="btn btn-danger" style="font-size:11px;padding:6px 10px" data-remove="${item.id}">
+            ${item.emoji} ${item.name} 제거
+          </button>`;
+        }
+      });
+      html += `</div>`;
+    }
+    html += `</section>`;
+  }
+
+  /* ── 보검 선언 단계 ── */
+  if (isSwordPhase && !state.over) {
+    html += `<section class="my-turn-box">
+      <h3>⚔️ 용사의 검 — 몬스터 선언</h3>
+      <p style="font-size:12px;color:var(--text2);margin-bottom:10px">무찌를 몬스터 1종을 선언하세요.</p>
+      <div class="row-btns" id="sword-declare-btns">`;
+    MONSTERS.forEach(m => {
+      html += `<button class="btn btn-ghost" style="font-size:11px" data-sword="${m.id}">
+        ${m.name} (${m.power})
+      </button>`;
+    });
+    html += `</div></section>`;
+  }
+
+  /* ── 던전 진행 (도전자만) ── */
+  if (isChallengePhase && !state.over) {
+    const hpPct = Math.max(0, (state.heroHP / state.maxHP) * 100);
+    const isLow = state.heroHP <= state.maxHP / 3;
+    html += `<section class="card" style="border-color:var(--accent)">
+      <div style="font-weight:900;font-size:14px;margin-bottom:8px;color:var(--accent)">
+        ⚔️ 던전 진행 중 — ${esc2(members[mySeat].nickname)}
+      </div>
+      <div class="hp-bar-wrap">
+        <span class="hp-label">${state.heroHP} / ${state.maxHP} HP</span>
+        <div class="hp-bar-bg">
+          <div class="hp-bar-fill ${isLow ? 'low' : ''}" style="width:${hpPct}%"></div>
+        </div>
+      </div>
+      <div style="margin:10px 0;font-size:12px;color:var(--text2)">남은 카드: ${state.dungeon.length}장</div>
+      <button class="btn btn-gold" id="reveal-next-btn">🃏 다음 카드 공개</button>
+    </section>`;
+  } else if (state.phase === 'challenge' && !isChallenger) {
+    const seat = state.challenger;
+    const hpPct = Math.max(0, (state.heroHP / state.maxHP) * 100);
+    const isLow = state.heroHP <= state.maxHP / 3;
+    html += `<section class="card" style="border-color:var(--accent)">
+      <div style="font-weight:900;font-size:14px;margin-bottom:8px;color:var(--accent)">
+        ⚔️ ${esc2(members[seat].nickname)} 던전 진행 중…
+      </div>
+      <div class="hp-bar-wrap">
+        <span class="hp-label">${state.heroHP} / ${state.maxHP} HP</span>
+        <div class="hp-bar-bg">
+          <div class="hp-bar-fill ${isLow ? 'low' : ''}" style="width:${hpPct}%"></div>
+        </div>
+      </div>
+      <div style="font-size:12px;color:var(--muted)">남은 카드: ${state.dungeon.length}장 | 기다리는 중…</div>
+    </section>`;
+  }
+
+  /* ── 공개된 몬스터 카드 ── */
+  if (state.revealedCards.length > 0) {
+    html += `<section class="card">
+      <div style="font-weight:900;font-size:13px;margin-bottom:10px">📜 공개된 몬스터</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">`;
+    state.revealedCards.forEach(rc => {
+      const m = MONSTERS.find(x => x.id === rc.id);
+      const cls = rc.blocked ? 'blocked' : rc.namedHit ? 'named' : 'hit';
+      const label = rc.blocked ? '🛡️ 막힘' : rc.namedHit ? '⚔️ 검으로 처치' : `💢 -${rc.damage}`;
+      html += `<div class="monster-card ${cls}">
+        <div class="m-power">${m.power}</div>
+        <div class="m-name">${m.name}</div>
+        <div class="m-icons">${m.icons.map(i => ICON_MAP[i]).join(' ')}</div>
+        <div style="font-size:10px;margin-top:4px;color:var(--text2)">${label}</div>
+      </div>`;
+    });
+    html += `</div></section>`;
+  }
+
+  /* ── 던전 더미 시각화 ── */
+  html += `<section class="card">
+    <div style="font-weight:900;font-size:13px;margin-bottom:10px;color:var(--text2)">🏰 던전 현황</div>
+    <div class="dungeon-area">`;
+  if (state.dungeon.length === 0) {
+    html += `<span style="color:var(--muted);font-size:13px">던전이 비어있습니다.</span>`;
+  } else {
+    html += `<div class="dungeon-pile">
+      ${state.dungeon.length > 1 ? '<div class="dungeon-card-back stacked">🏰</div>' : ''}
+      <div class="dungeon-card-back main">🃏</div>
+    </div>
+    <div style="font-size:13px;color:var(--text2)">${state.dungeon.length}장의<br>몬스터</div>`;
+  }
+  html += `</div></section>`;
+
+  /* ── 결과 패널 ── */
+  if (state.over && state.winner !== null) {
+    const isWinner = state.winner === mySeat;
+    html += `<div class="result-panel ${isWinner ? 'win' : 'lose'}">
+      <h2>${isWinner ? '🏆 승리!' : '💀 패배'}</h2>
+      <p>${esc2(state.logs[0])}</p>
+    </div>`;
+  }
+
+  /* ── 게임 로그 ── */
+  html += `<section class="card">
+    <div style="font-size:12px;font-weight:900;margin-bottom:8px;color:var(--text2)">📋 게임 로그</div>
+    <div class="log-box">
+      ${state.logs.slice(0, 60).map(l => `<div>${esc2(l)}</div>`).join('')}
+    </div>`;
+
+  /* ── 몬스터 참조표 ── */
+  html += `<details style="margin-top:12px">
+    <summary style="font-size:12px;color:var(--muted);cursor:pointer">📖 몬스터 목록 보기</summary>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">`;
+  MONSTERS.forEach(m => {
+    html += `<div class="monster-card" style="min-width:80px">
+      <div class="m-power">${m.power}</div>
+      <div class="m-name">${m.name}</div>
+      <div class="m-icons">${m.icons.map(i => ICON_MAP[i]).join(' ') || '–'}</div>
+    </div>`;
+  });
+  html += `</div></details></section>`;
+
+  app.innerHTML = html;
+
+  /* ── 이벤트 바인딩 ── */
+  document.querySelector('#start-btn')?.addEventListener('click', startGame);
+  document.querySelector('#action-dungeon')?.addEventListener('click', actionPlaceToDungeon);
+  document.querySelector('#action-pass')?.addEventListener('click', actionPass);
+  document.querySelectorAll('[data-remove]').forEach(btn => {
+    btn.addEventListener('click', () => actionRemoveItem(btn.dataset.remove));
+  });
+  document.querySelectorAll('[data-sword]').forEach(btn => {
+    btn.addEventListener('click', () => actionNameMonster(btn.dataset.sword));
+  });
+  document.querySelector('#reveal-next-btn')?.addEventListener('click', revealNextCard);
+}
+
+// ── 앱 부트 ───────────────────────────────────────────────
+(async () => {
+  try {
+    me = await getMe();
+    if (!me) return showFatal('로그인이 필요합니다.');
+    ({ room, members } = await loadRoom());
+    if (room.game !== 'mandom') return showFatal('맨덤의 던전 방이 아닙니다. (game ≠ mandom)');
+    mySeat = members.findIndex(m => m.user_id === me.user_id);
+    if (mySeat < 0) return showFatal('이 방의 참가자가 아닙니다.');
+
+    const row = await loadState();
+    revision = row.revision;
+    state = row.state;
+
+    if (!state && room.host_id === me.user_id) {
+      state = setupState();
+      revision = await saveState(0, state);
+    }
+    render();
+
+    startStatePoll(async row => {
+      revision = row.revision;
+      if (row.state) { state = row.state; render(); }
+    }, { interval: 8000 });
+
+  } catch(e) { showFatal(e.message); }
+})();
+</script>
+</body>
+</html>

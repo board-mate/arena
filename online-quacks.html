@@ -1,0 +1,459 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BoardMate Online · 돌팔이 약장수</title>
+<meta name="board-mate-game-id" content="quacks">
+<meta name="board-mate-game-name" content="돌팔이 약장수">
+<meta name="board-mate-min-players" content="2">
+<meta name="board-mate-max-players" content="4">
+<meta name="board-mate-multiplayer" content="true">
+<script type="application/json" id="boardMateGameManifest">{"id":"quacks","name":"돌팔이 약장수","version":"1.0.0","minPlayers":2,"maxPlayers":4,"multiplayer":true,"turnBased":false,"entry":"single-html","stateMode":"shared"}</script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="./config.js"></script>
+<style>
+:root{font-family:Pretendard,"Noto Sans KR",system-ui,sans-serif;color:#f8fafc;background:#1e1f29}
+*{box-sizing:border-box}
+body{margin:0;background:#1e1f29;color:#fff}
+button{font:inherit;cursor:pointer}
+button:disabled{opacity:.4;cursor:not-allowed}
+.bar{position:sticky;top:0;background:#11131b;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;z-index:10;gap:8px}
+.bar a{color:#fff;text-decoration:none;font-weight:900}
+.wrap{width:min(1080px,calc(100% - 20px));margin:14px auto 60px}
+.card{background:#282a36;border:1px solid #3a3d50;border-radius:16px;padding:14px;margin-bottom:12px}
+.hdr{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
+.hdr b{font-size:15px}
+.pill{background:#343746;border-radius:999px;padding:4px 10px;font-size:12px;font-weight:800}
+.pill.on{background:#f1c40f;color:#111}
+.note{font-size:12px;color:#c8cedc;line-height:1.6}
+.player{border:1px solid #3a3d50;border-radius:12px;padding:10px;margin-bottom:10px;background:#20222c}
+.player.me{border-color:#f1c40f}
+.player.exploded{border-color:#e74c3c}
+.prow{display:flex;flex-wrap:wrap;gap:6px;align-items:center;justify-content:space-between}
+.pname{font-weight:900}
+.tag{font-size:11px;background:#3a3d50;border-radius:6px;padding:2px 6px;font-weight:800}
+.tag.bad{background:#5a2530;color:#ffb4c0}
+.tag.good{background:#204a30;color:#a9f0bf}
+.pot{display:flex;flex-wrap:wrap;gap:3px;margin:8px 0;min-height:26px}
+.chip{display:inline-block;min-width:24px;padding:3px 5px;border-radius:6px;font-size:11px;font-weight:900;text-align:center;color:#111;position:relative}
+.chip small{display:block;font-size:8px;font-weight:700;color:#222;opacity:.75}
+.chip-white{background:#eee}
+.chip-orange{background:#e08a2c;color:#fff}
+.chip-green{background:#4caf50;color:#fff}
+.chip-blue{background:#3b82f6;color:#fff}
+.chip-red{background:#e74c3c;color:#fff}
+.chip-yellow{background:#f1c40f;color:#332900}
+.chip-purple{background:#9b59b6;color:#fff}
+.chip-black{background:#0c0c10;color:#fff;border:1px solid #555}
+.controls{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.btn{border:0;border-radius:9px;padding:8px 12px;font-weight:900;font-size:13px}
+.primary{background:#e74c3c;color:#fff}
+.good{background:#2ecc71;color:#052012}
+.ghost{background:#4b5167;color:#fff}
+.gold{background:#f1c40f;color:#332900}
+.blue{background:#3b82f6;color:#fff}
+.small{font-size:11px;padding:5px 8px}
+.shopgrid{display:flex;flex-wrap:wrap;gap:5px;margin-top:4px}
+.shopbtn{border:1px solid #565b78;border-radius:8px;padding:5px 7px;background:#2c2f3d;color:#fff;font-size:11px;font-weight:800}
+.shopbtn:disabled{opacity:.35}
+.scorebox{background:#1a1c26;border-radius:10px;padding:8px;margin-top:6px;font-size:12px;line-height:1.55}
+.log{color:#9aa3c0}
+.readybar{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}
+.readychip{font-size:10px;padding:3px 7px;border-radius:999px;background:#343746}
+.readychip.ok{background:#204a30;color:#a9f0bf}
+.status{text-align:center;font-weight:900;margin:4px 0}
+.result{background:#203c2e;border:1px solid #3f7a5d;border-radius:12px;padding:14px;text-align:center;margin-top:10px}
+</style></head>
+<body>
+<header class="bar">
+<span style="display:flex;gap:6px"><a href="./index.html#/">← 홈</a><a href="./index.html#/multi">다인플</a></span>
+<b>🧪 돌팔이 약장수</b>
+<span id="sync">연결 중…</span>
+</header>
+<main class="wrap"><div id="app">불러오는 중…</div></main>
+
+<script type="module">
+import {configured,roomId,getMe,loadRoom,loadState,saveState,startStatePoll,submitMatch,ratingBadges,esc,showFatal,endPanel} from './multi-common.js';
+if(!configured()||!roomId) showFatal('Supabase 설정 또는 room 주소가 없습니다.');
+
+const clone=x=>JSON.parse(JSON.stringify(x));
+let me,room,members,badges={},mySeat=-1,state=null,revision=0,saving=false,submitted=false;
+
+/* ── 세트1 성분책 규칙(공식 룰북 기준, 첫 게임 권장 세트) ─────────────────
+   흰색/주황: 능력 없음. 초록(거미)/파랑(까마귀해골)/빨강(버섯)/노랑(맨드레이크)
+   /보라(유령의 숨결)/검정(해골나방) = 세트1 능력을 그대로 구현.
+   ⚠ 냄비 칸별 정확한 승점/루비 배치표는 원문에 전체 수치가 없어(일부 예시만
+   제공됨: 15→3점·15원, 19→5점·19원, 23→7점·23원) 그 예시에 100% 들어맞는
+   공식으로 근사했습니다. 실물 보드와 다를 수 있으니, 필요하면 아래 GOLD_OF/
+   POINTS_OF/RUBY_POS 만 바꾸면 됩니다. 쥐 마커·점쟁이 카드(24장)는 이번
+   버전에서는 생략했습니다(추후 추가 가능). */
+
+const COST={ // [1칩,2칩,4칩] 비용, null=해당 가치 없음
+  orange:[3,null,null], green:[4,8,14], blue:[5,10,19], red:[6,10,16],
+  yellow:[8,12,18], purple:[9,null,null], black:[10,null,null]
+};
+const VIDX=v=>v===1?0:v===2?1:2;
+const bookAvailable=(c,round)=> c==='yellow'?round>=2 : c==='purple'?round>=3 : true;
+const RUBY_POS=new Set([3,7,11,15,19,23,27,31]); // 근사치
+const GOLD_OF=pos=>pos; // 냄비 숫자칸 = 구매력(원문 예시와 일치)
+const POINTS_OF=pos=> pos<=8?0:Math.floor((pos-9)/2); // 15→3,19→5,23→7 예시와 일치하는 근사식
+const JACKPOT={gold:35,points:15};
+const BONUS_FACES=['1점','2점','루비','물방울','호박칩'];
+
+function freshBag(){
+  const a=[];
+  for(let i=0;i<4;i++)a.push({c:'white',v:1});
+  a.push({c:'white',v:2});a.push({c:'white',v:2});
+  a.push({c:'white',v:3});
+  a.push({c:'orange',v:1});
+  a.push({c:'green',v:1});
+  return a;
+}
+function newPlayer(m){
+  return {name:m.nickname,bag:freshBag(),pot:[],cursor:0,dropletBase:0,whiteSum:0,
+    exploded:false,stopped:false,flaskUsed:false,rubies:1,score:0,pendingBlue:null,scoring:null};
+}
+function initialState(){
+  return {kind:'quacks-v1',round:1,phase:'drawing',
+    players:members.map(newPlayer),
+    finalOrder:null,
+    log:[`게임 시작 (${members.length}인) · 세트1 · 1라운드`]};
+}
+
+function drawOne(p){
+  if(!p.bag.length)return null;
+  const i=Math.floor(Math.random()*p.bag.length);
+  return p.bag.splice(i,1)[0];
+}
+function placeChip(p,chip){
+  let advance=chip.v;
+  if(chip.c==='red'){
+    const or=p.pot.filter(x=>x.c==='orange').length;
+    advance+= or===0?0:(or<=2?1:2);
+  }
+  const pos=Math.min(p.cursor+advance,33);
+  p.pot.push({c:chip.c,v:chip.v,pos});
+  p.cursor=pos;
+  if(chip.c==='white')p.whiteSum+=chip.v;
+  if(chip.c==='yellow'){
+    const idx=p.pot.length-2;
+    if(idx>=0 && p.pot[idx].c==='white'){
+      const rm=p.pot.splice(idx,1)[0];
+      p.whiteSum-=rm.v;
+      p.bag.push({c:'white',v:rm.v});
+    }
+  }
+  if(p.whiteSum>7){p.exploded=true;p.stopped=true;}
+  return chip;
+}
+function drawExtraForBlue(p,chip){
+  if(chip.c!=='blue'||p.exploded)return;
+  const n=chip.v,drawn=[];
+  for(let i=0;i<n;i++){const c=drawOne(p); if(c)drawn.push(c);}
+  if(drawn.length)p.pendingBlue={options:drawn};
+}
+function checkForcedStop(p){ if(!p.bag.length && !p.pendingBlue) p.stopped=true; }
+
+function allDoneDrawing(next){
+  return next.players.every(p=>(p.stopped||p.exploded)&&!p.pendingBlue);
+}
+function computeScoring(next){
+  const n=next.players.length;
+  next.players.forEach(p=>{
+    let scoringPos,gold,points,hasRuby,jackpot=false;
+    if(p.cursor>=33){jackpot=true;gold=JACKPOT.gold;points=JACKPOT.points;hasRuby=false;scoringPos=34;}
+    else{scoringPos=Math.min(p.cursor+1,33);gold=GOLD_OF(scoringPos);points=POINTS_OF(scoringPos);hasRuby=RUBY_POS.has(scoringPos);}
+    p.scoring={scoringPos,gold,points,hasRuby,jackpot,bonusEligible:false,bonusRolled:false,bonusResult:null,
+      choice:p.exploded?null:'both',shopBudget:gold,shopPurchased:[],pointsApplied:false,endReady:false,
+      chipLog:[],vpBoughtGold:0,vpBoughtRuby:0};
+  });
+  const alive=next.players.filter(p=>!p.exploded);
+  if(alive.length){
+    const maxPos=Math.max(...alive.map(p=>p.scoring.scoringPos));
+    const top=alive.filter(p=>p.scoring.scoringPos===maxPos);
+    const maxCur=Math.max(...top.map(p=>p.cursor));
+    top.filter(p=>p.cursor===maxCur).forEach(p=>p.scoring.bonusEligible=true);
+  }
+  next.players.forEach((p,i)=>{
+    const cnt=p.pot.filter(x=>x.c==='black').length;
+    if(!cnt)return;
+    if(n===2){
+      const oc=next.players[1-i].pot.filter(x=>x.c==='black').length;
+      if(cnt===oc){p.dropletBase++;p.scoring.chipLog.push('검정 동률: 물방울+1');}
+      else if(cnt>oc){p.dropletBase++;p.rubies++;p.scoring.chipLog.push('검정 우위: 물방울+1, 루비+1');}
+    }else{
+      const lc=next.players[(i-1+n)%n].pot.filter(x=>x.c==='black').length;
+      const rc=next.players[(i+1)%n].pot.filter(x=>x.c==='black').length;
+      if(cnt>lc&&cnt>rc){p.dropletBase++;p.rubies++;p.scoring.chipLog.push('검정 양쪽 우위: 물방울+1, 루비+1');}
+      else if(cnt>lc||cnt>rc){p.dropletBase++;p.scoring.chipLog.push('검정 한쪽 우위: 물방울+1');}
+    }
+  });
+  next.players.forEach(p=>{
+    const g=p.pot.slice(-2).filter(x=>x.c==='green').length;
+    if(g>0){p.rubies+=g;p.scoring.chipLog.push(`초록(마지막·전전): 루비+${g}`);}
+  });
+  next.players.forEach(p=>{
+    const cnt=p.pot.filter(x=>x.c==='purple').length;
+    if(cnt>=3){p.score+=2;p.dropletBase++;p.scoring.chipLog.push('보라 3개+: 승점+2, 물방울+1');}
+    else if(cnt===2){p.score+=1;p.rubies++;p.scoring.chipLog.push('보라 2개: 승점+1, 루비+1');}
+    else if(cnt===1){p.score+=1;p.scoring.chipLog.push('보라 1개: 승점+1');}
+  });
+  next.players.forEach(p=>{ if(p.scoring.hasRuby){p.rubies++;p.scoring.chipLog.push('점수칸 루비: +1');} });
+  next.players.forEach(p=>{ if(!p.exploded){p.score+=p.scoring.points;p.scoring.pointsApplied=true;} });
+}
+function maybeStartScoring(next){
+  if(next.phase!=='drawing')return;
+  if(!allDoneDrawing(next))return;
+  next.phase='scoring';
+  computeScoring(next);
+  next.log.unshift(`${next.round}라운드 정산 시작`);
+}
+function checkAdvance(next){
+  if(next.phase!=='scoring')return;
+  const allReady=next.players.every(p=>p.scoring&&p.scoring.endReady&&(!p.scoring.bonusEligible||p.scoring.bonusRolled));
+  if(!allReady)return;
+  if(next.round>=9){
+    next.phase='ended';
+    next.finalOrder=next.players.map((p,i)=>i).sort((a,b)=> next.players[b].score-next.players[a].score || next.players[b].cursor-next.players[a].cursor);
+    next.log.unshift('게임 종료!');
+    return;
+  }
+  next.round++;
+  if(next.round===6) next.players.forEach(p=>p.bag.push({c:'white',v:1}));
+  next.players.forEach(p=>{
+    p.pot.forEach(ch=>p.bag.push({c:ch.c,v:ch.v}));
+    p.pot=[];p.cursor=p.dropletBase;p.whiteSum=0;p.exploded=false;p.stopped=false;p.flaskUsed=false;p.scoring=null;
+  });
+  next.phase='drawing';
+  next.log.unshift(`${next.round}라운드 시작`);
+}
+
+async function mutateSelf(fn){
+  if(saving||!state)return; saving=true;
+  for(let attempt=0;attempt<6;attempt++){
+    const next=clone(state);
+    const p=next.players[mySeat];
+    fn(p,next);
+    maybeStartScoring(next);
+    checkAdvance(next);
+    try{
+      const nr=await saveState(revision,next);
+      revision=nr; state=next; render();
+      saving=false; document.querySelector('#sync').textContent='자동 저장됨';
+      maybeSubmit();
+      return;
+    }catch(e){
+      document.querySelector('#sync').textContent='재동기화 중';
+      try{ const row=await loadState(); revision=row.revision; state=row.state; }catch(e2){}
+    }
+  }
+  saving=false; render();
+}
+
+/* ── 액션들 ───────────────────────────────────────────────── */
+function actionDraw(){ mutateSelf(p=>{
+  if(p.stopped||p.exploded||p.pendingBlue)return;
+  const chip=drawOne(p);
+  if(!chip){p.stopped=true;return;}
+  placeChip(p,chip);
+  if(!p.exploded) drawExtraForBlue(p,chip);
+  checkForcedStop(p);
+});}
+function actionResolveBlue(i){ mutateSelf(p=>{
+  if(!p.pendingBlue)return;
+  const opts=p.pendingBlue.options;
+  opts.forEach((c,idx)=>{ if(idx!==i) p.bag.push(c); });
+  p.pendingBlue=null;
+  if(i!=null && opts[i]){
+    const chosen=opts[i];
+    placeChip(p,chosen);
+    if(!p.exploded) drawExtraForBlue(p,chosen);
+  }
+  checkForcedStop(p);
+});}
+function actionFlask(){ mutateSelf(p=>{
+  if(p.flaskUsed||p.exploded||!p.pot.length)return;
+  const last=p.pot[p.pot.length-1];
+  if(last.c!=='white')return;
+  p.pot.pop();
+  p.cursor=p.pot.length?p.pot[p.pot.length-1].pos:p.dropletBase;
+  p.whiteSum-=last.v;
+  p.bag.push({c:'white',v:last.v});
+  p.flaskUsed=true;
+});}
+function actionStop(){ mutateSelf(p=>{ p.stopped=true; }); }
+function actionRollBonus(){ mutateSelf(p=>{
+  if(!p.scoring||!p.scoring.bonusEligible||p.scoring.bonusRolled)return;
+  const r=BONUS_FACES[Math.floor(Math.random()*BONUS_FACES.length)];
+  p.scoring.bonusResult=r; p.scoring.bonusRolled=true;
+  if(r==='1점')p.score+=1; else if(r==='2점')p.score+=2; else if(r==='루비')p.rubies++;
+  else if(r==='물방울')p.dropletBase++; else if(r==='호박칩')p.bag.push({c:'orange',v:1});
+});}
+function actionChoose(kind){ mutateSelf(p=>{
+  if(!p.exploded||!p.scoring||p.scoring.choice)return;
+  if(kind==='points'){ p.score+=p.scoring.points; p.scoring.choice='points'; p.scoring.shopBudget=0; }
+  else { p.scoring.choice='shop'; }
+});}
+function actionBuy(color,value){ mutateSelf((p,next)=>{
+  const s=p.scoring; if(!s)return;
+  if(p.exploded && s.choice!=='shop')return;
+  if(!p.exploded && s.choice!=='both')return;
+  if(s.shopPurchased.length>=2)return;
+  if(s.shopPurchased.some(x=>x.c===color))return;
+  if(!bookAvailable(color,next.round))return;
+  const cost=COST[color][VIDX(value)];
+  if(cost==null||s.shopBudget<cost)return;
+  s.shopBudget-=cost; s.shopPurchased.push({c:color,v:value});
+  p.bag.push({c:color,v:value});
+});}
+function actionSpendDroplet(){ mutateSelf(p=>{ if(p.rubies>=2){p.rubies-=2;p.dropletBase++;} }); }
+function actionSpendFlask(){ mutateSelf(p=>{ if(p.rubies>=2 && p.flaskUsed){p.rubies-=2;p.flaskUsed=false;} }); }
+function actionBuyVpGold(){ mutateSelf((p,next)=>{ if(next.round!==9)return; const s=p.scoring; if(!s)return; if(s.shopBudget>=5){s.shopBudget-=5;p.score+=1;s.vpBoughtGold++;} }); }
+function actionBuyVpRuby(){ mutateSelf((p,next)=>{ if(next.round!==9)return; if(p.rubies>=2){p.rubies-=2;p.score+=1;p.scoring.vpBoughtRuby++;} }); }
+function actionReady(){ mutateSelf(p=>{ if(p.scoring) p.scoring.endReady=true; }); }
+
+async function maybeSubmit(){
+  if(submitted||!state||state.phase!=='ended'||room.host_id!==me.user_id)return;
+  submitted=true;
+  try{
+    const order=state.finalOrder.map(i=>members[i]?.user_id).filter(Boolean);
+    if(order.length===members.length) await submitMatch(order);
+  }catch(e){ if(!String(e.message||e).includes('already')) submitted=false; }
+}
+
+/* ── 렌더링 ───────────────────────────────────────────────── */
+function chip(c){ return `<span class="chip chip-${c.c}">${c.v}${c.pos!=null?`<small>${c.pos}</small>`:''}</span>`; }
+
+function playerBlock(i,p){
+  const isMe=i===mySeat;
+  const cls=['player']; if(isMe)cls.push('me'); if(p.exploded)cls.push('exploded');
+  let status = p.exploded?'<span class="tag bad">폭발!</span>' : p.stopped?'<span class="tag good">멈춤</span>' : '뽑는 중';
+  let html=`<div class="${cls.join(' ')}"><div class="prow">
+    <span class="pname">${esc(p.name)}${isMe?' · 나':''}</span>
+    <span>${status} · 흰합 ${p.whiteSum}/7 · 🧪가방 ${p.bag.length} · 💎${p.rubies} · 🏆${p.score}</span>
+  </div>`;
+  html+=`<div class="pot">${p.pot.map(chip).join('')||'<span class="log">(빈 냄비)</span>'}</div>`;
+  if(state.phase==='drawing'){
+    if(isMe){
+      if(p.pendingBlue){
+        html+=`<div class="controls"><b style="align-self:center">파랑 보너스 – 1개 배치할 칩 선택:</b>`;
+        p.pendingBlue.options.forEach((c,idx)=>{ html+=`<button class="btn blue small" data-blue="${idx}">${chip(c)}</button>`; });
+        html+=`<button class="btn ghost small" data-blue="-1">아무것도 배치 안 함</button></div>`;
+      } else if(!p.stopped && !p.exploded){
+        const lastWhite=p.pot.length && p.pot[p.pot.length-1].c==='white';
+        html+=`<div class="controls">
+          <button class="btn primary" id="drawBtn" ${!p.bag.length?'disabled':''}>🎲 뽑기</button>
+          <button class="btn gold" id="flaskBtn" ${(p.flaskUsed||!lastWhite)?'disabled':''}>🧴 플라스크(흰칩 되돌리기)</button>
+          <button class="btn ghost" id="stopBtn">✋ 멈추기</button>
+        </div>`;
+      }
+    } else {
+      html+=`<div class="note">${p.stopped||p.exploded?'':'뽑는 중…'}</div>`;
+    }
+  } else if(state.phase==='scoring' && p.scoring){
+    const s=p.scoring;
+    html+=`<div class="scorebox">
+      <b>${s.jackpot?'🏁 완주(33칸+)':`점수 칸 ${s.scoringPos}`}</b> · 원 ${s.gold} · 승점 ${s.points}${s.hasRuby?' · 💎루비칸':''}
+      ${s.chipLog.length?`<div class="log">${s.chipLog.join(' · ')}</div>`:''}
+    </div>`;
+    if(isMe){
+      html+='<div class="controls">';
+      if(s.bonusEligible){
+        html+= s.bonusRolled? `<span class="tag good">보너스 주사위: ${s.bonusResult}</span>` : `<button class="btn gold small" id="bonusBtn">🎲 보너스 주사위 굴리기</button>`;
+      }
+      if(p.exploded && !s.choice){
+        html+=`<button class="btn good small" data-choice="points">승점 ${s.points} 받기</button><button class="btn blue small" data-choice="shop">대신 쇼핑하기(원 ${s.gold})</button>`;
+      }
+      html+='</div>';
+      const canShop = p.exploded? s.choice==='shop' : true;
+      if(canShop && s.shopPurchased.length<2){
+        html+=`<div class="note">구매 가능 (남은 예산 ${s.shopBudget}원, 서로 다른 색 최대 2개):</div><div class="shopgrid">`;
+        Object.keys(COST).forEach(color=>{
+          if(!bookAvailable(color,state.round))return;
+          if(s.shopPurchased.some(x=>x.c===color))return;
+          COST[color].forEach((cost,vi)=>{
+            if(cost==null)return;
+            const v=[1,2,4][vi];
+            html+=`<button class="shopbtn" data-buy="${color},${v}" ${s.shopBudget<cost?'disabled':''}>${color} ${v}칩 (${cost}원)</button>`;
+          });
+        });
+        html+='</div>';
+      }
+      if(s.shopPurchased.length){
+        html+=`<div class="note">구매함: ${s.shopPurchased.map(x=>`${x.c}${x.v}`).join(', ')}</div>`;
+      }
+      if(state.round===9){
+        html+=`<div class="controls">
+          <button class="btn gold small" id="vpGoldBtn" ${s.shopBudget<5?'disabled':''}>마지막 라운드: 5원→승점1</button>
+          <button class="btn gold small" id="vpRubyBtn" ${p.rubies<2?'disabled':''}>루비2→승점1</button>
+        </div>`;
+      }
+      html+=`<div class="controls">
+        <button class="btn ghost small" id="dropletBtn" ${p.rubies<2?'disabled':''}>루비2 → 물방울 전진(다음 라운드 시작칸 +1)</button>
+        <button class="btn ghost small" id="flaskFillBtn" ${(p.rubies<2||!p.flaskUsed)?'disabled':''}>루비2 → 플라스크 채우기</button>
+        ${!s.endReady?`<button class="btn primary small" id="readyBtn" ${(s.bonusEligible&&!s.bonusRolled)?'disabled':''}>라운드 정산 완료</button>`:'<span class="tag good">준비 완료</span>'}
+      </div>`;
+    } else {
+      html+=`<div class="note">${s.bonusEligible?(s.bonusRolled?`보너스: ${s.bonusResult}`:'보너스 주사위 대기중'):''} ${s.endReady?'· 준비완료':'· 정산중'}</div>`;
+    }
+  }
+  html+='</div>';
+  return html;
+}
+
+function render(){
+  if(!state)return;
+  const app=document.querySelector('#app');
+  const booksNote=`사용 가능 성분책: 주황·초록·파랑·빨강·검정${bookAvailable('yellow',state.round)?'·노랑':''}${bookAvailable('purple',state.round)?'·보라':''}`;
+  let html=`<div class="card"><div class="hdr">
+    <b>라운드 ${state.round} / 9</b>
+    <span class="pill ${state.phase==='drawing'?'on':''}">${state.phase==='drawing'?'물약 만들기':state.phase==='scoring'?'라운드 정산':'게임 종료'}</span>
+  </div><div class="note">${booksNote} · 세트1 규칙 · 흰색합 8 이상이면 폭발</div></div>`;
+
+  html+='<div>'+state.players.map((p,i)=>playerBlock(i,p)).join('')+'</div>';
+
+  if(state.phase==='ended'){
+    const ranked=state.finalOrder.map(i=>state.players[i]);
+    const myRank=state.finalOrder.indexOf(mySeat);
+    html+=endPanel('돌팔이 약장수 최종 결과','',{
+      outcome: myRank===0?'win':'lose',
+      headline: `${esc(ranked[0].name)} 승리! (${ranked[0].score}점)`,
+      details: ranked.map((p,idx)=>`${idx+1}위 · ${esc(p.name)} · ${p.score}점`)
+    });
+  }
+  html+=`<div class="card"><div class="note">최근 기록<br>${state.log.slice(0,20).map(esc).join('<br>')}</div></div>`;
+  app.innerHTML=html;
+
+  app.querySelector('#drawBtn')?.addEventListener('click',actionDraw);
+  app.querySelector('#flaskBtn')?.addEventListener('click',actionFlask);
+  app.querySelector('#stopBtn')?.addEventListener('click',actionStop);
+  app.querySelectorAll('[data-blue]').forEach(b=>b.addEventListener('click',()=>{
+    const v=Number(b.dataset.blue); actionResolveBlue(v<0?null:v);
+  }));
+  app.querySelector('#bonusBtn')?.addEventListener('click',actionRollBonus);
+  app.querySelectorAll('[data-choice]').forEach(b=>b.addEventListener('click',()=>actionChoose(b.dataset.choice)));
+  app.querySelectorAll('[data-buy]').forEach(b=>b.addEventListener('click',()=>{
+    const [c,v]=b.dataset.buy.split(','); actionBuy(c,Number(v));
+  }));
+  app.querySelector('#vpGoldBtn')?.addEventListener('click',actionBuyVpGold);
+  app.querySelector('#vpRubyBtn')?.addEventListener('click',actionBuyVpRuby);
+  app.querySelector('#dropletBtn')?.addEventListener('click',actionSpendDroplet);
+  app.querySelector('#flaskFillBtn')?.addEventListener('click',actionSpendFlask);
+  app.querySelector('#readyBtn')?.addEventListener('click',actionReady);
+}
+
+(async()=>{
+  try{
+    me=await getMe(); if(!me)return showFatal('로그인이 필요합니다.');
+    ({room,members}=await loadRoom());
+    if(room.game!=='quacks')return showFatal('돌팔이 약장수 방이 아닙니다.');
+    mySeat=members.findIndex(m=>m.user_id===me.user_id);
+    if(mySeat<0)return showFatal('이 방의 참가자가 아닙니다.');
+    if(members.length<2||members.length>4)return showFatal('돌팔이 약장수는 2~4인 게임입니다.');
+    badges=await ratingBadges('quacks',members.map(m=>m.user_id)).catch(()=>({}));
+    const row=await loadState();
+    revision=row.revision; state=row.state;
+    if(!state && room.host_id===me.user_id){ state=initialState(); revision=await saveState(0,state); }
+    render();
+    startStatePoll(async row=>{ revision=row.revision; if(row.state){ state=row.state; render(); } },{interval:6000});
+  }catch(e){ showFatal(e.message); }
+})();
+</script>
+</body></html>

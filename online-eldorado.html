@@ -1,0 +1,624 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<title>엘도라도 PVP · BoardMate Arena</title>
+<meta name="board-mate-game-id" content="eldorado-pvp" />
+<meta name="board-mate-game-name" content="엘도라도 PVP" />
+<meta name="board-mate-min-players" content="2" />
+<meta name="board-mate-max-players" content="4" />
+<meta name="board-mate-multiplayer" content="true" />
+<script type="application/json" id="boardMateGameManifest">{"id":"eldorado-pvp","name":"엘도라도 PVP","version":"1.1.0-arena","minPlayers":2,"maxPlayers":4,"multiplayer":true,"turnBased":true,"entry":"single-html","stateMode":"shared"}</script>
+<style>
+:root{
+  --ink:#1f2a24;--muted:#6d786f;--paper:#fffdf4;--panel:#fffef8;--line:#d9d4bf;
+  --green:#70a94e;--yellow:#e6b84b;--blue:#56a8c7;--red:#c75b45;--gray:#8c8f8a;--mountain:#3e4743;
+  --gold:#d79c2e;--purple:#85579f;--shadow:0 12px 30px rgba(37,47,40,.12);
+  --hex-w:74px;--hex-h:64px;
+}
+*{box-sizing:border-box} html,body{margin:0;min-height:100%;font-family:system-ui,-apple-system,"Segoe UI","Noto Sans KR",sans-serif;color:var(--ink);background:
+  radial-gradient(circle at 8% 8%,rgba(225,189,86,.14),transparent 24%),
+  radial-gradient(circle at 90% 12%,rgba(67,143,96,.12),transparent 22%),
+  linear-gradient(135deg,#f8f5e9,#eef3e8 55%,#f4efe2)}
+button,input{font:inherit} button{cursor:pointer} button:disabled{opacity:.45;cursor:not-allowed}.hidden{display:none!important}
+.app{max-width:1500px;margin:0 auto;padding:14px}.topbar{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:12px;flex-wrap:wrap}
+.brand h1{margin:0;font-size:clamp(1.35rem,3vw,2.05rem);color:#24432f}.brand .sub{font-size:.82rem;color:var(--muted);margin-top:3px}.top-actions{display:flex;gap:7px;flex-wrap:wrap}
+.btn{border:1px solid #cfc9b6;background:#fff;color:#26372d;border-radius:11px;padding:9px 12px;font-weight:800;box-shadow:0 2px 7px #0000000a}.btn.primary{background:#2f6843;border-color:#2f6843;color:white}.btn.gold{background:#c78b25;border-color:#c78b25;color:white}.btn.danger{background:#fff0ed;border-color:#e0aaa0;color:#9d4030}.btn.small{padding:6px 9px;font-size:.78rem}
+.card{background:rgba(255,254,248,.94);border:1px solid rgba(169,158,127,.28);border-radius:18px;padding:13px;box-shadow:var(--shadow);backdrop-filter:blur(6px)}
+.status{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px}.turn-title{font-weight:950}.phase{font-size:.84rem;color:var(--muted);margin-top:2px}
+.connection{display:inline-flex;align-items:center;gap:6px;font-size:.75rem;font-weight:850;padding:5px 9px;border-radius:999px;border:1px solid #d7d2c4;background:#fff}.connection::before{content:"";width:8px;height:8px;border-radius:50%;background:#b8b1a2}.connection.ok{color:#2f6f43;background:#f1fbf4;border-color:#bcdac4}.connection.ok::before{background:#4b9b63}
+.players{display:flex;gap:8px;overflow:auto;padding-bottom:4px;margin-bottom:12px}.player-chip{min-width:170px;border:1px solid #d9d3c0;background:#fff;border-radius:14px;padding:9px 11px}.player-chip.active{border-color:#327349;box-shadow:inset 0 0 0 1px #327349;background:#f3fbf4}.player-chip .name{font-weight:900}.player-chip .meta{font-size:.76rem;color:var(--muted);margin-top:3px}.me{font-size:.65rem;background:#2f6843;color:#fff;padding:1px 5px;border-radius:999px;margin-left:4px}
+.layout{display:grid;grid-template-columns:minmax(650px,1fr) 440px;gap:14px;align-items:start}.left,.right{display:grid;gap:12px}.board-card{overflow:hidden}.board-head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px}.board-head h2{margin:0;font-size:1.05rem}.legend{display:flex;gap:7px;flex-wrap:wrap;font-size:.69rem;color:#59635c}.legend span{display:flex;align-items:center;gap:4px}.dot{width:10px;height:10px;border-radius:3px;display:inline-block}
+.board-viewport{overflow:auto;border:1px solid #e0dccd;border-radius:16px;background:linear-gradient(#f8f4e6,#eef4e8);padding:12px}.board-stage{position:relative;width:800px;height:390px;margin:0 auto;min-width:800px}
+.hex{position:absolute;width:var(--hex-w);height:var(--hex-h);clip-path:polygon(25% 0,75% 0,100% 50%,75% 100%,25% 100%,0 50%);border:0;padding:0;display:grid;place-items:center;text-align:center;font-weight:950;line-height:1;color:#fff;filter:drop-shadow(0 2px 2px #0003);transition:transform .1s,filter .1s}.hex::after{content:"";position:absolute;inset:3px;clip-path:inherit;border:1px solid rgba(255,255,255,.66);pointer-events:none}.hex:hover:not(:disabled){transform:scale(1.055);filter:drop-shadow(0 0 8px #fff8)}.hex.green{background:var(--green)}.hex.yellow{background:var(--yellow);color:#4f3c10}.hex.blue{background:var(--blue)}.hex.red{background:var(--red)}.hex.gray{background:var(--gray)}.hex.mountain{background:linear-gradient(145deg,#4c5550,#28312d)}.hex.start{background:#d8c47c;color:#403715}.hex.finish{box-shadow:inset 0 0 0 4px #f2d167;background:linear-gradient(145deg,#d7a827,#7ca04b)}.hex .cost{font-size:1rem}.hex .label{font-size:.56rem;font-weight:850;margin-top:3px;opacity:.94}.hex.target{filter:drop-shadow(0 0 10px #fff) drop-shadow(0 0 8px #f1b738);transform:scale(1.07)}.hex.occupied::before{content:"";position:absolute;inset:8px;clip-path:inherit;background:#0002}
+.token{position:absolute;z-index:8;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;color:#fff;font-size:.7rem;font-weight:1000;border:3px solid #fff;box-shadow:0 3px 9px #0007;pointer-events:none;transform:translate(-50%,-50%)}.token.p0{background:#d4473d}.token.p1{background:#336bc4}.token.p2{background:#6f4aa3}.token.p3{background:#2b8b68}.token.second{transform:translate(-50%,-50%) translate(10px,10px);scale:.88}
+.gate{position:absolute;z-index:5;background:#fff7dc;border:2px solid #a8751b;border-radius:10px;padding:4px 7px;font-size:.66rem;font-weight:950;box-shadow:0 4px 10px #0002;white-space:nowrap;pointer-events:none}.gate.cleared{opacity:.35;text-decoration:line-through}.gate .sym{font-size:.9rem}
+.section-title{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px}.section-title h3{margin:0;font-size:1rem}.tiny{font-size:.73rem;color:var(--muted)}.map-meta{display:flex;gap:6px;align-items:center;flex-wrap:wrap}.pill{display:inline-flex;align-items:center;border:1px solid #d8d1bf;background:#fff;border-radius:999px;padding:3px 7px;font-size:.66rem;font-weight:850;color:#5a655d}.pack-badge{display:inline-block;margin-top:5px;border-radius:999px;background:#f2ecff;color:#704c91;padding:2px 6px;font-size:.58rem;font-weight:900}
+.market-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}.exp-card{position:relative;min-height:122px;border:2px solid #ddd4bf;border-radius:13px;background:#fff;padding:8px 8px 9px;text-align:left;box-shadow:0 2px 8px #0000000b;overflow:hidden}.exp-card:hover:not(:disabled){transform:translateY(-2px)}.exp-card.green{border-top:7px solid var(--green)}.exp-card.yellow{border-top:7px solid var(--yellow)}.exp-card.blue{border-top:7px solid var(--blue)}.exp-card.white{border-top:7px solid #a5a5a5}.exp-card.purple{border-top:7px solid var(--purple)}.exp-card.basic{border-top:7px solid #b7a673}.exp-card.selected{outline:3px solid #e0a526;outline-offset:1px}.exp-card .name{font-weight:950;font-size:.85rem}.exp-card .price{position:absolute;right:7px;top:7px;background:#e2aa31;color:#3c2b08;border-radius:999px;padding:2px 6px;font-size:.67rem;font-weight:1000}.exp-card .power{font-size:.76rem;font-weight:900;margin-top:7px}.exp-card .desc{font-size:.68rem;color:#62665f;line-height:1.25;margin-top:5px}.exp-card .count{position:absolute;right:7px;bottom:6px;font-size:.65rem;color:#7c766a}.exp-card .item{position:absolute;left:7px;bottom:6px;color:#a73f35;font-size:.62rem;font-weight:900}
+.reserve{margin-top:9px}.reserve summary{cursor:pointer;font-weight:900;color:#536157}.reserve-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:8px}
+.hand-row{display:flex;gap:7px;overflow-x:auto;padding:3px 1px 7px}.hand-row .exp-card{flex:0 0 126px;min-height:132px}.hand-empty{font-size:.83rem;color:var(--muted);padding:8px}
+.action-box{background:#f6f4e9;border:1px solid #ded8c3;border-radius:13px;padding:10px;font-size:.82rem;line-height:1.5}.action-box strong{color:#2d6340}.action-buttons{display:flex;gap:7px;flex-wrap:wrap;margin-top:9px}.piece-pick{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.piece-pick button.active{background:#284f35;color:#fff;border-color:#284f35}.buy-total{font-size:.9rem;font-weight:950;margin-top:8px;color:#875e11}.rule-note{font-size:.73rem;line-height:1.55;color:#657068;background:#f8fbf6;border:1px dashed #cbd7ca;border-radius:12px;padding:9px}.log{max-height:150px;overflow:auto;font-size:.72rem;line-height:1.45}.log div{padding:3px 0;border-bottom:1px dashed #e2ded0}.log div:last-child{border:0}
+.overlay{position:fixed;inset:0;z-index:50;background:#17231dcc;display:grid;place-items:center;padding:18px;backdrop-filter:blur(3px)}.modal{width:min(650px,96vw);max-height:88vh;overflow:auto;background:#fffef9;border-radius:20px;padding:18px;box-shadow:0 24px 80px #0007}.modal h2{margin:0 0 10px;color:#2c5b3a}.modal p{color:#647067;line-height:1.55}.modal-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.modal-actions{display:flex;justify-content:flex-end;gap:7px;flex-wrap:wrap;margin-top:14px}.choice-row{display:flex;gap:8px;flex-wrap:wrap}.choice-card{border:2px solid #ddd4bf;border-radius:12px;padding:8px;background:#fff;min-width:110px;font-weight:850}.choice-card.active{border-color:#d49b27;background:#fff8df}
+.toast{position:fixed;z-index:90;left:50%;bottom:22px;transform:translateX(-50%);background:#1d2a22;color:#fff;padding:10px 14px;border-radius:999px;font-size:.8rem;font-weight:800;box-shadow:0 10px 30px #0005;max-width:92vw;text-align:center}.footer{text-align:center;color:#7d847e;font-size:.7rem;line-height:1.5;padding:4px 8px 10px}
+.winner{padding:14px;border-radius:14px;background:#fff7d8;border:2px solid #e3bb4f;text-align:center}.winner h2{margin:0 0 7px}
+@media(max-width:1100px){.layout{grid-template-columns:1fr}.right{grid-template-columns:1fr 1fr}.right .hand-card,.right .control-card{grid-column:1/-1}}
+@media(max-width:720px){.app{padding:8px}.right{grid-template-columns:1fr}.market-grid,.reserve-grid,.modal-grid{grid-template-columns:repeat(2,1fr)}.player-chip{min-width:145px}.board-viewport{padding:6px}.topbar{align-items:flex-start}.hand-row .exp-card{flex-basis:118px}}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="./config.js"></script>
+</head>
+<body>
+<div id="app" class="app"><div class="card">게임을 불러오는 중…</div></div>
+<script type="module">
+import {configured,roomId,getMe,loadRoom,loadState,saveState,startStatePoll,submitMatch,ratingBadges,showFatal} from './multi-common.js';
+
+const $=s=>document.querySelector(s), clone=x=>JSON.parse(JSON.stringify(x));
+const app=$('#app');
+let revision=0, room=null, members=[], me=null, badges={}, state=null;
+let saveChain=Promise.resolve(), saving=0, unsubPoll=null, matchSubmitted=false;
+let selectedPiece=0, buySelection=new Set();
+
+const SYMBOL={green:'🗡️',yellow:'🪙',blue:'🛶',white:'✦',purple:'✨',gray:'🪨',red:'🏕️'};
+const PLAYER_COLOR=['#d4473d','#336bc4','#6f4aa3','#2b8b68'];
+const START_MARKET=['scout','trailblazer','jack','photographer','treasure','transmitter'];
+const BASE_MARKET_IDS=['scout','trailblazer','jack','photographer','treasure','transmitter','captain','cartographer','compass','scientist','travelLog','native','pioneer','giant','adventurer','propPlane','journalist','millionaire'];
+const EXTRA_MARKET_IDS=['specialPaddle','ranger','botanist','missionary','brute','elevationMap','trailChart','binoculars','telegram'];
+const MARKET_IDS=[...BASE_MARKET_IDS,...EXTRA_MARKET_IDS];
+
+const CARDS={
+  explorer:{name:'탐험가',color:'green',power:{green:1},price:null,desc:'정글 이동 1'},
+  traveler:{name:'여행가',color:'yellow',power:{yellow:1},price:null,desc:'마을/구매 금화 1'},
+  sailor:{name:'선원',color:'blue',power:{blue:1},price:null,desc:'강 이동 1'},
+  scout:{name:'길잡이',color:'green',power:{green:2},price:1,desc:'정글 이동 2'},
+  trailblazer:{name:'인도자',color:'green',power:{green:3},price:3,desc:'정글 이동 3'},
+  jack:{name:'잡역부',color:'white',power:{green:1,blue:1,yellow:1},price:2,desc:'🗡/🛶/🪙 중 하나를 1로 사용'},
+  photographer:{name:'사진사',color:'yellow',power:{yellow:2},price:2,desc:'금화 2'},
+  treasure:{name:'보물상자',color:'yellow',power:{yellow:4},price:3,item:true,desc:'금화 4 · 사용 후 파기'},
+  transmitter:{name:'송신기',color:'purple',price:4,item:true,action:'transmitter',desc:'시장/예비 시장 카드 1장을 무료 획득 · 파기'},
+  captain:{name:'선장',color:'blue',power:{blue:3},price:2,desc:'강 이동 3'},
+  cartographer:{name:'측량사',color:'purple',price:4,action:'draw2',desc:'카드 2장 뽑기'},
+  compass:{name:'나침반',color:'purple',price:2,item:true,action:'draw3',desc:'카드 3장 뽑기 · 파기'},
+  scientist:{name:'과학자',color:'purple',price:4,action:'scientist',desc:'카드 1장 뽑고 손에서 최대 1장 파기'},
+  travelLog:{name:'탐험 일지',color:'purple',price:3,item:true,action:'travelLog',desc:'카드 2장 뽑고 손에서 최대 2장 파기 · 파기'},
+  native:{name:'원주민',color:'purple',price:5,action:'native',desc:'인접 1칸 이동 · 요구치 무시 · 산/점유 칸 불가'},
+  pioneer:{name:'개척자',color:'green',power:{green:5},price:5,desc:'정글 이동 5'},
+  giant:{name:'대형 마체테',color:'green',power:{green:6},price:3,item:true,desc:'정글 이동 6 · 사용 후 파기'},
+  adventurer:{name:'모험가',color:'white',power:{green:2,blue:2,yellow:2},price:4,desc:'🗡/🛶/🪙 중 하나를 2로 사용'},
+  propPlane:{name:'프로펠러 비행기',color:'white',power:{green:4,blue:4,yellow:4},price:4,item:true,desc:'🗡/🛶/🪙 중 하나를 4로 사용 · 파기'},
+  journalist:{name:'기자',color:'yellow',power:{yellow:3},price:3,desc:'금화 3'},
+  millionaire:{name:'백만장자',color:'yellow',power:{yellow:4},price:5,desc:'금화 4'},
+  specialPaddle:{name:'특제 노',color:'blue',power:{blue:6},price:2,item:true,pack:'추가/프로모',desc:'강 이동 6 · 사용 후 파기'},
+  ranger:{name:'정찰자',color:'white',power:{green:3,blue:3},price:4,pack:'추가',desc:'🗡 또는 🛶 중 하나를 3으로 사용'},
+  botanist:{name:'식물학자',color:'green',price:4,action:'botanist',pack:'프로모',desc:'인접 정글 칸으로 최대 2번 이동 · 요구치 무시'},
+  missionary:{name:'선교사',color:'yellow',price:2,action:'missionary',pack:'프로모',desc:'인접 마을 칸으로 최대 2번 이동 · 요구치 무시'},
+  brute:{name:'막일꾼',color:'purple',price:3,action:'brute',pack:'프로모',desc:'요구치 3 이상 인접 칸 1곳으로 이동 · 점유 칸 허용'},
+  elevationMap:{name:'등고선 지도',color:'purple',price:3,item:true,action:'elevationMap',pack:'프로모',desc:'인접 1칸 이동 · 요구치 무시 · 점유/빈 산 허용 · 파기'},
+  trailChart:{name:'길 안내도',color:'purple',price:3,item:true,action:'trailChart',pack:'프로모',desc:'요구치 1 인접 칸으로 최대 4번 이동 · 파기'},
+  binoculars:{name:'쌍안경',color:'purple',price:3,item:true,action:'binoculars',pack:'프로모',desc:'시장판 카드 1장의 효과를 복사 · 파기'},
+  telegram:{name:'전보',color:'purple',price:3,item:true,action:'telegram',pack:'프로모',desc:'시장판 카드 1장을 무료로 즉시 손에 추가 · 파기'}
+};
+
+// 원본 보드 그림을 복제하지 않고, 업로드된 추천 루트의 난이도/흐름만 참고한 추상 헥스 코스다.
+const MAPS={
+  arena:{name:'아레나 기본 코스',difficulty:'보통',note:'기존 1차 버전 코스',gates:[3,6,9],rows:[
+    ['S','G1','G1','Y1','G2','B1','B2','G1','M','Y2','G2','G1','FG'],
+    ['S','G1','Y1','G2','M','B1','B2','G2','Y1','G1','B1','Y2','FY'],
+    ['S','Y1','G1','X1','G2','Y2','G1','R1','B1','B2','G2','Y2','FB'],
+    ['S','B1','B1','G1','G2','M','Y1','X2','G1','B1','Y2','G1',null],
+    ['S','G1','Y1','G2','B1','B2','G1','Y1','M','G2','B1','G1',null]
+  ]},
+  hills:{name:'Hills of Gold',difficulty:'쉬움',note:'추천 루트 모티브',gates:[4,8,11],rows:[
+    ['S','G1','Y1','G1','Y2','G1','B1','Y1','G2','B1','Y2','G1','G2','FG'],
+    ['S','G1','G2','Y1','G1','Y1','B1','B2','G1','Y2','G1','B1','G1','FY'],
+    ['S','Y1','G1','G1','X1','Y2','G1','B1','B2','G1','Y1','G2','Y2','FB'],
+    ['S','B1','G1','Y1','G2','M','G1','Y1','B1','G2','B1','Y1','G1',null],
+    ['S','G1','Y1','G1','B1','G2','Y1','G1','M','B1','G2','Y1','G1',null]
+  ]},
+  home:{name:'Home Stretch',difficulty:'쉬움',note:'추천 루트 모티브',gates:[3,7,10],rows:[
+    ['S','G1','G2','G1','B1','B2','Y1','G1','Y2','G2','B1','G1','FG'],
+    ['S','Y1','G1','G2','B1','G1','Y1','X1','G1','B2','Y1','G2','FY'],
+    ['S','G1','Y1','G1','G2','B1','Y2','G1','M','G1','B1','Y2','FB'],
+    ['S','B1','G1','Y1','G1','B2','G1','Y1','G2','X1','B1','G1',null],
+    ['S','G1','B1','G1','Y1','G2','B1','G1','Y2','G1','G2','B1',null]
+  ]},
+  winding:{name:'Winding Paths',difficulty:'보통',note:'추천 루트 모티브',gates:[4,8,12],rows:[
+    ['S','G1','Y1',null,'G2','B1','B2','G1','Y2',null,'G2','B1','Y2','G1','FG'],
+    ['S','G1','G2','Y1','G1','M','B1','Y1','G1','B2','Y1','G2','B1','Y2','FY'],
+    ['S','Y1','X1','G1','G2','Y2','G1','R1','B1','G2','M','Y1','G2','B1','FB'],
+    ['S','B1','G1','Y1',null,'G2','Y1','B2','G1','Y2','G1','B1','X2','G1',null],
+    ['S','G1','B1','G2','Y1','G1','B1','G2',null,'G1','B2','Y1','G1','G2',null]
+  ]},
+  serpentine:{name:'Serpentine',difficulty:'보통',note:'추천 루트 모티브',gates:[3,7,11],rows:[
+    ['S','G1','Y1','G2',null,null,'B1','G1','Y2','G2',null,'B1','G1','Y2','FG'],
+    ['S','B1','G1','Y1','G2','B1','B2','G1','M','Y1','G2','B1','Y2','G1','FY'],
+    ['S','G1','X1','G2','Y2','G1','B1','R1','G2','B2','Y1','G1','M','Y2','FB'],
+    ['S','Y1','G1','B1','G2','M','Y1','G1','B1','G2','X1','Y2','G1','B1',null],
+    ['S','G1','B1',null,'Y1','G2','B2','G1',null,'Y2','G2','B1','G1','Y1',null]
+  ]},
+  cauldron:{name:"Witch's Cauldron",difficulty:'어려움',note:'추천 루트 모티브',gates:[3,6,10,13],rows:[
+    ['S','G1','G2','Y1','M','B1','B2','X1','G2','Y2','M','B1','G2','Y2','FG'],
+    ['S','Y1','G1','G2','X1','B2','G1','Y2','M','G2','B2','Y1','X2','G1','FY'],
+    ['S','B1','G1','R1','G2','Y2','M','B1','G2','X2','Y2','G1','B2','G2','FB'],
+    ['S','G1','Y1','G2','B1','M','Y2','G1','R1','B2','G2','M','Y1','G2',null],
+    ['S','B1','G1','Y2','G2','X1','B1','G2','Y1','M','B2','G1','Y2','G2',null]
+  ]},
+  swamps:{name:'Swamplands',difficulty:'어려움',note:'추천 루트 모티브',gates:[4,8,12],rows:[
+    ['S','B1','B2','G1','X1','Y2','G2','B2','M','G1','Y2','X2','G2','B1','FG'],
+    ['S','G1','Y1','B1','G2','R1','B2','G1','Y2','M','G2','B1','Y2','G1','FY'],
+    ['S','Y1','G2','X1','B1','G2','M','Y2','B2','G1','X2','Y1','G2','B1','FB'],
+    ['S','B1','G1','Y2','M','B2','G1','X1','Y2','G2','B1','M','G1','Y2',null],
+    ['S','G1','X1','B1','G2','Y2','B2','M','G1','Y1','G2','B2','X1','G1',null]
+  ]},
+  lenient:{name:'Lenient Line',difficulty:'확장 모티브',note:'Dangers & Muisca 맵을 기본 지형으로 단순화',gates:[4,9,13],rows:[
+    ['S','G1','B1','G2','Y1','B2','G1','Y2','X1','G2','B1','Y1','G2','B2','Y2','FG'],
+    ['S','Y1','G1','B1','G2','Y2','M','G1','B2','Y1','G2','X1','B1','G2','Y1','FY'],
+    ['S','G1','X1','Y1','B1','G2','B2','Y2','G1','R1','G2','B1','Y2','G1','B2','FB'],
+    ['S','B1','G1','G2','Y1','M','B1','G2','Y2','B2','G1','Y1','M','G2','B1',null],
+    ['S','G1','Y1','B1','G2','Y2','B2','G1','X1','Y1','B1','G2','Y2','G1','B1',null]
+  ]},
+  zigzag:{name:'Zilly Zigzag',difficulty:'확장 모티브',note:'Dangers & Muisca 맵을 기본 지형으로 단순화',gates:[3,7,11,14],rows:[
+    ['S','G1',null,'Y1','G2','B2','G1',null,'Y2','B1','G2','M','Y1','G2','B1','Y2','FG'],
+    ['S','B1','G1','G2','M','Y2','B1','G2','X1','Y1','B2','G1','Y2','M','G2','B1','FY'],
+    ['S','Y1','G2','X1','B1','G2','Y2','B2','G1','R1','G2','B1','X2','Y1','G2','B2','FB'],
+    ['S','G1','B1','Y1','G2','M','B2','Y2','G1','B1','G2','X1','Y2','G1','B2','G2',null],
+    ['S','B1','G1',null,'Y2','G2','B1','M','G1','Y1',null,'B2','G2','Y2','G1','B1',null]
+  ]}
+};
+const BLOCKADE_POOL=[
+  {symbol:'green',cost:1},{symbol:'yellow',cost:1},{symbol:'blue',cost:1},
+  {symbol:'green',cost:2},{symbol:'yellow',cost:2},{symbol:'blue',cost:2}
+];
+
+function makeUid(prefix='c'){return `${prefix}-${Math.random().toString(36).slice(2,9)}-${Date.now().toString(36)}`}
+function shuffle(a){a=[...a];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a}
+function makeCard(type){return {uid:makeUid(type),type}}
+function cardDef(c){return CARDS[c.type]||CARDS.explorer}
+function nowLog(msg){state.log=state.log||[];state.log.unshift(`${state.round}R · ${msg}`);state.log=state.log.slice(0,40)}
+function toast(msg){const e=document.createElement('div');e.className='toast';e.textContent=msg;document.body.appendChild(e);setTimeout(()=>e.remove(),2200)}
+function esc(s){return String(s??'').replace(/[&<>'"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[ch]))}
+
+function parseCell(code,c,r){
+  if(!code)return null;
+  if(code==='S')return {id:`${c},${r}`,c,r,type:'start',cost:0,label:'출발'};
+  if(code==='M')return {id:`${c},${r}`,c,r,type:'mountain',cost:99,label:'산'};
+  const first=code[0],n=Number(code.slice(1)||1);
+  if(first==='G')return {id:`${c},${r}`,c,r,type:'green',cost:n};
+  if(first==='Y')return {id:`${c},${r}`,c,r,type:'yellow',cost:n};
+  if(first==='B')return {id:`${c},${r}`,c,r,type:'blue',cost:n};
+  if(first==='X')return {id:`${c},${r}`,c,r,type:'gray',cost:n,label:'돌무더기'};
+  if(first==='R')return {id:`${c},${r}`,c,r,type:'red',cost:n,label:'베이스캠프'};
+  if(first==='F'){
+    const t=code[1]==='G'?'green':code[1]==='Y'?'yellow':'blue';
+    return {id:`${c},${r}`,c,r,type:t,cost:1,finish:true,label:'엘도라도'};
+  }
+  return null;
+}
+function mapDef(id=state?.mapId||'arena'){return MAPS[id]||MAPS.arena}
+function buildCells(mapId='arena'){
+  const rows=mapDef(mapId).rows,out=[];
+  for(let r=0;r<rows.length;r++)for(let c=0;c<rows[r].length;c++){
+    const cell=parseCell(rows[r][c],c,r);if(cell)out.push(cell);
+  }
+  return out;
+}
+function cellById(id){return state.board.cells.find(x=>x.id===id)||null}
+function neighborCoords(c,r){
+  return c%2===0
+    ?[[c+1,r],[c+1,r-1],[c,r-1],[c-1,r-1],[c-1,r],[c,r+1]]
+    :[[c+1,r+1],[c+1,r],[c,r-1],[c-1,r],[c-1,r+1],[c,r+1]];
+}
+function neighbors(cell){return neighborCoords(cell.c,cell.r).map(([c,r])=>cellById(`${c},${r}`)).filter(Boolean)}
+function occupied(cellId,ignoreSeat=-1,ignorePiece=-1){
+  for(let si=0;si<state.players.length;si++)for(let pi=0;pi<state.players[si].positions.length;pi++){
+    if(si===ignoreSeat&&pi===ignorePiece)continue;
+    if(state.players[si].positions[pi]===cellId)return true;
+  }
+  return false;
+}
+function gateFor(a,b){
+  if(!a||!b)return null; const lo=Math.min(a.c,b.c),hi=Math.max(a.c,b.c); if(hi-lo!==1)return null;
+  return state.board.gates.find(g=>g.afterCol===lo&&!g.removed)||null;
+}
+function player(){return state.players[state.current]}
+function mySeat(){return members.findIndex(x=>x.user_id===me?.user_id)}
+function isMyTurn(){return !state?.gameOver && mySeat()===state?.current}
+function requiredPieces(){return state.players.length===2?2:1}
+function activePieceIndex(){const p=player();if(!p.positions[selectedPiece]){const idx=p.positions.findIndex(Boolean);if(idx>=0)selectedPiece=idx}return selectedPiece}
+function currentCell(){const p=player(),i=activePieceIndex();return cellById(p.positions[i])}
+
+function startDeck(){
+  return shuffle([makeCard('sailor'),makeCard('explorer'),makeCard('explorer'),makeCard('explorer'),makeCard('traveler'),makeCard('traveler'),makeCard('traveler'),makeCard('traveler')]);
+}
+function drawOne(p){
+  if(!p.deck.length&&p.discard.length){p.deck=shuffle(p.discard.splice(0));}
+  return p.deck.length?p.deck.pop():null;
+}
+function drawCards(p,n){for(let i=0;i<n;i++){const c=drawOne(p);if(!c)break;p.hand.push(c)}}
+function freshState(){
+  const mapId='arena',md=mapDef(mapId),cells=buildCells(mapId);
+  const startIds=['0,0','0,1','0,2','0,3'];
+  const blocks=shuffle(BLOCKADE_POOL).slice(0,md.gates.length);
+  const ps=members.map((m,i)=>{
+    const deck=startDeck(),p={id:m.user_id,name:m.nickname,deck,discard:[],hand:[],played:[],trash:[],positions:[],finishedPieces:0,blockades:[],qualified:false,reachedSeq:null};
+    if(members.length===2)p.positions=i===0?[startIds[0],startIds[2]]:[startIds[1],startIds[3]];else p.positions=[startIds[i]];
+    drawCards(p,4);return p;
+  });
+  const stock=Object.fromEntries(MARKET_IDS.map(id=>[id,3]));
+  return {version:2,gameId:'eldorado-pvp',mapId,current:0,round:1,phase:'action',players:ps,marketSlots:[...START_MARKET],stock,
+    board:{cells,gates:md.gates.map((afterCol,i)=>({afterCol,...blocks[i],removed:false,removedBy:null}))},
+    turn:{move:null,pending:null},finalTriggered:false,finishSeq:0,gameOver:false,finalOrder:null,log:[`게임 시작 · ${md.name} · 손패 4장`]};
+}
+function normalizeState(){
+  if(!state)return;
+  state.version=2;state.mapId=state.mapId||'arena';state.stock=state.stock||{};
+  for(const id of MARKET_IDS)if(state.stock[id]==null)state.stock[id]=3;
+  state.board=state.board||{cells:buildCells(state.mapId),gates:[]};
+  if(!Array.isArray(state.board.cells)||!state.board.cells.length)state.board.cells=buildCells(state.mapId);
+  state.turn=state.turn||{move:null,pending:null};
+}
+
+async function loadContext(){
+  if(!configured()||!roomId)showFatal('BoardMate 다인플 방에서 열어 주세요. (config.js / room 파라미터 필요)');
+  me=await getMe();if(!me)showFatal('BoardMate 로그인이 필요합니다.');
+  ({room,members}=await loadRoom());members=[...members].sort((a,b)=>Number(a.seat)-Number(b.seat));
+  if(room.game!=='eldorado')showFatal('엘도라도 방이 아닙니다.');
+  if(!members.some(m=>m.user_id===me.user_id))showFatal('이 방의 참가자가 아닙니다.');
+  badges=await ratingBadges('eldorado',members.map(m=>m.user_id)).catch(()=>({}));
+  const row=await loadState();revision=Number(row?.revision||0);state=row?.state?clone(row.state):null;normalizeState();
+  if(state&&state.gameId!=='eldorado-pvp')showFatal('이 방에는 호환되지 않는 저장 상태가 있습니다. 새 방을 만들어 주세요.');
+  if(!state){
+    if(room.host_id===me.user_id){state=freshState();await directSave(state);}
+    else renderWaiting();
+  }
+  if(!unsubPoll){unsubPoll=startStatePoll(async r=>{
+    const rv=Number(r?.revision||0);if(rv<=revision)return;revision=rv;
+    if(r?.state&&saving===0){state=clone(r.state);buySelection.clear();render();maybeSubmit();}
+  },{interval:10000});}
+}
+async function directSave(snapshot){
+  const next=await saveState(revision,clone(snapshot));revision=Number(next??revision+1);return revision;
+}
+function commit(reason='행동'){
+  const snap=clone(state);saving++;
+  saveChain=saveChain.then(async()=>{
+    try{await directSave(snap);state=snap;}
+    catch(e){
+      const row=await loadState().catch(()=>null);if(row){revision=Number(row.revision||revision);if(row.state)state=clone(row.state)}
+      toast(String(e?.message||e).includes('revision')?'다른 기기에서 먼저 갱신되어 최신 상태를 불러왔습니다.':`저장 실패: ${e.message||e}`);
+    }finally{saving--;render();maybeSubmit();}
+  });return saveChain;
+}
+async function maybeSubmit(){
+  if(matchSubmitted||!state?.gameOver||!Array.isArray(state.finalOrder)||room?.host_id!==me?.user_id)return;
+  const order=state.finalOrder.map(i=>members[i]?.user_id).filter(Boolean);if(order.length!==members.length)return;
+  matchSubmitted=true;try{await submitMatch(order)}catch(e){if(!String(e?.message||e).toLowerCase().includes('already')){matchSubmitted=false;console.warn(e)}}
+}
+
+function renderWaiting(){
+  app.innerHTML=`<div class="card"><h2>🧭 엘도라도 PVP</h2><p>방장이 게임 상태를 준비하는 중입니다…</p><a class="btn" href="./index.html#/multi">다인플 목록</a></div>`;
+}
+function phaseText(){
+  if(state.gameOver)return '게임 종료';if(state.turn?.pending)return '카드 효과 해결 중';if(state.turn?.move)return '이동 카드 사용 중';if(state.phase==='purchase')return '구매 단계';return '이동 / 액션 단계';
+}
+function render(){
+  if(!state)return renderWaiting();
+  const seat=mySeat(),p=player(),mine=isMyTurn();
+  app.innerHTML=`
+    <div class="topbar"><div class="brand"><h1>🧭 엘도라도 PVP</h1><div class="sub">이미지 미사용 · 기본판 + 추가/프로모 카드 · 다중 추상 맵 · 2–4인 BoardMate Arena</div></div><div class="top-actions"><a class="btn small" href="./index.html#/multi">← 방 목록</a>${room?.host_id===me?.user_id?'<button class="btn small" id="mapBtn">맵 선택</button>':''}<button class="btn small" id="rulesBtn">규칙 요약</button></div></div>
+    <section class="card status"><div><div class="turn-title">${state.round}라운드 · ${esc(p.name)} 차례${mine?' · 내 차례':''}</div><div class="phase">${phaseText()}</div></div><span class="connection ok">Arena 동기화</span></section>
+    <div class="players">${state.players.map((x,i)=>playerChip(x,i,seat)).join('')}</div>
+    <div class="layout"><div class="left">
+      <section class="card board-card"><div class="board-head"><div><h2>탐험 지도</h2><div class="map-meta"><span class="pill">${esc(mapDef().name)}</span><span class="pill">${esc(mapDef().difficulty)}</span></div></div><div class="legend"><span><i class="dot" style="background:var(--green)"></i>🗡 정글</span><span><i class="dot" style="background:var(--yellow)"></i>🪙 마을</span><span><i class="dot" style="background:var(--blue)"></i>🛶 강</span><span><i class="dot" style="background:var(--gray)"></i>🪨 돌무더기</span><span><i class="dot" style="background:var(--red)"></i>🏕 베이스캠프</span></div></div><div class="board-viewport"><div class="board-stage" id="boardStage"></div></div></section>
+      <section class="card"><div class="section-title"><h3>📜 진행 기록</h3><span class="tiny">최근 40개</span></div><div class="log">${(state.log||[]).map(x=>`<div>${esc(x)}</div>`).join('')}</div></section>
+    </div><div class="right">
+      ${state.gameOver?endPanelHtml():''}
+      <section class="card"><div class="section-title"><h3>🛒 시장</h3><span class="tiny">기본 18종 + 추가 9종 · 빈 칸이 생기면 예비 시장 구매 가능</span></div><div class="market-grid">${state.marketSlots.map((id,i)=>marketSlotHtml(id,i)).join('')}</div><details class="reserve"><summary>예비 시장 12종 보기</summary><div class="reserve-grid">${reserveIds().map(id=>marketCardHtml(id,'reserve')).join('')}</div></details></section>
+      <section class="card hand-card"><div class="section-title"><h3>🃏 내 손패</h3><span class="tiny">덱 ${ownPlayer()?.deck.length||0} · 버림 ${ownPlayer()?.discard.length||0} · 제거 ${ownPlayer()?.trash.length||0}</span></div><div class="hand-row" id="handRow">${handHtml()}</div></section>
+      <section class="card control-card"><div class="section-title"><h3>🎮 행동</h3><span class="tiny">${mine?'카드를 선택하세요':'상대 차례입니다'}</span></div>${controlHtml()}</section>
+      <div class="rule-note">팬메이드 웹 구현입니다. 상업용 카드/보드 이미지는 포함하지 않았고, 업로드해 주신 기본판/추가 카드 자료와 추천 맵 흐름을 바탕으로 텍스트·색상 UI로 구현했습니다. 동굴·저주·용·사원 같은 확장 전용 시스템은 이번 버전에서 생략했습니다.</div>
+    </div></div><div class="footer">The Quest for El Dorado의 상표/원작 권리는 각 권리자에게 있습니다. 이 파일은 모임 내 플레이용 비공식 구현입니다.</div>`;
+  renderBoard();bindAll();
+}
+function ownPlayer(){return state.players[mySeat()]||null}
+function playerChip(p,i,seat){
+  const maxBlock=Math.max(0,...p.blockades.map(b=>b.cost||0));
+  return `<div class="player-chip ${i===state.current?'active':''}"><div class="name"><span style="color:${PLAYER_COLOR[i]}">●</span> ${esc(p.name)}${i===seat?'<span class="me">나</span>':''}</div><div class="meta">도착 ${p.finishedPieces}/${requiredPieces()} · 봉쇄 ${p.blockades.length}개${p.blockades.length?`(최고 ${maxBlock})`:''} · 손 ${p.hand.length}</div></div>`;
+}
+function marketSlotHtml(id,i){return id&&state.stock[id]>0?marketCardHtml(id,'market'):`<div class="exp-card" style="display:grid;place-items:center;color:#9a9385;text-align:center"><b>빈 시장 칸</b><div class="desc">예비 시장 구매 가능</div></div>`}
+function reserveIds(){return MARKET_IDS.filter(id=>!state.marketSlots.includes(id)&&state.stock[id]>0)}
+function powerLabel(d){
+  if(d.color==='purple')return '✨ 액션';
+  return Object.entries(d.power||{}).map(([k,v])=>`${SYMBOL[k]} ${v}`).join(' · ');
+}
+function marketCardHtml(id,where){
+  const d=CARDS[id],cnt=state.stock[id]||0,disabled=!canBuyFrom(id,where);
+  return `<button class="exp-card ${d.color}" data-buy-pile="${id}" data-where="${where}" ${disabled?'disabled':''}><span class="name">${esc(d.name)}</span><span class="price">${d.price}🪙</span><div class="power">${powerLabel(d)}</div><div class="desc">${esc(d.desc)}</div>${d.pack?`<span class="pack-badge">${esc(d.pack)}</span>`:''}${d.item?'<span class="item">사용 후 파기</span>':''}<span class="count">×${cnt}</span></button>`;
+}
+function canBuyFrom(id,where){
+  if(!isMyTurn()||state.gameOver||state.phase!=='purchase'||state.turn.move||state.turn.pending)return false;
+  if((state.stock[id]||0)<=0)return false;
+  if(where==='market')return true;
+  return state.marketSlots.some(x=>x===null);
+}
+function handHtml(){
+  const p=ownPlayer();if(!p)return '<div class="hand-empty">내 좌석을 찾는 중…</div>';if(!p.hand.length)return '<div class="hand-empty">손패가 없습니다.</div>';
+  return p.hand.map(c=>handCardHtml(c)).join('');
+}
+function handCardHtml(c){
+  const d=cardDef(c),selected=buySelection.has(c.uid),disabled=!isMyTurn()||state.gameOver||state.turn.pending||state.turn.move||state.current!==mySeat();
+  return `<button class="exp-card ${d.color} ${selected?'selected':''}" data-hand="${c.uid}" ${disabled?'disabled':''}><span class="name">${esc(d.name)}</span>${d.price!=null?`<span class="price">${d.price}🪙</span>`:''}<div class="power">${powerLabel(d)}</div><div class="desc">${esc(d.desc)}</div>${d.pack?`<span class="pack-badge">${esc(d.pack)}</span>`:''}${d.item?'<span class="item">아이템</span>':''}</button>`;
+}
+function buyValue(c){
+  const d=cardDef(c);if(d.power?.yellow)return d.power.yellow;return .5;
+}
+function buyTotal(){const p=ownPlayer();if(!p)return 0;return p.hand.filter(c=>buySelection.has(c.uid)).reduce((s,c)=>s+buyValue(c),0)}
+function controlHtml(){
+  if(state.gameOver)return '<div class="action-box">게임이 종료되었습니다.</div>';
+  if(!isMyTurn())return '<div class="action-box">현재 플레이어의 행동을 기다리는 중입니다.</div>';
+  const p=player();
+  if(state.turn.pending)return `<div class="action-box"><strong>카드 효과를 해결하세요.</strong><div>${pendingText()}</div><div class="action-buttons"><button class="btn primary" id="resolvePending">효과 선택</button></div></div>`;
+  if(state.turn.move){const m=state.turn.move,d=CARDS[m.type];return `<div class="action-box"><strong>${esc(d.name)}</strong> · ${m.special?'특수 이동 남은 횟수':' '+(SYMBOL[m.symbol]||'✨')+' 남은 힘'} <b>${m.remaining}</b><div>말 ${m.piece+1}을 강조된 인접 칸으로 이동하세요. 봉쇄 제거가 가능한 효과는 강조된 봉쇄 너머 칸을 누르면 먼저 봉쇄를 제거합니다.</div><div class="action-buttons"><button class="btn" id="stopMove">현재 카드 종료</button></div></div>`;}
+  const pieceBtns=p.positions.map((pos,i)=>`<button class="btn small ${selectedPiece===i?'active':''}" data-piece="${i}" ${!pos?'disabled':''}>말 ${i+1}${pos?'':' · 도착'}</button>`).join('');
+  if(state.phase==='purchase')return `<div class="action-box"><strong>구매 단계</strong><div>손패에서 구매에 쓸 카드를 선택한 뒤 시장 카드 1장을 누르세요. 노란색/흰색의 🪙 값은 그대로, 그 외 카드는 0.5🪙입니다.</div><div class="buy-total">선택 금액: ${buyTotal()}🪙</div><div class="action-buttons"><button class="btn" id="backAction">구매 취소 → 이동 단계</button><button class="btn primary" id="endTurn">구매 없이 턴 종료</button></div></div>`;
+  return `<div class="action-box"><strong>이동 / 액션 단계</strong><div>이동 카드를 누른 뒤 지도에서 인접 칸을 클릭하세요. 🪨/🏕 칸은 지도를 직접 클릭하면 필요한 손패를 고를 수 있습니다.</div>${p.positions.length>1?`<div class="piece-pick">${pieceBtns}</div>`:''}<div class="action-buttons"><button class="btn gold" id="goPurchase">구매 단계</button><button class="btn primary" id="endTurn">턴 종료</button></div></div>`;
+}
+function pendingText(){
+  const p=state.turn.pending;if(!p)return '';
+  if(p.type==='trash')return `손에서 최대 ${p.max}장까지 게임에서 제거할 수 있습니다.`;
+  if(p.type==='transmitter')return '시장 또는 예비 시장에서 카드 1장을 무료로 가져옵니다.';
+  if(p.type==='telegram')return '현재 시장판에 놓인 카드 1장을 골라 즉시 손에 넣습니다.';
+  if(p.type==='binoculars')return '현재 시장판 카드 1장을 골라 그 효과를 복사합니다.';
+  return '';
+}
+function endPanelHtml(){
+  const order=state.finalOrder||[],winner=state.players[order[0]];
+  return `<section class="card winner"><h2>🏆 ${esc(winner?.name||'승자')}</h2><div>${order.map((i,n)=>`${n+1}위 ${esc(state.players[i].name)}`).join(' · ')}</div></section>`;
+}
+
+function renderBoard(){
+  const stage=$('#boardStage');if(!stage)return;stage.innerHTML='';
+  const W=74,H=64,stepX=W*.75,stepY=H+5,originX=10,originY=16;
+  const maxC=Math.max(0,...state.board.cells.map(c=>c.c)),maxR=Math.max(0,...state.board.cells.map(c=>c.r));stage.style.width=`${Math.max(800,originX+(maxC+1)*stepX+W)}px`;stage.style.height=`${Math.max(390,originY+(maxR+1)*stepY+H)}px`;stage.style.minWidth=stage.style.width;
+  const pos=(c,r)=>({x:originX+c*stepX,y:originY+r*stepY+(c%2?stepY/2:0)});
+  const targets=new Set(validTargets().map(x=>x.id));
+  for(const cell of state.board.cells){
+    const {x,y}=pos(cell.c,cell.r);const b=document.createElement('button');b.className=`hex ${cell.type}${cell.finish?' finish':''}${targets.has(cell.id)?' target':''}${occupied(cell.id)?' occupied':''}`;b.style.left=`${x}px`;b.style.top=`${y}px`;b.dataset.cell=cell.id;b.disabled=cell.type==='mountain'&&!targets.has(cell.id);
+    const icon=cell.finish?'🏆':cell.type==='green'?'🗡️':cell.type==='yellow'?'🪙':cell.type==='blue'?'🛶':cell.type==='gray'?'🪨':cell.type==='red'?'🏕️':cell.type==='start'?'⛺':'⛰️';
+    b.innerHTML=`<div><div class="cost">${icon}${cell.cost&&cell.cost<90?` ${cell.cost}`:''}</div><div class="label">${cell.finish?'엘도라도':cell.label||''}</div></div>`;stage.appendChild(b);
+  }
+  state.board.gates.forEach((g,i)=>{
+    const c=g.afterCol+.5,{x,y}=pos(c,2.05);const el=document.createElement('div');el.className=`gate ${g.removed?'cleared':''}`;el.style.left=`${x-18}px`;el.style.top=`${y-13+(i-1)*18}px`;el.innerHTML=`<span class="sym">${SYMBOL[g.symbol]}</span> 봉쇄 ${g.cost}${g.removed?' ✓':''}`;stage.appendChild(el);
+  });
+  state.players.forEach((p,si)=>p.positions.forEach((id,pi)=>{if(!id)return;const c=cellById(id);if(!c)return;const {x,y}=pos(c.c,c.r);const t=document.createElement('div');t.className=`token p${si} ${pi===1?'second':''}`;t.style.left=`${x+W/2}px`;t.style.top=`${y+H/2}px`;t.textContent=`${si+1}${p.positions.length>1?String.fromCharCode(65+pi):''}`;stage.appendChild(t)}));
+}
+function specialCanEnter(m,n,isOccupied){
+  if(n.type==='start')return false;
+  if(m.special==='native')return !isOccupied&&n.type!=='mountain';
+  if(m.special==='botanist')return !isOccupied&&n.type==='green';
+  if(m.special==='missionary')return !isOccupied&&n.type==='yellow';
+  if(m.special==='brute')return n.type!=='mountain'&&n.cost>=3;
+  if(m.special==='elevationMap')return true;
+  if(m.special==='trailChart')return !isOccupied&&n.type!=='mountain'&&n.cost===1;
+  return false;
+}
+function specialCanBlockade(m){return ['native','botanist','missionary','elevationMap','trailChart'].includes(m.special)}
+function validTargets(){
+  if(!isMyTurn()||state.gameOver||state.turn.pending)return[];const p=player(),pi=state.turn.move?.piece??activePieceIndex(),id=p.positions[pi];if(!id)return[];const cur=cellById(id);if(!cur)return[];
+  return neighbors(cur).filter(n=>{
+    const occ=occupied(n.id,state.current,pi),gate=gateFor(cur,n);
+    if(state.turn.move){const m=state.turn.move;
+      if(m.special){if(gate)return specialCanBlockade(m);return specialCanEnter(m,n,occ)}
+      if(occ||n.type==='mountain'||n.type==='start')return false;
+      if(gate)return gate.symbol===m.symbol&&m.remaining>=gate.cost;return ['green','yellow','blue'].includes(n.type)&&n.type===m.symbol&&n.cost<=m.remaining;
+    }
+    if(occ||n.type==='mountain'||n.type==='start'||gate)return false;return n.type==='gray'||n.type==='red';
+  });
+}
+
+function bindAll(){
+  $('#rulesBtn')?.addEventListener('click',showRules);
+  $('#mapBtn')?.addEventListener('click',showMapPicker);
+  document.querySelectorAll('[data-piece]').forEach(b=>b.onclick=()=>{selectedPiece=Number(b.dataset.piece);render()});
+  document.querySelectorAll('[data-cell]').forEach(b=>b.onclick=()=>clickCell(b.dataset.cell));
+  document.querySelectorAll('[data-hand]').forEach(b=>b.onclick=()=>clickHand(b.dataset.hand));
+  document.querySelectorAll('[data-buy-pile]').forEach(b=>b.onclick=()=>purchasePile(b.dataset.buyPile,b.dataset.where));
+  $('#goPurchase')?.addEventListener('click',()=>{if(!guard())return;state.phase='purchase';state.turn.move=null;buySelection.clear();nowLog(`${player().name} 구매 단계`);commit('purchase-phase')});
+  $('#backAction')?.addEventListener('click',()=>{if(!guard())return;state.phase='action';buySelection.clear();commit('back-action')});
+  $('#endTurn')?.addEventListener('click',()=>openEndTurn());
+  $('#stopMove')?.addEventListener('click',()=>{if(!guard())return;state.turn.move=null;nowLog(`${player().name} 이동 카드 종료`);commit('stop-move')});
+  $('#resolvePending')?.addEventListener('click',()=>openPending());
+}
+function guard(){if(!isMyTurn()){toast('내 차례가 아닙니다.');return false}return true}
+function findHand(uid,p=player()){return p.hand.find(c=>c.uid===uid)}
+function removeHand(uid,p=player()){const i=p.hand.findIndex(c=>c.uid===uid);return i>=0?p.hand.splice(i,1)[0]:null}
+function usedCardDestination(card,usePower=true){const d=cardDef(card),p=player();if(d.item&&usePower)p.trash.push(card);else p.played.push(card)}
+
+function clickHand(uid){
+  if(!guard()||state.turn.pending||state.turn.move)return;const c=findHand(uid);if(!c)return;const d=cardDef(c);
+  if(state.phase==='purchase'){
+    buySelection.has(uid)?buySelection.delete(uid):buySelection.add(uid);render();return;
+  }
+  if(d.action){playActionCard(c,d);return;}
+  if(d.power){
+    const opts=Object.keys(d.power);if(opts.length===1)beginMove(c,opts[0]);else showSymbolChoice(c,opts);
+  }
+}
+function beginMove(card,symbol){
+  const p=player(),pi=activePieceIndex();if(!p.positions[pi]){toast('이동할 말을 선택하세요.');return}
+  const c=removeHand(card.uid,p);if(!c)return;usedCardDestination(c,true);
+  state.turn.move={uid:c.uid,type:c.type,symbol,remaining:CARDS[c.type].power[symbol],piece:pi};
+  nowLog(`${p.name} ${CARDS[c.type].name} 사용 (${SYMBOL[symbol]} ${state.turn.move.remaining})`);commit('begin-move');
+}
+function showSymbolChoice(card,opts){
+  modal(`<h2>${esc(cardDef(card).name)} · 기호 선택</h2><p>이 카드로 사용할 탐험 기호 하나를 고르세요.</p><div class="choice-row">${opts.map(s=>`<button class="choice-card" data-symbol="${s}">${SYMBOL[s]} ${cardDef(card).power[s]}</button>`).join('')}</div>`,m=>m.querySelectorAll('[data-symbol]').forEach(b=>b.onclick=()=>{closeModal();beginMove(card,b.dataset.symbol)}));
+}
+function playActionCard(card,d){
+  const p=player(),c=removeHand(card.uid,p);if(!c)return;
+  if(d.action==='native'){
+    usedCardDestination(c,true);state.turn.move={uid:c.uid,type:c.type,symbol:'native',remaining:1,piece:activePieceIndex(),special:'native'};nowLog(`${p.name} 원주민 사용`);commit('native');return;
+  }
+  if(d.action==='draw2'){usedCardDestination(c,true);drawCards(p,2);nowLog(`${p.name} 측량사로 2장 뽑음`);commit('draw2');return;}
+  if(d.action==='draw3'){usedCardDestination(c,true);drawCards(p,3);nowLog(`${p.name} 나침반으로 3장 뽑음`);commit('draw3');return;}
+  if(d.action==='scientist'){usedCardDestination(c,true);drawCards(p,1);state.turn.pending={type:'trash',max:1,source:'과학자'};nowLog(`${p.name} 과학자 사용`);commit('scientist');return;}
+  if(d.action==='travelLog'){usedCardDestination(c,true);drawCards(p,2);state.turn.pending={type:'trash',max:2,source:'탐험 일지'};nowLog(`${p.name} 탐험 일지 사용`);commit('travel-log');return;}
+  if(d.action==='transmitter'){usedCardDestination(c,true);state.turn.pending={type:'transmitter'};nowLog(`${p.name} 송신기 사용`);commit('transmitter');return;}
+  if(d.action==='telegram'){usedCardDestination(c,true);state.turn.pending={type:'telegram'};nowLog(`${p.name} 전보 사용`);commit('telegram');return;}
+  if(d.action==='binoculars'){usedCardDestination(c,true);state.turn.pending={type:'binoculars'};nowLog(`${p.name} 쌍안경 사용`);commit('binoculars');return;}
+  if(['botanist','missionary','brute','elevationMap','trailChart'].includes(d.action)){
+    usedCardDestination(c,true);beginSpecialMove(c.type,d.action,false);return;
+  }
+}
+function beginSpecialMove(type,special,virtual=false){
+  const p=player(),pi=activePieceIndex();if(!p.positions[pi]){toast('이동할 말을 선택하세요.');return}
+  const steps=special==='trailChart'?4:(special==='botanist'||special==='missionary'?2:1);
+  state.turn.move={uid:virtual?null:makeUid('effect'),type,symbol:'special',remaining:steps,piece:pi,special,virtual};
+  nowLog(`${p.name} ${CARDS[type].name} 효과 시작 (최대 ${steps}회)`);commit('special-move');
+}
+function playCopiedCard(type){
+  const d=CARDS[type],p=player();if(!d)return;
+  if(d.power){const opts=Object.keys(d.power);if(opts.length===1){state.turn.move={uid:null,type,symbol:opts[0],remaining:d.power[opts[0]],piece:activePieceIndex(),virtual:true};nowLog(`${p.name} 쌍안경으로 ${d.name} 효과 복사`);commit('copy-power')}else showCopiedSymbolChoice(type,opts);return;}
+  if(d.action==='draw2'){drawCards(p,2);nowLog(`${p.name} 쌍안경으로 측량사 효과 복사`);commit('copy-draw2');return;}
+  if(d.action==='draw3'){drawCards(p,3);nowLog(`${p.name} 쌍안경으로 나침반 효과 복사`);commit('copy-draw3');return;}
+  if(d.action==='scientist'){drawCards(p,1);state.turn.pending={type:'trash',max:1,source:'쌍안경 → 과학자'};commit('copy-scientist');return;}
+  if(d.action==='travelLog'){drawCards(p,2);state.turn.pending={type:'trash',max:2,source:'쌍안경 → 탐험 일지'};commit('copy-travel-log');return;}
+  if(d.action==='transmitter'){state.turn.pending={type:'transmitter'};commit('copy-transmitter');return;}
+  if(d.action==='telegram'){state.turn.pending={type:'telegram'};commit('copy-telegram');return;}
+  if(d.action==='native'){state.turn.move={uid:null,type,symbol:'native',remaining:1,piece:activePieceIndex(),special:'native',virtual:true};commit('copy-native');return;}
+  if(['botanist','missionary','brute','elevationMap','trailChart'].includes(d.action)){beginSpecialMove(type,d.action,true);return;}
+  toast('이 카드 효과는 현재 단순화 버전에서 복사할 수 없습니다.');render();
+}
+function showCopiedSymbolChoice(type,opts){
+  modal(`<h2>쌍안경 → ${esc(CARDS[type].name)}</h2><p>복사할 기호 하나를 고르세요.</p><div class="choice-row">${opts.map(s=>`<button class="choice-card" data-symbol="${s}">${SYMBOL[s]} ${CARDS[type].power[s]}</button>`).join('')}</div>`,m=>m.querySelectorAll('[data-symbol]').forEach(b=>b.onclick=()=>{closeModal();state.turn.move={uid:null,type,symbol:b.dataset.symbol,remaining:CARDS[type].power[b.dataset.symbol],piece:activePieceIndex(),virtual:true};nowLog(`${player().name} 쌍안경으로 ${CARDS[type].name} 복사`);commit('copy-symbol')}));
+}
+
+function clickCell(id){
+  if(!guard()||state.gameOver||state.turn.pending)return;const p=player();
+  const pi=state.turn.move?.piece??activePieceIndex(),fromId=p.positions[pi];if(!fromId)return;const from=cellById(fromId),to=cellById(id);if(!from||!to||!neighbors(from).some(n=>n.id===id))return;
+  const occ=occupied(id,state.current,pi);
+  const gate=gateFor(from,to);
+  if(state.turn.move){
+    const m=state.turn.move;
+    if(m.special){
+      if(gate){if(!specialCanBlockade(m)){toast('이 효과로 봉쇄를 제거할 수 없습니다.');return}gate.removed=true;gate.removedBy=state.current;p.blockades.push({symbol:gate.symbol,cost:gate.cost});m.remaining--;nowLog(`${p.name} ${CARDS[m.type].name}으로 봉쇄 ${SYMBOL[gate.symbol]}${gate.cost} 제거`);if(m.remaining<=0)state.turn.move=null;commit('special-blockade');return;}
+      if(!specialCanEnter(m,to,occ)){toast('현재 특수 이동으로 갈 수 없는 칸입니다.');return}
+      movePieceTo(pi,to);m.remaining--;nowLog(`${p.name} ${CARDS[m.type].name} 특수 이동`);if(m.remaining<=0||to.finish)state.turn.move=null;commit('special-move-step');return;
+    }
+    if(occ){toast('다른 말이 있는 칸에는 들어갈 수 없습니다.');return}
+    if(to.type==='mountain'||to.type==='start'){toast('그 칸으로는 이동할 수 없습니다.');return}
+    if(gate){
+      if(gate.symbol!==m.symbol||m.remaining<gate.cost){toast('현재 카드로 이 봉쇄를 제거할 수 없습니다.');return}
+      m.remaining-=gate.cost;gate.removed=true;gate.removedBy=state.current;p.blockades.push({symbol:gate.symbol,cost:gate.cost});nowLog(`${p.name} 봉쇄 ${SYMBOL[gate.symbol]}${gate.cost} 제거`);if(m.remaining<=0)state.turn.move=null;commit('remove-blockade');return;
+    }
+    if(!['green','yellow','blue'].includes(to.type)||to.type!==m.symbol||to.cost>m.remaining){toast('현재 카드의 기호/힘으로 갈 수 없는 칸입니다.');return}
+    m.remaining-=to.cost;movePieceTo(pi,to);if(m.remaining<=0||to.finish)state.turn.move=null;commit('move');return;
+  }
+  if(occ){toast('다른 말이 있는 칸에는 들어갈 수 없습니다.');return}
+  if(to.type==='mountain'||to.type==='start'){toast('그 칸으로는 이동할 수 없습니다.');return}
+  if(gate){toast('먼저 이동 카드로 봉쇄를 제거하세요.');return}
+  if(to.type==='gray'||to.type==='red')openSpecialTerrain(to,pi);
+}
+function movePieceTo(pi,to){
+  const p=player();p.positions[pi]=to.id;nowLog(`${p.name} → ${to.finish?'엘도라도':terrainName(to.type)+' '+to.cost}`);
+  if(to.finish){p.positions[pi]=null;p.finishedPieces++;toast(`${p.name}의 말 ${pi+1}이 엘도라도에 도착했습니다!`);if(p.finishedPieces>=requiredPieces()&&!p.qualified){p.qualified=true;p.reachedSeq=++state.finishSeq;if(!state.finalTriggered){state.finalTriggered=true;nowLog(`최종 라운드 발동 · ${p.name}`)}}}
+}
+function terrainName(t){return t==='green'?'정글':t==='yellow'?'마을':t==='blue'?'강':t==='gray'?'돌무더기':t==='red'?'베이스캠프':t==='mountain'?'산':t}
+function openSpecialTerrain(to,pi){
+  const p=player(),need=to.cost;let picked=new Set();
+  modal(`<h2>${to.type==='gray'?'🪨 돌무더기':'🏕 베이스캠프'} ${need}</h2><p>${to.type==='gray'?`손에서 카드 ${need}장을 사용하면 이동합니다. 카드 종류/힘은 무관하며, 사용한 아이템도 이 경우에는 파기되지 않습니다.`:`손에서 카드 ${need}장을 게임에서 완전히 제거하고 이동합니다.`}</p><div class="modal-grid" id="specialCards">${p.hand.map(c=>miniChoiceCard(c)).join('')}</div><div class="modal-actions"><button class="btn" data-close>취소</button><button class="btn primary" id="confirmSpecial" disabled>0 / ${need}장 선택</button></div>`,m=>{
+    m.querySelectorAll('[data-choice]').forEach(b=>b.onclick=()=>{const uid=b.dataset.choice;picked.has(uid)?picked.delete(uid):picked.add(uid);b.classList.toggle('active',picked.has(uid));const ok=picked.size===need,btn=m.querySelector('#confirmSpecial');btn.disabled=!ok;btn.textContent=`${picked.size} / ${need}장 선택`;});
+    m.querySelector('[data-close]').onclick=closeModal;
+    m.querySelector('#confirmSpecial').onclick=()=>{if(picked.size!==need)return;const cards=[];for(const uid of picked){const c=removeHand(uid,p);if(c)cards.push(c)}if(to.type==='red')p.trash.push(...cards);else p.played.push(...cards);movePieceTo(pi,to);closeModal();commit('special-terrain')};
+  });
+}
+function miniChoiceCard(c){const d=cardDef(c);return `<button class="choice-card" data-choice="${c.uid}">${esc(d.name)}<br><span class="tiny">${powerLabel(d)}</span></button>`}
+
+function openPending(){
+  if(!guard()||!state.turn.pending)return;const pend=state.turn.pending,p=player();
+  if(pend.type==='trash'){
+    let picked=new Set();modal(`<h2>${esc(pend.source)} · 카드 제거</h2><p>손에서 최대 ${pend.max}장까지 제거할 수 있습니다. 0장도 가능합니다.</p><div class="modal-grid">${p.hand.map(c=>miniChoiceCard(c)).join('')}</div><div class="modal-actions"><button class="btn primary" id="resolveTrash">0장 제거하고 계속</button></div>`,m=>{
+      m.querySelectorAll('[data-choice]').forEach(b=>b.onclick=()=>{const uid=b.dataset.choice;if(picked.has(uid))picked.delete(uid);else if(picked.size<pend.max)picked.add(uid);else return;b.classList.toggle('active',picked.has(uid));m.querySelector('#resolveTrash').textContent=`${picked.size}장 제거하고 계속`;});
+      m.querySelector('#resolveTrash').onclick=()=>{for(const uid of picked){const c=removeHand(uid,p);if(c)p.trash.push(c)}state.turn.pending=null;nowLog(`${p.name} ${picked.size}장 제거`);closeModal();commit('resolve-trash')};
+    });return;
+  }
+  if(pend.type==='transmitter'){
+    const ids=MARKET_IDS.filter(id=>(state.stock[id]||0)>0&&id!=='transmitter');
+    modal(`<h2>📡 송신기 · 무료 카드 선택</h2><p>시장 또는 예비 시장에서 원하는 카드 1장을 골라 버린 카드 더미에 놓습니다.</p><div class="modal-grid">${ids.map(id=>marketCardPlain(id)).join('')}</div>`,m=>m.querySelectorAll('[data-free]').forEach(b=>b.onclick=()=>{const id=b.dataset.free;if((state.stock[id]||0)<=0)return;state.stock[id]--;p.discard.push(makeCard(id));const slot=state.marketSlots.indexOf(id);if(slot>=0&&state.stock[id]<=0)state.marketSlots[slot]=null;state.turn.pending=null;nowLog(`${p.name} 송신기로 ${CARDS[id].name} 획득`);closeModal();commit('transmitter-pick')}));return;
+  }
+  if(pend.type==='telegram'){
+    const ids=state.marketSlots.filter(id=>id&&(state.stock[id]||0)>0&&id!=='telegram');
+    modal(`<h2>✉️ 전보 · 시장 카드 선택</h2><p>현재 시장판에 놓인 카드 1장을 비용 없이 즉시 손에 넣습니다.</p><div class="modal-grid">${ids.map(id=>marketCardPlain(id).replaceAll('data-free','data-telegram')).join('')||'<div class="tiny">가져올 수 있는 카드가 없습니다.</div>'}</div><div class="modal-actions"><button class="btn" data-close>취소</button></div>`,m=>{m.querySelector('[data-close]').onclick=()=>{state.turn.pending=null;closeModal();commit('telegram-cancel')};m.querySelectorAll('[data-telegram]').forEach(b=>b.onclick=()=>{const id=b.dataset.telegram;if((state.stock[id]||0)<=0)return;state.stock[id]--;p.hand.push(makeCard(id));const slot=state.marketSlots.indexOf(id);if(slot>=0&&state.stock[id]<=0)state.marketSlots[slot]=null;state.turn.pending=null;nowLog(`${p.name} 전보로 ${CARDS[id].name}을 손에 추가`);closeModal();commit('telegram-pick')})});return;
+  }
+  if(pend.type==='binoculars'){
+    const ids=[...new Set(state.marketSlots.filter(id=>id&&(state.stock[id]||0)>0&&id!=='binoculars'))];
+    modal(`<h2>🔭 쌍안경 · 효과 복사</h2><p>현재 시장판 카드 1장의 효과를 복사합니다. 시장의 카드는 줄어들지 않습니다.</p><div class="modal-grid">${ids.map(id=>marketCardPlain(id).replaceAll('data-free','data-copy')).join('')||'<div class="tiny">복사할 카드가 없습니다.</div>'}</div><div class="modal-actions"><button class="btn" data-close>취소</button></div>`,m=>{m.querySelector('[data-close]').onclick=()=>{state.turn.pending=null;closeModal();commit('binoculars-cancel')};m.querySelectorAll('[data-copy]').forEach(b=>b.onclick=()=>{const id=b.dataset.copy;state.turn.pending=null;closeModal();playCopiedCard(id)})});return;
+  }
+}
+function marketCardPlain(id){const d=CARDS[id];return `<button class="exp-card ${d.color}" data-free="${id}"><span class="name">${esc(d.name)}</span><span class="price">${d.price}🪙</span><div class="power">${powerLabel(d)}</div><div class="desc">${esc(d.desc)}</div>${d.pack?`<span class="pack-badge">${esc(d.pack)}</span>`:''}<span class="count">×${state.stock[id]}</span></button>`}
+
+function purchasePile(id,where){
+  if(!guard()||state.phase!=='purchase'||state.turn.pending||state.turn.move)return;const d=CARDS[id];if(!d||!canBuyFrom(id,where))return;
+  const total=buyTotal();if(total<d.price){toast(`금화가 부족합니다. 필요 ${d.price}, 선택 ${total}`);return}
+  if(!buySelection.size){toast('구매에 사용할 손패를 먼저 선택하세요.');return}
+  const p=player(),spent=[];for(const uid of [...buySelection]){const c=removeHand(uid,p);if(c)spent.push(c)}
+  for(const c of spent){const cd=cardDef(c),usesPower=Boolean(cd.power?.yellow);if(cd.item&&usesPower)p.trash.push(c);else p.played.push(c)}
+  p.discard.push(makeCard(id));state.stock[id]--;
+  const marketIdx=state.marketSlots.indexOf(id);
+  if(marketIdx>=0&&state.stock[id]<=0)state.marketSlots[marketIdx]=null;
+  if(where==='reserve'){
+    const empty=state.marketSlots.findIndex(x=>x===null);if(empty>=0&&state.stock[id]>0)state.marketSlots[empty]=id;
+  }
+  buySelection.clear();nowLog(`${p.name} ${d.name} 구매 (${d.price}🪙)`);state.phase='action';openEndTurn(true);
+}
+
+function openEndTurn(afterPurchase=false){
+  if(!guard()||state.turn.pending||state.turn.move)return;const p=player();let discardSet=new Set();
+  modal(`<h2>${afterPurchase?'구매 완료 · ':''}턴 종료</h2><p>아직 손에 남은 카드는 다음 턴까지 보관하거나 원하는 만큼 버릴 수 있습니다. 버릴 카드를 선택하세요.</p><div class="modal-grid">${p.hand.map(c=>miniChoiceCard(c)).join('')||'<div class="tiny">남은 손패가 없습니다.</div>'}</div><div class="modal-actions"><button class="btn" data-close>취소</button><button class="btn primary" id="confirmEnd">선택한 0장 버리고 턴 종료</button></div>`,m=>{
+    m.querySelectorAll('[data-choice]').forEach(b=>b.onclick=()=>{const uid=b.dataset.choice;discardSet.has(uid)?discardSet.delete(uid):discardSet.add(uid);b.classList.toggle('active',discardSet.has(uid));m.querySelector('#confirmEnd').textContent=`선택한 ${discardSet.size}장 버리고 턴 종료`;});
+    m.querySelector('[data-close]').onclick=closeModal;
+    m.querySelector('#confirmEnd').onclick=()=>{for(const uid of discardSet){const c=removeHand(uid,p);if(c)p.discard.push(c)}finishTurn();closeModal()};
+  });
+}
+function finishTurn(){
+  const p=player();p.discard.push(...p.played.splice(0));drawCards(p,Math.max(0,4-p.hand.length));state.turn={move:null,pending:null};buySelection.clear();
+  const old=state.current;nowLog(`${p.name} 턴 종료`);
+  if(state.finalTriggered&&old===state.players.length-1){finishGame();commit('finish-game');return;}
+  state.current=(old+1)%state.players.length;if(state.current===0)state.round++;state.phase='action';selectedPiece=0;commit('end-turn');
+}
+function progressScore(p){
+  let s=p.finishedPieces*100;for(const id of p.positions){const c=cellById(id);if(c)s=Math.max(s,p.finishedPieces*100+c.c*7+(12-Math.abs(2-c.r)))}return s;
+}
+function finishGame(){
+  state.gameOver=true;state.phase='gameover';const seats=state.players.map((_,i)=>i);
+  seats.sort((a,b)=>{
+    const A=state.players[a],B=state.players[b];if(A.qualified!==B.qualified)return A.qualified?-1:1;
+    if(A.qualified&&B.qualified){if(B.blockades.length!==A.blockades.length)return B.blockades.length-A.blockades.length;const am=Math.max(0,...A.blockades.map(x=>x.cost)),bm=Math.max(0,...B.blockades.map(x=>x.cost));if(bm!==am)return bm-am;return (A.reachedSeq??999)-(B.reachedSeq??999)}
+    return progressScore(B)-progressScore(A);
+  });state.finalOrder=seats;nowLog(`게임 종료 · 승자 ${state.players[seats[0]].name}`);
+}
+
+
+function canChangeMap(){
+  if(room?.host_id!==me?.user_id||state.gameOver||state.round!==1||state.current!==0||state.finalTriggered)return false;
+  return state.players.every(p=>p.finishedPieces===0&&p.blockades.length===0&&p.discard.length===0&&p.played.length===0&&p.trash.length===0&&p.hand.length===4&&p.deck.length===4);
+}
+function showMapPicker(){
+  if(room?.host_id!==me?.user_id){toast('방장만 맵을 바꿀 수 있습니다.');return}
+  const enabled=canChangeMap();
+  modal(`<h2>🗺️ 맵 선택</h2><p>${enabled?'게임 시작 전에 사용할 추상 맵을 고르세요. 맵만 바뀌고 카드/플레이어 상태는 그대로입니다.':'맵 변경은 첫 행동 전에만 가능합니다.'}</p><div class="modal-grid">${Object.entries(MAPS).map(([id,m])=>`<button class="choice-card ${state.mapId===id?'active':''}" data-map="${id}" ${enabled?'':'disabled'}><b>${esc(m.name)}</b><br><span class="tiny">${esc(m.difficulty)} · ${esc(m.note)}</span></button>`).join('')}</div><div class="modal-actions"><button class="btn" data-close>닫기</button></div>`,m=>{m.querySelector('[data-close]').onclick=closeModal;m.querySelectorAll('[data-map]').forEach(b=>b.onclick=()=>selectMap(b.dataset.map))});
+}
+function selectMap(id){
+  if(!canChangeMap()||!MAPS[id])return;const md=MAPS[id],blocks=shuffle(BLOCKADE_POOL).slice(0,md.gates.length);state.mapId=id;state.board={cells:buildCells(id),gates:md.gates.map((afterCol,i)=>({afterCol,...blocks[i%blocks.length],removed:false,removedBy:null}))};
+  const starts=['0,0','0,1','0,2','0,3'];state.players.forEach((p,i)=>{p.positions=state.players.length===2?(i===0?[starts[0],starts[2]]:[starts[1],starts[3]]):[starts[i]]});state.log=[`게임 시작 · ${md.name} · 손패 4장`];closeModal();commit('change-map');
+}
+
+function showRules(){
+  modal(`<h2>🧭 규칙 요약</h2><ul style="line-height:1.7;color:#526057"><li>각자 시작 덱 8장(선원 1, 탐험가 3, 여행가 4)에서 손패 4장으로 시작합니다.</li><li>이동 카드는 같은 색 지형을 힘만큼 연속 이동할 수 있으며, 한 칸의 높은 요구치를 여러 카드로 합칠 수 없습니다.</li><li>🪨 돌무더기는 표시된 장수만큼 아무 카드를 사용합니다. 🏕 베이스캠프는 그 장수만큼 카드를 게임에서 제거합니다.</li><li>한 턴에 카드 1장만 구매합니다. 시장 칸이 비어 있으면 예비 시장 카드도 살 수 있고, 남은 같은 종류 카드가 빈 칸으로 들어옵니다.</li><li><b>추가 카드:</b> 특제 노, 정찰자, 식물학자, 선교사, 막일꾼, 등고선 지도, 길 안내도, 쌍안경, 전보를 예비 시장에 추가했습니다.</li><li><b>맵:</b> 기본 코스와 추천 루트/확장 맵 모티브의 추상 코스를 선택할 수 있습니다. 동굴·저주·용·사원 전용 규칙은 생략되어 모든 맵을 기본 지형 규칙으로 플레이합니다.</li><li>2인전은 각자 말 2개가 모두 도착해야 합니다. 3–4인전은 말 1개가 도착하면 최종 라운드가 발동합니다.</li><li>동률이면 획득 봉쇄 수, 그래도 같으면 가장 높은 봉쇄 수치로 비교합니다.</li></ul><div class="modal-actions"><button class="btn primary" data-close>닫기</button></div>`,m=>m.querySelector('[data-close]').onclick=closeModal);
+}
+function modal(inner,onMount){closeModal();const ov=document.createElement('div');ov.className='overlay';ov.id='modalOverlay';ov.innerHTML=`<div class="modal">${inner}</div>`;document.body.appendChild(ov);onMount?.(ov.querySelector('.modal'))}
+function closeModal(){$('#modalOverlay')?.remove()}
+
+await loadContext();if(state)render();
+</script>
+</body>
+</html>
