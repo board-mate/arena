@@ -45,3 +45,21 @@ export function openRoles(counts,title='이번 판 역할'){
 }
 export function namesBySeat(members){return Object.fromEntries((members||[]).map(m=>[Number(m.seat),m.nickname]));}
 export function seatName(members,seat){return members.find(m=>Number(m.seat)===Number(seat))?.nickname||`#${Number(seat)+1}`;}
+
+// Shared social-deduction end-state helpers.
+export async function finalizeSeatWinners(ctx,winnerSeats=[]){
+  const winners=new Set((winnerSeats||[]).map(Number));
+  const winIds=(ctx?.members||[]).filter(m=>winners.has(Number(m.seat))).map(m=>m.user_id).filter(Boolean);
+  const loseIds=(ctx?.members||[]).filter(m=>!winners.has(Number(m.seat))).map(m=>m.user_id).filter(Boolean);
+  try{
+    if(!winIds.length && !loseIds.length) return null;
+    return await rpc('submit_boardmate_team_match',{p_token:token(),p_room_id:roomId,p_winners:winIds,p_losers:loseIds});
+  }catch(e){
+    // Preserve the playable game even if result/RR submission is unavailable.
+    if(!String(e?.message||e).toLowerCase().includes('already')) console.warn('[BoardMate social] result submit failed',e);
+    return null;
+  }
+}
+export function socialEndScreen({win,title='게임 종료',reason='',summary='',body=''}){
+  return `<section class="sd-end-screen ${win?'is-win':'is-loss'}"><div class="sd-end-icon">${win?'🏆':'🎭'}</div><h2>${esc(title)}</h2><div class="sd-end-result">${win?'승리':'패배'}</div>${reason?`<p class="sd-end-reason">${esc(reason)}</p>`:''}${summary?`<p class="sd-end-summary">${esc(summary)}</p>`:''}<div class="sd-end-body">${body}</div><div class="sd-end-actions"><a class="sd-btn primary" href="./index.html#/">홈으로</a><a class="sd-btn ghost" href="./index.html#/multi">다인플 목록</a><a class="sd-btn ghost" href="./index.html#/room/${encodeURIComponent(roomId)}">방으로</a></div></section>`;
+}

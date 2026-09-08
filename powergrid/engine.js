@@ -246,7 +246,7 @@
   }
 
   // ============================================================
-  // V29 supported board maps: Germany + USA
+  // V30 supported board maps: Germany + USA
   // ============================================================
   var USA_MAP; (function buildUSAMap() {
     var regionIds = ['r0','r1','r2','r3','r4','r5'];

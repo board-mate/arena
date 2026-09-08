@@ -15,7 +15,7 @@ for(const g of ['avalon','secrethitler','onenightwerewolf']){
   ok(sql.includes(`'${g}'`),`SQL registers ${g}`);
 }
 ok(app.includes('create_boardmate_room_v10'),'app.js uses room creator v10');
-ok(sql.includes("mode:=case when p_game in ('avalon','secrethitler','onenightwerewolf') then 'realtime'"),'social rooms are realtime');
+ok(/mode:=case\s+when p_game in \('avalon','secrethitler','onenightwerewolf'\) then 'realtime'/.test(sql),'social rooms are realtime');
 ok(sql.includes('revoke all on table public.boardmate_social_games from public, anon, authenticated'),'raw secret table is revoked from clients');
 ok(sql.includes('boardmate_social_view')&&sql.includes('boardmate_social_action'),'filtered view and server action RPCs exist');
 

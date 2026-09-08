@@ -5,17 +5,17 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>파워그리드 · BoardMate 온라인</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-  <link rel="stylesheet" href="./powergrid/pg-styles.css?v=26">
+  <link rel="stylesheet" href="./powergrid/pg-styles.css?v=30">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="./config.js"></script>
 </head>
 <body>
 <div class="pg-app" id="app">불러오는 중…</div>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="./powergrid/data/germany-map.js?v=26"></script>
-<script src="./powergrid/engine.js?v=29"></script>
-<script src="./powergrid/ui.js?v=26"></script>
-<script src="./powergrid/map-rules-v23.js?v=26"></script>
+<script src="./powergrid/data/germany-map.js?v=30"></script>
+<script src="./powergrid/engine.js?v=30"></script>
+<script src="./powergrid/ui.js?v=30"></script>
+<script src="./powergrid/map-rules-v30.js?v=30"></script>
 <script type="module">
 import {
   configured, roomId, getMe, loadRoom, loadState, saveState, startStatePoll,
@@ -93,7 +93,8 @@ function mountSetupMapPreviews(){
 
 function setupView(){
   destroySetupPreviews();
-  const boardId=document.querySelector('#boardSelect')?.value || legacyBoardId || 'germany';
+  const selectedBoard=document.querySelector('#boardSelect')?.value;
+  const boardId=(selectedBoard==='germany'||selectedBoard==='usa') ? selectedBoard : 'germany';
   const boardDef=PowerGrid.BOARD_DEFS[boardId] || PowerGrid.BOARD_DEFS.germany;
   const boardMap=PowerGrid.mapData(boardId);
   const wanted=PowerGrid.defaultRegions(members.length,boardId).length;
@@ -110,7 +111,7 @@ function setupView(){
     </div>
     <div class="pg-card">
       <h3>파워그리드 게임 설정</h3>
-      ${legacyState?'<div class="pg-setup-warning">이 방에 이전 형식의 Power Grid 상태가 남아 있습니다. 방장이 아래 설정으로 새 게임을 시작하면 현재 형식으로 교체합니다.</div>':''}
+      ${legacyState?'<div class="pg-setup-warning">이 방에 이전 형식 또는 지원하지 않는 지도 상태가 남아 있습니다. 방장이 아래 설정에서 독일 또는 미국을 선택해 새 게임을 시작하면 현재 형식으로 교체합니다.</div>':''}
       <p>사용할 맵(독일/미국)과 연결된 지역을 선택하세요. ${members.length}인 게임은 서로 이어진 지역 <b>${wanted}개</b>를 사용합니다.</p>
       <input type="hidden" id="boardSelect" value="${boardId}"><div class="pg-map-choice-title">🗺️ 시작 맵 선택</div><div class="pg-map-choice-grid">${mapCards}</div>
       ${isHost?`<div class="pg-region-selector" id="regionSelector">${regionHtml}</div>
@@ -186,7 +187,8 @@ async function action(a){
 }
 function draw(){
   if(!state)return setupView();
-  const boardId=(state.map&&state.map.boardId)||'germany';
+  const rawBoardId=(state.map&&state.map.boardId);
+  const boardId=(rawBoardId==='germany'||rawBoardId==='usa') ? rawBoardId : 'germany';
   const boardMap=PowerGrid.mapData(boardId);
   const boardName=(PowerGrid.BOARD_DEFS[boardId]||PowerGrid.BOARD_DEFS.germany).name;
   const regionNames=(state.map.regionIds||[]).map(r=>boardMap.REGIONS[r]?.shortName||r).join('·');
@@ -213,13 +215,13 @@ async function onRow(row){
   const newRevision=Number(row.revision||0);
   const incoming=row.state||null;
   const incomingBoard=incoming?.map?.boardId||null;
-  // 현재 지원 지도는 독일/미국뿐입니다. 예전 한국맵 상태나 알 수 없는 지도 상태는
+  // 현재 지원 지도는 독일/미국뿐입니다. 예전 또는 알 수 없는 지도 상태는
   // 새 게임 설정으로 되돌려 방장이 독일/미국 중 하나를 다시 선택하게 합니다.
   const supportedBoard=incomingBoard==='germany'||incomingBoard==='usa';
   const staleExactMap=!!incoming && !supportedBoard;
   if(incoming && (incoming.kind!==PowerGrid.STATE_KIND || staleExactMap)){
     revision=newRevision;
-    legacyState=true; legacyBoardId=incomingBoard||'germany'; state=null; undoStack=[];
+    legacyState=true; legacyBoardId='germany'; state=null; undoStack=[];
     setupView();return;
   }
   // 폴링으로 다른 플레이어/기기의 액션이 들어오면 로컬 Undo 히스토리를 리셋합니다.
