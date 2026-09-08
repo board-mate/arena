@@ -891,6 +891,15 @@ if(roomId) window.addEventListener('DOMContentLoaded',()=>{
   // 있지만 조건을 잃지 않는다. 따라서 현재 상태 기준의 fail-closed 정정이 안전하다.
   function repairInvalidCatTokens(next){
     if(!next || !Array.isArray(next.players) || !Array.isArray(next.cats)) return {changed:false,removed:[]};
+    // V30 safety rule: manually placed cat tokens are player decisions and must
+    // never be deleted merely because a later board re-evaluation cannot prove
+    // the historical group. We only normalize exact duplicate token IDs in the
+    // same group; we do not remove a single existing token.
+    // Historical validity cannot be reconstructed reliably from the current
+    // board alone (especially when printed-edge groups are involved). Therefore
+    // this migration intentionally performs no destructive token repair.
+    // New token placement is validated at placement time.
+    return {changed:false,removed:[]};
     const removed=[];
     next.players.forEach((p,pi)=>{
       if(!p?.board || !p?.boardColor) return;
@@ -918,10 +927,9 @@ if(roomId) window.addEventListener('DOMContentLoaded',()=>{
       for(const item of candidates){
         const cell=p.board[item.key];
         const sameGroupKey=item.groupKey || `${item.key}|${item.catId}`;
-        const keep = item.valid && !keptGroup.has(sameGroupKey);
-        if(keep){
+        if(!keptGroup.has(sameGroupKey)){
           keptGroup.add(sameGroupKey);
-        }else{
+        }else if(item.valid){
           const idx=(cell?.cats||[]).indexOf(item.catId);
           if(idx>=0){
             cell.cats.splice(idx,1);
@@ -1858,7 +1866,25 @@ if(roomId) window.addEventListener('DOMContentLoaded',()=>{
   function offsetToAxial(key){const [r,c]=key.split(',').map(Number);return[c-Math.floor((r+1)/2),r];}function axialToKey(q,r){return`${r},${q+Math.floor((r+1)/2)}`;}function rotateAxial(q,r){return[-r,q+r];}
   function normalizedShape(coords){const minQ=Math.min(...coords.map(x=>x[0])),minR=Math.min(...coords.map(x=>x[1]));return coords.map(([q,r])=>`${q-minQ},${r-minR}`).sort().join('|');}
   function shapeVariants(shape){let set=new Set(),cur=shape.map(x=>x.slice());for(let i=0;i<6;i++){set.add(normalizedShape(cur));cur=cur.map(([q,r])=>rotateAxial(q,r));}return set;}
-  function componentHasShape(p,keys,shapeName){const variants=shapeVariants(AXIAL_SHAPES[shapeName]||[]),keySet=new Set(keys),axial=new Map(keys.map(k=>[k,offsetToAxial(k)]));for(const origin of keys){const[oq,or]=axial.get(origin);for(const variant of variants){const pts=variant.split('|').map(x=>x.split(',').map(Number));for(const[vq,vr]of pts){const bq=oq-vq,br=or-vr,candidate=pts.map(([q,r])=>axialToKey(bq+q,br+r));if(candidate.every(k=>keySet.has(k)))return candidate;}}}return null;}
+  function componentHasShape(p,keys,shapeName){
+    const keySet=new Set(keys), axial=new Map(keys.map(k=>[k,offsetToAxial(k)]));
+    // 직선형 고양이(루미/테콜로테/레오)는 육각 격자의 6방향 직선으로
+    // 직접 검사한다. 기존 정규화/회전 비교는 오프셋 좌표와 가장자리 노드를
+    // 함께 사용할 때 정상적인 직선도 탈락시키는 경우가 있어 fail-closed로
+    // 이미 놓인 정상 토큰을 지우는 문제를 막는다.
+    const lineLen={rumi:3,tecolote:4,leo:5}[shapeName];
+    if(lineLen){
+      const dirs=[[1,0],[-1,0],[0,1],[0,-1],[1,-1],[-1,1]];
+      for(const origin of keys){const [oq,or]=axial.get(origin);for(const [dq,dr] of dirs){
+        const candidate=Array.from({length:lineLen},(_,i)=>axialToKey(oq+dq*i,or+dr*i));
+        if(candidate.every(k=>keySet.has(k))) return candidate;
+      }}
+      return null;
+    }
+    const variants=shapeVariants(AXIAL_SHAPES[shapeName]||[]);
+    for(const origin of keys){const[oq,or]=axial.get(origin);for(const variant of variants){const pts=variant.split('|').map(x=>x.split(',').map(Number));for(const[vq,vr]of pts){const bq=oq-vq,br=or-vr,candidate=pts.map(([q,r])=>axialToKey(bq+q,br+r));if(candidate.every(k=>keySet.has(k)))return candidate;}}}
+    return null;
+  }
   function resolveAutomaticTokens(p,placedKey){
     const earned=[],placed=p.board[placedKey]; if(!placed?.tile) return earned;
     const color=placed.tile.color,colorGroup=componentFor(p,placedKey,'color',color);

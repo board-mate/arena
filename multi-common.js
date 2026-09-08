@@ -79,6 +79,12 @@ export async function saveFantasyState(expectedRevision,publicState,privateState
   void broadcastStateRevision(newRevision);
   return Number(newRevision);
 }
+export async function claimFantasyController(){
+  const t=token();
+  if(!t)throw new Error('로그인이 필요합니다.');
+  await touchPresence(true);
+  return await rpc('claim_boardmate_fantasy_controller',{p_token:t,p_room_id:roomId});
+}
 export async function sendRoomBroadcast(event,payload={}){
   try{
     const ch=await getStateChannel();
