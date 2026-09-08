@@ -480,7 +480,6 @@
       {a:"KR_05",b:"KR_06",cost:5},
       {a:"KR_05",b:"KR_07",cost:4},
       {a:"KR_06",b:"KR_07",cost:8},
-      {a:"KR_06",b:"KR_17",cost:14},
       {a:"KR_07",b:"KR_15",cost:8},
       {a:"KR_07",b:"KR_16",cost:7},
       {a:"KR_08",b:"KR_09",cost:18},
@@ -495,9 +494,8 @@
       {a:"KR_13",b:"KR_20",cost:18},
       {a:"KR_13",b:"KR_17",cost:18},
       {a:"KR_15",b:"KR_16",cost:0},
-      {a:"KR_15",b:"KR_18",cost:4},
+      {a:"KR_15",b:"KR_18",cost:0},
       {a:"KR_16",b:"KR_17",cost:0},
-      {a:"KR_16",b:"KR_19",cost:2},
       {a:"KR_17",b:"KR_18",cost:0},
       {a:"KR_17",b:"KR_20",cost:8},
       {a:"KR_17",b:"KR_22",cost:9},
@@ -544,9 +542,6 @@
       {a:"KR_41",b:"KR_42",cost:7},
       {a:"KR_42",b:"KR_39",cost:7},
       {a:"KR_40",b:"KR_42",cost:10},
-      {a:"KR_15",b:"KR_17",cost:2},
-      {a:"KR_16",b:"KR_18",cost:3},
-      {a:"KR_17",b:"KR_19",cost:3},
     ];
     var CITY_BY_ID={}; cityDefs.forEach(function(c){CITY_BY_ID[c.id]=c;});
     function regionAdjacency(){var out={};regionIds.forEach(function(r){out[r]=[];});edgeDefs.forEach(function(e){var ra=CITY_BY_ID[e.a].region,rb=CITY_BY_ID[e.b].region;if(ra===rb)return;if(out[ra].indexOf(rb)<0)out[ra].push(rb);if(out[rb].indexOf(ra)<0)out[rb].push(ra);});return out;}

@@ -375,7 +375,7 @@ async function renderRoom(roomId){
   let touchBusy=false;
   const touch=async()=>{if(touchBusy)return;touchBusy=true;try{await callRpc('touch_boardmate_room',{p_token:memberToken(),p_room_id:roomId});}catch{}finally{touchBusy=false;}};
   await touch();
-  const draw=async()=>{data=await load();const {room,members}=data,isHost=room.host_id===me.user_id,gi=gameInfo(room.game),min=Number(room.min_players||gi.min);
+  const draw=async()=>{data=await load();const {room,members}=data,isHost=room.host_id===me.user_id,gi=gameInfo(room.game),min=(room.game==='powergrid'?Math.max(3,Number(room.min_players||gi.min)):Number(room.min_players||gi.min));
     if(room.status==='cancelled'){shell(`<div class="page-head"><div><h1>🛑 ${esc(room.title)}</h1><p>${gi.name} · 참가자 전원 동의로 취소된 게임입니다.</p></div></div><section class="lobby-card" style="text-align:center"><h2>게임이 취소되었습니다</h2><p>이번 게임은 승패와 ELO에 반영되지 않습니다.</p><div class="actions" style="justify-content:center"><a class="primary link-btn" href="#/multi">다인플 목록</a><a class="ghost link-btn" href="#/">홈으로</a></div></section>`);return;}
     const realtime=(room.play_mode==='realtime'||gi.mode==='realtime'),modeText=realtime?'⚡ 실시간':'⏳ 턴 기반';
     shell(`<div class="page-head"><div><h1>${gi.icon} ${esc(room.title)}</h1><p>${gi.name} · ${modeText} · 현재 ${members.length}명 · ${room.status==='open'?'대기 중':room.status==='playing'?'게임 중':'종료'}</p></div><div class="actions"><button class="ghost" id="backMulti">← 방 목록</button></div></div>
