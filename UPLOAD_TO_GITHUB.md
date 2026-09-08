@@ -29,14 +29,16 @@ GitHub 웹 UI만 사용할 경우에도 가능합니다.
 구 `pocketnova/`, `online-pocketnova.html`, `solo-pocketnova.html`은 최종본에 없습니다.
 SQL과 `app.js`에 남은 `pocketnova`는 **포켓몬 미니마의 내부 호환 ID**이므로 지우지 마세요.
 
-## Supabase
+## Supabase — v11.4.20 필수 복구
 
-소셜 3종을 처음 배포하는 경우 SQL Editor에서 순서대로 실행:
+판타지 왕국 또는 한밤의 늑대인간이 로딩되지 않는 기존 설치에서는 SQL Editor에서 다음 순서로 실행하세요.
 
-1. `SUPABASE_SOCIAL_DEDUCTION_V1.sql`
-2. `SUPABASE_VERIFY_SOCIAL_DEDUCTION.sql`
+1. `SUPABASE_REPAIR_FANTASY_WEREWOLF_V20.sql`
+2. `SUPABASE_VERIFY_FANTASY_WEREWOLF_V20.sql`
 
-기존 파워그리드가 정상이라면 `SUPABASE_POWERGRID_UNIFIED.sql`을 다시 실행할 필요는 없습니다.
+검증 결과의 `ok`가 모두 `true`면 됩니다. Repair SQL은 현재 지원 게임 전체의 공용 제약조건/도우미를 정상화하고 판타지 왕국 및 소셜 추리 RPC를 다시 설치하며, 기존 방/게임 상태를 삭제하지 않습니다.
+
+새 설치에서도 개별 구버전 SQL을 임의 순서로 반복 실행하기보다 위 Repair SQL을 마지막에 실행해 공용 카탈로그를 정상화하는 것을 권장합니다.
 
 ## 배포 후 빠른 확인
 

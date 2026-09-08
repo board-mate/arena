@@ -1,13 +1,12 @@
--- BoardMate Arena - Safe Fantasy Realms migration (v2)
--- IMPORTANT: Run this instead of the older SUPABASE_FANTASY_REALMS_UNIFIED.sql.
--- It preserves the current game catalog (PowerGrid/Social/Plakoro/Pokemon Minima)
--- and only adds Fantasy Realms private-state support.
+-- BoardMate Arena v11.4.20: Fantasy Realms unified migration
+-- Safe on the current integrated catalog; does not remove later-added games.
+-- Includes current room helpers plus Fantasy Realms private-state RPCs.
 
 begin;
 
--- 1) Restore the CURRENT full game check constraints.
--- The old Fantasy migration accidentally narrowed these constraints and caused
--- existing PowerGrid/Social/Plakoro rows to violate the new constraint.
+-- -----------------------------------------------------------------------------
+-- 1. Keep every currently supported game + add plakoro.
+-- -----------------------------------------------------------------------------
 alter table public.boardmate_rooms drop constraint if exists boardmate_rooms_game_check;
 alter table public.boardmate_rooms add constraint boardmate_rooms_game_check
   check (game in (
@@ -22,7 +21,9 @@ alter table public.boardmate_ratings add constraint boardmate_ratings_game_check
     'fantasyrealms','powergrid','avalon','secrethitler','onenightwerewolf','plakoro'
   ));
 
--- 2) Keep the CURRENT game catalog rules.
+-- -----------------------------------------------------------------------------
+-- 2. Current min/max/player labels used by room creation.
+-- -----------------------------------------------------------------------------
 create or replace function public.boardmate_game_max(p_game text)
 returns integer
 language sql immutable as $$
@@ -74,8 +75,56 @@ language sql immutable as $$
 $$;
 revoke all on function public.boardmate_game_ko(text) from public, anon, authenticated;
 
--- 3) The current turn helper already supports Fantasy Realms in the
--- BoardMate game catalog migration. Keep/restore it here as well.
+-- -----------------------------------------------------------------------------
+-- 3. Unified room creation RPC.
+-- -----------------------------------------------------------------------------
+create or replace function public.create_boardmate_room_v10(p_token text,p_title text,p_game text)
+returns uuid
+language plpgsql
+security definer
+set search_path=public,extensions
+as $$
+declare
+  uid uuid; rid uuid; mx integer; nm text; ttl text; mode text;
+begin
+  uid:=public.boardmate_session_user(p_token);
+  if uid is null then raise exception '로그인이 필요합니다.'; end if;
+
+  if p_game not in (
+    'maskmen','acquire','calico','cascadia','pocketnova','thegame','kraken',
+    'fantasyrealms','powergrid','avalon','secrethitler','onenightwerewolf','plakoro'
+  ) then
+    raise exception '지원하지 않는 게임입니다.';
+  end if;
+
+  select nickname into nm from public.boardmate_profiles where user_id=uid;
+  ttl:=trim(coalesce(p_title,''));
+  if ttl='' then
+    ttl:=left(coalesce(nm,'보드메이트')||'의 '||public.boardmate_game_ko(p_game)||' 한 판',40);
+  end if;
+  if char_length(ttl)>40 then ttl:=left(ttl,40); end if;
+
+  mx:=public.boardmate_game_max(p_game);
+  mode:=case
+    when p_game in ('avalon','secrethitler','onenightwerewolf') then 'realtime'
+    else 'turn'
+  end;
+
+  insert into public.boardmate_rooms(title,game,max_players,host_id,play_mode)
+  values(ttl,p_game,mx,uid,mode)
+  returning id into rid;
+
+  insert into public.boardmate_room_members(room_id,user_id,seat)
+  values(rid,uid,0);
+
+  return rid;
+end;
+$$;
+grant execute on function public.create_boardmate_room_v10(text,text,text) to anon, authenticated;
+
+-- -----------------------------------------------------------------------------
+-- 4. Turn helper: keep all existing games + Plakoro current field.
+-- -----------------------------------------------------------------------------
 create or replace function public.boardmate_turn_seat(p_game text,p_state jsonb)
 returns integer
 language plpgsql immutable as $$
@@ -86,7 +135,11 @@ begin
   if p_state is null then return null; end if;
   if coalesce((p_state->>'over')::boolean,false)
      or coalesce((p_state->>'gameOver')::boolean,false) then return null; end if;
-  if p_game='maskmen' then return nullif(p_state->>'currentTurn','')::integer; end if;
+
+  if p_game='maskmen' then
+    return nullif(p_state->>'currentTurn','')::integer;
+  end if;
+
   if p_game='acquire' then
     if p_state->>'phase'='resolve' then
       p:=p_state->'pending';
@@ -101,19 +154,24 @@ begin
     end if;
     return nullif(p_state->>'current','')::integer;
   end if;
+
   if p_game='calico' then
     return coalesce(nullif(p_state->>'active','')::integer,
-                    nullif(p_state->>'current','')::integer);
+                   nullif(p_state->>'current','')::integer);
   end if;
+
   if p_game in ('cascadia','thegame','kraken','fantasyrealms','plakoro') then
     return nullif(p_state->>'current','')::integer;
   end if;
+
   if p_game='pocketnova' then
     return nullif(p_state->>'currentPlayer','')::integer;
   end if;
+
   if p_game='powergrid' then
     return nullif(p_state->>'currentSeat','')::integer;
   end if;
+
   return null;
 exception when others then
   return null;
@@ -121,7 +179,11 @@ end;
 $$;
 revoke all on function public.boardmate_turn_seat(text,jsonb) from public, anon, authenticated;
 
--- 4) Fantasy Realms private state.
+-- 2) Private Fantasy Realms state.
+-- Public boardmate_room_state never contains hands/actions.
+-- One private row stores a seat-keyed map. The RPC exposes only the caller's
+-- seat to normal players; the authoritative host receives the full map so it
+-- can resume the game after a browser refresh.
 create table if not exists public.boardmate_game_private_states (
   room_id uuid primary key references public.boardmate_rooms(id) on delete cascade,
   revision bigint not null default 0,
@@ -135,40 +197,20 @@ create or replace function public.get_boardmate_fantasy_state(p_token text,p_roo
 returns jsonb
 language plpgsql security definer stable set search_path=public,extensions
 as $$
-declare
-  uid uuid;
-  seat_no integer;
-  r public.boardmate_rooms%rowtype;
-  pub public.boardmate_room_state%rowtype;
-  priv jsonb;
+declare uid uuid; seat_no integer; r public.boardmate_rooms%rowtype; pub public.boardmate_room_state%rowtype; priv jsonb;
 begin
   uid:=public.boardmate_session_user(p_token);
   if uid is null then raise exception '로그인이 필요합니다.'; end if;
   select * into r from public.boardmate_rooms where id=p_room_id;
   if not found then raise exception '방을 찾을 수 없습니다.'; end if;
-  if r.game<>'fantasyrealms' then raise exception '판타지 왕국 방이 아닙니다.'; end if;
-  select seat into seat_no
-  from public.boardmate_room_members
-  where room_id=p_room_id and user_id=uid;
+  select seat into seat_no from public.boardmate_room_members where room_id=p_room_id and user_id=uid;
   if seat_no is null then raise exception '이 방의 참가자가 아닙니다.'; end if;
-
   select * into pub from public.boardmate_room_state where room_id=p_room_id;
-  if not found then
-    return jsonb_build_object('revision',0,'state',null,'private',null,'host',r.host_id=uid,'seat',seat_no,'updated_at',null);
-  end if;
-
+  if not found then return jsonb_build_object('revision',0,'state',null,'private',null); end if;
   select states into priv from public.boardmate_game_private_states where room_id=p_room_id;
   if r.host_id=uid then
-    return jsonb_build_object(
-      'revision',pub.revision,
-      'state',pub.state,
-      'private',coalesce(priv,'{}'::jsonb),
-      'host',true,
-      'seat',seat_no,
-      'updated_at',pub.updated_at
-    );
+    return jsonb_build_object('revision',pub.revision,'state',pub.state,'private',coalesce(priv,'{}'::jsonb),'host',true,'seat',seat_no,'updated_at',pub.updated_at);
   end if;
-
   return jsonb_build_object(
     'revision',pub.revision,
     'state',pub.state,
@@ -184,61 +226,29 @@ $$;
 grant execute on function public.get_boardmate_fantasy_state(text,uuid) to anon, authenticated;
 
 create or replace function public.put_boardmate_fantasy_state(
-  p_token text,
-  p_room_id uuid,
-  p_expected_revision bigint,
-  p_public_state jsonb,
-  p_private_states jsonb
+  p_token text,p_room_id uuid,p_expected_revision bigint,p_public_state jsonb,p_private_states jsonb
 )
 returns bigint
 language plpgsql security definer set search_path=public,extensions
 as $$
-declare
-  uid uuid;
-  r public.boardmate_rooms%rowtype;
-  rev bigint;
-  newrev bigint;
-  seat_no integer;
-  turn_uid uuid;
-  current_controller uuid;
-  existing_state jsonb;
-  inserted boolean := false;
+declare uid uuid; r public.boardmate_rooms%rowtype; rev bigint; newrev bigint; seat_no integer; turn_uid uuid;
 begin
   uid:=public.boardmate_session_user(p_token);
   if uid is null then raise exception '로그인이 필요합니다.'; end if;
   select * into r from public.boardmate_rooms where id=p_room_id for update;
   if not found then raise exception '방을 찾을 수 없습니다.'; end if;
+  if r.host_id<>uid then raise exception '판타지 왕국 게임 상태는 방장만 확정할 수 있습니다.'; end if;
   if r.game<>'fantasyrealms' then raise exception '판타지 왕국 방이 아닙니다.'; end if;
   if r.status<>'playing' and r.status<>'finished' then raise exception '게임이 시작되지 않았습니다.'; end if;
   if jsonb_typeof(p_public_state) is distinct from 'object' then raise exception '공개 게임 상태가 올바르지 않습니다.'; end if;
   if jsonb_typeof(p_private_states) is distinct from 'object' then raise exception '비공개 게임 상태가 올바르지 않습니다.'; end if;
 
-  select revision,state into rev,existing_state from public.boardmate_room_state where room_id=p_room_id for update;
-  if rev is null then
+  select revision into rev from public.boardmate_room_state where room_id=p_room_id for update;
+  if not found then
     if p_expected_revision<>0 then raise exception 'revision conflict'; end if;
-    -- Bootstrap authority: any room member may initialize an empty Fantasy
-    -- Realms room. The client records controllerUserId in the public state.
-    if not exists(select 1 from public.boardmate_room_members where room_id=p_room_id and user_id=uid) then
-      raise exception '이 방의 참가자가 아닙니다.';
-    end if;
     newrev:=1;
-    begin
-      insert into public.boardmate_room_state(room_id,revision,state)
-      values(p_room_id,newrev,p_public_state);
-      inserted:=true;
-    exception when unique_violation then
-      select revision,state into rev,existing_state from public.boardmate_room_state where room_id=p_room_id for update;
-    end;
-    if not inserted then
-      current_controller:=coalesce(nullif(existing_state->>'controllerUserId','')::uuid,r.host_id);
-      if current_controller<>uid then raise exception '다른 참가자가 게임을 초기화했습니다.'; end if;
-      if rev<>p_expected_revision then raise exception 'revision conflict'; end if;
-      newrev:=rev+1;
-      update public.boardmate_room_state set revision=newrev,state=p_public_state,updated_at=now() where room_id=p_room_id;
-    end if;
+    insert into public.boardmate_room_state(room_id,revision,state) values(p_room_id,newrev,p_public_state);
   else
-    current_controller:=coalesce(nullif(existing_state->>'controllerUserId','')::uuid,r.host_id);
-    if current_controller<>uid then raise exception '현재 게임 진행 권한이 없습니다.'; end if;
     if rev<>p_expected_revision then raise exception 'revision conflict'; end if;
     newrev:=rev+1;
     update public.boardmate_room_state set revision=newrev,state=p_public_state,updated_at=now() where room_id=p_room_id;
@@ -246,8 +256,7 @@ begin
 
   insert into public.boardmate_game_private_states(room_id,revision,states,updated_at)
   values(p_room_id,newrev,p_private_states,now())
-  on conflict(room_id) do update
-    set revision=excluded.revision,states=excluded.states,updated_at=now();
+  on conflict(room_id) do update set revision=excluded.revision,states=excluded.states,updated_at=now();
 
   seat_no:=public.boardmate_turn_seat('fantasyrealms',p_public_state);
   if seat_no is not null then
@@ -255,7 +264,6 @@ begin
   else
     turn_uid:=null;
   end if;
-
   update public.boardmate_rooms
      set turn_user_id=turn_uid,turn_updated_at=now()
    where id=p_room_id;
@@ -265,23 +273,5 @@ end;
 $$;
 grant execute on function public.put_boardmate_fantasy_state(text,uuid,bigint,jsonb,jsonb) to anon, authenticated;
 
-notify pgrst, 'reload schema';
+select pg_notify('pgrst','reload schema');
 commit;
-
--- 5) Optional verification: this should return zero rows.
-select game, count(*)
-from public.boardmate_rooms
-where game not in (
-  'maskmen','acquire','calico','cascadia','pocketnova','thegame','kraken',
-  'fantasyrealms','powergrid','avalon','secrethitler','onenightwerewolf','plakoro'
-)
-group by game
-order by game;
-
-select
-  public.boardmate_game_min('pocketnova') as pokemon_min,
-  public.boardmate_game_max('pocketnova') as pokemon_max,
-  public.boardmate_game_ko('pocketnova') as pokemon_name,
-  public.boardmate_game_min('fantasyrealms') as fantasy_min,
-  public.boardmate_game_max('fantasyrealms') as fantasy_max,
-  public.boardmate_game_ko('fantasyrealms') as fantasy_name;

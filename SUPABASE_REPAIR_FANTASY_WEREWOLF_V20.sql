@@ -1,6 +1,12 @@
--- BoardMate Arena v11.4.20: Social Deduction unified migration
--- Safe on the current integrated catalog; does not remove Plakoro or regress
--- the Pokemon Minima turn-state field.
+-- BoardMate Arena v11.4.20: Fantasy Realms + One Night Werewolf load repair
+-- Safe/idempotent repair for current v11.4.x installations.
+-- Does NOT delete rooms, ratings, or game state.
+--
+-- Why this exists:
+-- Older per-game SQL files rewrote the shared room game CHECK constraints and
+-- helper functions with partial game lists. Depending on migration order this
+-- could remove newer games (especially social deduction / Plakoro) or abort
+-- before Fantasy Realms / social-deduction RPCs were installed.
 
 begin;
 
@@ -178,6 +184,100 @@ exception when others then
 end;
 $$;
 revoke all on function public.boardmate_turn_seat(text,jsonb) from public, anon, authenticated;
+
+-- 2) Private Fantasy Realms state.
+-- Public boardmate_room_state never contains hands/actions.
+-- One private row stores a seat-keyed map. The RPC exposes only the caller's
+-- seat to normal players; the authoritative host receives the full map so it
+-- can resume the game after a browser refresh.
+create table if not exists public.boardmate_game_private_states (
+  room_id uuid primary key references public.boardmate_rooms(id) on delete cascade,
+  revision bigint not null default 0,
+  states jsonb not null default '{}'::jsonb,
+  updated_at timestamptz not null default now()
+);
+alter table public.boardmate_game_private_states enable row level security;
+revoke all on public.boardmate_game_private_states from anon, authenticated;
+
+create or replace function public.get_boardmate_fantasy_state(p_token text,p_room_id uuid)
+returns jsonb
+language plpgsql security definer stable set search_path=public,extensions
+as $$
+declare uid uuid; seat_no integer; r public.boardmate_rooms%rowtype; pub public.boardmate_room_state%rowtype; priv jsonb;
+begin
+  uid:=public.boardmate_session_user(p_token);
+  if uid is null then raise exception '로그인이 필요합니다.'; end if;
+  select * into r from public.boardmate_rooms where id=p_room_id;
+  if not found then raise exception '방을 찾을 수 없습니다.'; end if;
+  select seat into seat_no from public.boardmate_room_members where room_id=p_room_id and user_id=uid;
+  if seat_no is null then raise exception '이 방의 참가자가 아닙니다.'; end if;
+  select * into pub from public.boardmate_room_state where room_id=p_room_id;
+  if not found then return jsonb_build_object('revision',0,'state',null,'private',null); end if;
+  select states into priv from public.boardmate_game_private_states where room_id=p_room_id;
+  if r.host_id=uid then
+    return jsonb_build_object('revision',pub.revision,'state',pub.state,'private',coalesce(priv,'{}'::jsonb),'host',true,'seat',seat_no,'updated_at',pub.updated_at);
+  end if;
+  return jsonb_build_object(
+    'revision',pub.revision,
+    'state',pub.state,
+    'private',coalesce(priv->>(seat_no::text),'null'::text)::jsonb,
+    'host',false,
+    'seat',seat_no,
+    'updated_at',pub.updated_at
+  );
+exception when others then
+  raise;
+end;
+$$;
+grant execute on function public.get_boardmate_fantasy_state(text,uuid) to anon, authenticated;
+
+create or replace function public.put_boardmate_fantasy_state(
+  p_token text,p_room_id uuid,p_expected_revision bigint,p_public_state jsonb,p_private_states jsonb
+)
+returns bigint
+language plpgsql security definer set search_path=public,extensions
+as $$
+declare uid uuid; r public.boardmate_rooms%rowtype; rev bigint; newrev bigint; seat_no integer; turn_uid uuid;
+begin
+  uid:=public.boardmate_session_user(p_token);
+  if uid is null then raise exception '로그인이 필요합니다.'; end if;
+  select * into r from public.boardmate_rooms where id=p_room_id for update;
+  if not found then raise exception '방을 찾을 수 없습니다.'; end if;
+  if r.host_id<>uid then raise exception '판타지 왕국 게임 상태는 방장만 확정할 수 있습니다.'; end if;
+  if r.game<>'fantasyrealms' then raise exception '판타지 왕국 방이 아닙니다.'; end if;
+  if r.status<>'playing' and r.status<>'finished' then raise exception '게임이 시작되지 않았습니다.'; end if;
+  if jsonb_typeof(p_public_state) is distinct from 'object' then raise exception '공개 게임 상태가 올바르지 않습니다.'; end if;
+  if jsonb_typeof(p_private_states) is distinct from 'object' then raise exception '비공개 게임 상태가 올바르지 않습니다.'; end if;
+
+  select revision into rev from public.boardmate_room_state where room_id=p_room_id for update;
+  if not found then
+    if p_expected_revision<>0 then raise exception 'revision conflict'; end if;
+    newrev:=1;
+    insert into public.boardmate_room_state(room_id,revision,state) values(p_room_id,newrev,p_public_state);
+  else
+    if rev<>p_expected_revision then raise exception 'revision conflict'; end if;
+    newrev:=rev+1;
+    update public.boardmate_room_state set revision=newrev,state=p_public_state,updated_at=now() where room_id=p_room_id;
+  end if;
+
+  insert into public.boardmate_game_private_states(room_id,revision,states,updated_at)
+  values(p_room_id,newrev,p_private_states,now())
+  on conflict(room_id) do update set revision=excluded.revision,states=excluded.states,updated_at=now();
+
+  seat_no:=public.boardmate_turn_seat('fantasyrealms',p_public_state);
+  if seat_no is not null then
+    select user_id into turn_uid from public.boardmate_room_members where room_id=p_room_id and seat=seat_no;
+  else
+    turn_uid:=null;
+  end if;
+  update public.boardmate_rooms
+     set turn_user_id=turn_uid,turn_updated_at=now()
+   where id=p_room_id;
+
+  return newrev;
+end;
+$$;
+grant execute on function public.put_boardmate_fantasy_state(text,uuid,bigint,jsonb,jsonb) to anon, authenticated;
 
 -- -----------------------------------------------------------------------------
 -- 2) Private social-deduction state
@@ -825,6 +925,6 @@ end;
 $$;
 grant execute on function public.boardmate_social_action(text,uuid,jsonb) to anon, authenticated;
 
--- Keep PostgREST schema cache current.
+-- Refresh PostgREST's RPC/schema cache after every repaired function is present.
 select pg_notify('pgrst','reload schema');
 commit;

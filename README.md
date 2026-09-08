@@ -1,19 +1,19 @@
-# BoardMate v11.4.20 — Fantasy Realms connectivity fix
+# v11.4.20 current hotfix
 
-## Root cause
-The unified Fantasy Realms page waited for the Supabase Realtime channel subscription **before** loading the game state. If the WebSocket subscription stalled, the game UI stayed on the room/seat panel even though BoardMate room data had loaded.
+판타지 왕국 / 한밤의 늑대인간 로딩 문제는 `FANTASY_WEREWOLF_LOAD_FIX_V11_4_20.md`를 먼저 확인하세요. 운영 Supabase에는 `SUPABASE_REPAIR_FANTASY_WEREWOLF_V20.sql` 실행 후 `SUPABASE_VERIFY_FANTASY_WEREWOLF_V20.sql`로 검증합니다.
 
-The unified game was also host-authoritative. When the room host disconnected before initializing or during a game, connected participants could be left with no controller to process actions.
+---
 
-## Fix
-- Realtime subscriptions are now fire-and-forget; they never block initial game-state loading.
-- Initial `get_boardmate_fantasy_state` is loaded independently with an explicit timeout.
-- If the host is disconnected and no game state exists, a connected participant can initialize the game.
-- If the current controller/host is disconnected during an existing game, a connected participant can claim controller authority.
-- Controller identity is stored with the Fantasy public/private state and returned by the protected RPC.
-- Public Realtime Broadcast remains revision-only. Game state and hands are still fetched through RPC.
+# BoardMate Arena — app.js Power Grid merge
 
-## Supabase
-Run `SUPABASE_FANTASY_REALMS_UNIFIED.sql` once. It is the corrected safe migration and replaces the older Fantasy migration that narrowed the `boardmate_rooms_game_check` constraint.
+Base: latest known v11.4.16 DIRECT_RESUME app.js.
 
-Do not run the old Fantasy migration after this file.
+Merged only the Power Grid-specific change from the user-supplied app.js:
+- Power Grid display name: `파워그리드`
+- Player count: minimum 3, maximum 6
+- Entry page remains `online-powergrid.html`
+
+Other unrelated differences in the supplied app.js were intentionally not copied, so the latest BoardMate app features remain intact (Pokemon Minima replacement, Fantasy Realms, direct resume, home UI, etc.).
+
+Replace the repository-root `app.js` with this file.
+Supabase SQL is not changed by this app.js-only merge.
