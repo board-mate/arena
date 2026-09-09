@@ -1,0 +1,37 @@
+{
+  "release": "BoardMate Arena v11.4.34 PLANETX PVP",
+  "base": "BoardMate Arena v11.4.33 FULL",
+  "new_game": {
+    "id": "planetx",
+    "name": "행성 X를 찾아서",
+    "players": "2-4",
+    "page": "online-planetx.html",
+    "modes": [
+      "standard",
+      "expert"
+    ],
+    "gm_catalog_games": 100,
+    "secret_answer_storage": "Supabase private tables/RPC"
+  },
+  "required_sql_last": "SUPABASE_PLANETX_PVP_V1.sql",
+  "preserved": [
+    "v11.4.29 Plakoro V6 compatibility",
+    "v11.4.29 unanimous game-cancel overlay behavior",
+    "v11.4.29 Fantasy Realms scroll/dialog fixes",
+    "v11.4.31 Plakoro roll-result fix",
+    "v11.4.33 Mandom rule-flow restore"
+  ],
+  "changed_files": [
+    "app.js",
+    "index.html",
+    "sw.js",
+    "online-planetx.html",
+    "README.md",
+    "HANDOFF_VERSION.txt",
+    "SUPABASE_PLANETX_PVP_V1.sql",
+    "README_V11_4_34_PLANETX_PVP.md",
+    "UPLOAD_TO_GITHUB_V34.md",
+    "INTEGRATION_MANIFEST_V34.json",
+    "VERIFY_V11_4_34_PLANETX.md"
+  ]
+}

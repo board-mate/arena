@@ -1,1 +1,2 @@
-BoardMate Arena v11.4.29 — Plakoro setup repair + cancel notice + Fantasy Realms scroll/minimize polish
+BoardMate Arena v11.4.34 PLANETX PVP
+Base: v11.4.33 FULL

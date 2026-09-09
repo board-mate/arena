@@ -43,6 +43,7 @@ function gameInfo(game){
     powergrid:{name:'파워그리드',icon:'🔌',min:3,max:6,page:'online-powergrid.html'},
     quacks:{name:'돌팔이 약장수',icon:'🧪',min:2,max:4,page:'online-quacks.html',mode:'realtime',tier:'alpha'},
     mandom:{name:'맨덤의 던전',icon:'⚔️',min:2,max:4,page:'online-mandom.html'},
+    planetx:{name:'행성 X를 찾아서',icon:'🪐',min:2,max:4,page:'online-planetx.html'},
     samurai:{name:'사무라이',icon:'⛩️',min:2,max:4,page:'online-samurai.html',tier:'alpha'},
     eldorado:{name:'엘도라도',icon:'🧭',min:2,max:4,page:'online-eldorado.html',tier:'alpha'},
     airlandsea:{name:'에어 랜드 & 씨',icon:'✈️',min:2,max:2,page:'online-airlandsea.html',tier:'beta'},
@@ -353,7 +354,7 @@ async function renderMyPage(){
 
 async function renderCreateRoom(){
   if(!onlineConfigured())return renderMulti();const me=await authProfile();if(!me){location.hash='#/login';return;}
-  const games=['maskmen','acquire','calico','cascadia','plakoro','powergrid','quacks','mandom','samurai','eldorado','airlandsea','thegame','kraken','fantasyrealms','avalon','secrethitler','onenightwerewolf'];let selected='maskmen';
+  const games=['maskmen','acquire','calico','cascadia','plakoro','powergrid','quacks','mandom','planetx','samurai','eldorado','airlandsea','thegame','kraken','fantasyrealms','avalon','secrethitler','onenightwerewolf'];let selected='maskmen';
   const tierLabel=(x)=>x.tier==='alpha'?'ALPHA · 보완 필요':x.tier==='beta'?'BETA · 보완 중':'정상 작동';
   const tierClass=(x)=>x.tier==='alpha'?'tier-alpha':x.tier==='beta'?'tier-beta':'tier-stable';
   const renderGame=(g)=>{const x=gameInfo(g);return `<button class="library-card game-choice ${g==='maskmen'?'selected':''}" data-room-game="${g}"><div class="library-icon">${x.icon}</div><div class="game-tier ${tierClass(x)}">${tierLabel(x)}</div><h2>${x.name}</h2><p>${x.min}명부터 · 최대 ${x.max}명</p></button>`;};
@@ -365,7 +366,7 @@ async function renderCreateRoom(){
     const title=document.querySelector('#roomTitle').value.trim(),st=document.querySelector('#roomStatus');
     st.textContent='';
     const social=['avalon','secrethitler','onenightwerewolf'].includes(selected);
-    const v21Games=['quacks','mandom','samurai','eldorado','airlandsea'];
+    const v21Games=['quacks','mandom','samurai','eldorado','airlandsea','planetx'];
     try{
       let id;
       try{
@@ -375,6 +376,7 @@ async function renderCreateRoom(){
         const v10missing=/create_boardmate_room_v10|PGRST202|schema cache/i.test(msg);
         const catalogRejected=/지원하지 않는 게임|boardmate_rooms_game_check|violates check constraint/i.test(msg);
         if(v21Games.includes(selected)&&(v10missing||catalogRejected)){
+          if(selected==='planetx') throw new Error('행성 X PVP용 Supabase 업데이트가 필요합니다. SUPABASE_PLANETX_PVP_V1.sql을 SQL Editor에서 실행하세요.');
           throw new Error('새 게임용 Supabase 업데이트가 필요합니다. SUPABASE_REPAIR_ALL_GAMES_V24.sql을 SQL Editor에서 실행하세요.');
         }
         if(!v10missing)throw v10e;
@@ -425,7 +427,7 @@ async function renderRoom(roomId){
   await touch();
   const draw=async()=>{data=await load();const {room,members}=data,isHost=room.host_id===me.user_id,gi=gameInfo(room.game),min=(room.game==='powergrid'?Math.max(3,Number(room.min_players||gi.min)):Number(room.min_players||gi.min));
     let cancelled=room.status==='cancelled';
-    if(!cancelled&&room.status==='finished'&&['avalon','secrethitler','onenightwerewolf','plakoro'].includes(room.game)){
+    if(!cancelled&&room.status==='finished'&&['avalon','secrethitler','onenightwerewolf','plakoro','planetx'].includes(room.game)){
       try{cancelled=Boolean((await callRpc('boardmate_get_cancel_status',{p_token:memberToken(),p_room_id:roomId}))?.cancelled);}catch{}
     }
     if(cancelled){shell(`<div class="page-head"><div><h1>🛑 ${esc(room.title)}</h1><p>${gi.name} · 참가자 전원 동의로 취소된 게임입니다.</p></div></div><section class="lobby-card" style="text-align:center"><h2>게임이 취소되었습니다</h2><p>이번 게임은 승패와 ELO에 반영되지 않습니다.</p><div class="actions" style="justify-content:center"><a class="primary link-btn" href="#/multi">다인플 목록</a><a class="ghost link-btn" href="#/">홈으로</a></div></section>`);return;}
