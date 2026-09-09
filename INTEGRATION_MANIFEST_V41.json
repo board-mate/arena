@@ -1,0 +1,25 @@
+{
+  "release": "BoardMate Arena v11.4.41 PLANETX RECORD LAYOUT FIX",
+  "base": "v11.4.40",
+  "changes": [
+    "Force private record sheet to position: static with important overrides",
+    "Move private record sheet to bottom of right sidebar",
+    "Collapse private record sheet by default",
+    "Place references, research topics and public logs before private record sheet",
+    "Expand research topic titles A-F by default",
+    "Bump service worker cache to v11.4.41 and app query to v41"
+  ],
+  "changed_files": [
+    "online-planetx.html",
+    "sw.js",
+    "index.html",
+    "HANDOFF_VERSION.txt",
+    "README_V11_4_41_PLANETX_RECORD_LAYOUT.md",
+    "UPLOAD_TO_GITHUB_V41.md",
+    "VERIFY_V11_4_41_PLANETX.md",
+    "INTEGRATION_MANIFEST_V41.json"
+  ],
+  "cache": "boardmate-shell-v11.4.41",
+  "app_query": "app.js?v=41",
+  "database_changes": false
+}
