@@ -1,0 +1,19 @@
+BoardMate Arena v11.4.43 Planet X patch
+Base: v11.4.42
+
+1) GitHub Pages repository: replace these files
+   - online-planetx.html
+   - index.html
+   - sw.js
+
+2) Existing Supabase database: run once in SQL Editor
+   - SUPABASE_PLANETX_THEORY_SAME_SECTOR_FIX_V3.sql
+
+3) Reload the site. If an old page remains, use a hard reload once.
+
+What this patch keeps/fixes
+- Keeps v11.4.42 personal-record-sheet collapse fix.
+- Keeps v11.4.42 theory-placement automatic retry/manual recovery.
+- Expert mode: two DIFFERENT theory object types may now be placed on the same sector.
+- Same sector + SAME object type is still rejected.
+- Final theory submission follows the same rule.

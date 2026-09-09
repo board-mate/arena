@@ -1,0 +1,27 @@
+{
+  "version": "v11.4.43",
+  "base": "v11.4.42",
+  "game": "The Search for Planet X",
+  "changes": [
+    "Preserve v11.4.42 personal record-sheet open state and non-rerender marking behavior",
+    "Preserve v11.4.42 automatic/manual theory-placement recovery",
+    "Allow two different theory object types on the same sector in expert theory selection",
+    "Reject only duplicate sector+object theory pairs",
+    "Apply the same duplicate-pair rule to final theory submission",
+    "Count pending same-object choices against physical token inventory server-side",
+    "Bump service worker cache to v11.4.43 and app query to v43"
+  ],
+  "changed_files": [
+    "online-planetx.html",
+    "sw.js",
+    "index.html",
+    "SUPABASE_PLANETX_PVP_V1.sql",
+    "HANDOFF_VERSION.txt"
+  ],
+  "added_files": [
+    "SUPABASE_PLANETX_THEORY_SAME_SECTOR_FIX_V3.sql",
+    "README_V11_4_43_PLANETX_THEORY_RULE_FIX.md",
+    "tests/v43_planetx_same_sector_rule_test.py",
+    "INTEGRATION_MANIFEST_V43.json"
+  ]
+}
