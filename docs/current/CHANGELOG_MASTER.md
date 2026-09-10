@@ -1,13 +1,13 @@
 # BoardMate Arena — MASTER CHANGELOG
 
-## ⭐ Current baseline — v11.4.57
+## ⭐ Current baseline — v11.4.59
 
 - 행성 X 진행 중 구형 논문 패널티 로그를 공개 논문 상태와 합쳐 상세 표시.
 - 행성 X 찾기에서 후보 섹터의 왼쪽/오른쪽 인접 섹터 번호를 동적으로 안내.
 - 종료 시 전체 섹터 실제 개체 + 행성 X 위치 + X 양옆 실제 개체 공개.
 - 내 차례 브라우저 탭 제목 `🔔 내 차례 ·` 표시.
 - 실행 중 알림 재확인/dedupe 보강. 완전 종료 Web Push는 아직 미구현.
-- v11.4.57 신규 DB/RPC 없음.
+- v11.4.59 신규 DB/RPC 없음.
 - 상세 현재 상태: `docs/current/HANDOFF_CURRENT.md`.
 
 
@@ -341,7 +341,7 @@
 - Added display-side handling for v11.4.55 games where detailed peer-review and separate penalty rows could coexist.
 - No database migration.
 
-## BoardMate Arena v11.4.57 — Planet X adjacent sectors + legacy review merge + alarm reliability
+## BoardMate Arena v11.4.59 — Planet X adjacent sectors + legacy review merge + alarm reliability
 - Existing Planet X games: bare `틀린 논문 패널티 시간 +1` rows are reconstructed from retained wrong-theory tokens and rendered as one detailed public row; duplicate detailed/penalty rows are merged.
 - `행성 X 찾기` now displays exact left/right adjacent sector numbers as the candidate X sector changes.
 - My-turn alarm can fire on initial page entry if the current turn has not already been seen, with local same-turn dedupe.
@@ -350,7 +350,21 @@
 - No Supabase schema/RPC change.
 
 
-## v11.4.57 통합 보완 (2026-09-10)
+## v11.4.59 통합 보완 (2026-09-10)
 - 행성 X 찾기: X 후보 섹터 선택 시 왼쪽/오른쪽 인접 섹터 번호를 명시. 예: 9 → 8 / 10.
 - 게임 종료: 모든 섹터 실제 개체 + 행성 X 위치/양옆 개체 공개.
-- 기존 v11.4.57 공개 기록 복구, 알림 재확인, 브라우저 탭 `🔔 내 차례` 표시 유지.
+- 기존 v11.4.59 공개 기록 복구, 알림 재확인, 브라우저 탭 `🔔 내 차례` 표시 유지.
+
+
+## v11.4.59 — Blank-screen boot hotfix
+- index.html no longer blocks on jsDelivr Supabase SDK.
+- app.js initializes Supabase lazily when SDK becomes available.
+- recovery.html safely clears BoardMate service-worker caches without deleting localStorage.
+
+
+## v11.4.59 추가
+- 알림 모듈 실패가 메인 부팅을 막지 않음.
+- app.js module load 최대 3회 재시도.
+- 내 차례: 탭 제목 + 상단 배너 + favicon 표시.
+- 시스템 알림 성공 후에만 seen 처리.
+- DB 변경 없음.

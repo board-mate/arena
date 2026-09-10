@@ -1,5 +1,5 @@
 const KEY='boardmate:alarm_settings';
-const SEEN_KEY='boardmate:alarm_seen_turns_v2';
+const SEEN_KEY='boardmate:alarm_seen_turns_v3';
 const DEFAULTS={enabled:false,newRoom:true,myTurn:true,gameStart:true,sound:true,vibrate:true};
 let audioCtx=null;
 let roomSnapshot=null;
@@ -68,6 +68,21 @@ export function setBrowserTurnIndicator(count=0){
   const n=Math.max(0,Number(count)||0),base=safeTitleBase();
   document.title=n?`🔔 내 차례${n>1?` (${n})`:''} · ${base}`:base;
   try{document.documentElement.dataset.boardmateMyTurn=n?'1':'0';}catch{}
+  try{
+    let banner=document.getElementById('boardmate-turn-banner');
+    if(n){
+      if(!banner){banner=document.createElement('div');banner.id='boardmate-turn-banner';banner.textContent='🎯 내 차례입니다';document.body.appendChild(banner);}
+      banner.style.display='block';
+    }else if(banner){banner.style.display='none';}
+  }catch{}
+  try{
+    let icon=document.querySelector('link[data-boardmate-turn-favicon]');
+    if(!icon){icon=document.createElement('link');icon.rel='icon';icon.type='image/svg+xml';icon.dataset.boardmateTurnFavicon='1';document.head.appendChild(icon);}
+    if(n){
+      const svg='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="%23ffb000"/><text x="32" y="44" font-size="40" text-anchor="middle">!</text></svg>';
+      icon.href='data:image/svg+xml,'+svg;
+    }else{icon.href='./icons/favicon-32.png';}
+  }catch{}
 }
 function turnIsMine(room,me){
   return Boolean(room&&me?.user_id&&room.status==='playing'&&room.play_mode!=='realtime'&&room.turn_user_id===me.user_id);
@@ -85,11 +100,10 @@ function turnSignature(room){
   const stamp=room?.turn_updated_at||room?.updated_at||room?.revision||room?.state_revision||room?.turn_no||room?.turn_index||'';
   return `${String(room?.turn_user_id||'')}|${String(stamp)}`;
 }
-function unseenTurn(room){
+function turnWasSeen(room){
   if(!room?.id)return false;
   const seen=loadSeenTurns(),id=String(room.id),sig=turnSignature(room);
-  if(seen[id]===sig)return false;
-  seen[id]=sig;saveSeenTurns(seen);return true;
+  return seen[id]===sig;
 }
 function markTurnSeen(room){
   if(!room?.id)return;
@@ -107,8 +121,8 @@ async function swRegistrationWithTimeout(ms=1800){
 export async function sendBoardMateAlarm(kind,{title='BoardMate',body='',url='./index.html#/multi',tag}={}){
   const s=alarmSettings();
   if(!s.enabled||!s[kind])return false;
-  if(!document.hidden)playTone();vibrate();
   if(!('Notification' in window)||Notification.permission!=='granted')return false;
+  if(!document.hidden)playTone();vibrate();
   const opts={body,icon:'./icons/icon-192.png',badge:'./icons/favicon-32.png',tag:tag||`boardmate-${kind}`,renotify:true,data:{url},silent:!s.sound};
   try{
     const reg=await swRegistrationWithTimeout();
@@ -132,9 +146,10 @@ export async function processRoomAlarms(rooms,me,{gameName=x=>x?.game||'게임',
   if(!roomSnapshot){
     roomSnapshot=current;
     for(const room of myTurnRooms){
-      if(!unseenTurn(room))continue;
+      if(turnWasSeen(room))continue;
       const name=gameName(room);
-      await sendBoardMateAlarm('myTurn',{title:`🎯 내 차례 · ${name}`,body:`${room.title||'게임'}에서 내 차례입니다.`,url:gameHref(room),tag:`turn-${String(room.id)}-${encodeURIComponent(turnSignature(room))}`});
+      const sent=await sendBoardMateAlarm('myTurn',{title:`🎯 내 차례 · ${name}`,body:`${room.title||'게임'}에서 내 차례입니다.`,url:gameHref(room),tag:`turn-${String(room.id)}-${encodeURIComponent(turnSignature(room))}`});
+      if(sent)markTurnSeen(room);
     }
     return;
   }
@@ -142,15 +157,15 @@ export async function processRoomAlarms(rooms,me,{gameName=x=>x?.game||'게임',
     const id=String(room.id),prev=roomSnapshot.get(id),name=gameName(room);
     if(!prev){
       if(room.status==='open'&&!room.mine)await sendBoardMateAlarm('newRoom',{title:`🎲 새 방 · ${name}`,body:`${room.title||'새 게임 방'} · ${room.member_count||1}명 참가 중`,url:'./index.html#/multi',tag:`room-${id}`});
-      if(Boolean(room.mine)&&turnIsMine(room,me)&&unseenTurn(room))await sendBoardMateAlarm('myTurn',{title:`🎯 내 차례 · ${name}`,body:`${room.title||'게임'}에서 내 차례입니다.`,url:gameHref(room),tag:`turn-${id}-${encodeURIComponent(turnSignature(room))}`});
+      if(Boolean(room.mine)&&turnIsMine(room,me)&&!turnWasSeen(room)){const sent=await sendBoardMateAlarm('myTurn',{title:`🎯 내 차례 · ${name}`,body:`${room.title||'게임'}에서 내 차례입니다.`,url:gameHref(room),tag:`turn-${id}-${encodeURIComponent(turnSignature(room))}`});if(sent)markTurnSeen(room);}
       continue;
     }
     if(room.mine&&prev.status!=='playing'&&room.status==='playing'){
       await sendBoardMateAlarm('gameStart',{title:`▶ ${name} 게임 시작`,body:`${room.title||'참가 중인 방'}이 시작되었습니다.`,url:gameHref(room),tag:`start-${id}`});
     }
     if(Boolean(room.mine)&&turnIsMine(room,me)&&prev.turn_user_id!==me.user_id){
-      markTurnSeen(room);
-      await sendBoardMateAlarm('myTurn',{title:`🎯 내 차례 · ${name}`,body:`${room.title||'게임'}에서 내 차례가 되었습니다.`,url:gameHref(room),tag:`turn-${id}-${encodeURIComponent(turnSignature(room))}`});
+      const sent=await sendBoardMateAlarm('myTurn',{title:`🎯 내 차례 · ${name}`,body:`${room.title||'게임'}에서 내 차례가 되었습니다.`,url:gameHref(room),tag:`turn-${id}-${encodeURIComponent(turnSignature(room))}`});
+      if(sent)markTurnSeen(room);
     }
   }
   roomSnapshot=current;
@@ -164,12 +179,12 @@ export async function processSingleRoomAlarm(room,me,{gameName='게임',gameHref
   singleRoomState.set(id,{...room});
   const href=gameHref||hrefForRoom(room);
   if(!prev){
-    if(myTurn&&unseenTurn(room))await sendBoardMateAlarm('myTurn',{title:`🎯 내 차례 · ${gameName}`,body:`${room.title||'게임'}에서 내 차례입니다.`,url:href,tag:`turn-${id}-${encodeURIComponent(turnSignature(room))}`});
+    if(myTurn&&!turnWasSeen(room)){const sent=await sendBoardMateAlarm('myTurn',{title:`🎯 내 차례 · ${gameName}`,body:`${room.title||'게임'}에서 내 차례입니다.`,url:href,tag:`turn-${id}-${encodeURIComponent(turnSignature(room))}`});if(sent)markTurnSeen(room);}
     return;
   }
   if(prev.status!=='playing'&&room.status==='playing')await sendBoardMateAlarm('gameStart',{title:`▶ ${gameName} 게임 시작`,body:`${room.title||'참가 중인 방'}이 시작되었습니다.`,url:href,tag:`start-${id}`});
   if(myTurn&&prev.turn_user_id!==me.user_id){
-    markTurnSeen(room);
-    await sendBoardMateAlarm('myTurn',{title:`🎯 내 차례 · ${gameName}`,body:`${room.title||'게임'}에서 내 차례가 되었습니다.`,url:href,tag:`turn-${id}-${encodeURIComponent(turnSignature(room))}`});
+    const sent=await sendBoardMateAlarm('myTurn',{title:`🎯 내 차례 · ${gameName}`,body:`${room.title||'게임'}에서 내 차례가 되었습니다.`,url:href,tag:`turn-${id}-${encodeURIComponent(turnSignature(room))}`});
+    if(sent)markTurnSeen(room);
   }
 }

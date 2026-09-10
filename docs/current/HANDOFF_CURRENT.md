@@ -1,8 +1,8 @@
 # 🤝 BoardMate Arena — CURRENT HANDOFF
 
-**Baseline:** v11.4.57  
+**Baseline:** v11.4.59  
 **Date:** 2026-09-10  
-**Service worker cache:** `boardmate-shell-v11.4.57`  
+**Service worker cache:** `boardmate-shell-v11.4.59`  
 **New DB/RPC in this release:** 없음
 
 ---
@@ -111,7 +111,7 @@
 
 ## 5. DB / 보안
 
-- v11.4.57 신규 SQL/RPC 없음.
+- v11.4.59 신규 SQL/RPC 없음.
 - 현재 체인: `database/SUPABASE_CURRENT_UPDATE.sql`.
 - 과거 SQL 원문: `database/history/`.
 - DB 역적용은 자동으로 하지 말 것. 데이터 손실 위험을 따로 검토.
@@ -143,3 +143,17 @@
 **P1 — 알림 신뢰성:** 완전 종료 상태에서도 오는 Web Push 설계/구현.  
 **P2 — 행성 X 실사용 회귀:** 진행 중 방에서 교차 검증 공개 기록, X 찾기 양옆 선택, 최종 공개까지 실제 2인 이상 E2E.  
 **P3 — 전체 게임 E2E 자동화:** 방 생성 → 참가 → 첫 행동 → 종료/취소를 게임별 최소 시나리오로 자동화.
+
+## v11.4.59 긴급 빈 화면 복구
+- 루트 `index.html`의 jsDelivr Supabase SDK가 parser-blocking이던 구조를 제거했다.
+- 외부 SDK 장애/지연이 있어도 `app.js`가 먼저 실행되어 홈 UI가 렌더링된다.
+- SDK가 이후 도착하면 `app.js`가 Supabase client를 lazy-init한다.
+- `recovery.html`은 BoardMate SW/cache만 정리하고 localStorage는 보존한다.
+
+
+## v11.4.59 추가
+- 알림 모듈 실패가 메인 부팅을 막지 않음.
+- app.js module load 최대 3회 재시도.
+- 내 차례: 탭 제목 + 상단 배너 + favicon 표시.
+- 시스템 알림 성공 후에만 seen 처리.
+- DB 변경 없음.

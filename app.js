@@ -1,4 +1,32 @@
-import {alarmSettings,saveAlarmSettings,alarmSupport,requestAlarmPermission,sendTestAlarm,processRoomAlarms,processSingleRoomAlarm,unlockAlarmAudio} from './alarm.js?v=11.4.58';
+// v11.4.59: alarm.js가 늦거나 일시적으로 누락돼도 메인 앱은 먼저 부팅한다.
+const __alarmApi={
+  alarmSettings:()=>({enabled:false,newRoom:true,myTurn:true,gameStart:true,sound:true,vibrate:true}),
+  saveAlarmSettings:()=>({}),
+  alarmSupport:()=>({notification:'Notification' in window,serviceWorker:'serviceWorker' in navigator,vibrate:'vibrate' in navigator,permission:('Notification' in window?Notification.permission:'unsupported')}),
+  requestAlarmPermission:async()=>({ok:false,permission:('Notification' in window?Notification.permission:'unsupported')}),
+  sendTestAlarm:async()=>false,
+  processRoomAlarms:async()=>{},
+  processSingleRoomAlarm:async()=>{},
+  unlockAlarmAudio:()=>false
+};
+const alarmSettings=(...a)=>__alarmApi.alarmSettings(...a);
+const saveAlarmSettings=(...a)=>__alarmApi.saveAlarmSettings(...a);
+const alarmSupport=(...a)=>__alarmApi.alarmSupport(...a);
+const requestAlarmPermission=(...a)=>__alarmApi.requestAlarmPermission(...a);
+const sendTestAlarm=(...a)=>__alarmApi.sendTestAlarm(...a);
+const processRoomAlarms=(...a)=>__alarmApi.processRoomAlarms(...a);
+const processSingleRoomAlarm=(...a)=>__alarmApi.processSingleRoomAlarm(...a);
+const unlockAlarmAudio=(...a)=>__alarmApi.unlockAlarmAudio(...a);
+window.__boardmateAppStarted=true;
+(async()=>{
+  try{
+    const mod=await import('./alarm.js?v=11.4.59');
+    for(const key of Object.keys(__alarmApi)) if(typeof mod[key]==='function') __alarmApi[key]=mod[key];
+    window.dispatchEvent(new Event('boardmate:alarm-ready'));
+  }catch(err){
+    console.warn('[BoardMate] alarm module load failed; main UI continues.',err);
+  }
+})();
 const app = document.querySelector('#app');
 const CFG = window.BOARDMATE_CONFIG || {};
 const STORAGE_PREFIX = 'boardmate:';
