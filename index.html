@@ -6,15 +6,39 @@
   <meta name="theme-color" content="#141922" />
   <meta name="description" content="보드메이트 모임원용 데일리 보드게임 아케이드" />
   <title>BoardMate Arcade</title>
-  <link rel="stylesheet" href="./styles.css?v=52" />
+  <link rel="stylesheet" href="./styles.css?v=58" />
   <link rel="manifest" href="./manifest.webmanifest" />
   <link rel="icon" type="image/png" sizes="32x32" href="./icons/favicon-32.png" />
   <link rel="apple-touch-icon" sizes="180x180" href="./icons/apple-touch-icon.png" />
+  <style>
+    #bootFallback{display:none;max-width:760px;margin:64px auto;padding:28px;background:#fff;border:1px solid #ddd7ce;border-radius:18px;box-shadow:0 12px 30px rgba(0,0,0,.08);font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#18202d}
+    #bootFallback h1{margin:0 0 10px;font-size:1.35rem}#bootFallback p{color:#586474;line-height:1.65}
+    #bootFallback a,#bootFallback button{display:inline-block;margin:8px 8px 0 0;padding:11px 15px;border-radius:10px;border:1px solid #cfc8bc;background:#18202d;color:#fff;text-decoration:none;cursor:pointer}
+  </style>
 </head>
 <body>
   <div id="app"></div>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <section id="bootFallback">
+    <h1>⚠️ BoardMate 화면을 불러오는 데 시간이 걸리고 있습니다.</h1>
+    <p>게임 서버 SDK가 늦게 응답하더라도 메인 화면은 먼저 열리도록 복구 기능이 적용되어 있습니다. 그래도 이 화면이 보인다면 캐시를 초기화해 주세요.</p>
+    <a href="./recovery.html">🧹 캐시 복구 페이지</a><button type="button" onclick="location.reload()">↻ 다시 불러오기</button>
+  </section>
   <script src="./config.js"></script>
   <script type="module" src="./app.js?v=11.4.58"></script>
+  <script>
+    // Supabase CDN은 앱 부팅을 막지 않도록 비동기로 로드한다.
+    (function(){
+      var s=document.createElement('script');
+      s.src='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
+      s.async=true;
+      s.onload=function(){window.dispatchEvent(new Event('boardmate:supabase-ready'));};
+      s.onerror=function(){console.warn('[BoardMate] Supabase SDK load failed; UI remains available in offline/local mode.');};
+      document.head.appendChild(s);
+      setTimeout(function(){
+        var app=document.getElementById('app'),fallback=document.getElementById('bootFallback');
+        if(app && !app.children.length && fallback) fallback.style.display='block';
+      },3500);
+    })();
+  </script>
 </body>
 </html>

@@ -1,36 +1,4 @@
-export {};
-// v11.4.58 BOOT FAILSAFE
-// alarm.js는 메인 앱의 부트 필수 의존성이 아닙니다.
-// Pages 배포 지연/404/구버전 캐시가 있어도 메인 화면은 먼저 렌더링되도록 지연 로드합니다.
-const DEFAULT_ALARM_SETTINGS={enabled:false,newRoom:true,myTurn:true,gameStart:true,sound:true,vibrate:true};
-let alarmSettings=()=>({...DEFAULT_ALARM_SETTINGS});
-let saveAlarmSettings=next=>({...DEFAULT_ALARM_SETTINGS,...next});
-let alarmSupport=()=>({notification:('Notification' in window),serviceWorker:('serviceWorker' in navigator),vibrate:('vibrate' in navigator),permission:('Notification' in window?Notification.permission:'unsupported')});
-let requestAlarmPermission=async()=>({ok:false,permission:'unsupported'});
-let sendTestAlarm=async()=>false;
-let processRoomAlarms=async()=>{};
-let processSingleRoomAlarm=async()=>{};
-let unlockAlarmAudio=()=>false;
-
-async function loadAlarmModule(){
-  try{
-    const m=await import('./alarm.js?v=11.4.58');
-    if(typeof m.alarmSettings==='function') alarmSettings=m.alarmSettings;
-    if(typeof m.saveAlarmSettings==='function') saveAlarmSettings=m.saveAlarmSettings;
-    if(typeof m.alarmSupport==='function') alarmSupport=m.alarmSupport;
-    if(typeof m.requestAlarmPermission==='function') requestAlarmPermission=m.requestAlarmPermission;
-    if(typeof m.sendTestAlarm==='function') sendTestAlarm=m.sendTestAlarm;
-    if(typeof m.processRoomAlarms==='function') processRoomAlarms=m.processRoomAlarms;
-    if(typeof m.processSingleRoomAlarm==='function') processSingleRoomAlarm=m.processSingleRoomAlarm;
-    if(typeof m.unlockAlarmAudio==='function') unlockAlarmAudio=m.unlockAlarmAudio;
-    if((location.hash||'').slice(2)==='alarms') void router();
-    return true;
-  }catch(e){
-    console.warn('[BoardMate] alarm module unavailable; continuing without alarm features.',e);
-    return false;
-  }
-}
-
+import {alarmSettings,saveAlarmSettings,alarmSupport,requestAlarmPermission,sendTestAlarm,processRoomAlarms,processSingleRoomAlarm,unlockAlarmAudio} from './alarm.js?v=11.4.58';
 const app = document.querySelector('#app');
 const CFG = window.BOARDMATE_CONFIG || {};
 const STORAGE_PREFIX = 'boardmate:';
@@ -45,15 +13,26 @@ const kstDate = () => new Date(Date.now() + 9*3600*1000).toISOString().slice(0,1
 const formatDate = d => `${d.slice(0,4)}.${d.slice(5,7)}.${d.slice(8,10)}`;
 const formatClock = iso => new Intl.DateTimeFormat('ko-KR',{timeZone:'Asia/Seoul',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).format(new Date(iso));
 const configured = () => Boolean(CFG.supabaseUrl && CFG.supabaseAnonKey);
-const onlineConfigured = () => configured() && Boolean(window.supabase?.createClient);
-const sb = onlineConfigured() ? window.supabase.createClient(CFG.supabaseUrl, CFG.supabaseAnonKey, {auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}}) : null;
+let sb = null;
+function initSupabaseClient(){
+  if(sb) return sb;
+  if(!configured() || !window.supabase?.createClient) return null;
+  try{
+    sb = window.supabase.createClient(CFG.supabaseUrl, CFG.supabaseAnonKey, {auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}});
+  }catch(err){
+    console.warn('[BoardMate] Supabase client init failed',err);
+    sb = null;
+  }
+  return sb;
+}
+const onlineConfigured = () => Boolean(initSupabaseClient());
 const MEMBER_SESSION_KEY=STORAGE_PREFIX+'member_session';
 let routeCleanups=[];
 function addCleanup(fn){ routeCleanups.push(fn); }
 function clearRouteCleanups(){ routeCleanups.splice(0).forEach(fn=>{try{fn();}catch{}}); }
 function memberToken(){return localStorage.getItem(MEMBER_SESSION_KEY)||sessionStorage.getItem(MEMBER_SESSION_KEY)||'';}
 function saveMemberToken(t,remember=true){localStorage.removeItem(MEMBER_SESSION_KEY);sessionStorage.removeItem(MEMBER_SESSION_KEY);if(t)(remember?localStorage:sessionStorage).setItem(MEMBER_SESSION_KEY,t);}
-async function callRpc(name,args={}){if(!sb)throw new Error('Supabase 설정이 필요합니다.');const {data,error}=await sb.rpc(name,args);if(error)throw error;return data;}
+async function callRpc(name,args={}){const client=initSupabaseClient();if(!client)throw new Error('Supabase 연결을 준비 중입니다. 잠시 후 다시 시도하세요.');const {data,error}=await client.rpc(name,args);if(error)throw error;return data;}
 async function authSession(){return memberToken()||null;}
 async function authProfile(){const token=memberToken();if(!token)return null;try{return await callRpc('boardmate_me',{p_token:token});}catch(e){return null;}}
 function tierInfo(row){
@@ -561,5 +540,17 @@ async function router(){
   if(route.startsWith('room/'))return renderRoom(route.split('/')[1]);
   return renderHome();
 }
-window.addEventListener('hashchange',router);router();
-void loadAlarmModule();
+window.addEventListener('hashchange',router);
+window.addEventListener('boardmate:supabase-ready',()=>{
+  const wasReady=Boolean(sb);
+  const nowReady=Boolean(initSupabaseClient());
+  if(nowReady&&!wasReady){
+    // CDN SDK가 늦게 도착해도 화면을 비우지 않고 현재 라우트만 온라인 모드로 다시 그린다.
+    router().catch(err=>console.warn('[BoardMate] route refresh after Supabase ready failed',err));
+  }
+});
+router().catch(err=>{
+  console.error('[BoardMate] boot failed',err);
+  const box=document.querySelector('#app');
+  if(box&&!box.children.length) box.innerHTML='<main class="boot-fallback"><h1>BoardMate를 불러오지 못했습니다.</h1><p>브라우저 캐시 또는 네트워크 문제일 수 있습니다.</p><p><a href="./recovery.html">복구 페이지 열기</a></p></main>';
+});
