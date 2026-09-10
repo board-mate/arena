@@ -1,0 +1,19 @@
+BoardMate Arena v11.4.51 alarm verification
+- app.js syntax: PASS
+- alarm.js syntax: PASS
+- multi-common.js syntax: PASS
+- sw.js syntax: PASS
+- inline HTML JS syntax: PASS (36 scripts; JSON data scripts skipped)
+- online game HTML changed vs v11.4.50: 0
+- solo game HTML changed vs v11.4.50: 0
+- static relative references missing: 0
+- alarm transition harness: PASS
+  baseline: no notification
+  new room: notification
+  game start: notification
+  my turn: notification
+- online entry files: 18
+- solo entry files: 7
+- database migration required: NO
+- OS-level notification UI presentation: requires deployed HTTPS/device smoke test
+- fully closed-app Web Push: not implemented in v11.4.51

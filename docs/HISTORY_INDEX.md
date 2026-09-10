@@ -1,0 +1,95 @@
+# History Index
+
+과거 원문 전체 색인입니다. 파일은 롤백/회귀 추적을 위해 보존합니다.
+
+- `docs/history/README_HISTORY.md` — BoardMate Arena 업데이트/롤백 기록
+- `docs/history/ROLLBACK_GUIDE.md` — BoardMate Arena 롤백 가이드
+- `docs/history/deployment/UPLOAD_TO_GITHUB.md` — BoardMate Arena FINAL — GitHub 업로드 방법
+- `docs/history/deployment/UPLOAD_TO_GITHUB_V24.md` — BoardMate Arena v11.4.24 배포 순서
+- `docs/history/deployment/UPLOAD_TO_GITHUB_V25.md` — BoardMate Arena v11.4.25 배포
+- `docs/history/deployment/UPLOAD_TO_GITHUB_V26.md` — BoardMate Arena v11.4.26 배포
+- `docs/history/deployment/UPLOAD_TO_GITHUB_V27.md` — BoardMate Arena v11.4.27 upload
+- `docs/history/deployment/UPLOAD_TO_GITHUB_V28.md` — BoardMate Arena v11.4.28 업로드 안내
+- `docs/history/deployment/UPLOAD_TO_GITHUB_V29.md` — BoardMate Arena v11.4.29 업로드 안내
+- `docs/history/deployment/UPLOAD_TO_GITHUB_V31.md` — BoardMate Arena v11.4.31 업로드 안내
+- `docs/history/deployment/UPLOAD_TO_GITHUB_V33.md` — v11.4.33 GitHub 업로드
+- `docs/history/deployment/UPLOAD_TO_GITHUB_V34.md` — BoardMate Arena v11.4.34 · GitHub / Supabase 배포
+- `docs/history/deployment/UPLOAD_TO_GITHUB_V35.md` — BoardMate Arena v11.4.35 · GitHub 배포
+- `docs/history/deployment/UPLOAD_TO_GITHUB_V36.md` — BoardMate Arena v11.4.36 · GitHub 배포
+- `docs/history/deployment/UPLOAD_TO_GITHUB_V37.md` — BoardMate Arena v11.4.37 배포 순서
+- `docs/history/deployment/UPLOAD_TO_GITHUB_V38.md` — BoardMate Arena v11.4.38 배포 순서
+- `docs/history/deployment/UPLOAD_TO_GITHUB_V39.md` — BoardMate Arena v11.4.39 배포 순서
+- `docs/history/deployment/UPLOAD_TO_GITHUB_V40.md` — BoardMate Arena v11.4.40 배포 순서
+- `docs/history/deployment/UPLOAD_TO_GITHUB_V41.md` — Upload v11.4.41
+- `docs/history/deployment/UPLOAD_TO_GITHUB_V44.md` — v11.4.44 GitHub Pages 배포
+- `docs/history/deployment/UPLOAD_TO_GITHUB_V45.md` — v11.4.45 GitHub Pages 배포
+- `docs/history/deployment/UPLOAD_TO_GITHUB_V46.md` — v11.4.46 GitHub Pages 배포
+- `docs/history/deployment/UPLOAD_TO_GITHUB_V47.md` — GitHub Pages 업로드 · v11.4.47
+- `docs/history/deployment/UPLOAD_TO_GITHUB_V48.md` — v11.4.48 GitHub 업로드
+- `docs/history/deployment/UPLOAD_TO_GITHUB_V49.md` — v11.4.49 GitHub 배포
+- `docs/history/deployment/UPLOAD_TO_GITHUB_pre_20260907.md` — GitHub 업로드 방법
+- `docs/history/updates/00_READ_ME_FIRST.md` — BoardMate Arena — 저장소 업로드용 통합 패치 + 인수인계
+- `docs/history/updates/DEVELOPER_HANDOFF_V11_4_8.md` — BoardMate Arcade 통합 v11.4.8 개발 인수인계
+- `docs/history/updates/FANTASY_WEREWOLF_CONNECTIVITY_FIX_V11_4_19.md` — v11.4.19 - Fantasy Realms / One Night Werewolf connectivity fix
+- `docs/history/updates/FANTASY_WEREWOLF_LOAD_FIX_V11_4_20.md` — BoardMate Arena v11.4.20 — 판타지 왕국 / 한밤의 늑대인간 로딩 복구
+- `docs/history/updates/FINAL_HANDOFF_README_pre_20260907.md` — BoardMate Arcade FINAL v11.4.7 — Consolidated Handoff
+- `docs/history/updates/HANDOFF_NEXT_CHAT.md` — BoardMate Arena 개발 인수인계 — 2026-09-07
+- `docs/history/updates/INSTALL_GITHUB_SUPABASE.md` — 설치 체크리스트
+- `docs/history/updates/KNOWN_ISSUES.md` — Known Issues / Next Work
+- `docs/history/updates/NEW_GAMES_INTEGRATION_V11_4_21.md` — BoardMate Arena v11.4.21 — 신규 게임 통합
+- `docs/history/updates/NEXT_CHAT_PROMPT.md` — 다음 ChatGPT 대화 시작용 프롬프트
+- `docs/history/updates/POWERGRID_V22_MAP_DATA_AUDIT.md` — Power Grid v22 · USA/Korea map data audit
+- `docs/history/updates/POWERGRID_V22_PATCH_NOTES.md` — BoardMate Arena · Power Grid v22 patch
+- `docs/history/updates/README_FIRST_pre_20260907.md` — BoardMate Arcade 통합 v11.4.8 — 2026-09-06
+- `docs/history/updates/README_HANDOFF_BOARDMATE_ARENA_V11_4_28.md` — BoardMate Arena — GPT 인수인계 README
+- `docs/history/updates/README_POWERGRID_V29.md` — BoardMate Power Grid V29 — Germany / USA only
+- `docs/history/updates/README_POWERGRID_V30.md` — BoardMate Power Grid V30 — Germany / USA only
+- `docs/history/updates/README_V11_4_11_PLAKORO_SITE.md` — BoardMate Arena v11.4.11 — 프라코로 + 사이트 안내 + 자동 로그인 패치
+- `docs/history/updates/README_V11_4_12_PLAKORO_PVP.md` — BoardMate Arena v11.4.12 — 프라코로 PvP 소스 HTML 적용
+- `docs/history/updates/README_V11_4_23_GAME_UPDATES.md` — BoardMate Arcade v11.4.23 — Game Updates
+- `docs/history/updates/README_V11_4_24_INTEGRATED.md` — v11.4.24 Integrated
+- `docs/history/updates/README_V11_4_25_SOLO_SAVE.md` — BoardMate Arena v11.4.25 — 1인플 저장 / 게임 포기
+- `docs/history/updates/README_V11_4_26_GAME_POLISH.md` — BoardMate Arena v11.4.26 — 게임 수정
+- `docs/history/updates/README_V11_4_27_MERGED.md` — BoardMate Arena v11.4.27 merged
+- `docs/history/updates/README_V11_4_28_GAME_UPDATES.md` — README_V11_4_28_GAME_UPDATES
+- `docs/history/updates/README_V11_4_29_FIXES.md` — BoardMate Arena v11.4.29 — gameplay hotfix
+- `docs/history/updates/README_V11_4_29_GAME_FIXES.md` — BoardMate Arena v11.4.29 GAME FIXES
+- `docs/history/updates/README_V11_4_30_GAME_FIXES.md` — BoardMate Arena v11.4.30
+- `docs/history/updates/README_V11_4_30_MANDOM_RULE_FIX.md` — BoardMate Arena v11.4.30 — 맨덤의 던전 규칙 복구
+- `docs/history/updates/README_V11_4_31_PLAKORO_ROLL_RESULT_FIX.md` — BoardMate Arena v11.4.31 — 프라코로 대전 주사위 결과 수정
+- `docs/history/updates/README_V11_4_33_MANDOM_RULE_FLOW_RESTORE.md` — BoardMate Arena v11.4.33 — 맨덤의 던전 룰 흐름 복구
+- `docs/history/updates/README_V11_4_34_PLANETX_PVP.md` — BoardMate Arena v11.4.34 — 행성 X를 찾아서 완전 PVP
+- `docs/history/updates/README_V11_4_35_PLANETX_UI.md` — BoardMate Arena v11.4.35 — 행성 X PVP 사용성 패치
+- `docs/history/updates/README_V11_4_36_PLANETX_SURVEY_WRAP_FIX.md` — BoardMate Arena v11.4.36 — 행성 X 개체 탐사 12→1 연속 범위 수정
+- `docs/history/updates/README_V11_4_37_PLANETX_PLAYER_COLORS.md` — v11.4.37 — 행성 X PVP 플레이어 색상 구분
+- `docs/history/updates/README_V11_4_38_PLANETX_NOTES_ORBIT_TOPICS.md` — BoardMate Arena v11.4.38 — 행성 X 플레이 UI 보강
+- `docs/history/updates/README_V11_4_39_PLANETX_BOARD_LAYOUT.md` — BoardMate Arena v11.4.39 — 행성 X 게임판 중심 배치
+- `docs/history/updates/README_V11_4_40_PLANETX_THEORY_TRACK.md` — BoardMate Arena v11.4.40 — 행성 X 가설 트랙/기록지 개선
+- `docs/history/updates/README_V11_4_41_PLANETX_RECORD_LAYOUT.md` — BoardMate Arena v11.4.41 · Planet X record layout fix
+- `docs/history/updates/README_V11_4_42_PLANETX_BUGFIX.md` — BoardMate Arena v11.4.42 · Planet X bug fix
+- `docs/history/updates/README_V11_4_43_PLANETX_THEORY_RULE_FIX.md` — BoardMate Arena v11.4.43 · Planet X theory rule fix
+- `docs/history/updates/README_V11_4_44_PLANETX_ACCOUNT_SHEET_ROLLBACK.md` — BoardMate Arena v11.4.44 · Planet X account sheet + theory placement rollback
+- `docs/history/updates/README_V11_4_45_PLANETX_BOARD_EVENTS_TERMINOLOGY.md` — BoardMate Arena v11.4.45 · 행성 X 원형 보드 이벤트/명칭 정리
+- `docs/history/updates/README_V11_4_46_PLANETX_CIRCULAR_RECORD_SHEET.md` — BoardMate Arena v11.4.46 · 행성 X 원형 기록지
+- `docs/history/updates/README_V11_4_47_PLANETX_RECORD_LAYOUT_TOGGLE.md` — BoardMate Arena v11.4.47 · 행성 X 기록지 전환 + 이모지 각주
+- `docs/history/updates/README_V11_4_48_CALICO_ETCH_E2E.md` — BoardMate Arena v11.4.48 — Calico / Etchinstone recovery patch
+- `docs/history/updates/README_V11_4_49_APP_ICON.md` — BoardMate Arena v11.4.49 — App Icon Update
+- `docs/history/updates/REALTIME_V11_4_SETUP.md` — BoardMate Arcade v11.4 — Realtime 적용 가이드
+- `docs/history/updates/RELEASE_NOTES_V11_4_8.md` — BoardMate Arcade INTEGRATED v11.4.8
+- `docs/history/updates/RULE_SCOPE_SOCIAL_DEDUCTION.md` — 소셜 디덕션 구현 범위 고정
+- `docs/history/verification/VERIFY_V11_4_34_PLANETX.md` — v11.4.34 정적 검증 결과
+- `docs/history/verification/VERIFY_V11_4_35_PLANETX.md` — BoardMate Arena v11.4.35 · 정적 검증
+- `docs/history/verification/VERIFY_V11_4_36_PLANETX.md` — BoardMate Arena v11.4.36 · 정적 검증
+- `docs/history/verification/VERIFY_V11_4_37_PLANETX.md` — v11.4.37 행성 X 플레이어 색상 구분 검증
+- `docs/history/verification/VERIFY_V11_4_38_PLANETX.md` — v11.4.38 행성 X UI 검증
+- `docs/history/verification/VERIFY_V11_4_39_PLANETX.md` — v11.4.39 행성 X 확인 결과
+- `docs/history/verification/VERIFY_V11_4_40_PLANETX.md` — v11.4.40 행성 X 확인 결과
+- `docs/history/verification/VERIFY_V11_4_41_PLANETX.md` — Verify Planet X v11.4.41
+- `docs/history/verification/VERIFY_V11_4_45_PLANETX.md` — v11.4.45 행성 X 확인 결과
+- `docs/history/verification/VERIFY_V11_4_46_PLANETX.md` — v11.4.46 행성 X 확인 결과
+- `docs/history/verification/VERIFY_V11_4_47_PLANETX.md` — v11.4.47 확인 항목
+- `docs/history/verification/VERIFY_V11_4_48.md` — v11.4.48 검증 결과
+- `docs/history/verification/VERIFY_V11_4_49.md` — v11.4.49 Verification
+- `docs/history/updates/README_V11_4_51_ALARM.md` — v11.4.51 BoardMate 알림 기능
+- `docs/history/verification/VERIFY_V11_4_51_ALARM.md` — v11.4.51 알림 검증
+- `docs/history/deployment/UPLOAD_TO_GITHUB_V51.md` — v11.4.51 GitHub 배포
