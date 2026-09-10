@@ -93,3 +93,6 @@
 - `docs/history/updates/README_V11_4_51_ALARM.md` — v11.4.51 BoardMate 알림 기능
 - `docs/history/verification/VERIFY_V11_4_51_ALARM.md` — v11.4.51 알림 검증
 - `docs/history/deployment/UPLOAD_TO_GITHUB_V51.md` — v11.4.51 GitHub 배포
+- `docs/history/updates/README_V11_4_52_PLANETX_SECTOR_ORIENTATION.md` — v11.4.52 행성 X 원형 섹터 방향 통일
+- `docs/history/verification/VERIFY_V11_4_52_PLANETX.md` — v11.4.52 행성 X 방향 검증
+- `docs/history/deployment/UPLOAD_TO_GITHUB_V52.md` — v11.4.52 GitHub 배포
