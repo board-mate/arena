@@ -9,7 +9,7 @@
 <meta name="board-mate-min-players" content="2" />
 <meta name="board-mate-max-players" content="4" />
 <meta name="board-mate-multiplayer" content="true" />
-<script type="application/json" id="boardMateGameManifest">{"id":"calico-pvp","name":"Calico PVP","version":"12.0.0-edge-pattern-token-fix","minPlayers":2,"maxPlayers":4,"multiplayer":true,"turnBased":true,"entry":"single-html","stateMode":"shared"}</script>
+<script type="application/json" id="boardMateGameManifest">{"id":"calico-pvp","name":"Calico PVP","version":"12.1.0-rumi-recovery-cancel","minPlayers":2,"maxPlayers":4,"multiplayer":true,"turnBased":true,"entry":"single-html","stateMode":"shared"}</script>
 <style>
   :root{
     --ink:#362d3c;
@@ -113,6 +113,8 @@
   .board-edge-caption{position:absolute;left:50%;bottom:5px;transform:translateX(-50%);z-index:3;max-width:92%;padding:5px 10px;border-radius:999px;background:rgba(255,255,255,.88);border:1px solid rgba(125,58,131,.18);box-shadow:0 2px 8px rgba(40,20,55,.08);font-size:.7rem;font-weight:800;color:#6a5b6d;white-space:nowrap;pointer-events:none}
   .board-stage.board-image-missing::after{content:"원본 보드 이미지를 불러오지 못했습니다 · 게임 판정은 내장 데이터로 계속됩니다";position:absolute;left:50%;top:18px;transform:translateX(-50%);z-index:4;width:max-content;max-width:90%;padding:6px 10px;border-radius:10px;background:#fff6e6;border:1px solid #eccb90;color:#80571d;font-size:.7rem;font-weight:800;text-align:center}
   .hex{position:absolute;width:var(--hex-w);height:var(--hex-h);clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%);border:none;padding:0;overflow:hidden;background:#f4f0f2;filter:drop-shadow(0 2px 2px rgba(30,20,35,.12));transition:transform .12s,filter .12s}
+  .hex.patch{touch-action:manipulation;-webkit-tap-highlight-color:transparent;pointer-events:auto;z-index:2}
+  .hex.patch.playable{cursor:pointer}
   .hex::after{content:"";position:absolute;inset:4px;clip-path:inherit;border:2px solid rgba(255,255,255,.65);pointer-events:none}
   /* 빈 홈은 원본 보드 이미지 자체가 보이도록 거의 투명하게 둔다. */
   .hex.patch.empty{background:rgba(255,255,255,.025);filter:none}
@@ -205,7 +207,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="./config.js"></script>
 <script type="module">
-import {configured,roomId,getMe,loadRoom,loadState,saveState,startStatePoll,submitMatch,ratingBadges,showFatal} from './multi-common.js';
+import {configured,roomId,getMe,loadRoom,loadState,saveState,startStatePoll,submitMatch,ratingBadges,showFatal,openCancelVotePanel} from './multi-common.js?v=11.4.48';
 
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 let ctxPromise=null, revision=0, room=null, members=[], me=null, badges={}, callbacks=[];
@@ -311,6 +313,14 @@ if(roomId) window.addEventListener('DOMContentLoaded',()=>{
   a.style.cssText='position:fixed;left:10px;bottom:10px;z-index:2147482000;text-decoration:none;background:#172033;color:#fff;border-radius:999px;padding:8px 11px;font:800 12px system-ui;box-shadow:0 6px 18px #0003';
   document.body.appendChild(a);
 });
+window.addEventListener('DOMContentLoaded',()=>{
+  const cancel=document.getElementById('cancelGameBtn');
+  if(!cancel)return;
+  if(!roomId){cancel.classList.add('hidden');return;}
+  cancel.addEventListener('click',()=>{
+    if(!openCancelVotePanel()) alert('게임 취소 기능을 불러오는 중입니다. 잠시 후 다시 눌러 주세요.');
+  });
+});
 </script>
 
 <style id="calico-v4-ui">.goal-preview{position:relative;width:min(100%,360px);aspect-ratio:1.35;border:1px solid #dfd3e2;border-radius:16px;overflow:hidden;background:#f5f0f5;margin:10px auto}.goal-preview img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}.goal-preview-grid{position:absolute;inset:0}.goal-preview-slot{position:absolute;width:64px;height:74px;transform:translate(-50%,-50%);border:2px dashed rgba(94,44,101,.55);border-radius:13px;background:rgba(255,255,255,.82);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;font-weight:900;color:#5e2c65;font-size:.72rem;padding:4px;box-shadow:0 3px 9px #0002;transition:all .2s ease;cursor:pointer}
@@ -336,6 +346,7 @@ if(roomId) window.addEventListener('DOMContentLoaded',()=>{
     <div class="top-actions">
       <span class="arena-connection waiting" id="arenaConnection">Arena 연결 확인 중</span>
       <button class="btn small" id="rulesBtn">규칙 요약</button>
+      <button class="btn small danger" id="cancelGameBtn">게임 취소</button>
       <button class="btn small hidden" id="saveBtn">로컬 저장</button>
       <button class="btn small hidden" id="exportBtn">상태 내보내기</button>
       <button class="btn small hidden" id="importBtn">상태 불러오기</button>
@@ -464,7 +475,7 @@ if(roomId) window.addEventListener('DOMContentLoaded',()=>{
   const SAVE_KEY = 'calico-pvp-arena-v8';
   const VERSION = 12;
   const GAME_ID = 'calico-pvp';
-  const GAME_MANIFEST = Object.freeze({id:GAME_ID,name:'Calico PVP',version:'12.0.0-edge-pattern-token-fix',minPlayers:2,maxPlayers:4,multiplayer:true,turnBased:true});
+  const GAME_MANIFEST = Object.freeze({id:GAME_ID,name:'Calico PVP',version:'12.1.0-rumi-recovery-cancel',minPlayers:2,maxPlayers:4,multiplayer:true,turnBased:true});
 
   const COLORS = [
     {id:'darkBlue', ko:'남색', css:'#32467b'},
@@ -1739,33 +1750,45 @@ if(roomId) window.addEventListener('DOMContentLoaded',()=>{
     return true;
   }
 
+  function rescanEarnedTokensNow(returnPhase=state?.phase){
+    if(!state || !isMyTurn() || state.gameOver) return false;
+    const p=state.players?.[state.active];
+    if(!p) return false;
+    const recovered=buildAllPendingTokenChoices(p,state);
+    if(!recovered.length){
+      toast('현재 퀼트에서 새로 놓을 고양이/단추 토큰을 찾지 못했습니다.');
+      return false;
+    }
+    pendingTokenChoices=deepClone(recovered);
+    tokenPlacementMode=null;
+    state._pendingTokenChoices=deepClone(recovered);
+    state._tokenPlacementMode=null;
+    state._tokenReturnPhase=normalizeTokenReturnPhase(returnPhase,returnPhase==='place'?'place':'draft');
+    state.phase='token';
+    state._manualAwardRescanV48=true;
+    state.turnTokens=[...new Set([...(state.turnTokens||[]),...recovered.map(x=>x.label.replace(/^🐈 |^🔘 |^🌈 /,''))])];
+    autoSave('manual-award-rescan-v48');
+    renderGame();
+    toast(`조건을 다시 검사해 토큰 후보 ${recovered.length}개를 찾았습니다.`);
+    return true;
+  }
+
   function renderControls(){
     const card=$('#controlCard'),p=state.players[state.active];if(state.gameOver){card.innerHTML='<h3 class="section-title" style="font-size:1rem">게임 종료</h3><button class="btn primary" id="scoreAgainBtn">최종 점수 보기</button>';$('#scoreAgainBtn').onclick=showScoreModal;return;}
     if(isArenaMode()&&!isMyTurn()){const me=myPlayerIndex();card.innerHTML=`<h3 class="section-title" style="font-size:1rem">상대 차례</h3><div class="action-line"><b>${escapeHtml(p.name)}</b>의 차례입니다. 행동이 동기화되면 자동으로 화면에 반영됩니다.</div>${me!==null?`<button class="btn" id="viewOwnBoardBtn">내 보드 보기</button>`:''}`;if($('#viewOwnBoardBtn'))$('#viewOwnBoardBtn').onclick=()=>{viewedPlayer=me;renderGame();};return;}
     if(viewedPlayer!==state.active){card.innerHTML=`<h3 class="section-title" style="font-size:1rem">다른 보드 확인 중</h3><div class="action-line">내 차례입니다. 행동하려면 현재 차례 보드로 돌아가세요.</div><button class="btn primary" id="returnActiveBtn">현재 차례 보드로</button>`;$('#returnActiveBtn').onclick=()=>{viewedPlayer=state.active;renderGame();};return;}
     let html=`<h3 class="section-title" style="font-size:1rem">차례 진행</h3><div class="action-line"><b>${phaseLabel()}</b></div>`;
-    if(state.phase==='place')html+=`<p style="font-size:.83rem;color:var(--muted);line-height:1.5">손패에서 타일을 하나 선택한 뒤 빈 육각 칸을 누르세요. 조건을 만족하면 아래에서 고양이/단추를 선택하고, 해당 그룹의 타일을 눌러 직접 놓을 수 있습니다.</p><div class="turn-actions"><button type="button" class="btn small" id="historicalTokenSearchBtn">🔎 이전 미배치 토큰 검색</button></div>`;
+    if(state.phase==='place')html+=`<p style="font-size:.83rem;color:var(--muted);line-height:1.5">손패에서 타일을 하나 선택한 뒤 빈 육각 칸을 누르세요. 조건을 만족하면 아래에서 고양이/단추를 선택하고, 해당 그룹의 타일을 눌러 직접 놓을 수 있습니다.</p><div class="turn-actions"><button type="button" class="btn small" id="awardRescanBtn">🐈 현재 보드 조건 다시 검사</button></div>`;
     else if(state.phase==='token'){
       const noChoices=!pendingTokenChoices.length;
       html+=`<div class="token-placement-panel"><div class="token-placement-title">🐈 🔘 획득 토큰 배치</div><div style="font-size:.8rem;color:var(--muted);margin-bottom:7px">${noChoices?'저장된 토큰 배치 정보가 없으면 방금 놓은 타일 기준으로 다시 검색합니다.':'토큰을 선택한 뒤 보드에서 강조된 타일을 누르세요.'}</div><div class="token-choice-grid">${pendingTokenChoices.map((x,i)=>`<button type="button" class="token-choice ${tokenPlacementMode===x?'active':''}" data-token-index="${i}">${x.label}<small>${x.type==='rainbow'?'아무 패치 타일':x.type==='cat'?'해당 무늬 그룹':'해당 색상 그룹'}</small></button>`).join('')}</div>${noChoices?'<div class="token-recovery-actions"><button type="button" class="btn small" id="recoverTokensBtn" style="margin-top:8px">🔄 미배치 토큰 다시 검색</button><button type="button" class="btn small" id="skipEmptyTokenBtn" style="margin-top:8px">➡️ 토큰 없이 시장으로</button></div>':''}</div>`;
       if(tokenPlacementMode)html+=`<div class="action-line">현재 선택: <b>${tokenPlacementMode.label}</b> · 보드의 강조된 타일을 누르세요.</div>`;
       html+=`<div class="turn-actions"><button class="btn small" id="undoTurnBtn" ${dirtyTurn?'':'disabled'}>↶ 현재 차례 되돌리기</button></div>`;
-    } else if(state.phase==='draft'||state.phase==='turn-end'){html+=`<div class="token-auto-note"><b>토큰 배치 완료</b><br>${state.phase==='draft'?'이제 시장에서 1개를 가져오세요.':'시장 선택이 끝났습니다. 턴 종료를 누르세요.'}</div>`;if(state.turnTokens?.length)html+=`<div class="token-award">이번 턴 획득 · ${state.turnTokens.join(' · ')}</div>`;html+=`<div class="turn-actions"><button class="btn small" id="undoTurnBtn" ${dirtyTurn?'':'disabled'}>↶ 현재 차례 되돌리기</button><button class="btn primary" id="endTurnBtn" ${state.phase==='draft'?'disabled':''}>턴 종료</button></div>`;}
+    } else if(state.phase==='draft'||state.phase==='turn-end'){html+=`<div class="token-auto-note"><b>토큰 배치 완료</b><br>${state.phase==='draft'?'이제 시장에서 1개를 가져오세요.':'시장 선택이 끝났습니다. 턴 종료를 누르세요.'}</div>`;if(state.turnTokens?.length)html+=`<div class="token-award">이번 턴 획득 · ${state.turnTokens.join(' · ')}</div>`;html+=`<div class="turn-actions"><button class="btn small" id="awardRescanBtn">🐈 현재 보드 조건 다시 검사</button><button class="btn small" id="undoTurnBtn" ${dirtyTurn?'':'disabled'}>↶ 현재 차례 되돌리기</button><button class="btn primary" id="endTurnBtn" ${state.phase==='draft'?'disabled':''}>턴 종료</button></div>`;}
     card.innerHTML=html;if($('#undoTurnBtn'))$('#undoTurnBtn').onclick=undoTurn;if($('#endTurnBtn'))$('#endTurnBtn').onclick=()=>{if(state.phase==='turn-end')advanceTurn();};$$('[data-token-index]').forEach(b=>b.onclick=()=>beginTokenPlacement(pendingTokenChoices[Number(b.dataset.tokenIndex)]));
-    if($('#historicalTokenSearchBtn')) $('#historicalTokenSearchBtn').onclick=()=>{
-      if(!isMyTurn() || state.phase!=='place') return;
-      const recovered=buildAllPendingTokenChoices(state.players[state.active],state);
-      if(!recovered.length){toast('현재 퀼트에서 복구할 미배치 고양이/단추가 없습니다.');return;}
-      pendingTokenChoices=deepClone(recovered);
-      tokenPlacementMode=null;
-      state._pendingTokenChoices=deepClone(recovered);
-      state._tokenPlacementMode=null;
-      state._tokenReturnPhase='place';
-      state.phase='token';
-      state._tokenRecoveryV12=true;
-      autoSave('historical-token-search-v12');
-      renderGame();
-      toast(`이전에 놓지 못한 토큰 후보 ${recovered.length}개를 찾았습니다.`);
+    if($('#awardRescanBtn')) $('#awardRescanBtn').onclick=()=>{
+      if(!isMyTurn() || state.phase==='token') return;
+      rescanEarnedTokensNow(state.phase);
     };
     if($('#recoverTokensBtn')) $('#recoverTokensBtn').onclick=()=>{
       if(!isMyTurn()) return;
@@ -1779,7 +1802,7 @@ if(roomId) window.addEventListener('DOMContentLoaded',()=>{
         state._tokenRecoveryV10=true;
         // turnTokens는 '획득 후보' 표시용으로 복원한다. 실제 지급/재고 차감은
         // 사용자가 토큰을 놓는 순간에만 발생한다.
-        state.turnTokens=recovered.map(x=>x.label.replace(/^🐈 |^🔘 |^🌈 /,''));
+        state.turnTokens=[...new Set([...(state.turnTokens||[]),...recovered.map(x=>x.label.replace(/^🐈 |^🔘 |^🌈 /,''))])];
         autoSave('manual-token-recovery-v10');
         renderGame();
         toast(`복구 가능한 미배치 토큰 ${recovered.length}개를 찾았습니다.`);

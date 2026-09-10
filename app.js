@@ -263,7 +263,7 @@ async function renderHome(){
   shell(`<section class="hero"><div><h1><span>BoardMate</span> Arcade</h1><p>보드메이트에서 같이 즐기는 웹 보드게임 공간.<br>미니게임, AI 연습, 로그인 기반 온라인 방을 한 곳에 모았습니다.</p><div class="social-links"><a class="social-link" href="${LINKS.instagram}" target="_blank" rel="noreferrer">📷 Instagram</a><a class="social-link" href="${LINKS.somoim}" target="_blank" rel="noreferrer">👥 소모임</a><a class="social-link" href="${LINKS.shop}" target="_blank" rel="noreferrer">🛍 마플샵</a></div></div><div class="hero-badge">🎲</div></section>
   <section id="homeActiveGamesWrap" class="active-games-wrap hidden"><div class="section-title"><h2>▶ 진행 중인 게임</h2><small>자동 저장 · 재접속</small></div><div id="homeActiveGameList"></div></section>
   <div class="section-title"><h2>미니게임</h2><small>${formatDate(kstDate())} · KST</small></div><section class="game-grid daily-two">${homeCard('pensterdam','🧩','펜토리니','도움칸 적게 사용 → 동률이면 먼저 클리어')} ${homeCard('yahtzee','🎲','Yahtzee','언제든 플레이 · 올타임 최고 점수')}</section>
-  <section class="home-mode-grid"><button class="mode-card" data-go="solo"><span>🧠</span><b>1인플 · AI/솔로</b><small>마스크맨 / 어콰이어 / 캘리코 / 캐스캐디아 / 더 게임 / 커피 로스터</small></button><button class="mode-card" data-go="multi"><span>🌐</span><b>다인플 · 온라인 방</b><small>자동 저장 · 재접속 · 게임별 티어</small></button></section>
+  <section class="home-mode-grid"><button class="mode-card" data-go="solo"><span>🧠</span><b>1인플 · AI/솔로</b><small>마스크맨 / 어콰이어 / 에친스톤 / 캘리코 / 캐스캐디아 / 더 게임 / 커피 로스터</small></button><button class="mode-card" data-go="multi"><span>🌐</span><b>다인플 · 온라인 방</b><small>자동 저장 · 재접속 · 게임별 티어</small></button></section>
     <div id="connection"></div>`);
 
   document.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>location.hash=`#/${b.dataset.go}`);
@@ -308,6 +308,7 @@ function renderSolo(){
   <section class="library-grid">
     <article class="library-card maskmen"><div class="library-icon">🥊</div><h2>마스크맨</h2><p>3~6인 규칙을 AI들과 연습합니다.</p><span class="save-badge">💾 로컬 자동 저장</span><a class="primary link-btn" href="./solo-maskmen.html">AI와 대전</a></article>
     <article class="library-card acquire"><div class="library-icon">🏙️</div><h2>어콰이어</h2><p>타일 배치, 호텔 체인, 주식과 합병을 AI들과 연습합니다.</p><span class="save-badge">💾 로컬 자동 저장</span><a class="primary link-btn" href="./solo-acquire.html">AI와 대전</a></article>
+    <article class="library-card etchinstone"><div class="library-icon">🐉</div><h2>에친스톤의 용들</h2><p>4개 지역과 최후의 여정·용을 돌파하는 1인 손패 관리 모험입니다.</p><span class="save-badge">💾 로컬 자동 저장</span><a class="primary link-btn" href="./solo-etchinstone.html">솔로 플레이</a></article>
     <article class="library-card calico"><div class="library-icon">🧵</div><h2>캘리코</h2><p>공개된 MyAutoma 구현을 BoardMate 상단바 안에서 엽니다.</p><span class="save-badge external">외부 게임 · BoardMate 저장 제외</span><a class="primary link-btn" href="./solo-calico.html">솔로 게임 열기</a></article>
     <article class="library-card cascadia"><div class="library-icon">🌲</div><h2>캐스캐디아</h2><p>공개 Cascadia 웹 구현을 BoardMate 상단바 안에서 엽니다.</p><span class="save-badge external">외부 게임 · BoardMate 저장 제외</span><a class="primary link-btn" href="./solo-cascadia.html">솔로 게임 열기</a></article>
     <article class="library-card thegame"><div class="library-icon">🃏</div><h2>더 게임</h2><p>업로드한 HTML로 1인 솔로 플레이. ±10 되돌리기 규칙을 지원합니다.</p><span class="save-badge">💾 로컬 자동 저장</span><a class="primary link-btn" href="./solo-thegame.html">솔로 플레이</a></article>

@@ -1,0 +1,22 @@
+{
+  "release": "BoardMate Arena v11.4.48",
+  "focus": [
+    "remove Pokemon Minima from active UI/runtime",
+    "restore Etchinstone solo entry",
+    "Calico upper-right Rumi placement/recovery",
+    "Calico visible game cancel control",
+    "current-room backwards compatibility"
+  ],
+  "modified_runtime_files": [
+    "index.html",
+    "app.js",
+    "styles.css",
+    "online-calico.html",
+    "multi-common.js",
+    "sw.js",
+    "HANDOFF_VERSION.txt"
+  ],
+  "database_migration_required": false,
+  "calico_state_version": 12,
+  "e2e": "tests/v48_calico_etch_e2e.py"
+}

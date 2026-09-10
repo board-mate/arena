@@ -201,3 +201,11 @@ function mountCancelControl(){
   window.addEventListener('beforeunload',()=>{if(cancelPollId)clearInterval(cancelPollId);},{once:true});
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(mountCancelControl,0),{once:true});else setTimeout(mountCancelControl,0);
+export function openCancelVotePanel(){
+  mountCancelControl();
+  const open=document.querySelector('#bmCancelOpen'),panel=document.querySelector('#bmCancelPanel');
+  if(!open||!panel)return false;
+  panel.hidden=false;
+  open.setAttribute('aria-expanded','true');
+  return true;
+}

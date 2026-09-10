@@ -141,8 +141,6 @@
 /* v8 */
 .game-grid.daily-two{grid-template-columns:repeat(2,minmax(0,1fr));max-width:none;width:100%}
 .turn-system-note{margin:18px 0 4px;padding:12px 14px;border:1px solid #dfe5ec;border-radius:14px;background:#f8fafc;display:grid;gap:4px}.turn-system-note b{font-size:14px}.turn-system-note span{font-size:12px;color:var(--muted);line-height:1.5}
-.game-pill.pocketnova{background:#fff1a8;color:#6b5200}
-.library-card.pocketnova{background:linear-gradient(145deg,#fff7b8,#fff)}
 @media(max-width:760px){.game-grid.daily-two{grid-template-columns:1fr}}
 
 
@@ -163,3 +161,5 @@
 @media(max-width:1050px){.library-grid.compact-games{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:760px){.library-grid.compact-games{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.top-install{padding:7px 9px;font-size:11px;margin-right:6px}.topbar{height:auto;min-height:68px;gap:8px;flex-wrap:wrap;padding-top:10px;padding-bottom:10px}.topnav{order:4;width:100%;justify-content:center}.top-date{display:none}}
 @media(max-width:480px){.library-grid.compact-games{grid-template-columns:1fr}.top-install{font-size:10px;padding:6px 8px;margin-left:4px;margin-right:4px}.topbar{padding-left:10px;padding-right:10px}.brand-btn{font-size:17px}}
+
+.library-card.etchinstone{background:linear-gradient(145deg,#fff1e7,#fff)}
