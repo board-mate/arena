@@ -1,9 +1,9 @@
-# ✅ Current Test Status — v11.4.59
+# ✅ Current Test Status — v11.4.60
 
 ## 릴리스 판정
 
 **정적/로컬 회귀 기준: PASS**  
-**실서비스 완전 종료 Web Push: 미구현 / 테스트 대상 아님**
+**완전 종료 Web Push: 현재 요구 범위 밖 / 테스트 대상 아님**
 
 ---
 
@@ -25,7 +25,8 @@
 
 ## 알림 / 브라우저 탭
 
-- `alarm.js`, `app.js`, `multi-common.js` syntax: **PASS**
+- `alarm.js`, `app.js`, `multi-common.js` TypeScript parser diagnostics: **PASS (0건)**
+- `app.js` Chromium ES-module Blob import + 홈 렌더 smoke: **PASS**
 - 브라우저 제목 상태 모의 테스트: **PASS**
   - 내 차례 → `🔔 내 차례 ·` prefix
   - 상대 차례 → prefix 제거
@@ -38,14 +39,14 @@
 실사용 보고에서 시스템 알림이 간헐적으로 누락되는 경우가 있습니다. 이는 현재 방식이 브라우저/PWA 실행 중 polling 기반이며, 백그라운드 throttling과 OS 정책 영향을 받기 때문입니다.
 
 - 웹 탭 `🔔 내 차례`: 현재 구현됨
-- 앱/브라우저 완전 종료 후 진짜 push: **미구현**
+- 앱/브라우저 완전 종료 후 서버 Web Push: **현재 요구 범위 밖**
 
 ## 패키지
 
-- 서비스워커 캐시 키: `boardmate-shell-v11.4.59`
+- 서비스워커 캐시 키: `boardmate-shell-v11.4.60`
 - 다인플 18개 / 1인플 7개 파일 유지
 - `docs/history/`, `database/history/` 유지
-- v11.4.59 DB migration: **불필요**
+- v11.4.60 DB migration: **불필요**
 - README/현재 인수인계 문서: **최종 정리 완료**
 
 ## 실서비스에서 배포 직후 확인할 것
@@ -58,7 +59,7 @@
 6. 캘리코 진행 중 방 / 에친스톤 저장 게임 진입
 
 
-## v11.4.59 추가
+## v11.4.60 추가
 - 알림 모듈 실패가 메인 부팅을 막지 않음.
 - app.js module load 최대 3회 재시도.
 - 내 차례: 탭 제목 + 상단 배너 + favicon 표시.

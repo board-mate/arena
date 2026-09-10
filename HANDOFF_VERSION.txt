@@ -1,3 +1,2 @@
-BoardMate Arena v11.4.59
-Baseline: v11.4.58
-Focus: resilient boot + browser turn indicator + notification retry semantics
+BoardMate Arena v11.4.60
+Emergency boot syntax fix + v11.4.59 alarm/Planet X features retained

@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#141922" />
   <meta name="description" content="보드메이트 모임원용 데일리 보드게임 아케이드" />
   <title>BoardMate Arcade</title>
-  <link rel="stylesheet" href="./styles.css?v=59" />
+  <link rel="stylesheet" href="./styles.css?v=60" />
   <link rel="manifest" href="./manifest.webmanifest" />
   <link rel="icon" type="image/png" sizes="32x32" href="./icons/favicon-32.png" />
   <link rel="apple-touch-icon" sizes="180x180" href="./icons/apple-touch-icon.png" />
@@ -25,7 +25,7 @@
   </section>
   <script src="./config.js"></script>
   <script>
-    // v11.4.59: GitHub Pages 배포 직후의 일시적 404/캐시 불일치에도 앱 로더를 최대 3회 재시도한다.
+    // v11.4.60: GitHub Pages 배포 직후의 일시적 404/캐시 불일치에도 앱 로더를 최대 3회 재시도한다.
     (function(){
       var fallback=document.getElementById('bootFallback');
       function showFallback(detail){
@@ -38,8 +38,8 @@
       function loadApp(attempt){
         var s=document.createElement('script');
         s.type='module';
-        s.src='./app.js?v=11.4.59'+(attempt?'&retry='+Date.now():'');
-        s.onload=function(){setTimeout(function(){if(!window.__boardmateAppStarted)showFallback('앱 초기화가 완료되지 않았습니다.');},1200);};
+        s.src='./app.js?v=11.4.60'+(attempt?'&retry='+Date.now():'');
+        s.onload=function(){setTimeout(function(){if(!window.__boardmateAppStarted)showFallback('앱 파일의 실행이 완료되지 않았습니다. v11.4.60 복구 페이지에서 캐시를 한 번 초기화해 주세요.');},1200);};
         s.onerror=function(){s.remove();if(attempt<2)setTimeout(function(){loadApp(attempt+1);},600*(attempt+1));else showFallback('앱 파일 로딩에 3회 실패했습니다.');};
         document.head.appendChild(s);
       }

@@ -1,4 +1,4 @@
-// v11.4.59: alarm.js가 늦거나 일시적으로 누락돼도 메인 앱은 먼저 부팅한다.
+// v11.4.60: alarm.js가 늦거나 일시적으로 누락돼도 메인 앱은 먼저 부팅한다.
 const __alarmApi={
   alarmSettings:()=>({enabled:false,newRoom:true,myTurn:true,gameStart:true,sound:true,vibrate:true}),
   saveAlarmSettings:()=>({}),
@@ -20,7 +20,7 @@ const unlockAlarmAudio=(...a)=>__alarmApi.unlockAlarmAudio(...a);
 window.__boardmateAppStarted=true;
 (async()=>{
   try{
-    const mod=await import('./alarm.js?v=11.4.59');
+    const mod=await import('./alarm.js?v=11.4.60');
     for(const key of Object.keys(__alarmApi)) if(typeof mod[key]==='function') __alarmApi[key]=mod[key];
     window.dispatchEvent(new Event('boardmate:alarm-ready'));
   }catch(err){
@@ -129,7 +129,7 @@ function ensureSiteFeatures(){
   if(!document.querySelector('link[rel="manifest"]')){const l=document.createElement('link');l.rel='manifest';l.href='./manifest.webmanifest';document.head.appendChild(l);}
   if(!document.querySelector('meta[name="theme-color"]')){const m=document.createElement('meta');m.name='theme-color';m.content='#141922';document.head.appendChild(m);}
   if(!document.querySelector('link[rel="manifest"]')){const l=document.createElement('link');l.rel='manifest';l.href='./manifest.webmanifest';document.head.appendChild(l);}
-  if('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js',{scope:'./'}).catch(()=>{});
+  if('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js?v=11.4.60',{scope:'./'}).catch(()=>{});
 }
 async function installBoardMate(){
   if(deferredInstallPrompt){
@@ -513,7 +513,7 @@ async function renderRoom(roomId){
     document.querySelectorAll('[data-kick]').forEach(b=>b.onclick=async()=>{if(!confirm('이 참가자를 방에서 내보낼까요?'))return;try{await callRpc('kick_boardmate_room_member',{p_token:memberToken(),p_room_id:roomId,p_user_id:b.dataset.kick});await draw();}catch(e){toast(e.message);}});
   };
   await draw();const refreshRoom=async()=>{if((location.hash||'').includes(`/room/${roomId}`))try{await touch();await draw();}catch{}};const timer=setInterval(refreshRoom,3500);const wakeRoom=()=>{if(!document.hidden)void refreshRoom()};document.addEventListener('visibilitychange',wakeRoom);window.addEventListener('focus',wakeRoom);window.addEventListener('pageshow',wakeRoom);window.addEventListener('online',wakeRoom);addCleanup(()=>{clearInterval(timer);document.removeEventListener('visibilitychange',wakeRoom);window.removeEventListener('focus',wakeRoom);window.removeEventListener('pageshow',wakeRoom);window.removeEventListener('online',wakeRoom)});
-
+}
 
 async function renderPensterdam(){
   let weekdayMode=localStorage.getItem(STORAGE_PREFIX+'pentorini_weekday_mode')||'en',puzzle=getPentoriniPuzzle(kstDate(),weekdayMode),board=Array(70).fill(null),selected='F',rotation=0,flipped=false;const placed={};

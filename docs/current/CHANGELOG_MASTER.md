@@ -1,13 +1,23 @@
 # BoardMate Arena — MASTER CHANGELOG
 
-## ⭐ Current baseline — v11.4.59
+## v11.4.60 — Emergency boot syntax fix (2026-09-10)
+
+- `app.js`의 `renderRoom()` 종료 중괄호 누락을 수정.
+- 증상: `⚠️ BoardMate 화면을 불러오는 데 시간이 걸리고 있습니다. / 앱 초기화가 완료되지 않았습니다.`
+- 실제 원인: Supabase/CDN 지연이 아니라 메인 ES module 파싱 오류(`Unexpected end of input`).
+- v11.4.59의 행성 X/알림 기능은 그대로 유지.
+- `app.js`, `alarm.js`, `sw.js` TypeScript parser diagnostics 0건 및 Chromium Blob module 렌더링 테스트 통과.
+- 신규 DB/RPC/SQL 없음.
+
+
+## ⭐ Current baseline — v11.4.60
 
 - 행성 X 진행 중 구형 논문 패널티 로그를 공개 논문 상태와 합쳐 상세 표시.
 - 행성 X 찾기에서 후보 섹터의 왼쪽/오른쪽 인접 섹터 번호를 동적으로 안내.
 - 종료 시 전체 섹터 실제 개체 + 행성 X 위치 + X 양옆 실제 개체 공개.
 - 내 차례 브라우저 탭 제목 `🔔 내 차례 ·` 표시.
 - 실행 중 알림 재확인/dedupe 보강. 완전 종료 Web Push는 아직 미구현.
-- v11.4.59 신규 DB/RPC 없음.
+- v11.4.60 신규 DB/RPC 없음.
 - 상세 현재 상태: `docs/current/HANDOFF_CURRENT.md`.
 
 
