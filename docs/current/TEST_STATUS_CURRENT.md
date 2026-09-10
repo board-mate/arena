@@ -1,12 +1,15 @@
-# Current test status — v11.4.52
+# Current test status — v11.4.53
 
-- Planet X circular game board sector 1 coordinate: checked at top/12 o’clock.
-- Planet X circular record sheet sector 1 coordinate: checked at top/12 o’clock in both Standard 12-sector and Expert 18-sector modes.
-- Clockwise progression alignment: sector 2 is upper-right of sector 1 for both board and record sheet.
+- Planet X asteroid display symbol: `🪨` in canonical object label/icon constants.
+- Legacy comet-like asteroid display `☄️ 소행성`: absent from current Planet X runtime.
+- Comet display remains `🌠 혜성`, so the two objects are visually distinct.
+- Bottom reference table includes correct-paper points: asteroid 2, comet 3, gas 4, dwarf 4 Standard / 2 Expert.
+- Reference table also includes correct-paper leader bonus (+1) and Planet X scoring summary.
+- Runtime scoring constants remain consistent with the displayed reference (`asteroid:2`, `comet:3`, `gas:4`, `dwarf:4/2`).
+- Planet X circular board/record orientation from v11.4.52 remains unchanged.
 - `online-planetx.html` inline JavaScript syntax: checked.
-- Service worker JavaScript syntax and cache version `boardmate-shell-v11.4.52`: checked.
-- Existing private record data model is unchanged; only circular record rendering origin changed.
-- Multiplayer/solo files other than Planet X are byte-identical to v11.4.51 runtime package.
+- Service worker JavaScript syntax and cache version `boardmate-shell-v11.4.53`: checked.
+- Multiplayer/solo files other than Planet X are unchanged from the v11.4.52 integrated package.
 - No database migration required.
 
-Known environment limit: this verification is static/mathematical for the orientation patch. Real Supabase multi-device state synchronization was not modified by v11.4.52.
+Known environment limit: this release changes display/reference text only; live Supabase multi-device behavior was not changed.

@@ -96,3 +96,6 @@
 - `docs/history/updates/README_V11_4_52_PLANETX_SECTOR_ORIENTATION.md` — v11.4.52 행성 X 원형 섹터 방향 통일
 - `docs/history/verification/VERIFY_V11_4_52_PLANETX.md` — v11.4.52 행성 X 방향 검증
 - `docs/history/deployment/UPLOAD_TO_GITHUB_V52.md` — v11.4.52 GitHub 배포
+- `docs/history/updates/README_V11_4_53_PLANETX_ICON_SCORE_REFERENCE.md` — v11.4.53 행성 X 소행성 아이콘/논문 점수 참조표
+- `docs/history/verification/VERIFY_V11_4_53_PLANETX.md` — v11.4.53 행성 X 검증
+- `docs/history/deployment/UPLOAD_TO_GITHUB_V53.md` — v11.4.53 GitHub 배포

@@ -1,16 +1,17 @@
-# BoardMate Arena CURRENT HANDOFF — v11.4.52
+# BoardMate Arena CURRENT HANDOFF — v11.4.53
 
 ## Current release
-- Runtime baseline: v11.4.52
+- Runtime baseline: v11.4.53
 - v11.4.51 browser/PWA alarm feature is retained.
-- v11.4.52 aligns Planet X circular board and circular record sheet orientation.
+- v11.4.52 Planet X circular board/record orientation alignment is retained.
+- v11.4.53 clarifies the Planet X asteroid symbol and exposes paper scoring in the bottom reference table.
 
-## Planet X v11.4.52
-- `online-planetx.html` circular game board already uses sector 1 at 12 o’clock and increases clockwise.
-- Circular record sheet now uses the same orientation: **sector 1 at 12 o’clock, then 2, 3, ... clockwise**.
-- Standard (12-sector) and Expert (18-sector) record sheets use the same zero-angle origin.
-- Existing private record data (`priv.marks`) is unchanged; this is display-coordinate-only.
-- Square record sheet, game logic, hidden solar system, turn/time logic, theories/papers, research, conferences and scoring are unchanged.
+## Planet X v11.4.53
+- `online-planetx.html` uses **🪨 for asteroid** instead of the comet-like ☄️ symbol.
+- Comet remains **🌠**, so asteroid/comet are visually distinct on the game board, circular record sheet, emoji footnote and revealed paper tokens.
+- The bottom `참조표` now shows correct-paper points directly: Asteroid 2, Comet 3, Gas Cloud 4, Dwarf Planet 4 in Standard / 2 in Expert.
+- The same reference also shows paper leader bonus (+1 per sector for the earliest correct paper, ties included) and Planet X scoring (first 10; later 2 points per sector behind, 2–10).
+- Existing game state, private record data, paper objects, board positions and database schema are unchanged. This is a UI/reference patch.
 - No Supabase SQL migration is required.
 
 ## Alarm feature retained

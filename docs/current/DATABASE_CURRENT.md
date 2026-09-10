@@ -1,6 +1,6 @@
 # 현재 데이터베이스 상태
 
-- v11.4.50: **새 SQL 없음**.
+- v11.4.53: **새 SQL 없음**.
 - 현재 통합 repair/update 파일: `database/SUPABASE_CURRENT_UPDATE.sql`.
 - 목적: 기존 BoardMate 스키마의 복구/갱신.
 - 주의: 빈 Supabase 프로젝트 전체를 처음부터 만드는 bootstrap 스키마가 아닙니다.
