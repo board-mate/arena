@@ -317,3 +317,11 @@
 - Removed opaque maskable icon selection from `manifest.webmanifest`.
 - `background_color` changed from dark navy to `transparent`.
 - No game logic or Supabase schema changes.
+
+
+## BoardMate Arena v11.4.55 — Planet X theory review detail + asteroid emoji unification
+- Planet X asteroid display icon is unified to `🌑` across object labels, survey/target records, theory options/tokens, circular record sheet footnote, confirmed objects, and the reference table; legacy saved observation/log strings with `🪨` are normalized on display.
+- Peer review now records each incorrect theory explicitly: player, sector, submitted object, and “that object is not in this sector”.
+- If the same sector is confirmed by a correct theory during that review, the actual object is also shown. Otherwise the actual object remains hidden, matching the board-game peer-review rule.
+- A persistent “recent peer review result” panel is shown to all players in the current-progress card.
+- No database/RPC change.

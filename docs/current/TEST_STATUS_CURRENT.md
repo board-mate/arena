@@ -18,3 +18,9 @@ Known environment limit: this release changes display/reference text only; live 
 - Transparent alpha verified on 192/512 app icons, Apple-touch icon, favicon and compatibility maskable PNGs.
 - Manifest references only transparent `purpose:any` app icons and uses `background_color: transparent`.
 - Service worker cache key advanced to v11.4.54.
+
+
+## v11.4.55 Planet X verification
+- Asteroid icon source constants and hard-coded reference row use 🌑; legacy 🪨 text is only retained as a display-normalization search pattern so old saved records render as 🌑.
+- Incorrect theory result panel/log includes owner, sector, submitted object, and absence statement; actual object only when confirmed in same review.
+- Service worker cache key advanced to v11.4.55.

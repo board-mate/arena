@@ -7,3 +7,7 @@
 5. Scroll to the bottom `참조표` and confirm correct-paper points are visible (소행성 2 / 혜성 3 / 가스 구름 4 / 왜소행성 표준 4·전문가 2).
 
 No Supabase SQL is required for v11.4.53. Existing Planet X rooms and private record data are compatible.
+
+
+## v11.4.55
+Deploy `online-planetx.html`, `sw.js`, `HANDOFF_VERSION.txt`, README/START_HERE and current/history docs. No SQL is required.

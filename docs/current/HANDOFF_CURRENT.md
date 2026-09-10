@@ -1,18 +1,23 @@
-# BoardMate Arena CURRENT HANDOFF — v11.4.54
+# BoardMate Arena CURRENT HANDOFF — v11.4.55
 
 ## Current release
-- Runtime baseline: v11.4.54
+- Runtime baseline: v11.4.55
 - v11.4.51 browser/PWA alarm feature is retained.
 - v11.4.52 Planet X circular board/record orientation alignment is retained.
-- v11.4.53 Planet X object-symbol/scoring reference patch is retained.
-- v11.4.54 makes the BoardMate app icon/background assets transparent instead of using the previous dark maskable/Apple-touch fill.
+- v11.4.53 Planet X scoring reference is retained.
+- v11.4.54 transparent BoardMate app-icon assets are retained.
+- v11.4.55 updates Planet X peer-review disclosure and unifies the asteroid emoji to `🌑`.
 
-## App icon/background v11.4.54
-- `icons/icon-192.png`, `icon-512.png`, `icon-maskable-192.png`, `icon-maskable-512.png`, `apple-touch-icon.png`, and `favicon-32.png` are regenerated from the transparent user-provided BoardMate logo without an opaque fill.
-- `manifest.webmanifest` uses only the transparent `purpose:any` icons, so Android/PWA install no longer prefers the old dark maskable icon.
-- Manifest `background_color` is `transparent`.
-- Existing game HTML/JS/DB state is unchanged. No Supabase SQL migration is required.
-- Platform note: some launchers, especially iOS home-screen icons, may still composite transparent pixels onto a system-selected background; that behavior is controlled by the OS.
+## Planet X v11.4.55
+- Asteroid display is `🌑` everywhere derived from `OBJ` / `OBJICON`, including survey/target records, options, theory tokens, circular record sheet and footnote; the reference-table row is also `🌑`. Legacy stored observation/log text containing `🪨` is normalized to `🌑` at display time.
+- Incorrect peer-reviewed theories now identify the submitter, sector and submitted object, and explicitly state that the submitted object is not in that sector.
+- The actual object is shown only when the same sector becomes confirmed by a correct theory in that peer review. This avoids leaking hidden information when a theory is merely proven wrong.
+- The most recent peer-review result remains visible in the Current Progress card for all players; the public log also records each result.
+- No Supabase SQL/RPC change is required.
+
+## App icon/background retained from v11.4.54
+- PWA/Apple Touch/favicon assets keep the transparent user-provided BoardMate logo.
+- Manifest `background_color` remains `transparent`.
 
 ## Alarm feature retained
 - Main header `🔔 알림` settings, new-room/game-start/my-turn alerts, optional sound/vibration and notification click navigation remain from v11.4.51.
