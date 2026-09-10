@@ -1,13 +1,17 @@
-# Deployment — v11.4.53
+# Deployment — v11.4.57
 
-1. Upload the v11.4.53 integrated package (or Planet X patch) over the GitHub Pages repository.
-2. Commit and push.
-3. Reload BoardMate once so the v11.4.53 service worker activates.
-4. Open Planet X and confirm asteroid is shown as **🪨 소행성**, while comet remains **🌠 혜성**.
-5. Scroll to the bottom `참조표` and confirm correct-paper points are visible (소행성 2 / 혜성 3 / 가스 구름 4 / 왜소행성 표준 4·전문가 2).
+## Recommended GitHub Pages deployment
+1. Commit/tag the currently working repository before replacing files.
+2. Upload the v11.4.57 integrated package, or use the v11.4.57 patch ZIP.
+3. Commit and push to GitHub.
+4. Reload BoardMate once so `boardmate-shell-v11.4.57` activates.
+5. In an existing Planet X game, refresh the page and verify old bare `틀린 논문 패널티 시간 +1` rows are shown as detailed peer-review rows.
+6. Open `행성 X 찾기`, choose sector 9, and confirm the labels say left 8 / right 10.
+7. Open a turn-based game where it is your turn and confirm the browser tab title starts with `🔔 내 차례 ·`.
+8. In `🔔 알림 설정`, send a test alert if OS notification delivery is desired.
 
-No Supabase SQL is required for v11.4.53. Existing Planet X rooms and private record data are compatible.
+## Database
+No Supabase SQL/RPC update is required for v11.4.57.
 
-
-## v11.4.55
-Deploy `online-planetx.html`, `sw.js`, `HANDOFF_VERSION.txt`, README/START_HERE and current/history docs. No SQL is required.
+## Existing games
+The Planet X public-log repair is display-time compatibility logic; it is specifically intended to work with already-running v11.4.55-era games without resetting the room.

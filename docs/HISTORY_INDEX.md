@@ -106,3 +106,7 @@
 - `docs/history/updates/README_V11_4_55_PLANETX_THEORY_REVIEW_ASTEROID_EMOJI.md` — v11.4.55 행성 X 논문 검증 상세/소행성 이모지 통일
 - `docs/history/verification/VERIFY_V11_4_55_PLANETX.md` — v11.4.55 행성 X 검증
 - `docs/history/deployment/UPLOAD_TO_GITHUB_V55.md` — v11.4.55 GitHub 배포
+- `docs/history/updates/README_V11_4_56_PLANETX_LIVE_REVIEW_LOG.md` — v11.4.56 행성 X 진행 중 게임 논문 로그 호환
+- `docs/history/updates/README_V11_4_57_PLANETX_ADJACENT_ALARM.md` — v11.4.57 행성 X 인접 섹터/공개 로그/알림 안정화
+- `docs/history/verification/VERIFY_V11_4_57.md` — v11.4.57 검증
+- `docs/history/deployment/UPLOAD_TO_GITHUB_V57.md` — v11.4.57 GitHub 배포

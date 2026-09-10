@@ -1,0 +1,12 @@
+BoardMate Arena v11.4.57 test results
+- PASS: online-planetx inline JS syntax
+- PASS: alarm.js syntax
+- PASS: app.js syntax
+- PASS: multi-common.js syntax
+- PASS: v11.4.55 live log duplicate merge -> detailed public review + penalty in one row
+- PASS: X=9 -> left 8 / right 10
+- PASS: X=1 standard -> left 12 / right 2
+- PASS: X=1 expert -> left 18 / right 2
+- PASS: browser tab adds/removes "🔔 내 차례"
+- PASS: initial my-turn alarm, same-turn dedupe, later return-turn alarm
+- DB migration: none
