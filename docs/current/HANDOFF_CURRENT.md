@@ -1,18 +1,18 @@
-# BoardMate Arena CURRENT HANDOFF — v11.4.53
+# BoardMate Arena CURRENT HANDOFF — v11.4.54
 
 ## Current release
-- Runtime baseline: v11.4.53
+- Runtime baseline: v11.4.54
 - v11.4.51 browser/PWA alarm feature is retained.
 - v11.4.52 Planet X circular board/record orientation alignment is retained.
-- v11.4.53 clarifies the Planet X asteroid symbol and exposes paper scoring in the bottom reference table.
+- v11.4.53 Planet X object-symbol/scoring reference patch is retained.
+- v11.4.54 makes the BoardMate app icon/background assets transparent instead of using the previous dark maskable/Apple-touch fill.
 
-## Planet X v11.4.53
-- `online-planetx.html` uses **🪨 for asteroid** instead of the comet-like ☄️ symbol.
-- Comet remains **🌠**, so asteroid/comet are visually distinct on the game board, circular record sheet, emoji footnote and revealed paper tokens.
-- The bottom `참조표` now shows correct-paper points directly: Asteroid 2, Comet 3, Gas Cloud 4, Dwarf Planet 4 in Standard / 2 in Expert.
-- The same reference also shows paper leader bonus (+1 per sector for the earliest correct paper, ties included) and Planet X scoring (first 10; later 2 points per sector behind, 2–10).
-- Existing game state, private record data, paper objects, board positions and database schema are unchanged. This is a UI/reference patch.
-- No Supabase SQL migration is required.
+## App icon/background v11.4.54
+- `icons/icon-192.png`, `icon-512.png`, `icon-maskable-192.png`, `icon-maskable-512.png`, `apple-touch-icon.png`, and `favicon-32.png` are regenerated from the transparent user-provided BoardMate logo without an opaque fill.
+- `manifest.webmanifest` uses only the transparent `purpose:any` icons, so Android/PWA install no longer prefers the old dark maskable icon.
+- Manifest `background_color` is `transparent`.
+- Existing game HTML/JS/DB state is unchanged. No Supabase SQL migration is required.
+- Platform note: some launchers, especially iOS home-screen icons, may still composite transparent pixels onto a system-selected background; that behavior is controlled by the OS.
 
 ## Alarm feature retained
 - Main header `🔔 알림` settings, new-room/game-start/my-turn alerts, optional sound/vibration and notification click navigation remain from v11.4.51.

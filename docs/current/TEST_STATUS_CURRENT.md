@@ -13,3 +13,8 @@
 - No database migration required.
 
 Known environment limit: this release changes display/reference text only; live Supabase multi-device behavior was not changed.
+
+## v11.4.54 icon transparency verification
+- Transparent alpha verified on 192/512 app icons, Apple-touch icon, favicon and compatibility maskable PNGs.
+- Manifest references only transparent `purpose:any` app icons and uses `background_color: transparent`.
+- Service worker cache key advanced to v11.4.54.

@@ -311,3 +311,9 @@
 - 논문 리더 보너스(+1)와 행성 X 발견 점수(최초 10점, 이후 뒤처진 섹터당 2점)를 함께 표시합니다.
 - 게임/DB 로직은 변경하지 않았습니다.
 
+
+## BoardMate Arena v11.4.54 — transparent app icon/background
+- BoardMate app icon assets are regenerated from the transparent source logo.
+- Removed opaque maskable icon selection from `manifest.webmanifest`.
+- `background_color` changed from dark navy to `transparent`.
+- No game logic or Supabase schema changes.

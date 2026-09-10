@@ -1,4 +1,4 @@
-# BoardMate Arena v11.4.53 · INTEGRATED FULL + HISTORY
+# BoardMate Arena v11.4.54 · INTEGRATED FULL + HISTORY
 
 이 패키지는 **현재 실행 가능한 BoardMate Arena 전체본**, **현재 기준 인수인계 자료**, **통합 변경 이력**, **버전별 원문**, **검증/배포 기록**, **Supabase SQL 이력**을 한 ZIP에 모은 통합 배포본입니다.
 
@@ -12,9 +12,9 @@
 
 ## 현재 버전
 
-- 패키지/서비스워커 셸: **v11.4.53**
-- 게임 런타임 기능 기준: v11.4.53
-- 이번 v11.4.53 변경은 **행성 X 소행성 아이콘 구분 개선 + 참조표 논문 점수 표시**이며 새 DB 변경은 없습니다.
+- 패키지/서비스워커 셸: **v11.4.54**
+- 게임 런타임 기능 기준: v11.4.54
+- 이번 v11.4.54 변경은 **행성 X 소행성 아이콘 구분 개선 + 참조표 논문 점수 표시**이며 새 DB 변경은 없습니다.
 
 ## 포함 게임
 
@@ -47,7 +47,7 @@
 
 ## Supabase
 
-v11.4.53에는 새 SQL이 없습니다. `database/SUPABASE_CURRENT_UPDATE.sql`은 기존 BoardMate 스키마 복구/갱신용 통합 repair/update 체인입니다. 빈 프로젝트 bootstrap 전체 스키마는 아닙니다.
+v11.4.54에는 새 SQL이 없습니다. `database/SUPABASE_CURRENT_UPDATE.sql`은 기존 BoardMate 스키마 복구/갱신용 통합 repair/update 체인입니다. 빈 프로젝트 bootstrap 전체 스키마는 아닙니다.
 
 ## 롤백
 
