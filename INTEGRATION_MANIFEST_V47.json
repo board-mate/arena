@@ -1,0 +1,14 @@
+{
+  "version": "11.4.47",
+  "feature": "planetx_record_layout_toggle_and_emoji_footnote",
+  "required_deploy_files": [
+    "online-planetx.html",
+    "sw.js",
+    "index.html",
+    "HANDOFF_VERSION.txt"
+  ],
+  "database_change": false,
+  "private_mark_storage_compatible": true,
+  "record_layout_preference": "localStorage: boardmate:planetx:record-layout",
+  "layouts": ["circle", "square"]
+}
