@@ -1,3 +1,4 @@
+import {alarmSettings,saveAlarmSettings,alarmSupport,requestAlarmPermission,sendTestAlarm,processRoomAlarms,processSingleRoomAlarm,unlockAlarmAudio} from './alarm.js?v=11.4.51';
 const app = document.querySelector('#app');
 const CFG = window.BOARDMATE_CONFIG || {};
 const STORAGE_PREFIX = 'boardmate:';
@@ -136,12 +137,40 @@ function footer(){
 }
 function shell(content){
   ensureSiteFeatures();
-  app.innerHTML=`<div class="app-shell"><header class="topbar"><button class="brand-btn" id="homeBtn"><span class="brand-mark">●</span> BOARDMATE</button><nav class="topnav"><button data-nav="">미니게임</button><button data-nav="solo">1인플</button><button data-nav="multi">다인플</button><button data-nav="mypage">마이페이지</button></nav><div class="top-date">${formatDate(kstDate())}</div><button class="top-install" id="topInstallBtn">📲 앱 설치</button></header><main class="container">${content}${footer()}</main></div>`;
+  app.innerHTML=`<div class="app-shell"><header class="topbar"><button class="brand-btn" id="homeBtn"><span class="brand-mark">●</span> BOARDMATE</button><nav class="topnav"><button data-nav="">미니게임</button><button data-nav="solo">1인플</button><button data-nav="multi">다인플</button><button data-nav="mypage">마이페이지</button></nav><div class="top-date">${formatDate(kstDate())}</div><button class="top-alarm" id="topAlarmBtn" title="알림 설정">🔔 알림</button><button class="top-install" id="topInstallBtn">📲 앱 설치</button></header><main class="container">${content}${footer()}</main></div>`;
   document.querySelector('#homeBtn')?.addEventListener('click',()=>location.hash='#/');
   document.querySelector('#topInstallBtn')?.addEventListener('click',installBoardMate);
+  document.querySelector('#topAlarmBtn')?.addEventListener('click',()=>location.hash='#/alarms');
+  document.addEventListener('pointerdown',unlockAlarmAudio,{once:true});
   document.querySelectorAll('[data-nav]').forEach(b=>b.onclick=()=>location.hash=`#/${b.dataset.nav}`);
   const route=(location.hash||'#/').slice(2).split('/')[0];
   document.querySelectorAll('[data-nav]').forEach(b=>b.classList.toggle('active',(b.dataset.nav===''&&route==='')||b.dataset.nav===route));
+}
+
+
+function renderAlarmSettings(){
+  const s=alarmSettings(),support=alarmSupport();
+  const permissionText=support.permission==='granted'?'허용됨':support.permission==='denied'?'차단됨':support.permission==='unsupported'?'지원 안 함':'권한 필요';
+  shell(`<div class="page-head"><div><h1>🔔 알림 설정</h1><p>새 다인플 방, 게임 시작, 내 차례를 놓치지 않도록 알려줍니다.</p></div><div class="actions"><button class="ghost" id="backAlarmHome">← 홈</button></div></div>
+  <section class="alarm-card">
+    <div class="alarm-status"><div><b>시스템 알림</b><small>현재 권한: ${permissionText}</small></div><button class="primary" id="alarmPermission">${support.permission==='granted'?'알림 켜짐':'알림 권한 허용'}</button></div>
+    <label class="alarm-toggle"><span><b>🎲 새 방 알림</b><small>다른 모임원이 새 다인플 방을 만들면 알림</small></span><input type="checkbox" data-alarm-setting="newRoom" ${s.newRoom?'checked':''}></label>
+    <label class="alarm-toggle"><span><b>▶ 게임 시작 알림</b><small>내가 참가한 대기방이 게임을 시작하면 알림</small></span><input type="checkbox" data-alarm-setting="gameStart" ${s.gameStart?'checked':''}></label>
+    <label class="alarm-toggle"><span><b>🎯 내 차례 알림</b><small>턴 기반 게임에서 내 차례가 되면 알림</small></span><input type="checkbox" data-alarm-setting="myTurn" ${s.myTurn?'checked':''}></label>
+    <label class="alarm-toggle"><span><b>🔊 알림음</b><small>알림 발생 시 짧은 BoardMate 알림음 재생</small></span><input type="checkbox" data-alarm-setting="sound" ${s.sound?'checked':''}></label>
+    <label class="alarm-toggle"><span><b>📳 진동</b><small>지원하는 모바일 기기에서 진동</small></span><input type="checkbox" data-alarm-setting="vibrate" ${s.vibrate?'checked':''}></label>
+    <div class="alarm-actions"><button class="ghost" id="alarmTest" ${support.permission==='granted'?'':'disabled'}>🔔 테스트 알림 보내기</button><span id="alarmMessage"></span></div>
+    <div class="notice alarm-note"><b>알림 범위</b><br>현재 버전은 BoardMate 웹앱/사이트가 실행 중일 때 새 방·게임 시작·내 차례를 감지합니다. 휴대폰에서 앱을 완전히 종료한 뒤에도 받는 푸시 알림은 별도의 Web Push 서버 구성이 필요합니다. iPhone/iPad는 홈 화면에 BoardMate를 설치한 뒤 알림 권한을 허용해야 할 수 있습니다.</div>
+  </section>`);
+  document.querySelector('#backAlarmHome').onclick=()=>location.hash='#/';
+  const msg=document.querySelector('#alarmMessage');
+  document.querySelector('#alarmPermission').onclick=async()=>{
+    const r=await requestAlarmPermission();
+    msg.textContent=r.ok?'알림 권한을 허용했습니다.':'알림 권한을 사용할 수 없습니다.';
+    if(r.ok)setTimeout(()=>renderAlarmSettings(),350);
+  };
+  document.querySelectorAll('[data-alarm-setting]').forEach(el=>el.onchange=()=>{saveAlarmSettings({[el.dataset.alarmSetting]:el.checked});msg.textContent='설정을 저장했습니다.';});
+  document.querySelector('#alarmTest').onclick=async()=>{const ok=await sendTestAlarm();msg.textContent=ok?'테스트 알림을 보냈습니다.':'알림을 보내지 못했습니다. 권한을 확인하세요.';};
 }
 
 // -------------------- shared leaderboard --------------------
@@ -275,6 +304,7 @@ async function renderHome(){
     if(!me){activeWrap.classList.add('hidden');return;}
     try{
       const rooms=await callRpc('boardmate_list_rooms',{p_token:memberToken()})||[];
+      void processRoomAlarms(rooms,me,{gameName:r=>gameInfo(r.game).name,gameHref:gameEntryHref});
       const active=rooms.filter(r=>r.mine&&r.status==='playing');
       if(!active.length){activeWrap.classList.add('hidden');return;}
       activeWrap.classList.remove('hidden');
@@ -414,7 +444,7 @@ async function renderMulti(){
   <div class="section-title"><h2>열린 방</h2><button class="ghost mini" id="refreshRooms">새로고침</button></div><div id="roomList"><div class="empty">방을 불러오는 중…</div></div>`);
   const roomCard=r=>{const gi=gameInfo(r.game),mine=Boolean(r.mine),full=Number(r.member_count)>=Number(r.max_players),playing=r.status==='playing',realtime=(r.play_mode==='realtime'||gi.mode==='realtime'),myTurn=!realtime&&playing&&mine&&r.turn_user_id===me.user_id,modeText=realtime?'⚡ 실시간':'⏳ 턴 기반';return `<article class="room-row ${playing&&mine?'resume-room':''} ${myTurn?'my-turn-room':''}"><div><div class="room-title"><span class="game-pill ${r.game}">${gi.icon} ${gi.name}</span><b>${esc(r.title)}</b>${myTurn?'<span class="turn-alert">내 차례</span>':''}</div><small>${modeText} · ${esc(r.host_nickname||'방장')} · ${r.member_count}명${r.online_count!=null?` · 접속 ${r.online_count}명`:''} · ${r.status==='open'?'대기 중':realtime?'실시간 진행 중':r.turn_nickname?`현재 ${esc(r.turn_nickname)} 차례`:'게임 중'}</small></div><button class="${mine?'primary':'ghost'}" data-room-action="${r.id}" data-mine="${mine?'1':'0'}" data-status="${r.status}" data-game-href="${gameEntryHref(r)}" ${!mine&&r.status==='open'&&full?'disabled':''}>${mine?(playing?(myTurn?'내 차례 플레이':'이어하기'):'방으로'):r.status==='open'?(full?'가득 참':'참가'):'관전 불가'}</button></article>`;};
   const bindRoomButtons=root=>root.querySelectorAll('[data-room-action]').forEach(b=>b.onclick=async()=>{if(b.dataset.mine==='1'){if(b.dataset.status==='playing'){location.href=b.dataset.gameHref;return;}location.hash=`#/room/${b.dataset.roomAction}`;return;}if(b.dataset.status!=='open'||b.disabled)return;try{await callRpc('join_boardmate_room',{p_token:memberToken(),p_room_id:b.dataset.roomAction});location.hash=`#/room/${b.dataset.roomAction}`;}catch(err){toast(err.message);}});
-  const loadRooms=async()=>{const box=document.querySelector('#roomList'),activeBox=document.querySelector('#activeGameList'),wrap=document.querySelector('#activeGamesWrap');if(!box)return;try{const rooms=await callRpc('boardmate_list_rooms',{p_token:memberToken()})||[];const active=rooms.filter(r=>r.mine&&r.status==='playing'),open=rooms.filter(r=>r.status==='open');if(active.length){wrap.classList.remove('hidden');activeBox.innerHTML=active.map(roomCard).join('');bindRoomButtons(activeBox);}else wrap.classList.add('hidden');box.innerHTML=open.length?open.map(roomCard).join(''):'<div class="empty">현재 열린 방이 없습니다.</div>';bindRoomButtons(box);}catch(err){box.innerHTML=`<div class="empty">${esc(err.message)}</div>`;}};
+  const loadRooms=async()=>{const box=document.querySelector('#roomList'),activeBox=document.querySelector('#activeGameList'),wrap=document.querySelector('#activeGamesWrap');if(!box)return;try{const rooms=await callRpc('boardmate_list_rooms',{p_token:memberToken()})||[];void processRoomAlarms(rooms,me,{gameName:r=>gameInfo(r.game).name,gameHref:gameEntryHref});const active=rooms.filter(r=>r.mine&&r.status==='playing'),open=rooms.filter(r=>r.status==='open');if(active.length){wrap.classList.remove('hidden');activeBox.innerHTML=active.map(roomCard).join('');bindRoomButtons(activeBox);}else wrap.classList.add('hidden');box.innerHTML=open.length?open.map(roomCard).join(''):'<div class="empty">현재 열린 방이 없습니다.</div>';bindRoomButtons(box);}catch(err){box.innerHTML=`<div class="empty">${esc(err.message)}</div>`;}};
   document.querySelector('#refreshRooms').onclick=loadRooms;await loadRooms();const timer=setInterval(loadRooms,3000);addCleanup(()=>clearInterval(timer));
 }
 
@@ -426,7 +456,7 @@ async function renderRoom(roomId){
   let touchBusy=false;
   const touch=async()=>{if(touchBusy)return;touchBusy=true;try{await callRpc('touch_boardmate_room',{p_token:memberToken(),p_room_id:roomId});}catch{}finally{touchBusy=false;}};
   await touch();
-  const draw=async()=>{data=await load();const {room,members}=data,isHost=room.host_id===me.user_id,gi=gameInfo(room.game),min=(room.game==='powergrid'?Math.max(3,Number(room.min_players||gi.min)):Number(room.min_players||gi.min));
+  const draw=async()=>{data=await load();const {room,members}=data,isHost=room.host_id===me.user_id,gi=gameInfo(room.game),min=(room.game==='powergrid'?Math.max(3,Number(room.min_players||gi.min)):Number(room.min_players||gi.min));void processSingleRoomAlarm(room,me,{gameName:gi.name,gameHref:gameEntryHref(room)});
     let cancelled=room.status==='cancelled';
     if(!cancelled&&room.status==='finished'&&['avalon','secrethitler','onenightwerewolf','plakoro','planetx'].includes(room.game)){
       try{cancelled=Boolean((await callRpc('boardmate_get_cancel_status',{p_token:memberToken(),p_room_id:roomId}))?.cancelled);}catch{}
@@ -487,6 +517,7 @@ async function router(){
   if(route==='pensterdam')return renderPensterdam();
   if(route==='yahtzee')return renderYahtzee();
   if(route==='solo')return renderSolo();
+  if(route==='alarms')return renderAlarmSettings();
   if(route==='login')return renderLoginPage();
   if(route==='mypage')return renderMyPage();
   if(route==='multi')return renderMulti();

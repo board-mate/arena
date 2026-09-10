@@ -1,4 +1,4 @@
-# BoardMate Arena v11.4.50 · INTEGRATED FULL + HISTORY
+# BoardMate Arena v11.4.51 · INTEGRATED FULL + HISTORY
 
 이 패키지는 **현재 실행 가능한 BoardMate Arena 전체본**, **현재 기준 인수인계 자료**, **통합 변경 이력**, **버전별 원문**, **검증/배포 기록**, **Supabase SQL 이력**을 한 ZIP에 모은 통합 배포본입니다.
 
@@ -12,9 +12,9 @@
 
 ## 현재 버전
 
-- 패키지/서비스워커 셸: **v11.4.50**
+- 패키지/서비스워커 셸: **v11.4.51**
 - 게임 런타임 기능 기준: v11.4.49 / 게임 로직은 v11.4.48과 동일
-- 이번 v11.4.50 변경은 **문서/인수인계/이력 통합과 패키지 정리**이며 새 DB 변경은 없습니다.
+- 이번 v11.4.51 변경은 **문서/인수인계/이력 통합과 패키지 정리**이며 새 DB 변경은 없습니다.
 
 ## 포함 게임
 
@@ -46,7 +46,7 @@
 
 ## Supabase
 
-v11.4.50에는 새 SQL이 없습니다. `database/SUPABASE_CURRENT_UPDATE.sql`은 기존 BoardMate 스키마 복구/갱신용 통합 repair/update 체인입니다. 빈 프로젝트 bootstrap 전체 스키마는 아닙니다.
+v11.4.51에는 새 SQL이 없습니다. `database/SUPABASE_CURRENT_UPDATE.sql`은 기존 BoardMate 스키마 복구/갱신용 통합 repair/update 체인입니다. 빈 프로젝트 bootstrap 전체 스키마는 아닙니다.
 
 ## 롤백
 

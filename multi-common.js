@@ -1,3 +1,4 @@
+import {processSingleRoomAlarm} from './alarm.js?v=11.4.51';
 const CFG=window.BOARDMATE_CONFIG||{};
 export const configured=()=>Boolean(CFG.supabaseUrl&&CFG.supabaseAnonKey&&window.supabase?.createClient);
 export const sb=configured()?window.supabase.createClient(CFG.supabaseUrl,CFG.supabaseAnonKey,{auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}}):null;
@@ -209,3 +210,25 @@ export function openCancelVotePanel(){
   open.setAttribute('aria-expanded','true');
   return true;
 }
+
+
+// ───────────────────── BoardMate turn/start alarm watcher ─────────────────────
+let alarmWatcherStarted=false,alarmWatcherTimer=null;
+async function pollRoomAlarm(){
+  if(!roomId||!token()||!configured())return;
+  try{
+    const [me,data]=await Promise.all([getMe(),loadRoom()]);
+    const room=data?.room;
+    if(!me||!room)return;
+    const gameLabel=String(room.title||room.game||'BoardMate 게임');
+    const href=`./${location.pathname.split('/').pop()}?room=${encodeURIComponent(roomId)}`;
+    await processSingleRoomAlarm(room,me,{gameName:gameLabel,gameHref:href});
+  }catch{}
+}
+function startAlarmWatcher(){
+  if(alarmWatcherStarted||!roomId)return;alarmWatcherStarted=true;
+  void pollRoomAlarm();
+  alarmWatcherTimer=setInterval(()=>void pollRoomAlarm(),7000);
+  window.addEventListener('beforeunload',()=>{if(alarmWatcherTimer)clearInterval(alarmWatcherTimer);},{once:true});
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(startAlarmWatcher,800),{once:true});else setTimeout(startAlarmWatcher,800);

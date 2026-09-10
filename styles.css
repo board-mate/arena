@@ -163,3 +163,9 @@
 @media(max-width:480px){.library-grid.compact-games{grid-template-columns:1fr}.top-install{font-size:10px;padding:6px 8px;margin-left:4px;margin-right:4px}.topbar{padding-left:10px;padding-right:10px}.brand-btn{font-size:17px}}
 
 .library-card.etchinstone{background:linear-gradient(145deg,#fff1e7,#fff)}
+
+/* v11.4.51: BoardMate alarm / notification settings */
+.top-alarm{border:1px solid #ffffff35;background:#ffffff12;color:#fff;border-radius:10px;padding:8px 10px;font-weight:900;cursor:pointer;white-space:nowrap}.top-alarm:hover{background:#ffffff20}
+.alarm-card{max-width:760px;margin:0 auto;background:#fff;border:1px solid #e2e8f0;border-radius:20px;padding:20px;box-shadow:0 12px 34px #0f172a0d}.alarm-status,.alarm-toggle{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 2px;border-bottom:1px solid #eef2f7}.alarm-status small,.alarm-toggle small{display:block;color:#64748b;margin-top:3px;line-height:1.45}.alarm-toggle{cursor:pointer}.alarm-toggle input{width:22px;height:22px;accent-color:#f36f21;flex:0 0 auto}.alarm-actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:16px}.alarm-actions span{font-size:13px;color:#64748b}.alarm-note{margin-top:16px}.top-install,.top-alarm{flex:0 0 auto}
+@media(max-width:760px){.top-alarm{font-size:11px;padding:7px 9px}.alarm-card{padding:15px}.alarm-status,.alarm-toggle{align-items:flex-start}.alarm-toggle input{margin-top:3px}}
+@media(max-width:480px){.top-alarm{font-size:10px;padding:6px 8px}}
