@@ -1,4 +1,4 @@
-import {alarmSettings,saveAlarmSettings,alarmSupport,requestAlarmPermission,sendTestAlarm,processRoomAlarms,processSingleRoomAlarm,unlockAlarmAudio} from './alarm.js?v=11.4.51';
+import {alarmSettings,saveAlarmSettings,alarmSupport,requestAlarmPermission,sendTestAlarm,processRoomAlarms,processSingleRoomAlarm,unlockAlarmAudio} from './alarm.js?v=11.4.57';
 const app = document.querySelector('#app');
 const CFG = window.BOARDMATE_CONFIG || {};
 const STORAGE_PREFIX = 'boardmate:';
@@ -160,7 +160,7 @@ function renderAlarmSettings(){
     <label class="alarm-toggle"><span><b>🔊 알림음</b><small>알림 발생 시 짧은 BoardMate 알림음 재생</small></span><input type="checkbox" data-alarm-setting="sound" ${s.sound?'checked':''}></label>
     <label class="alarm-toggle"><span><b>📳 진동</b><small>지원하는 모바일 기기에서 진동</small></span><input type="checkbox" data-alarm-setting="vibrate" ${s.vibrate?'checked':''}></label>
     <div class="alarm-actions"><button class="ghost" id="alarmTest" ${support.permission==='granted'?'':'disabled'}>🔔 테스트 알림 보내기</button><span id="alarmMessage"></span></div>
-    <div class="notice alarm-note"><b>알림 범위</b><br>현재 버전은 BoardMate 웹앱/사이트가 실행 중일 때 새 방·게임 시작·내 차례를 감지합니다. 휴대폰에서 앱을 완전히 종료한 뒤에도 받는 푸시 알림은 별도의 Web Push 서버 구성이 필요합니다. iPhone/iPad는 홈 화면에 BoardMate를 설치한 뒤 알림 권한을 허용해야 할 수 있습니다.</div>
+    <div class="notice alarm-note"><b>알림 범위</b><br>BoardMate 웹앱/사이트가 열려 있으면 새 방·게임 시작·내 차례를 주기적으로 확인하고, 탭이 다시 보이거나 포커스를 얻는 순간에도 즉시 다시 확인합니다. <b>내 차례인 동안 브라우저 탭 제목 앞에 “🔔 내 차례”가 표시</b>되어 시스템 알림 권한이 없어도 웹에서 확인할 수 있습니다.<br><br>휴대폰에서 앱을 완전히 종료한 뒤에도 받는 진짜 백그라운드 푸시 알림은 별도의 Web Push 서버 구성이 필요합니다. iPhone/iPad는 홈 화면에 BoardMate를 설치한 뒤 알림 권한을 허용해야 할 수 있습니다.</div>
   </section>`);
   document.querySelector('#backAlarmHome').onclick=()=>location.hash='#/';
   const msg=document.querySelector('#alarmMessage');
@@ -445,7 +445,7 @@ async function renderMulti(){
   const roomCard=r=>{const gi=gameInfo(r.game),mine=Boolean(r.mine),full=Number(r.member_count)>=Number(r.max_players),playing=r.status==='playing',realtime=(r.play_mode==='realtime'||gi.mode==='realtime'),myTurn=!realtime&&playing&&mine&&r.turn_user_id===me.user_id,modeText=realtime?'⚡ 실시간':'⏳ 턴 기반';return `<article class="room-row ${playing&&mine?'resume-room':''} ${myTurn?'my-turn-room':''}"><div><div class="room-title"><span class="game-pill ${r.game}">${gi.icon} ${gi.name}</span><b>${esc(r.title)}</b>${myTurn?'<span class="turn-alert">내 차례</span>':''}</div><small>${modeText} · ${esc(r.host_nickname||'방장')} · ${r.member_count}명${r.online_count!=null?` · 접속 ${r.online_count}명`:''} · ${r.status==='open'?'대기 중':realtime?'실시간 진행 중':r.turn_nickname?`현재 ${esc(r.turn_nickname)} 차례`:'게임 중'}</small></div><button class="${mine?'primary':'ghost'}" data-room-action="${r.id}" data-mine="${mine?'1':'0'}" data-status="${r.status}" data-game-href="${gameEntryHref(r)}" ${!mine&&r.status==='open'&&full?'disabled':''}>${mine?(playing?(myTurn?'내 차례 플레이':'이어하기'):'방으로'):r.status==='open'?(full?'가득 참':'참가'):'관전 불가'}</button></article>`;};
   const bindRoomButtons=root=>root.querySelectorAll('[data-room-action]').forEach(b=>b.onclick=async()=>{if(b.dataset.mine==='1'){if(b.dataset.status==='playing'){location.href=b.dataset.gameHref;return;}location.hash=`#/room/${b.dataset.roomAction}`;return;}if(b.dataset.status!=='open'||b.disabled)return;try{await callRpc('join_boardmate_room',{p_token:memberToken(),p_room_id:b.dataset.roomAction});location.hash=`#/room/${b.dataset.roomAction}`;}catch(err){toast(err.message);}});
   const loadRooms=async()=>{const box=document.querySelector('#roomList'),activeBox=document.querySelector('#activeGameList'),wrap=document.querySelector('#activeGamesWrap');if(!box)return;try{const rooms=await callRpc('boardmate_list_rooms',{p_token:memberToken()})||[];void processRoomAlarms(rooms,me,{gameName:r=>gameInfo(r.game).name,gameHref:gameEntryHref});const active=rooms.filter(r=>r.mine&&r.status==='playing'),open=rooms.filter(r=>r.status==='open');if(active.length){wrap.classList.remove('hidden');activeBox.innerHTML=active.map(roomCard).join('');bindRoomButtons(activeBox);}else wrap.classList.add('hidden');box.innerHTML=open.length?open.map(roomCard).join(''):'<div class="empty">현재 열린 방이 없습니다.</div>';bindRoomButtons(box);}catch(err){box.innerHTML=`<div class="empty">${esc(err.message)}</div>`;}};
-  document.querySelector('#refreshRooms').onclick=loadRooms;await loadRooms();const timer=setInterval(loadRooms,3000);addCleanup(()=>clearInterval(timer));
+  document.querySelector('#refreshRooms').onclick=loadRooms;await loadRooms();const timer=setInterval(loadRooms,3000);const wakeRooms=()=>{if(!document.hidden)void loadRooms()};document.addEventListener('visibilitychange',wakeRooms);window.addEventListener('focus',wakeRooms);window.addEventListener('pageshow',wakeRooms);window.addEventListener('online',wakeRooms);addCleanup(()=>{clearInterval(timer);document.removeEventListener('visibilitychange',wakeRooms);window.removeEventListener('focus',wakeRooms);window.removeEventListener('pageshow',wakeRooms);window.removeEventListener('online',wakeRooms)});
 }
 
 async function renderRoom(roomId){
@@ -473,8 +473,8 @@ async function renderRoom(roomId){
     document.querySelector('#disconnectRoom')?.addEventListener('click',async()=>{try{await callRpc('disconnect_boardmate_room',{p_token:memberToken(),p_room_id:roomId});}catch{}location.hash='#/multi';});
     document.querySelectorAll('[data-kick]').forEach(b=>b.onclick=async()=>{if(!confirm('이 참가자를 방에서 내보낼까요?'))return;try{await callRpc('kick_boardmate_room_member',{p_token:memberToken(),p_room_id:roomId,p_user_id:b.dataset.kick});await draw();}catch(e){toast(e.message);}});
   };
-  await draw();const timer=setInterval(async()=>{if((location.hash||'').includes(`/room/${roomId}`))try{await touch();await draw();}catch{}},5000);addCleanup(()=>clearInterval(timer));
-}
+  await draw();const refreshRoom=async()=>{if((location.hash||'').includes(`/room/${roomId}`))try{await touch();await draw();}catch{}};const timer=setInterval(refreshRoom,3500);const wakeRoom=()=>{if(!document.hidden)void refreshRoom()};document.addEventListener('visibilitychange',wakeRoom);window.addEventListener('focus',wakeRoom);window.addEventListener('pageshow',wakeRoom);window.addEventListener('online',wakeRoom);addCleanup(()=>{clearInterval(timer);document.removeEventListener('visibilitychange',wakeRoom);window.removeEventListener('focus',wakeRoom);window.removeEventListener('pageshow',wakeRoom);window.removeEventListener('online',wakeRoom)});
+
 
 async function renderPensterdam(){
   let weekdayMode=localStorage.getItem(STORAGE_PREFIX+'pentorini_weekday_mode')||'en',puzzle=getPentoriniPuzzle(kstDate(),weekdayMode),board=Array(70).fill(null),selected='F',rotation=0,flipped=false;const placed={};

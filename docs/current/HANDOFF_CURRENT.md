@@ -1,28 +1,32 @@
-# BoardMate Arena CURRENT HANDOFF — v11.4.55
+# BoardMate Arena CURRENT HANDOFF — v11.4.57
 
 ## Current release
-- Runtime baseline: v11.4.55
-- v11.4.51 browser/PWA alarm feature is retained.
-- v11.4.52 Planet X circular board/record orientation alignment is retained.
-- v11.4.53 Planet X scoring reference is retained.
-- v11.4.54 transparent BoardMate app-icon assets are retained.
-- v11.4.55 updates Planet X peer-review disclosure and unifies the asteroid emoji to `🌑`.
+- Runtime/package baseline: **v11.4.57**
+- Service-worker cache: `boardmate-shell-v11.4.57`
+- New Supabase SQL/RPC: **none**
+- Existing rooms/private record sheets remain compatible.
 
-## Planet X v11.4.55
-- Asteroid display is `🌑` everywhere derived from `OBJ` / `OBJICON`, including survey/target records, options, theory tokens, circular record sheet and footnote; the reference-table row is also `🌑`. Legacy stored observation/log text containing `🪨` is normalized to `🌑` at display time.
-- Incorrect peer-reviewed theories now identify the submitter, sector and submitted object, and explicitly state that the submitted object is not in that sector.
-- The actual object is shown only when the same sector becomes confirmed by a correct theory in that peer review. This avoids leaking hidden information when a theory is merely proven wrong.
-- The most recent peer-review result remains visible in the Current Progress card for all players; the public log also records each result.
-- No Supabase SQL/RPC change is required.
+## Planet X — v11.4.57
+- Public peer-review log rendering now repairs legacy/live-game rows that only say `틀린 논문 패널티 시간 +1`.
+- The repair uses already-public theory token state retained in the game state (`ownerSeat`, `sector`, `object`, `correct=false`) and merges the penalty into one detailed public row. It does **not** mutate the server game state.
+- If a v11.4.55 game contains both a detailed wrong-theory row and a separate penalty row, the renderer merges them and suppresses the duplicate older row.
+- `행성 X 찾기` dynamically labels adjacent sectors. Sector 9 means left=8 and right=10; sector 1 wraps to 12/18 on the left and 2 on the right.
+- Existing Planet X rules retained: 🌑 asteroid display, theory scoring reference, circular/square note toggle, sector 1 at 12 o'clock, academic-festival/conference markers.
 
-## App icon/background retained from v11.4.54
-- PWA/Apple Touch/favicon assets keep the transparent user-provided BoardMate logo.
-- Manifest `background_color` remains `transparent`.
-
-## Alarm feature retained
-- Main header `🔔 알림` settings, new-room/game-start/my-turn alerts, optional sound/vibration and notification click navigation remain from v11.4.51.
-- Fully closed-app background Web Push is still not implemented.
+## Alarm / browser-tab indicator — v11.4.57
+- Initial entry while it is already the user's turn now triggers one my-turn alert if that specific turn has not been seen before.
+- Per-room turn signatures are stored locally to prevent repeated alerts for the same turn after refresh.
+- Turn changes observed while the page is open still alert normally.
+- Multiplayer pages poll approximately every 3 seconds and immediately refresh on `visibilitychange`, `focus`, `pageshow`, and `online`.
+- Turn-based rooms add `🔔 내 차례 ·` to the browser tab title while it is the user's turn. This indicator works even if system notification permission is disabled.
+- Fully closed browser/PWA background Web Push is still not implemented; that requires push subscriptions and a server/Edge Function sender.
 
 ## Preserve on future patches
 - Keep `docs/history/` and `database/history/` for rollback.
-- Update this file, `CHANGELOG_MASTER.md`, `TEST_STATUS_CURRENT.md`, `HANDOFF_VERSION.txt`, and service-worker cache version on every release.
+- Update `HANDOFF_VERSION.txt`, service-worker cache, README/START_HERE, current handoff/test/deployment docs, and changelog on every release.
+
+
+## v11.4.57 통합 보완 (2026-09-10)
+- 행성 X 찾기: X 후보 섹터 선택 시 왼쪽/오른쪽 인접 섹터 번호를 명시. 예: 9 → 8 / 10.
+- 게임 종료: 모든 섹터 실제 개체 + 행성 X 위치/양옆 개체 공개.
+- 기존 v11.4.57 공개 기록 복구, 알림 재확인, 브라우저 탭 `🔔 내 차례` 표시 유지.

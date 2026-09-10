@@ -1,26 +1,34 @@
-# Current test status — v11.4.53
+# Current test status — v11.4.57
 
-- Planet X asteroid display symbol: `🪨` in canonical object label/icon constants.
-- Legacy comet-like asteroid display `☄️ 소행성`: absent from current Planet X runtime.
-- Comet display remains `🌠 혜성`, so the two objects are visually distinct.
-- Bottom reference table includes correct-paper points: asteroid 2, comet 3, gas 4, dwarf 4 Standard / 2 Expert.
-- Reference table also includes correct-paper leader bonus (+1) and Planet X scoring summary.
-- Runtime scoring constants remain consistent with the displayed reference (`asteroid:2`, `comet:3`, `gas:4`, `dwarf:4/2`).
-- Planet X circular board/record orientation from v11.4.52 remains unchanged.
-- `online-planetx.html` inline JavaScript syntax: checked.
-- Service worker JavaScript syntax and cache version `boardmate-shell-v11.4.53`: checked.
-- Multiplayer/solo files other than Planet X are unchanged from the v11.4.52 integrated package.
-- No database migration required.
+## Planet X
+- `online-planetx.html` inline module JavaScript syntax: **PASS**.
+- Legacy live-game public log conversion: **PASS**.
+  - Separate `상현 · 틀린 논문 패널티 시간 +1` + existing detailed review row is rendered as one detailed row with player, sector, object, absence fact, and +1 penalty.
+  - Same check passed for a second player/object in the same review timestamp.
+- Adjacent-sector helper: **PASS**.
+  - Standard: X=9 → left 8 / right 10.
+  - Standard: X=1 → left 12 / right 2.
+  - Expert: X=1 → left 18 / right 2.
+- No Planet X DB/RPC change.
 
-Known environment limit: this release changes display/reference text only; live Supabase multi-device behavior was not changed.
+## Alarm / web tab
+- `alarm.js`, `app.js`, `multi-common.js` JavaScript syntax: **PASS**.
+- Browser-title state test with mocked room state: **PASS**.
+  - My turn → title starts `🔔 내 차례 ·`.
+  - Opponent turn → prefix is removed.
+  - Multi-room list with a my-turn room → prefix is restored.
+- Initial-turn notification + same-turn dedupe + later return-turn notification test: **PASS**.
+- Wake/focus polling hooks are installed in multiplayer page watcher and main multiplayer SPA.
 
-## v11.4.54 icon transparency verification
-- Transparent alpha verified on 192/512 app icons, Apple-touch icon, favicon and compatibility maskable PNGs.
-- Manifest references only transparent `purpose:any` app icons and uses `background_color: transparent`.
-- Service worker cache key advanced to v11.4.54.
+## Package
+- Service-worker cache key: `boardmate-shell-v11.4.57`.
+- History and database-history directories retained.
+- No migration required for v11.4.57.
+
+Known limit: OS background notification delivery cannot be guaranteed after the browser/PWA is fully terminated because server-side Web Push is not part of this release.
 
 
-## v11.4.55 Planet X verification
-- Asteroid icon source constants and hard-coded reference row use 🌑; legacy 🪨 text is only retained as a display-normalization search pattern so old saved records render as 🌑.
-- Incorrect theory result panel/log includes owner, sector, submitted object, and absence statement; actual object only when confirmed in same review.
-- Service worker cache key advanced to v11.4.55.
+## v11.4.57 통합 보완 (2026-09-10)
+- 행성 X 찾기: X 후보 섹터 선택 시 왼쪽/오른쪽 인접 섹터 번호를 명시. 예: 9 → 8 / 10.
+- 게임 종료: 모든 섹터 실제 개체 + 행성 X 위치/양옆 개체 공개.
+- 기존 v11.4.57 공개 기록 복구, 알림 재확인, 브라우저 탭 `🔔 내 차례` 표시 유지.

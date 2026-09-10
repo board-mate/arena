@@ -1,4 +1,4 @@
-import {processSingleRoomAlarm} from './alarm.js?v=11.4.51';
+import {processSingleRoomAlarm} from './alarm.js?v=11.4.57';
 const CFG=window.BOARDMATE_CONFIG||{};
 export const configured=()=>Boolean(CFG.supabaseUrl&&CFG.supabaseAnonKey&&window.supabase?.createClient);
 export const sb=configured()?window.supabase.createClient(CFG.supabaseUrl,CFG.supabaseAnonKey,{auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}}):null;
@@ -227,8 +227,15 @@ async function pollRoomAlarm(){
 }
 function startAlarmWatcher(){
   if(alarmWatcherStarted||!roomId)return;alarmWatcherStarted=true;
-  void pollRoomAlarm();
-  alarmWatcherTimer=setInterval(()=>void pollRoomAlarm(),7000);
-  window.addEventListener('beforeunload',()=>{if(alarmWatcherTimer)clearInterval(alarmWatcherTimer);},{once:true});
+  let wakeBusy=false;
+  const wake=()=>{if(wakeBusy)return;wakeBusy=true;Promise.resolve(pollRoomAlarm()).finally(()=>{wakeBusy=false})};
+  void wake();
+  alarmWatcherTimer=setInterval(()=>void wake(),3000);
+  const onVisible=()=>{if(!document.hidden)void wake()};
+  document.addEventListener('visibilitychange',onVisible);
+  window.addEventListener('focus',wake);
+  window.addEventListener('pageshow',wake);
+  window.addEventListener('online',wake);
+  window.addEventListener('beforeunload',()=>{if(alarmWatcherTimer)clearInterval(alarmWatcherTimer);document.removeEventListener('visibilitychange',onVisible);window.removeEventListener('focus',wake);window.removeEventListener('pageshow',wake);window.removeEventListener('online',wake);},{once:true});
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(startAlarmWatcher,800),{once:true});else setTimeout(startAlarmWatcher,800);

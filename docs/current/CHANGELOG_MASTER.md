@@ -325,3 +325,21 @@
 - If the same sector is confirmed by a correct theory during that review, the actual object is also shown. Otherwise the actual object remains hidden, matching the board-game peer-review rule.
 - A persistent “recent peer review result” panel is shown to all players in the current-progress card.
 - No database/RPC change.
+
+## BoardMate Arena v11.4.56 — Planet X live-game peer-review display compatibility
+- Added display-side handling for v11.4.55 games where detailed peer-review and separate penalty rows could coexist.
+- No database migration.
+
+## BoardMate Arena v11.4.57 — Planet X adjacent sectors + legacy review merge + alarm reliability
+- Existing Planet X games: bare `틀린 논문 패널티 시간 +1` rows are reconstructed from retained wrong-theory tokens and rendered as one detailed public row; duplicate detailed/penalty rows are merged.
+- `행성 X 찾기` now displays exact left/right adjacent sector numbers as the candidate X sector changes.
+- My-turn alarm can fire on initial page entry if the current turn has not already been seen, with local same-turn dedupe.
+- Multiplayer alarm watcher refreshes on focus/visibility/pageshow/online and polls more frequently.
+- Browser tab title shows `🔔 내 차례 ·` for turn-based rooms while it is the user's turn.
+- No Supabase schema/RPC change.
+
+
+## v11.4.57 통합 보완 (2026-09-10)
+- 행성 X 찾기: X 후보 섹터 선택 시 왼쪽/오른쪽 인접 섹터 번호를 명시. 예: 9 → 8 / 10.
+- 게임 종료: 모든 섹터 실제 개체 + 행성 X 위치/양옆 개체 공개.
+- 기존 v11.4.57 공개 기록 복구, 알림 재확인, 브라우저 탭 `🔔 내 차례` 표시 유지.
