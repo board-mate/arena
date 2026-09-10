@@ -1,4 +1,36 @@
-import {alarmSettings,saveAlarmSettings,alarmSupport,requestAlarmPermission,sendTestAlarm,processRoomAlarms,processSingleRoomAlarm,unlockAlarmAudio} from './alarm.js?v=11.4.57';
+export {};
+// v11.4.58 BOOT FAILSAFE
+// alarm.js는 메인 앱의 부트 필수 의존성이 아닙니다.
+// Pages 배포 지연/404/구버전 캐시가 있어도 메인 화면은 먼저 렌더링되도록 지연 로드합니다.
+const DEFAULT_ALARM_SETTINGS={enabled:false,newRoom:true,myTurn:true,gameStart:true,sound:true,vibrate:true};
+let alarmSettings=()=>({...DEFAULT_ALARM_SETTINGS});
+let saveAlarmSettings=next=>({...DEFAULT_ALARM_SETTINGS,...next});
+let alarmSupport=()=>({notification:('Notification' in window),serviceWorker:('serviceWorker' in navigator),vibrate:('vibrate' in navigator),permission:('Notification' in window?Notification.permission:'unsupported')});
+let requestAlarmPermission=async()=>({ok:false,permission:'unsupported'});
+let sendTestAlarm=async()=>false;
+let processRoomAlarms=async()=>{};
+let processSingleRoomAlarm=async()=>{};
+let unlockAlarmAudio=()=>false;
+
+async function loadAlarmModule(){
+  try{
+    const m=await import('./alarm.js?v=11.4.58');
+    if(typeof m.alarmSettings==='function') alarmSettings=m.alarmSettings;
+    if(typeof m.saveAlarmSettings==='function') saveAlarmSettings=m.saveAlarmSettings;
+    if(typeof m.alarmSupport==='function') alarmSupport=m.alarmSupport;
+    if(typeof m.requestAlarmPermission==='function') requestAlarmPermission=m.requestAlarmPermission;
+    if(typeof m.sendTestAlarm==='function') sendTestAlarm=m.sendTestAlarm;
+    if(typeof m.processRoomAlarms==='function') processRoomAlarms=m.processRoomAlarms;
+    if(typeof m.processSingleRoomAlarm==='function') processSingleRoomAlarm=m.processSingleRoomAlarm;
+    if(typeof m.unlockAlarmAudio==='function') unlockAlarmAudio=m.unlockAlarmAudio;
+    if((location.hash||'').slice(2)==='alarms') void router();
+    return true;
+  }catch(e){
+    console.warn('[BoardMate] alarm module unavailable; continuing without alarm features.',e);
+    return false;
+  }
+}
+
 const app = document.querySelector('#app');
 const CFG = window.BOARDMATE_CONFIG || {};
 const STORAGE_PREFIX = 'boardmate:';
@@ -530,3 +562,4 @@ async function router(){
   return renderHome();
 }
 window.addEventListener('hashchange',router);router();
+void loadAlarmModule();
