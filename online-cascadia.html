@@ -85,7 +85,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="./config.js"></script>
 <script type="module">
-import {configured,roomId,getMe,loadRoom,loadState,saveState,startStatePoll,submitMatch,ratingBadges,showFatal} from './multi-common.js';
+import {configured,roomId,getMe,loadRoom,loadState,saveState,startStatePoll,submitMatch,ratingBadges,showFatal} from './multi-common.js?v=11.4.57';
 let initPromise=null,revision=0,room=null,members=[],me=null,badges={},callbacks=[],saveChain=Promise.resolve(),pending=0,submitted=false,pollStarted=false;
 const clone=x=>JSON.parse(JSON.stringify(x));
 async function init(){

@@ -71,7 +71,7 @@ button:disabled{opacity:.4;cursor:not-allowed}
 <main class="wrap"><div id="app">불러오는 중…</div></main>
 
 <script type="module">
-import {configured,roomId,getMe,loadRoom,loadState,saveState,startStatePoll,submitMatch,ratingBadges,esc,showFatal,endPanel} from './multi-common.js';
+import {configured,roomId,getMe,loadRoom,loadState,saveState,startStatePoll,submitMatch,ratingBadges,esc,showFatal,endPanel} from './multi-common.js?v=11.4.57';
 if(!configured()||!roomId) showFatal('Supabase 설정 또는 room 주소가 없습니다.');
 
 const clone=x=>JSON.parse(JSON.stringify(x));
