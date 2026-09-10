@@ -1,6 +1,0 @@
-online-pokemon-minima.html
-online-pocketnova.html
-pokemon-minima.html
-solo-pokemon-minima.html
-solo-pocketnova.html
-pocketnova/
