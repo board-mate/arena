@@ -1,34 +1,58 @@
-# Current test status — v11.4.57
+# ✅ Current Test Status — v11.4.57
 
-## Planet X
-- `online-planetx.html` inline module JavaScript syntax: **PASS**.
-- Legacy live-game public log conversion: **PASS**.
-  - Separate `상현 · 틀린 논문 패널티 시간 +1` + existing detailed review row is rendered as one detailed row with player, sector, object, absence fact, and +1 penalty.
-  - Same check passed for a second player/object in the same review timestamp.
-- Adjacent-sector helper: **PASS**.
-  - Standard: X=9 → left 8 / right 10.
-  - Standard: X=1 → left 12 / right 2.
-  - Expert: X=1 → left 18 / right 2.
-- No Planet X DB/RPC change.
+## 릴리스 판정
 
-## Alarm / web tab
-- `alarm.js`, `app.js`, `multi-common.js` JavaScript syntax: **PASS**.
-- Browser-title state test with mocked room state: **PASS**.
-  - My turn → title starts `🔔 내 차례 ·`.
-  - Opponent turn → prefix is removed.
-  - Multi-room list with a my-turn room → prefix is restored.
-- Initial-turn notification + same-turn dedupe + later return-turn notification test: **PASS**.
-- Wake/focus polling hooks are installed in multiplayer page watcher and main multiplayer SPA.
+**정적/로컬 회귀 기준: PASS**  
+**실서비스 완전 종료 Web Push: 미구현 / 테스트 대상 아님**
 
-## Package
-- Service-worker cache key: `boardmate-shell-v11.4.57`.
-- History and database-history directories retained.
-- No migration required for v11.4.57.
+---
 
-Known limit: OS background notification delivery cannot be guaranteed after the browser/PWA is fully terminated because server-side Web Push is not part of this release.
+## 행성 X
 
+- `online-planetx.html` inline JavaScript syntax: **PASS**
+- 구형 진행방 공개 로그 렌더링 복구: **PASS**
+  - 별도 `틀린 논문 패널티 시간 +1` 행과 공개 논문 상태를 한 상세 교차 검증 행으로 합치는 케이스 확인
+  - 동일 시각 복수 플레이어 케이스 확인
+- 인접 섹터 helper: **PASS**
+  - 표준 X=9 → 8 / 10
+  - 표준 X=1 → 12 / 2
+  - 전문가 X=1 → 18 / 2
+- 최종 공개 UI/데이터 경로: **정적 검사 PASS**
+  - 전체 섹터 실제 개체
+  - X 위치
+  - X 좌/우 인접 섹터 요약
+- DB/RPC 변경: **없음**
 
-## v11.4.57 통합 보완 (2026-09-10)
-- 행성 X 찾기: X 후보 섹터 선택 시 왼쪽/오른쪽 인접 섹터 번호를 명시. 예: 9 → 8 / 10.
-- 게임 종료: 모든 섹터 실제 개체 + 행성 X 위치/양옆 개체 공개.
-- 기존 v11.4.57 공개 기록 복구, 알림 재확인, 브라우저 탭 `🔔 내 차례` 표시 유지.
+## 알림 / 브라우저 탭
+
+- `alarm.js`, `app.js`, `multi-common.js` syntax: **PASS**
+- 브라우저 제목 상태 모의 테스트: **PASS**
+  - 내 차례 → `🔔 내 차례 ·` prefix
+  - 상대 차례 → prefix 제거
+  - 목록 중 내 차례 방 존재 → prefix 복구
+- 최초 진입이 이미 내 차례인 경우 1회 알림 + 같은 턴 dedupe + 이후 새 턴 재알림: **PASS**
+- `visibilitychange`, `focus`, `pageshow`, `online` 재확인 hook: **설치 확인**
+
+### 알림 주의
+
+실사용 보고에서 시스템 알림이 간헐적으로 누락되는 경우가 있습니다. 이는 현재 방식이 브라우저/PWA 실행 중 polling 기반이며, 백그라운드 throttling과 OS 정책 영향을 받기 때문입니다.
+
+- 웹 탭 `🔔 내 차례`: 현재 구현됨
+- 앱/브라우저 완전 종료 후 진짜 push: **미구현**
+
+## 패키지
+
+- 서비스워커 캐시 키: `boardmate-shell-v11.4.57`
+- 다인플 18개 / 1인플 7개 파일 유지
+- `docs/history/`, `database/history/` 유지
+- v11.4.57 DB migration: **불필요**
+- README/현재 인수인계 문서: **최종 정리 완료**
+
+## 실서비스에서 배포 직후 확인할 것
+
+1. 메인 화면 로딩
+2. 기존 진행 중 행성 X 방 진입
+3. X 후보 9 선택 → 좌 8 / 우 10 표시
+4. 내 차례 방 → 브라우저 탭 `🔔 내 차례`
+5. `🔔 알림 설정` → 테스트 알림
+6. 캘리코 진행 중 방 / 에친스톤 저장 게임 진입

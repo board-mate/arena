@@ -1,28 +1,44 @@
-# 프로젝트 구조
+# 🗂️ Project Structure — v11.4.57
 
 ```text
 /
-├─ START_HERE.md                 # 가장 먼저 읽기
-├─ README.md                     # 배포본 개요
-├─ HANDOFF_VERSION.txt           # 현재 패키지 버전
-├─ index.html / app.js / styles.css
-├─ config.js / multi-common.js / solo-save-ui.js
-├─ manifest.webmanifest / sw.js
-├─ icons/                        # PWA/브라우저 아이콘 + 원본
-├─ online-*.html                 # 다인플 게임
-├─ solo-*.html                   # 1인플 게임
-├─ powergrid/                    # 파워그리드 전용 런타임
-├─ social/                       # 소셜 디덕션 공용 런타임
+├─ README.md                         # GitHub/배포본 메인 안내
+├─ START_HERE.md                     # 인수인계 첫 진입점
+├─ HANDOFF_VERSION.txt               # 현재 기준 버전
+├─ index.html / app.js / styles.css  # 메인 앱
+├─ alarm.js                          # 브라우저/PWA 알림
+├─ multi-common.js                   # 다인플 공용 로직
+├─ solo-save-ui.js                   # 1인플 저장 공용 UI
+├─ config.js                         # Supabase 공개 클라이언트 설정
+├─ manifest.webmanifest / sw.js      # PWA
+├─ icons/                            # 앱 아이콘 + 원본 로고
+├─ online-*.html                     # 다인플 게임 18개
+├─ solo-*.html                       # 1인플 게임 7개
+├─ powergrid/                        # 파워그리드 전용 런타임
+├─ social/                           # 소셜 디덕션 공용 런타임
 ├─ database/
-│  ├─ SUPABASE_CURRENT_UPDATE.sql
-│  └─ history/                   # 과거 SQL 원문
+│  ├─ SUPABASE_CURRENT_UPDATE.sql    # 현재 DB repair/update 체인
+│  └─ history/                       # 과거 SQL 원문 — 보존
 └─ docs/
-   ├─ current/                   # 현재 기준 통합 문서
+   ├─ current/
+   │  ├─ HANDOFF_CURRENT.md          # 현재 인수인계
+   │  ├─ NEXT_CHAT_PROMPT.md         # 다음 세션 시작용
+   │  ├─ TEST_STATUS_CURRENT.md      # 현재 테스트 상태
+   │  ├─ RELEASE_CHECKLIST.md        # 배포/회귀 체크리스트
+   │  ├─ DEPLOYMENT_CURRENT.md       # 배포 방법
+   │  ├─ PROJECT_STRUCTURE.md        # 이 문서
+   │  ├─ CHANGELOG_MASTER.md         # 통합 변경 색인
+   │  └─ DATABASE_CURRENT.md         # 현재 DB 상태
    └─ history/
-      ├─ updates/                # 과거 변경/인수인계 원문
-      ├─ verification/           # 과거 검증
-      ├─ deployment/             # 과거 배포 메모
-      └─ ROLLBACK_GUIDE.md
+      ├─ updates/                    # 과거 기능/인수인계 원문
+      ├─ verification/               # 과거 검증 원문
+      ├─ deployment/                 # 과거 배포 원문
+      └─ ROLLBACK_GUIDE.md           # 롤백 원칙
 ```
 
-원칙: 현재 이해를 위한 문서는 `docs/current/`에 통합하고, 실제 롤백 근거가 되는 과거 원문은 `docs/history/`에서 삭제하지 않습니다.
+## 관리 원칙
+
+- 현재 이해용 요약은 `docs/current/`에 최신화합니다.
+- 과거 원문은 `docs/history/`와 `database/history/`에서 지우지 않습니다.
+- 임시 테스트 산출물은 최종 FULL에 꼭 필요한 경우만 포함합니다.
+- 공용 파일 변경은 여러 게임에 영향을 줄 수 있으므로 회귀 검사를 우선합니다.

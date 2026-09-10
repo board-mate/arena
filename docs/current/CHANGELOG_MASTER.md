@@ -1,5 +1,16 @@
 # BoardMate Arena — MASTER CHANGELOG
 
+## ⭐ Current baseline — v11.4.57
+
+- 행성 X 진행 중 구형 논문 패널티 로그를 공개 논문 상태와 합쳐 상세 표시.
+- 행성 X 찾기에서 후보 섹터의 왼쪽/오른쪽 인접 섹터 번호를 동적으로 안내.
+- 종료 시 전체 섹터 실제 개체 + 행성 X 위치 + X 양옆 실제 개체 공개.
+- 내 차례 브라우저 탭 제목 `🔔 내 차례 ·` 표시.
+- 실행 중 알림 재확인/dedupe 보강. 완전 종료 Web Push는 아직 미구현.
+- v11.4.57 신규 DB/RPC 없음.
+- 상세 현재 상태: `docs/current/HANDOFF_CURRENT.md`.
+
+
 > 과거 원문은 `docs/history/updates/`에 그대로 보존되어 있습니다. 이 파일은 빠른 탐색용 통합 색인입니다.
 
 ## BoardMate Arena — 저장소 업로드용 통합 패치 + 인수인계
