@@ -1,0 +1,502 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>판타지 왕국: 그리스의 전설들 — BoardMate 3~6인</title>
+<style>
+:root{--bg:#0f172a;--panel:#1e293b;--panel2:#111827;--text:#f8fafc;--muted:#cbd5e1;--gold:#f4c95d;--danger:#ef4444;--ok:#22c55e;--line:#334155;
+--s-god:#06b6d4;--s-hero:#a855f7;--s-item:#f59e0b;--s-place:#10b981;--s-monster:#ef4444;--s-quest:#84cc16;--s-afterlife:#64748b}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at top,#26354d,#0f172a 58%);color:var(--text);font-family:system-ui,-apple-system,"Noto Sans KR",sans-serif;min-height:100vh}
+.app{max-width:1280px;margin:auto;padding:18px}
+.top{display:flex;gap:14px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-bottom:14px}
+.brand h1{font-size:clamp(20px,4vw,34px);margin:0;color:var(--gold);letter-spacing:-.03em}
+.brand p{margin:4px 0 0;color:var(--muted);font-size:14px}
+.badge{border:1px solid var(--line);background:#0b1220;border-radius:999px;padding:7px 11px;font-size:13px}
+.panel{background:rgba(30,41,59,.94);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:14px}
+.wide{margin-top:14px}
+.player-head{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.player-head h2{margin:0;font-size:17px}
+.small{font-size:12px;color:var(--muted)}
+.muted{color:var(--muted);font-weight:400;font-size:13px}
+.status{display:grid;grid-template-columns:1fr auto auto;gap:10px;align-items:center}
+.message{font-weight:800}
+.btn{border:0;border-radius:10px;padding:10px 13px;font-weight:800;cursor:pointer;background:#475569;color:white}
+.btn.primary{background:#a87907}.btn.good{background:#15803d}.btn.danger{background:#b91c1c}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.discard{display:flex;gap:8px;overflow-x:auto;overflow-y:hidden;padding:4px;scrollbar-width:thin}
+.players{display:flex;flex-direction:column;gap:14px}
+.player-stack-panel{margin-top:14px}
+.player-stack-head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:0 2px 8px}
+.player-stack-head h2{margin:0;font-size:16px;color:var(--muted)}
+.player-row{width:100%;background:rgba(30,41,59,.94);border:1px solid var(--line);border-radius:14px;padding:12px;box-shadow:0 8px 24px rgba(0,0,0,.16)}
+.player-row.active{outline:2px solid var(--gold)}
+.score{font-size:22px;font-weight:800;color:var(--gold)}
+.zone-label{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:8px 2px 4px}
+.card-row{display:flex;gap:8px;overflow-x:auto;overflow-y:hidden;padding:6px 2px;min-height:150px;scrollbar-width:thin}
+.card-row.afterlife-row{min-height:120px}
+.card{width:132px;min-height:150px;border-radius:12px;border:1px solid rgba(255,255,255,.18);padding:9px;display:flex;flex-direction:column;justify-content:space-between;cursor:default;box-shadow:0 4px 10px rgba(0,0,0,.25);transition:.12s;flex:0 0 132px;background:#334155}
+.card.click{cursor:pointer}.card.click:hover{transform:translateY(-2px);outline:2px solid white}
+.card.suit-god{background:linear-gradient(160deg,#0e7490,#164e63)}
+.card.suit-hero{background:linear-gradient(160deg,#7e22ce,#4c1d95)}
+.card.suit-item{background:linear-gradient(160deg,#b45309,#78350f)}
+.card.suit-place{background:linear-gradient(160deg,#047857,#064e3b)}
+.card.suit-monster{background:linear-gradient(160deg,#b91c1c,#7f1d1d)}
+.card.suit-quest{background:linear-gradient(160deg,#4d7c0f,#365314)}
+.card.afterlife-card{opacity:.82;filter:saturate(.7)}
+.card .name{font-weight:800;line-height:1.15;font-size:13px}
+.card .meta{font-size:11px;opacity:.9}
+.card .tags{font-size:9px;opacity:.85;margin-top:2px}
+.card .effect{font-size:10.5px;line-height:1.35;margin-top:6px;padding-top:6px;border-top:1px solid rgba(255,255,255,.18);flex:1}
+.card .pts{font-size:12px;font-weight:900;color:#fde68a;margin-top:5px}
+.card.blanked-card{opacity:.5;filter:grayscale(.5)}
+.card .configure{margin-top:6px;padding:5px 7px;border:0;border-radius:7px;font-weight:800;cursor:pointer;background:rgba(255,255,255,.2);color:white;font-size:11px}
+.back-card{background:linear-gradient(135deg,#172554,#312e81)}
+.back-card .name{font-size:12px}
+dialog{border:1px solid var(--line);border-radius:16px;background:#111827;color:white;max-width:760px;width:min(94vw,760px);padding:18px;max-height:88vh;overflow:auto}
+dialog::backdrop{background:rgba(0,0,0,.82)}
+select,input{background:#0f172a;color:white;border:1px solid #475569;border-radius:8px;padding:9px;width:100%}
+.modal-row{margin:12px 0}
+.winner{font-size:26px;font-weight:900;color:var(--gold)}
+.ranking{width:100%;border-collapse:collapse;margin-top:12px}
+.ranking th,.ranking td{padding:8px;border-bottom:1px solid var(--line);text-align:left}
+.ranking th:nth-child(n+2),.ranking td:nth-child(n+2){text-align:right}
+.rules{font-size:14px;line-height:1.6;color:#e2e8f0}
+.rules strong{color:var(--gold)}
+.choice-block{background:#0b1220;border:1px solid var(--line);border-radius:10px;padding:10px;margin-bottom:10px}
+.choice-block h3{margin:0 0 8px;font-size:14px;color:var(--gold)}
+.choice-block .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:6px}
+.choice-block .row select{flex:1;min-width:140px}
+.omega-item{background:#0b1220;border:1px solid var(--line);border-radius:10px;padding:10px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;gap:10px}
+.omega-item.done{opacity:.5}
+.omega-item .label{font-weight:800}
+.omega-item .cond{font-size:12px;color:var(--muted)}
+.checkbox-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px;margin-top:6px}
+.checkbox-list label{display:flex;gap:6px;align-items:center;font-size:12px;background:#0b1220;border:1px solid var(--line);border-radius:8px;padding:6px}
+@media(max-width:720px){.status{grid-template-columns:1fr}.card{width:118px;flex-basis:118px}.app{padding:10px}.panel{padding:11px}}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="./config.js"></script>
+</head>
+<body>
+<div class="app">
+  <div class="top">
+    <div class="brand"><h1>🏛️ 판타지 왕국: 그리스의 전설들</h1><p>BoardMate 온라인 3~6인 · Supabase Realtime · 비공개 손패 · 공개 사후세계</p></div>
+    <div class="badge" id="netBadge">연결 확인 중…</div>
+  </div>
+
+  <section class="panel" id="lobbyPanel">
+    <div class="player-head">
+      <div><div class="small">BoardMate 방</div><div id="roomCode" style="font-size:24px;font-weight:900;color:var(--gold);word-break:break-all">-</div></div>
+      <a class="btn" href="./index.html#/multi">← 다인플</a>
+    </div>
+    <div id="seatList" style="margin-top:10px"></div>
+    <div class="small" id="roomHint" style="margin-top:8px">공통 BoardMate 방 상태를 불러오는 중입니다.</div>
+  </section>
+
+  <section class="panel wide" id="gamePanel" style="display:none">
+    <div class="status">
+      <div><div class="message" id="message">대기 중</div><div class="muted" id="hint"></div></div>
+      <button class="btn primary" id="drawBtn" disabled>덱에서 1장 뽑기</button>
+      <span class="badge" id="deckBadge">덱 0장</span>
+    </div>
+  </section>
+
+  <section class="panel wide" id="discardPanel" style="display:none">
+    <div class="player-head"><h2>버린 카드 영역</h2><div class="badge" id="discardCount">0장 / 10장</div></div>
+    <div class="discard" id="discard"></div>
+  </section>
+
+  <section class="player-stack-panel" id="playersPanel" style="display:none">
+    <div class="player-stack-head"><h2>플레이어</h2><span class="small">내 카드(비공개) → 다른 플레이어 순서 · 사후세계는 모두에게 공개</span></div>
+    <div class="players" id="players"></div>
+  </section>
+
+  <section class="panel wide rules">
+    <strong>BoardMate 통합 온라인</strong> — 손패는 참가자별 비공개, 사후세계는 실제 게임처럼 모두에게 공개됩니다. 버리는 공간에 10장이 쌓이면 게임이 종료되고, 각자 손패+사후세계 카드로 최종 점수를 계산합니다. 기본 79장 + 프로모 디오니소스 1장을 지원합니다. 사후세계 즉시 효과와 공식 엔드게임 1~4단계(CLEAR → CLEAR 페널티 → ADD → Ω)를 순서대로 처리합니다.
+  </section>
+</div>
+
+<dialog id="detailDialog"><h2 id="detailTitle">카드 정보</h2><div id="detailBody"></div><div style="display:flex;justify-content:flex-end;margin-top:14px"><button class="btn primary" id="detailClose">닫기</button></div></dialog>
+
+<dialog id="choiceDialog"><h2 id="choiceTitle">게임 종료 · 효과 처리</h2><div class="small" id="choiceHelp" style="margin-bottom:10px"></div><div id="choiceBody"></div></dialog>
+
+<dialog id="omegaDialog"><h2>게임 종료 · Ω 효과 처리</h2><div class="small" style="margin-bottom:10px">Ω 카드를 원하는 순서로 하나씩 처리합니다. 조건형 몬스터는 영웅을 맞서는 순서에 따라 일부 영웅을 먼저 사후세계로 보낼 수 있습니다.</div><div id="omegaBody"></div></dialog>
+
+<dialog id="instantDialog"><h2 id="instantTitle">사후세계 즉시 효과</h2><div id="instantBody"></div><div style="display:flex;justify-content:flex-end;gap:8px;margin-top:12px"><button class="btn" id="instantSkip">효과 사용 안 함</button><button class="btn good" id="instantSave">확인</button></div></dialog>
+
+<dialog id="endDialog"><div id="endBody"></div><div style="display:flex;justify-content:flex-end;margin-top:14px"><button class="btn primary" id="endClose">닫기</button></div></dialog>
+
+<script type="module">
+import {configured,roomId,getMe,loadRoom,loadFantasyState,saveFantasyState,submitMatch,subscribeRoomBroadcast,sendRoomBroadcast,touchPresence,showFatal} from './multi-common.js?v=11.4.62';
+(() => {
+'use strict';
+
+// BoardMate Arena v11.4.62 · Fantasy Realms: Greek Legends
+// Rule basis: official 2025 rulebook (Afterlife / Endgame 1~4) + supplied Korean cards.
+const RAW_DB = [{"id":"apollo","n":"아폴론","s":"god","b":5,"t":["예술가"],"e":"다른 예술가마다 +5."},{"id":"ares","n":"아레스","s":"god","b":7,"t":["전사"],"e":"다른 전사마다 +7."},{"id":"artemis","n":"아르테미스","s":"god","b":7,"t":[],"e":"적대적 몬스터마다 +7."},{"id":"athena","n":"아테나","s":"god","b":4,"t":["영악함","현명함","예술가","전사"],"e":"이 카드의 태그 중 1개 이상을 가진 살아 있는 영웅마다 +4. 살아 있는 영웅 1명에게 이 카드의 태그 1개를 추가할 수 있음."},{"id":"demeter","n":"데메테르","s":"god","b":5,"t":["식물"],"e":"다른 식물마다 +5."},{"id":"moirai","n":"모이라이","s":"god","b":3,"t":[],"e":"사후세계에 버릴 수 있음. 사용하면 다른 손패 1장을 버리는 공간에 버리고 수트 또는 태그를 선언한 뒤, 일치하는 카드가 나올 때까지 덱을 공개하여 그 카드를 손에 넣고 나머지는 덱에 섞음."},{"id":"hades","n":"하데스","s":"god","b":3,"t":[],"e":"사후세계에 있는 다른 카드마다 +3. 사후세계에 버릴 수 있음."},{"id":"hecate","n":"헤카테","s":"god","b":3,"t":["마법"],"e":"다른 마법마다 +9."},{"id":"hephaestus","n":"헤파이스토스","s":"god","b":5,"t":["예술가"],"e":"다른 아이템마다 +10."},{"id":"hera","n":"헤라","s":"god","b":6,"t":[],"e":"살아 있는 영웅 쌍마다 +12."},{"id":"hermes","n":"헤르메스","s":"god","b":5,"t":["마법"],"e":"장소마다 +5, 살아 있는 민첩 영웅마다 +5, 사후세계 영웅마다 +5."},{"id":"muse","n":"무사","s":"god","b":3,"t":["예술가"],"e":"다른 예술가마다 +8."},{"id":"persephone","n":"페르세포네","s":"god","b":3,"t":["식물"],"e":"사후세계 카드 1장과 식물 1장의 쌍마다 +6. 사후세계에 버릴 수 있음."},{"id":"poseidon","n":"포세이돈","s":"god","b":5,"t":["물"],"e":"물마다 +5, 몬스터마다 +5."},{"id":"zeus","n":"제우스","s":"god","b":8,"t":["현명함"],"e":"다른 신마다 +4, 군주마다 +4."},{"id":"dionysus","n":"디오니소스","s":"god","b":4,"t":["식물"],"e":"프로모 카드. 페널티: 영웅 1명의 모든 태그와 보너스를 제거. 보너스: 태그와 보너스가 없는 영웅 1명의 기본 점수를 추가."},{"id":"achilles","n":"아킬레우스","s":"hero","b":7,"t":["전사","완력"],"e":"아테나 / 헤라 / 포세이돈 / 스틱스강이 있으면 +5."},{"id":"agamemnon","n":"아가멤논","s":"hero","b":9,"t":["전사","군주"],"e":"효과 없음."},{"id":"andromeda","n":"안드로메다","s":"hero","b":3,"t":[],"e":"퀘스트의 적대적 몬스터 조건을 모두 만족하면 +17."},{"id":"arachne","n":"아라크네","s":"hero","b":3,"t":["예술가"],"e":"신보다 영웅이 더 많으면 +10."},{"id":"atalanta","n":"아탈란타","s":"hero","b":12,"t":["민첩"],"e":"효과 없음."},{"id":"circe","n":"키르케","s":"hero","b":14,"t":["마법","현명함"],"e":"영악함이 있는 살아 있는 영웅이 없으면 다른 살아 있는 영웅의 태그와 보너스 제거."},{"id":"hector","n":"헥토르","s":"hero","b":6,"t":["전사","완력"],"e":"아레스 / 아폴론 / 아르테미스가 있으면 +6."},{"id":"helen","n":"헬레네","s":"hero","b":2,"t":[],"e":"전사마다 +10."},{"id":"heracles","n":"헤라클레스","s":"hero","b":12,"t":["완력"],"e":"적대적 몬스터마다 +5. 게임 종료 시 살아 있으면 손의 다른 영웅 1명을 사후세계로 보냄."},{"id":"hippolyta","n":"히폴리타","s":"hero","b":10,"t":["군주","완력"],"e":"효과 없음."},{"id":"homer","n":"호메로스","s":"hero","b":6,"t":["예술가"],"e":"전사마다 +6, 퀘스트마다 +6."},{"id":"jason","n":"이아손","s":"hero","b":4,"t":["민첩"],"e":"퀘스트마다 +4, 다른 살아 있는 영웅마다 +4."},{"id":"medea","n":"메데이아","s":"hero","b":7,"t":["영악함","마법"],"e":"효과 없음."},{"id":"odysseus","n":"오디세우스","s":"hero","b":4,"t":["영악함","군주","전사"],"e":"물마다 +4."},{"id":"orpheus","n":"오르페우스","s":"hero","b":6,"t":["예술가"],"e":"오르페우스가 살아 있다면 사후세계 카드 1장의 기본 점수를 추가."},{"id":"penelope","n":"페넬로페","s":"hero","b":5,"t":["영악함","군주","예술가"],"e":"효과 없음."},{"id":"perseus","n":"페르세우스","s":"hero","b":5,"t":["민첩"],"e":"신이 있으면 +5, 아이템이 있으면 +5."},{"id":"theseus","n":"테세우스","s":"hero","b":10,"t":["완력","민첩"],"e":"효과 없음."},{"id":"tiresias","n":"테이레시아스","s":"hero","b":11,"t":["현명함"],"e":"효과 없음."},{"id":"apple_of_discord","n":"불화의 사과","s":"item","b":25,"t":["식물"],"e":"신 / 살아 있는 영웅 / 몬스터는 각 종류별 첫 번째 카드를 제외하고 추가 카드마다 -5."},{"id":"argo","n":"아르고호","s":"item","b":0,"t":["물"],"e":"물 카드 장수 × 살아 있는 영웅 카드 장수 × 5."},{"id":"magic_bridle","n":"마법 고삐","s":"item","b":11,"t":["마법"],"e":"원하는 몬스터 1장의 페널티 제거."},{"id":"cornucopia","n":"코르누코피아","s":"item","b":2,"t":["식물"],"e":"사후세계에 버릴 수 있음. 즉시 덱에서 2장 뽑고 버리는 공간에 2장 버림."},{"id":"golden_apple","n":"황금 사과","s":"item","b":3,"t":["식물"],"e":"퀘스트가 있으면 +14."},{"id":"golden_fleece","n":"황금 양털","s":"item","b":6,"t":["신성"],"e":"살아 있는 영웅과 마법이 있으면 +12."},{"id":"helmet_of_hades","n":"하데스의 투구","s":"item","b":13,"t":["마법"],"e":"게임 종료 시 다른 효과로 사후세계에 가야 할 영웅 1명을 살아 있는 상태로 유지."},{"id":"moly","n":"몰리","s":"item","b":4,"t":["식물","마법"],"e":"아무 페널티 하나 제거."},{"id":"pomegranate","n":"석류","s":"item","b":6,"t":["식물"],"e":"사후세계에 버릴 수 있음. 게임 종료 시 손의 신 1명을 사후세계로 보냄."},{"id":"trojan_horse","n":"트로이의 목마","s":"item","b":4,"t":["전사"],"e":"영악함과 살아 있는 영웅 2명 이상이 있으면 +15."},{"id":"winged_sandals","n":"날개 달린 샌들","s":"item","b":10,"t":["신성"],"e":"살아 있는 영웅과 장소 2장 이상이 있으면 +15. 살아 있는 영웅 1명에게 민첩 태그 추가."},{"id":"daphne_spring","n":"다프네의 개울","s":"place","b":12,"t":["물","식물"],"e":"효과 없음."},{"id":"garden_hesperides","n":"헤스페리데스의 정원","s":"place","b":17,"t":["식물","신성","마법"],"e":"적대적 몬스터가 없으면 -12."},{"id":"lotus_eaters","n":"연꽃 자생지","s":"place","b":23,"t":["식물"],"e":"모든 살아 있는 영웅의 태그, 보너스, 페널티 제거."},{"id":"mount_olympus","n":"올림푸스산","s":"place","b":6,"t":["신성"],"e":"신마다 +6."},{"id":"oracle_delphi","n":"델포이의 신탁","s":"place","b":7,"t":["신성"],"e":"사후세계에 버릴 수 있음. 덱 위 5장을 보고 원하는 만큼 아래로 보냄."},{"id":"palace","n":"궁전","s":"place","b":7,"t":[],"e":"군주가 있으면 +7, 예술가마다 +7."},{"id":"garden_persephone","n":"페르세포네의 정원","s":"place","b":4,"t":["신성","식물"],"e":"식물 아이템마다 +4. 사후세계에 버릴 수 있음."},{"id":"river_lethe","n":"레테강","s":"place","b":6,"t":["물","신성"],"e":"사후세계에 버릴 수 있음. 사후세계에 있지 않으면 -20. 점수 계산 시 사후세계에 있는 영웅의 보너스와 태그를 세지 않음."},{"id":"river_styx","n":"스틱스강","s":"place","b":0,"t":["물","신성","마법"],"e":"신과 살아 있는 영웅이 있으면 +5. 사후세계에 버릴 수 있음. 사후세계에 있지 않으면 -20."},{"id":"sacrificial_altar","n":"희생제단","s":"place","b":0,"t":["신성"],"e":"사후세계 영웅마다 +7. 사후세계에 버릴 수 있음. 그렇게 하면 손의 영웅 1명을 추가로 사후세계에 보낼 수 있고, 보냈다면 덱 맨 위 카드로 대체."},{"id":"temple","n":"신전","s":"place","b":6,"t":["신성"],"e":"신이 있으면 +6, 예술가마다 +6."},{"id":"labyrinth","n":"미궁","s":"place","b":3,"t":[],"e":"적대적 몬스터가 있으면 +10, 영악함 있는 살아 있는 영웅이 있으면 +10."},{"id":"antaeus","n":"안타이오스","s":"monster","b":18,"t":["적대적"],"e":"살아 있는 완력 영웅이 없으면 모든 영웅을 사후세계로 보냄."},{"id":"calydonian_boar","n":"칼리돈의 멧돼지","s":"monster","b":24,"t":["적대적"],"e":"살아 있는 영웅이 3명 이상 없으면 모든 영웅을 사후세계로 보냄."},{"id":"cerberus","n":"케르베로스","s":"monster","b":5,"t":["적대적"],"e":"사후세계에 있는 영웅마다 +5. 사후세계에 버릴 수 있음. 사후세계에 있지 않으면 -5."},{"id":"chiron","n":"케이론","s":"monster","b":6,"t":["우호적","현명함"],"e":"살아 있는 영웅 1명에게 태그 1개 추가."},{"id":"dryad","n":"드라이어드","s":"monster","b":14,"t":["우호적","식물","현명함"],"e":"효과 없음."},{"id":"hydra","n":"레르네의 히드라","s":"monster","b":17,"t":["적대적"],"e":"서로 다른 태그를 3개 이상 가진 살아 있는 영웅이 없으면 모든 영웅을 사후세계로 보냄."},{"id":"medusa","n":"메두사","s":"monster","b":15,"t":["적대적"],"e":"살아 있는 영악한 또는 민첩 영웅이 없으면 모든 영웅을 사후세계로 보냄."},{"id":"minotaur","n":"미노타우로스","s":"monster","b":15,"t":["적대적"],"e":"살아 있는 영악한 또는 완력 영웅이 없으면 모든 영웅을 사후세계로 보냄."},{"id":"pegasus","n":"페가수스","s":"monster","b":20,"t":["우호적"],"e":"살아 있는 영웅 하나에 예술가와 민첩 태그가 모두 있으면 +10. 현명함이 없으면 -10."},{"id":"scylla_charybdis","n":"스킬라와 카리브디스","s":"monster","b":17,"t":["적대적","물"],"e":"살아 있는 민첩 영웅이 없으면 모든 영웅을 사후세계로 보냄."},{"id":"sirens","n":"세이렌","s":"monster","b":16,"t":["적대적","물","예술가"],"e":"게임 종료: 살아 있는 영악함 영웅이 없으면 모든 영웅을 사후세계로 보냄. 영웅을 원하는 순서로 맞서게 할 수 있음."},{"id":"twelve_labors","n":"열두 과업","s":"quest","b":0,"t":[],"e":"살아 있는 영웅이 필요. 완력마다 +12, 적대적 몬스터마다 +12."},{"id":"apotheosis","n":"신격화","s":"quest","b":0,"t":[],"e":"영웅(살아 있거나 사후세계) + 신 + 신성 + 마법 조건을 만족하면 +28."},{"id":"eleusinian_mysteries","n":"엘레우시스 제전","s":"quest","b":0,"t":[],"e":"살아 있는 영웅이 필요. 영웅 + 식물 + 예술가 + 마법 조건을 만족하면 +27."},{"id":"legendary_threat","n":"전설적인 위협","s":"quest","b":0,"t":[],"e":"살아 있는 영웅 + 신 + 장소 + 몬스터 + 아이템 조건을 만족하면 +30."},{"id":"glimpse_divinity","n":"신성을 엿보다","s":"quest","b":0,"t":[],"e":"살아 있는 영웅이 필요. 신마다 +8, 신성마다 +8."},{"id":"long_journey","n":"긴 여정","s":"quest","b":0,"t":[],"e":"살아 있는 영웅이 필요. 장소마다 +11."},{"id":"lost_knowledge","n":"잃어버린 지식","s":"quest","b":0,"t":[],"e":"살아 있는 영웅이 필요. 예술가 / 마법 / 현명함마다 +7."},{"id":"olympic_games","n":"올림픽 게임","s":"quest","b":0,"t":[],"e":"살아 있는 영웅이 필요. 민첩 또는 완력을 가진 살아 있는 영웅마다 +11."},{"id":"resisting_kingdom","n":"저항하는 왕국","s":"quest","b":0,"t":[],"e":"살아 있는 군주 영웅과 현명함이 모두 있으면 +27."},{"id":"trojan_war","n":"트로이 전쟁","s":"quest","b":0,"t":[],"e":"살아 있는 영웅이 필요. 전사마다 +13."},{"id":"visit_underworld","n":"지하세계 방문","s":"quest","b":0,"t":[],"e":"살아 있는 영웅이 필요. 사후세계에 있는 카드마다 +6."}];
+const DB = RAW_DB.map(c=>({...c}));
+const CARD_MAP = new Map(DB.map(c=>[c.id,c]));
+const byId=id=>CARD_MAP.get(id)||null;
+const ALL_IDS=DB.map(c=>c.id);
+const SUIT_KO={god:'신',hero:'영웅',item:'아이템',place:'장소',monster:'몬스터',quest:'퀘스트'};
+const SUIT_COLOR={god:'suit-god',hero:'suit-hero',item:'suit-item',place:'suit-place',monster:'suit-monster',quest:'suit-quest'};
+const ALL_TAGS=['군주','민첩','완력','예술가','영악함','현명함','전사','우호적','적대적','물','신성','식물','마법'];
+const GAME_ID='fantasyrealmsgreek';
+const GAME_VERSION=2;
+const MAY_AFTERLIFE=new Set(['moirai','hades','persephone','cornucopia','pomegranate','oracle_delphi','garden_persephone','river_lethe','river_styx','sacrificial_altar','cerberus']);
+const HOSTILE_MONSTERS=['antaeus','calydonian_boar','hydra','medusa','minotaur','scylla_charybdis','sirens'];
+const OMEGA_IDS=[...HOSTILE_MONSTERS,'heracles','pomegranate'];
+const PENALTY_IDS=new Set(['apple_of_discord','garden_hesperides','river_lethe','river_styx','cerberus','pegasus','lotus_eaters','circe','dionysus','heracles','pomegranate',...HOSTILE_MONSTERS]);
+const MONSTER_PENALTY_IDS=new Set(['cerberus','pegasus',...HOSTILE_MONSTERS]);
+const STAGE_LABEL={1:'1단계 · 보너스 CLEAR (선택)',2:'2단계 · 페널티 CLEAR (필수)',3:'3단계 · 태그 ADD (선택)',4:'4단계 · Ω 사후세계 이동'};
+
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const shuffle=a=>{const x=a.slice();for(let i=x.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[x[i],x[j]]=[x[j],x[i]];}return x;};
+const deepClone=x=>JSON.parse(JSON.stringify(x));
+const uniq=a=>[...new Set(a)];
+
+function freshSpecial(){return {penaltyDisabled:[],bonusDisabled:[],tagsDisabled:[],addedTags:{},helmetUsed:false,log:[]};}
+function normalizeSpecial(src){
+  const s={...freshSpecial(),...(src||{})};
+  s.penaltyDisabled=uniq(Array.isArray(s.penaltyDisabled)?s.penaltyDisabled:[]);
+  s.bonusDisabled=uniq(Array.isArray(s.bonusDisabled)?s.bonusDisabled:[]);
+  s.tagsDisabled=uniq(Array.isArray(s.tagsDisabled)?s.tagsDisabled:[]);
+  s.addedTags=s.addedTags&&typeof s.addedTags==='object'?s.addedTags:{};
+  for(const [id,tags] of Object.entries(s.addedTags)) s.addedTags[id]=uniq(Array.isArray(tags)?tags:[]);
+  s.log=Array.isArray(s.log)?s.log:[];
+  s.helmetUsed=!!s.helmetUsed;
+  return s;
+}
+function specialFor(seat){
+  fullState.specialData[seat]=normalizeSpecial(fullState.specialData[seat]);
+  return fullState.specialData[seat];
+}
+function addLog(seat,text){const s=specialFor(seat);s.log.push(text);if(s.log.length>60)s.log=s.log.slice(-60);}
+function disablePenalty(seat,id,source){const s=specialFor(seat);if(!s.penaltyDisabled.includes(id))s.penaltyDisabled.push(id);addLog(seat,`${byId(source)?.n||source}: ${byId(id)?.n||id} 페널티 제거`);}
+function disableBonus(seat,id,source){const s=specialFor(seat);if(!s.bonusDisabled.includes(id))s.bonusDisabled.push(id);addLog(seat,`${byId(source)?.n||source}: ${byId(id)?.n||id} 보너스 제거`);}
+function disableTags(seat,id,source){const s=specialFor(seat);if(!s.tagsDisabled.includes(id))s.tagsDisabled.push(id);addLog(seat,`${byId(source)?.n||source}: ${byId(id)?.n||id} 태그 제거`);}
+function addTag(seat,id,tag,source){const s=specialFor(seat);s.addedTags[id]=uniq([...(s.addedTags[id]||[]),tag]);addLog(seat,`${byId(source)?.n||source}: ${byId(id)?.n||id}에 ${tag} 추가`);}
+function penaltyOff(seat,id){return specialFor(seat).penaltyDisabled.includes(id);}
+function bonusOff(seat,id){return specialFor(seat).bonusDisabled.includes(id);}
+function tagsForSeat(seat,id){const c=byId(id);if(!c)return[];const s=specialFor(seat);const base=s.tagsDisabled.includes(id)?[]:(c.t||[]);return uniq([...base,...(s.addedTags[id]||[])]);}
+function hasTagSeat(seat,id,tag){return tagsForSeat(seat,id).includes(tag);}
+function allIdsForSeat(seat){return [...(fullState.hands[seat]||[]),...(fullState.afterlives[seat]||[])];}
+function livingHeroIds(seat){return (fullState.hands[seat]||[]).filter(id=>byId(id)?.s==='hero');}
+function moveHandToAfterlife(seat,id){const i=fullState.hands[seat].indexOf(id);if(i<0)return false;fullState.hands[seat].splice(i,1);fullState.afterlives[seat].push(id);return true;}
+
+// ── pure scoring engine ─────────────────────────────────────────────────────
+function makeScoreState(handIds,afterIds,specialRaw={}){
+  const sd=normalizeSpecial(deepClone(specialRaw));
+  const hand=handIds.map(id=>({...byId(id),_zone:'hand'})).filter(c=>c.id);
+  const afterlife=afterIds.map(id=>({...byId(id),_zone:'afterlife'})).filter(c=>c.id);
+  const all=[...hand,...afterlife];
+  const liveHeroes=hand.filter(c=>c.s==='hero');
+  const pOff=id=>sd.penaltyDisabled.includes(id);
+  const letheActive=all.some(c=>c.id==='river_lethe')&&!pOff('river_lethe');
+  const tags=c=>{
+    const base=sd.tagsDisabled.includes(c.id)?[]:(c.t||[]);
+    let out=uniq([...base,...(sd.addedTags[c.id]||[])]);
+    if(letheActive&&c.s==='hero'&&c._zone==='afterlife')out=[];
+    return out;
+  };
+  const bonusDisabled=c=>sd.bonusDisabled.includes(c.id)||(letheActive&&c.s==='hero'&&c._zone==='afterlife');
+  const penaltyDisabled=c=>sd.penaltyDisabled.includes(c.id);
+  return {hand,afterlife,all,liveHeroes,sd,tags,bonusDisabled,penaltyDisabled,letheActive};
+}
+function countTag(st,tag,exclude=null){return st.all.reduce((n,c)=>n+(c.id!==exclude&&st.tags(c).includes(tag)?1:0),0);}
+function countSuit(st,suit,exclude=null){return st.all.filter(c=>c.s===suit&&c.id!==exclude).length;}
+function hasAnyName(st,...names){return names.some(n=>st.all.some(c=>c.n===n));}
+function dionysusBonus(st){
+  const heroes=st.all.filter(c=>c.s==='hero');
+  const eligible=heroes.filter(h=>st.tags(h).length===0&&st.bonusDisabled(h));
+  return eligible.length?Math.max(...eligible.map(h=>h.b)):0;
+}
+function calcBonus(card,st){
+  if(st.bonusDisabled(card))return 0;
+  const {hand,afterlife,all,liveHeroes}=st;
+  switch(card.id){
+    case'apollo':return countTag(st,'예술가',card.id)*5;
+    case'ares':return countTag(st,'전사',card.id)*7;
+    case'artemis':return all.filter(c=>c.s==='monster'&&st.tags(c).includes('적대적')).length*7;
+    case'athena':return liveHeroes.filter(h=>st.tags(h).some(t=>st.tags(card).includes(t))).length*4;
+    case'demeter':return countTag(st,'식물',card.id)*5;
+    case'hades':return afterlife.filter(c=>c.id!==card.id).length*3;
+    case'hecate':return countTag(st,'마법',card.id)*9;
+    case'hephaestus':return countSuit(st,'item',card.id)*10;
+    case'hera':return Math.floor(liveHeroes.length/2)*12;
+    case'hermes':return(countSuit(st,'place')+liveHeroes.filter(h=>st.tags(h).includes('민첩')).length+afterlife.filter(c=>c.s==='hero').length)*5;
+    case'muse':return countTag(st,'예술가',card.id)*8;
+    case'persephone':{
+      const aftOther=afterlife.filter(c=>c.id!==card.id).length;
+      const plantOther=countTag(st,'식물',card.id);
+      return Math.min(aftOther,plantOther)*6;
+    }
+    case'poseidon':return(countTag(st,'물',card.id)+countSuit(st,'monster'))*5;
+    case'zeus':return(countSuit(st,'god',card.id)+countTag(st,'군주'))*4;
+    case'dionysus':return dionysusBonus(st);
+    case'achilles':return hasAnyName(st,'아테나','헤라','포세이돈','스틱스강')?5:0;
+    case'andromeda':return all.some(c=>c.s==='quest')&&all.some(c=>c.s==='monster'&&st.tags(c).includes('적대적'))?17:0;
+    case'arachne':return countSuit(st,'hero')>countSuit(st,'god')?10:0;
+    case'hector':return hasAnyName(st,'아레스','아폴론','아르테미스')?6:0;
+    case'helen':return countTag(st,'전사')*10;
+    case'heracles':return all.filter(c=>c.s==='monster'&&st.tags(c).includes('적대적')).length*5;
+    case'homer':return countTag(st,'전사')*6+countSuit(st,'quest')*6;
+    case'jason':return countSuit(st,'quest')*4+liveHeroes.filter(h=>h.id!=='jason').length*4;
+    case'odysseus':return countTag(st,'물')*4;
+    case'orpheus':return hand.some(c=>c.id==='orpheus')&&afterlife.length?Math.max(...afterlife.map(c=>c.b)):0;
+    case'perseus':return(countSuit(st,'god')?5:0)+(countSuit(st,'item')?5:0);
+    case'argo':return countTag(st,'물')*liveHeroes.length*5;
+    case'golden_apple':return countSuit(st,'quest')?14:0;
+    case'golden_fleece':return liveHeroes.length&&countTag(st,'마법')?12:0;
+    case'trojan_horse':return countTag(st,'영악함')&&liveHeroes.length>=2?15:0;
+    case'winged_sandals':return liveHeroes.length&&countSuit(st,'place')>=2?15:0;
+    case'mount_olympus':return countSuit(st,'god')*6;
+    case'palace':return(countTag(st,'군주')?7:0)+countTag(st,'예술가')*7;
+    case'garden_persephone':return all.filter(c=>c.s==='item'&&st.tags(c).includes('식물')).length*4;
+    case'river_styx':return countSuit(st,'god')&&liveHeroes.length?5:0;
+    case'sacrificial_altar':return afterlife.filter(c=>c.s==='hero').length*7;
+    case'temple':return(countSuit(st,'god')?6:0)+countTag(st,'예술가')*6;
+    case'labyrinth':return(all.some(c=>c.s==='monster'&&st.tags(c).includes('적대적'))?10:0)+(liveHeroes.some(h=>st.tags(h).includes('영악함'))?10:0);
+    case'cerberus':return afterlife.filter(c=>c.s==='hero').length*5;
+    case'pegasus':return liveHeroes.some(h=>st.tags(h).includes('예술가')&&st.tags(h).includes('민첩'))?10:0;
+    case'twelve_labors':return liveHeroes.length?(countTag(st,'완력')+all.filter(c=>c.s==='monster'&&st.tags(c).includes('적대적')).length)*12:0;
+    case'apotheosis':return countSuit(st,'hero')&&countSuit(st,'god')&&countTag(st,'신성')&&countTag(st,'마법')?28:0;
+    case'eleusinian_mysteries':return liveHeroes.length&&countTag(st,'식물')&&countTag(st,'예술가')&&countTag(st,'마법')?27:0;
+    case'legendary_threat':return liveHeroes.length&&['god','place','monster','item'].every(s=>countSuit(st,s)>0)?30:0;
+    case'glimpse_divinity':return liveHeroes.length?(countSuit(st,'god')+countTag(st,'신성'))*8:0;
+    case'long_journey':return liveHeroes.length?countSuit(st,'place')*11:0;
+    case'lost_knowledge':return liveHeroes.length?(countTag(st,'예술가')+countTag(st,'마법')+countTag(st,'현명함'))*7:0;
+    case'olympic_games':return liveHeroes.length?liveHeroes.filter(h=>st.tags(h).includes('민첩')||st.tags(h).includes('완력')).length*11:0;
+    case'resisting_kingdom':return liveHeroes.some(h=>st.tags(h).includes('군주'))&&countTag(st,'현명함')?27:0;
+    case'trojan_war':return liveHeroes.length?countTag(st,'전사')*13:0;
+    case'visit_underworld':return liveHeroes.length?afterlife.length*6:0;
+    default:return 0;
+  }
+}
+function calcPenalty(card,st){
+  if(st.penaltyDisabled(card))return 0;
+  const{all,liveHeroes,afterlife}=st;
+  const inAft=card._zone==='afterlife';
+  switch(card.id){
+    case'apple_of_discord':{
+      const gc=all.filter(c=>c.s==='god').length,hc=liveHeroes.length,mc=all.filter(c=>c.s==='monster').length;
+      return-Math.max(0,gc-1)*5-Math.max(0,hc-1)*5-Math.max(0,mc-1)*5;
+    }
+    case'garden_hesperides':return all.some(c=>c.s==='monster'&&st.tags(c).includes('적대적'))?0:-12;
+    case'river_lethe':return inAft?0:-20;
+    case'river_styx':return inAft?0:-20;
+    case'cerberus':return inAft?0:-5;
+    case'pegasus':return countTag(st,'현명함')?0:-10;
+    default:return 0;
+  }
+}
+function scoreHandDetailed(handIds,afterIds,special={}){
+  const st=makeScoreState(handIds,afterIds,special);
+  const rows=st.all.map(c=>{const bonus=calcBonus(c,st),penalty=calcPenalty(c,st);return{id:c.id,name:c.n,suit:c.s,base:c.b,bonus,penalty,inAft:c._zone==='afterlife'};});
+  const aftPenalty=afterIds.length*-10;
+  const total=rows.reduce((n,r)=>n+r.base+r.bonus+r.penalty,0)+aftPenalty;
+  return{rows,aftPenalty,total,state:st};
+}
+
+// ── UI card helpers ─────────────────────────────────────────────────────────
+function cardEl(id,opt={}){
+  const c=byId(id);if(!c)return document.createElement('div');
+  const d=document.createElement('div');d.className=`card ${SUIT_COLOR[c.s]||''}${opt.click?' click':''}${opt.afterlife?' afterlife-card':''}`;
+  d.innerHTML=`<div><div class="name">${esc(c.n)}</div><div class="meta">${SUIT_KO[c.s]} · 기본 ${c.b}</div><div class="tags">${(c.t||[]).map(esc).join(' · ')||'태그 없음'}</div><div class="effect">${esc(c.e)}</div></div>${opt.showPts?`<div class="pts" id="pts_${c.id}">계산 중</div>`:''}`;
+  d.addEventListener('click',e=>{if(e.target.closest('button,select,input,label'))return;if(opt.click)opt.click();else showDetail(id);});
+  return d;
+}
+function backEl(count){const d=document.createElement('div');d.className='card back-card';d.innerHTML=`<div class="name">비공개 손패</div><div class="effect">상대 카드 내용은 게임 종료 전까지 공개되지 않습니다.</div><div class="pts">${count}장</div>`;return d;}
+function showDetail(id){const c=byId(id);if(!c)return;$('detailTitle').textContent=`${c.n} · ${SUIT_KO[c.s]} · 기본 ${c.b}`;$('detailBody').innerHTML=`<div style="margin-bottom:8px">${(c.t||[]).length?(c.t||[]).map(t=>`<span style="display:inline-block;background:#334155;border-radius:6px;padding:2px 7px;margin:2px;font-size:13px">${esc(t)}</span>`).join(''):'태그 없음'}</div><div style="font-size:14px;line-height:1.7;color:#e2e8f0">${esc(c.e)}</div>${MAY_AFTERLIFE.has(id)?'<div style="margin-top:8px;color:#fbbf24;font-size:13px">🌑 사후세계에 버릴 수 있음</div>':''}`;$('detailDialog').showModal();}
+
+// ── room state ──────────────────────────────────────────────────────────────
+let me=null,roomInfo=null,members=[],mySeat=null,isHost=false;
+let fullState=null,view=null,revision=0,subscriptionsReady=false,saveBusy=false,matchSubmitted=false,pollTimer=null,isController=false;
+function renderRoom(){
+  $('roomCode').textContent=roomId||'-';
+  $('seatList').innerHTML=members.map(m=>`<div style="padding:8px 10px;background:#111827;border-radius:9px;margin:6px 0;display:flex;justify-content:space-between"><span>${Number(m.seat)+1}. ${esc(m.nickname)}${m.user_id===me?.user_id?' (나)':''}${m.user_id===roomInfo?.host_id?' · 방장':''}</span><span>${m.connected?'● 접속':'○ 끊김'}</span></div>`).join('');
+  $('roomHint').textContent='공식 사후세계/엔드게임 처리(v11.4.62) · 손패 비공개 · 사후세계 공개';
+}
+function publicSnapshot(){const s=fullState;return{version:GAME_VERSION,gameId:GAME_ID,_gameId:GAME_ID,started:true,controllerUserId:s.controllerUserId||me?.user_id||null,playerCount:s.playerCount,players:s.players.map(p=>({seat:p.seat,name:p.name})),current:s.current,startingPlayer:s.startingPlayer,turnNumber:s.turnNumber,phase:s.phase,discardPile:s.discardPile.slice(),afterlives:s.afterlives.map(a=>a.slice()),drawCount:s.drawPile.length,handCounts:s.hands.map(h=>h.length),pendingAfterlife:s.pendingAfterlife?{seat:s.pendingAfterlife.seat,cardId:s.pendingAfterlife.cardId,kind:s.pendingAfterlife.kind,remaining:s.pendingAfterlife.remaining??null}:null,finalizeTask:s.finalizeTask?deepClone(s.finalizeTask):null,gameOver:s.gameOver,result:s.result||null};}
+function privateSnapshotMap(){const out={};for(let p=0;p<fullState.playerCount;p++)out[String(p)]={hand:fullState.hands[p].slice(),specialData:deepClone(fullState.specialData[p]||freshSpecial()),pendingAfterlife:fullState.pendingAfterlife?.seat===p?deepClone(fullState.pendingAfterlife):null};out._host={drawPile:fullState.drawPile.slice(),hands:fullState.hands.map(h=>h.slice()),specialData:deepClone(fullState.specialData),pendingAfterlife:deepClone(fullState.pendingAfterlife||null),finalizeTask:deepClone(fullState.finalizeTask||null)};return out;}
+function makeView(pub,priv,seat){const own=priv?.[String(seat)]||priv||{};return{...deepClone(pub),ownHand:(own.hand||[]).slice(),ownSpecial:normalizeSpecial(own.specialData||{}),ownPending:deepClone(own.pendingAfterlife||null)};}
+function reconstructController(pub,priv){
+  const map=priv||{};let h=map._host;
+  if(!h){const hands=Array.from({length:Number(pub.playerCount||members.length)},(_,p)=>(map[String(p)]?.hand||[]).slice());const specialData=hands.map((_,p)=>normalizeSpecial(map[String(p)]?.specialData||{}));const afterlives=pub.afterlives||Array.from({length:hands.length},()=>[]);const used=new Set([...hands.flat(),...(pub.discardPile||[]),...afterlives.flat()]);h={drawPile:shuffle(ALL_IDS.filter(id=>!used.has(id))),hands,specialData,pendingAfterlife:null,finalizeTask:pub.finalizeTask||null};}
+  fullState={version:GAME_VERSION,gameId:GAME_ID,_gameId:GAME_ID,started:true,controllerUserId:pub.controllerUserId||roomInfo.host_id,playerCount:pub.playerCount,players:deepClone(pub.players),current:pub.current,startingPlayer:pub.startingPlayer,turnNumber:pub.turnNumber,phase:pub.phase,discardPile:deepClone(pub.discardPile||[]),afterlives:deepClone(pub.afterlives||Array.from({length:pub.playerCount},()=>[])),drawPile:(h.drawPile||[]).slice(),hands:(h.hands||[]).map(x=>x.slice()),specialData:(h.specialData||[]).map(normalizeSpecial),pendingAfterlife:deepClone(h.pendingAfterlife||null),finalizeTask:deepClone(h.finalizeTask||pub.finalizeTask||null),gameOver:!!pub.gameOver,result:deepClone(pub.result||null)};
+}
+async function syncState(force=false){try{const row=await loadFantasyState();const rev=Number(row?.revision||0);if(!force&&rev<=revision)return false;revision=rev;if(!row?.state){if(!fullState){isController=true;await startNewGame();}return true;}const ctrl=String(row.state.controllerUserId||roomInfo.host_id);isController=ctrl===String(me.user_id);if(isController)reconstructController(row.state,row.private);else fullState=null;view=makeView(row.state,row.private,mySeat);renderAll();if(view.gameOver&&view.result)showEnd(view.result);return true;}catch(e){console.warn('Greek sync',e);$('netBadge').textContent='연결 오류 · 재시도 중';return false;}}
+async function persist(reason){if(!isController||!fullState||saveBusy)return false;saveBusy=true;try{const pub=publicSnapshot(),priv=privateSnapshotMap();const newRev=await saveFantasyState(revision,pub,priv);revision=Number(newRev);view=makeView(pub,priv,mySeat);renderAll();if(fullState.gameOver&&fullState.result&&!matchSubmitted){matchSubmitted=true;const order=fullState.result.order.map(x=>members[Number(x.p)]?.user_id).filter(Boolean);try{await submitMatch(order);}catch(e){matchSubmitted=false;console.warn('Greek match submit',e);}}$('netBadge').textContent='BoardMate Realtime · 연결됨';return true;}catch(e){console.warn('Greek save',e);$('netBadge').textContent='저장 실패 · 다시 시도';return false;}finally{saveBusy=false;}}
+function buildGame(){const pc=members.length,pile=shuffle(ALL_IDS.slice()),hands=Array.from({length:pc},()=>[]);for(let r=0;r<7;r++)for(let p=0;p<pc;p++)hands[p].push(pile.pop());const first=Math.floor(Math.random()*pc);fullState={version:GAME_VERSION,gameId:GAME_ID,_gameId:GAME_ID,started:true,controllerUserId:me.user_id,playerCount:pc,players:members.map((m,i)=>({seat:i,name:m.nickname})),drawPile:pile,discardPile:[],afterlives:Array.from({length:pc},()=>[]),hands,current:first,startingPlayer:first,turnNumber:0,phase:'draw',specialData:Array.from({length:pc},()=>freshSpecial()),pendingAfterlife:null,finalizeTask:null,gameOver:false,result:null};}
+async function startNewGame(){if(!isController||fullState)return;buildGame();await persist('game-start');}
+
+// ── rendering ───────────────────────────────────────────────────────────────
+function renderAll(){if(!view)return;$('gamePanel').style.display='block';$('playersPanel').style.display='block';$('discardPanel').style.display='block';renderGame();renderTaskDialogs();}
+function scrollPos(){const h={};document.querySelectorAll('.player-row[data-seat] .card-row').forEach(el=>{const seat=el.closest('.player-row')?.dataset.seat;if(seat!=null)h[seat+':'+el.dataset.zone]=el.scrollLeft;});return{x:window.scrollX,y:window.scrollY,discard:$('discard')?.scrollLeft||0,h};}
+function restoreScroll(pos){if(!pos)return;requestAnimationFrame(()=>{if($('discard'))$('discard').scrollLeft=pos.discard||0;document.querySelectorAll('.player-row[data-seat] .card-row').forEach(el=>{const seat=el.closest('.player-row')?.dataset.seat;el.scrollLeft=pos.h?.[seat+':'+el.dataset.zone]||0;});window.scrollTo(pos.x||0,pos.y||0);});}
+function renderGame(){
+  const sp=scrollPos();const normalTurn=view.current===mySeat&&!view.gameOver&&['draw','discard'].includes(view.phase);const active=view.players[view.current];
+  if(view.gameOver){$('message').textContent='게임 종료';$('hint').textContent='최종 점수 계산 완료';}
+  else if(view.phase==='afterlife_effect'){$('message').textContent=`${esc(active?.name||'?')} · 사후세계 효과 처리 중`;$('hint').textContent=view.pendingAfterlife?.seat===mySeat?'즉시 효과를 완료하세요.':'다른 플레이어의 즉시 효과를 기다리는 중입니다.';}
+  else if(view.phase==='finalize'){$('message').textContent=`${esc(active?.name||'?')} · 게임 종료 처리 중`;$('hint').textContent=`${STAGE_LABEL[view.finalizeTask?.stage]||'최종 점수 처리'}`;}
+  else{$('message').textContent=normalTurn?'내 차례':`${esc(active?.name||'?')} 차례`;$('hint').textContent=view.phase==='draw'?(view.current===view.startingPlayer&&view.turnNumber===0?'첫 턴: 반드시 덱에서 뽑으세요.':'덱 또는 버린 카드에서 1장 가져오기'):'손에서 1장을 버리거나 사후세계에 보내세요.';}
+  $('deckBadge').textContent=`덱 ${view.drawCount}장`;$('discardCount').textContent=`${view.discardPile.length}장 / 10장`;
+  $('drawBtn').disabled=!(normalTurn&&view.phase==='draw'&&view.drawCount>0);$('drawBtn').onclick=()=>sendAction('DRAW');
+  $('discard').innerHTML='';view.discardPile.forEach((id,i)=>{const canTake=normalTurn&&view.phase==='draw'&&!(view.turnNumber===0&&view.current===view.startingPlayer);$('discard').appendChild(cardEl(id,{click:canTake?()=>sendAction('TAKE',{index:i}):null}));});
+  const order=Array.from({length:view.playerCount},(_,off)=>(mySeat+off)%view.playerCount);$('players').innerHTML='';
+  for(const p of order){const sec=document.createElement('section');sec.className='player-row'+(p===view.current&&!view.gameOver?' active':'');sec.dataset.seat=String(p);const isMe=p===mySeat,pName=view.players[p]?.name||'?',aftIds=view.afterlives[p]||[],handCount=view.handCounts[p];sec.innerHTML=`<div class="player-head"><h2>${isMe?'내 카드 · ':''}${esc(pName)}${p===view.current&&!view.gameOver?' ▶':''}</h2><div class="score" id="score_${p}">${isMe?'계산 중':'비공개'}</div></div><div class="zone-label">🤚 손패 ${handCount}장${isMe?' (비공개)':''}</div><div class="card-row" data-zone="hand" id="hand_${p}"></div><div class="zone-label">💀 사후세계 ${aftIds.length}장 (모두 공개)</div><div class="card-row afterlife-row" data-zone="aft" id="aft_${p}"></div>`;$('players').appendChild(sec);const handEl=$(`hand_${p}`);
+    if(isMe){view.ownHand.forEach((id,i)=>{const canDiscard=normalTurn&&view.phase==='discard';const canAft=canDiscard&&MAY_AFTERLIFE.has(id);const el=cardEl(id,{showPts:true,click:canDiscard&&!canAft?()=>sendAction('DISCARD',{index:i}):null});if(canDiscard){const row=document.createElement('div');row.style='display:flex;gap:5px;margin-top:6px';const bd=document.createElement('button');bd.className='configure';bd.textContent='버리기';bd.onclick=e=>{e.stopPropagation();sendAction('DISCARD',{index:i});};row.appendChild(bd);if(canAft){const ba=document.createElement('button');ba.className='configure';ba.style.background='rgba(100,116,139,.5)';ba.textContent='사후세계로';ba.onclick=e=>{e.stopPropagation();sendAction('AFTERLIFE',{index:i});};row.appendChild(ba);}el.appendChild(row);}handEl.appendChild(el);});}
+    else if(view.gameOver&&view.result?.hands){view.result.hands[p].forEach(id=>handEl.appendChild(cardEl(id,{})));}else if(handCount>0)handEl.appendChild(backEl(handCount));
+    const aftEl=$(`aft_${p}`);aftIds.forEach(id=>aftEl.appendChild(cardEl(id,{afterlife:true})));if(!aftIds.length){const e=document.createElement('div');e.style='color:var(--muted);font-size:12px;padding:8px';e.textContent='비어 있음';aftEl.appendChild(e);}
+  }
+  updateOwnScore();restoreScroll(sp);
+}
+function updateOwnScore(){if(!view)return;try{const aft=view.afterlives[mySeat]||[];const det=scoreHandDetailed(view.ownHand,aft,view.ownSpecial);$('score_'+mySeat).textContent=det.total+'점';const map=new Map(det.rows.map(r=>[r.id,r]));for(const id of view.ownHand){const e=$('pts_'+id),r=map.get(id);if(e&&r)e.textContent=`${r.base}${r.bonus?` ${r.bonus>0?'+':''}${r.bonus}`:''}${r.penalty?` ${r.penalty}`:''}점`;}}catch(e){if($('score_'+mySeat))$('score_'+mySeat).textContent='계산 대기';}}
+
+// ── turn / afterlife instant effects ────────────────────────────────────────
+function sendAction(action,payload={}){if(!view||view.gameOver)return;if(isController)void hostAction(mySeat,action,payload);else void sendRoomBroadcast('frg_action',{seat:mySeat,action,payload});}
+async function addTopToDiscard(){if(fullState.drawPile.length)fullState.discardPile.push(fullState.drawPile.pop());}
+async function endTurnAfterAfterlife(effectAddedDiscard){fullState.pendingAfterlife=null;if(!effectAddedDiscard)await addTopToDiscard();if(fullState.discardPile.length>=10){await beginFinalize();return;}fullState.turnNumber++;fullState.current=(fullState.current+1)%fullState.playerCount;fullState.phase='draw';await persist('afterlife-done');}
+function fatesMatch(id,type,value){const c=byId(id);return type==='suit'?c?.s===value:(c?.t||[]).includes(value);}
+async function beginAfterlifeEffect(seat,id){
+  fullState.phase='afterlife_effect';fullState.pendingAfterlife=null;
+  if(id==='cornucopia'){for(let n=0;n<2&&fullState.drawPile.length;n++)fullState.hands[seat].push(fullState.drawPile.pop());fullState.pendingAfterlife={seat,cardId:id,kind:'cornucopia',remaining:2};await persist('cornucopia-begin');return;}
+  if(id==='moirai'){fullState.pendingAfterlife={seat,cardId:id,kind:'fates'};await persist('fates-begin');return;}
+  if(id==='oracle_delphi'){const cards=[];for(let n=0;n<5&&fullState.drawPile.length;n++)cards.push(fullState.drawPile.pop());fullState.pendingAfterlife={seat,cardId:id,kind:'oracle',cards};await persist('oracle-begin');return;}
+  if(id==='sacrificial_altar'){const heroes=livingHeroIds(seat);if(heroes.length){fullState.pendingAfterlife={seat,cardId:id,kind:'altar'};await persist('altar-begin');return;}}
+  await endTurnAfterAfterlife(false);
+}
+async function resolveInstant(seat,payload){
+  const p=fullState.pendingAfterlife;if(!p||p.seat!==seat)return;
+  if(p.kind==='cornucopia'){
+    const id=String(payload.cardId||'');const i=fullState.hands[seat].indexOf(id);if(i<0)return;fullState.hands[seat].splice(i,1);fullState.discardPile.push(id);p.remaining=Math.max(0,Number(p.remaining||0)-1);if(p.remaining>0){await persist('cornucopia-discard');return;}await endTurnAfterAfterlife(true);return;
+  }
+  if(p.kind==='fates'){
+    if(payload.skip){addLog(seat,'모이라이 효과 사용 안 함');await endTurnAfterAfterlife(false);return;}
+    const discardId=String(payload.discardId||''),i=fullState.hands[seat].indexOf(discardId);const type=payload.criterionType,value=String(payload.criterionValue||'');if(i<0||!['suit','tag'].includes(type))return;if(type==='suit'&&!Object.keys(SUIT_KO).includes(value))return;if(type==='tag'&&!ALL_TAGS.includes(value))return;
+    fullState.hands[seat].splice(i,1);fullState.discardPile.push(discardId);const revealed=[];let found=null;while(fullState.drawPile.length){const id=fullState.drawPile.pop();if(fatesMatch(id,type,value)){found=id;break;}revealed.push(id);}if(found)fullState.hands[seat].push(found);fullState.drawPile.push(...shuffle(revealed));addLog(seat,`모이라이: ${type==='suit'?SUIT_KO[value]:value} 선언${found?` → ${byId(found).n} 획득`:' → 일치 카드 없음'}`);await endTurnAfterAfterlife(true);return;
+  }
+  if(p.kind==='oracle'){
+    const bottom=Array.isArray(payload.bottomIds)?payload.bottomIds.map(String):[];const valid=new Set(p.cards||[]);if(bottom.some(id=>!valid.has(id)))return;const bottomSet=new Set(bottom),rest=(p.cards||[]).filter(id=>!bottomSet.has(id)),down=(p.cards||[]).filter(id=>bottomSet.has(id));fullState.drawPile=[...down.slice().reverse(),...fullState.drawPile];fullState.drawPile.push(...rest.slice().reverse());addLog(seat,`델포이의 신탁: ${down.length}장 덱 아래로 이동`);await endTurnAfterAfterlife(false);return;
+  }
+  if(p.kind==='altar'){
+    const target=payload.skip?'':String(payload.heroId||'');if(target){if(byId(target)?.s!=='hero'||!moveHandToAfterlife(seat,target))return;if(fullState.drawPile.length)fullState.hands[seat].push(fullState.drawPile.pop());addLog(seat,`희생제단: ${byId(target).n} 사후세계 → 덱 위 카드로 대체`);}else addLog(seat,'희생제단 추가 효과 사용 안 함');await endTurnAfterAfterlife(false);return;
+  }
+}
+
+// ── official endgame phases ─────────────────────────────────────────────────
+function stageCards(seat,stage){const ids=allIdsForSeat(seat);if(stage===1)return['moly','magic_bridle'].filter(id=>ids.includes(id));if(stage===2)return['lotus_eaters','circe','dionysus'].filter(id=>ids.includes(id));if(stage===3)return['athena','chiron','winged_sandals'].filter(id=>ids.includes(id));if(stage===4)return OMEGA_IDS.filter(id=>ids.includes(id));return[];}
+function activePenaltyTargets(seat,monsterOnly=false){return allIdsForSeat(seat).filter(id=>(monsterOnly?MONSTER_PENALTY_IDS:PENALTY_IDS).has(id)&&!penaltyOff(seat,id));}
+function validAddTargetExists(seat,id){const live=livingHeroIds(seat);if(id==='winged_sandals')return live.some(h=>!hasTagSeat(seat,h,'민첩'));if(id==='athena'){const tags=byId('athena').t;return live.some(h=>tags.some(t=>!hasTagSeat(seat,h,t)));}if(id==='chiron')return live.some(h=>ALL_TAGS.some(t=>!hasTagSeat(seat,h,t)));return false;}
+function isTaskRelevant(seat,stage,id){const all=allIdsForSeat(seat),hand=fullState.hands[seat]||[],live=livingHeroIds(seat);if(!all.includes(id))return false;if(stage===1){if(bonusOff(seat,id))return false;return id==='moly'?activePenaltyTargets(seat,false).length>0:activePenaltyTargets(seat,true).length>0;}if(stage===2){return !penaltyOff(seat,id)&&(id!=='dionysus'||all.some(x=>byId(x)?.s==='hero'));}if(stage===3)return !bonusOff(seat,id)&&validAddTargetExists(seat,id);if(stage===4){if(penaltyOff(seat,id))return false;if(HOSTILE_MONSTERS.includes(id))return live.length>0;if(id==='heracles')return hand.includes('heracles')&&live.some(h=>h!=='heracles');if(id==='pomegranate')return hand.some(x=>byId(x)?.s==='god');}return false;}
+async function beginFinalize(){fullState.phase='finalize';fullState.pendingAfterlife=null;fullState.finalizeTask={seat:0,stage:1,remaining:stageCards(0,1)};fullState.current=0;await advanceFinalize('finalize-begin');}
+async function advanceFinalize(reason='finalize-step'){
+  while(fullState.finalizeTask){const t=fullState.finalizeTask;t.remaining=(t.remaining||[]).filter(id=>isTaskRelevant(t.seat,t.stage,id));if(t.remaining.length){fullState.current=t.seat;await persist(reason);return;}if(t.stage<4){t.stage++;t.remaining=stageCards(t.seat,t.stage);continue;}if(t.seat+1<fullState.playerCount){t.seat++;t.stage=1;t.remaining=stageCards(t.seat,1);continue;}fullState.finalizeTask=null;await finishGame();return;}
+}
+function removeFinalizeCard(id){const t=fullState.finalizeTask;t.remaining=t.remaining.filter(x=>x!==id);}
+function monsterQualifies(seat,monsterId,heroId){const tags=tagsForSeat(seat,heroId);if(monsterId==='antaeus')return tags.includes('완력');if(monsterId==='medusa')return tags.includes('영악함')||tags.includes('민첩');if(monsterId==='minotaur')return tags.includes('영악함')||tags.includes('완력');if(monsterId==='scylla_charybdis')return tags.includes('민첩');if(monsterId==='sirens')return tags.includes('영악함');return false;}
+function helmetCanSave(seat){return(fullState.hands[seat]||[]).includes('helmet_of_hades')&&!specialFor(seat).helmetUsed;}
+function applyHeroDeaths(seat,deaths,helmetSave=''){let ds=uniq(deaths).filter(id=>(fullState.hands[seat]||[]).includes(id)&&byId(id)?.s==='hero');if(helmetSave&&helmetCanSave(seat)&&ds.includes(helmetSave)){ds=ds.filter(x=>x!==helmetSave);specialFor(seat).helmetUsed=true;addLog(seat,`하데스의 투구: ${byId(helmetSave).n} 생존 유지`);}for(const id of ds)if(moveHandToAfterlife(seat,id))addLog(seat,`${byId(id).n} → 사후세계`);return ds;}
+async function resolveFinalize(seat,payload){
+  const t=fullState.finalizeTask;if(!t||t.seat!==seat)return;const id=String(payload.cardId||'');if(!t.remaining.includes(id)||!isTaskRelevant(seat,t.stage,id)){await advanceFinalize('finalize-skip-invalid');return;}
+  if(t.stage===1){
+    if(payload.skip){addLog(seat,`${byId(id).n} CLEAR 보너스 사용 안 함`);removeFinalizeCard(id);await advanceFinalize();return;}
+    const target=String(payload.targetId||'');const candidates=activePenaltyTargets(seat,id==='magic_bridle');if(!candidates.includes(target))return;disablePenalty(seat,target,id);removeFinalizeCard(id);await advanceFinalize();return;
+  }
+  if(t.stage===2){
+    if(id==='lotus_eaters'){for(const h of livingHeroIds(seat)){disableTags(seat,h,id);disableBonus(seat,h,id);disablePenalty(seat,h,id);}addLog(seat,'연꽃 자생지 페널티 적용');}
+    else if(id==='circe'){const live=livingHeroIds(seat);if(!live.some(h=>hasTagSeat(seat,h,'영악함'))){for(const h of live.filter(h=>h!=='circe')){disableTags(seat,h,id);disableBonus(seat,h,id);}addLog(seat,'키르케 페널티 적용');}else addLog(seat,'키르케: 살아 있는 영악함 영웅이 있어 페널티 미발동');}
+    else if(id==='dionysus'){const target=String(payload.targetId||'');if(!allIdsForSeat(seat).includes(target)||byId(target)?.s!=='hero')return;disableTags(seat,target,id);disableBonus(seat,target,id);specialFor(seat).dionysusPenaltyTarget=target;addLog(seat,`디오니소스 페널티 → ${byId(target).n}`);}
+    removeFinalizeCard(id);await advanceFinalize();return;
+  }
+  if(t.stage===3){
+    if(payload.skip){addLog(seat,`${byId(id).n} ADD 보너스 사용 안 함`);removeFinalizeCard(id);await advanceFinalize();return;}
+    const target=String(payload.targetId||''),tag=String(payload.tag||'');if(!livingHeroIds(seat).includes(target))return;let valid=false;if(id==='athena')valid=(byId('athena').t||[]).includes(tag)&&!hasTagSeat(seat,target,tag);else if(id==='chiron')valid=ALL_TAGS.includes(tag)&&!hasTagSeat(seat,target,tag);else if(id==='winged_sandals')valid=tag==='민첩'&&!hasTagSeat(seat,target,'민첩');if(!valid)return;addTag(seat,target,tag,id);removeFinalizeCard(id);await advanceFinalize();return;
+  }
+  if(t.stage===4){
+    if(HOSTILE_MONSTERS.includes(id)){
+      const live=livingHeroIds(seat);let deaths=[];
+      if(id==='calydonian_boar')deaths=live.length>=3?[]:live.slice();
+      else if(id==='hydra')deaths=live.some(h=>tagsForSeat(seat,h).length>=3)?[]:live.slice();
+      else{const qualifiers=live.filter(h=>monsterQualifies(seat,id,h));if(!qualifiers.length)deaths=live.slice();else{const allowed=new Set(live.filter(h=>!monsterQualifies(seat,id,h)));deaths=uniq(Array.isArray(payload.deaths)?payload.deaths.map(String):[]).filter(h=>allowed.has(h));}}
+      applyHeroDeaths(seat,deaths,String(payload.helmetSave||''));addLog(seat,`${byId(id).n} Ω 처리 완료`);
+    }else if(id==='heracles'){
+      const target=String(payload.targetId||'');if(!livingHeroIds(seat).includes(target)||target==='heracles')return;applyHeroDeaths(seat,[target],String(payload.helmetSave||''));addLog(seat,'헤라클레스 Ω 처리 완료');
+    }else if(id==='pomegranate'){
+      const target=String(payload.targetId||'');if(!(fullState.hands[seat]||[]).includes(target)||byId(target)?.s!=='god')return;moveHandToAfterlife(seat,target);addLog(seat,`석류: ${byId(target).n} → 사후세계`);
+    }
+    removeFinalizeCard(id);await advanceFinalize();return;
+  }
+}
+async function finishGame(){fullState.gameOver=true;fullState.phase='end';fullState.finalizeTask=null;const scores=[],bases=[],details=[];for(let p=0;p<fullState.playerCount;p++){const det=scoreHandDetailed(fullState.hands[p],fullState.afterlives[p],fullState.specialData[p]);scores.push(det.total);bases.push([...fullState.hands[p],...fullState.afterlives[p]].reduce((n,id)=>n+(byId(id)?.b||0),0));details.push({aftPenalty:det.aftPenalty,rows:det.rows});}const order=scores.map((s,p)=>({p,s,b:bases[p]})).sort((a,b)=>b.s-a.s||a.b-b.b),best=order[0].s,minBase=Math.min(...order.filter(x=>x.s===best).map(x=>x.b)),winners=order.filter(x=>x.s===best&&x.b===minBase).map(x=>x.p);fullState.result={scores,bases,order,winners,hands:fullState.hands.map(h=>h.slice()),afterlives:fullState.afterlives.map(a=>a.slice()),details,specialData:deepClone(fullState.specialData)};await persist('game-over');}
+
+// ── action router ───────────────────────────────────────────────────────────
+async function hostAction(seat,action,payload={}){
+  if(!fullState||fullState.gameOver)return;
+  if(action==='INSTANT'){if(fullState.phase!=='afterlife_effect'||fullState.pendingAfterlife?.seat!==seat)return;await resolveInstant(seat,payload);return;}
+  if(action==='FINALIZE'){if(fullState.phase!=='finalize'||fullState.finalizeTask?.seat!==seat)return;await resolveFinalize(seat,payload);return;}
+  if(fullState.phase==='afterlife_effect'||fullState.phase==='finalize'||seat!==fullState.current)return;
+  if(action==='DRAW'&&fullState.phase==='draw'){if(!fullState.drawPile.length)return;fullState.hands[seat].push(fullState.drawPile.pop());fullState.phase='discard';await persist('draw');return;}
+  if(action==='TAKE'&&fullState.phase==='draw'){if(fullState.turnNumber===0&&fullState.current===fullState.startingPlayer)return;const i=Number(payload.index);if(!Number.isInteger(i)||i<0||i>=fullState.discardPile.length)return;fullState.hands[seat].push(fullState.discardPile.splice(i,1)[0]);fullState.phase='discard';await persist('take');return;}
+  if(action==='DISCARD'&&fullState.phase==='discard'){const i=Number(payload.index);if(!Number.isInteger(i)||i<0||i>=fullState.hands[seat].length)return;const id=fullState.hands[seat].splice(i,1)[0];fullState.discardPile.push(id);if(fullState.discardPile.length>=10){await beginFinalize();return;}fullState.turnNumber++;fullState.current=(fullState.current+1)%fullState.playerCount;fullState.phase='draw';await persist('discard');return;}
+  if(action==='AFTERLIFE'&&fullState.phase==='discard'){const i=Number(payload.index);if(!Number.isInteger(i)||i<0||i>=fullState.hands[seat].length)return;const id=fullState.hands[seat][i];if(!MAY_AFTERLIFE.has(id))return;fullState.hands[seat].splice(i,1);fullState.afterlives[seat].push(id);addLog(seat,`${byId(id).n} → 사후세계`);await beginAfterlifeEffect(seat,id);return;}
+}
+
+// ── task dialogs ────────────────────────────────────────────────────────────
+function closeIfOpen(el){if(el?.open)el.close();}
+function optionHtml(ids,placeholder='선택'){return `<option value="">${placeholder}</option>`+ids.map(id=>`<option value="${esc(id)}">${esc(byId(id)?.n||id)}</option>`).join('');}
+function clientTags(id){const c=byId(id),s=view.ownSpecial||freshSpecial();const base=s.tagsDisabled.includes(id)?[]:(c?.t||[]);return uniq([...base,...(s.addedTags?.[id]||[])]);}
+function clientLiveHeroes(){return view.ownHand.filter(id=>byId(id)?.s==='hero');}
+function clientAll(){return[...view.ownHand,...(view.afterlives[mySeat]||[])];}
+function clientPenaltyTargets(monsterOnly=false){return clientAll().filter(id=>(monsterOnly?MONSTER_PENALTY_IDS:PENALTY_IDS).has(id)&&!view.ownSpecial.penaltyDisabled.includes(id));}
+function bindClick(sel,fn){document.querySelectorAll(sel).forEach(el=>el.addEventListener('click',()=>fn(el)));}
+function renderTaskDialogs(){
+  if(!view)return;
+  if(view.phase==='afterlife_effect'&&view.pendingAfterlife?.seat===mySeat){renderInstantDialog();}else closeIfOpen($('instantDialog'));
+  if(view.phase==='finalize'&&view.finalizeTask?.seat===mySeat){if(view.finalizeTask.stage===4){closeIfOpen($('choiceDialog'));renderOmegaDialog();}else{closeIfOpen($('omegaDialog'));renderChoiceDialog();}}else{closeIfOpen($('choiceDialog'));closeIfOpen($('omegaDialog'));}
+}
+function renderInstantDialog(){
+  const p=view.ownPending||view.pendingAfterlife;if(!p)return;const c=byId(p.cardId);$('instantTitle').textContent=`${c?.n||'카드'} · 사후세계 즉시 효과`;$('instantSkip').style.display='';$('instantSave').style.display='';
+  if(p.kind==='cornucopia'){$('instantBody').innerHTML=`<p>덱에서 2장을 뽑았습니다. <b>버리는 공간에 ${p.remaining}장</b> 더 버리세요.</p><div class="checkbox-list">${view.ownHand.map(id=>`<button class="btn" data-corn="${esc(id)}">${esc(byId(id).n)}</button>`).join('')}</div>`;$('instantSkip').style.display='none';$('instantSave').style.display='none';bindClick('[data-corn]',el=>sendAction('INSTANT',{cardId:el.dataset.corn}));}
+  else if(p.kind==='fates'){$('instantBody').innerHTML=`<p>효과를 사용하려면 <b>다른 손패 1장</b>을 중앙에 버리고 수트 또는 태그를 선언하세요. 효과를 사용하지 않으면 규칙에 따라 덱 위 1장이 중앙에 공개됩니다.</p><div class="modal-row"><label>버릴 카드</label><select id="fatesDiscard">${optionHtml(view.ownHand)}</select></div><div class="modal-row"><label>선언 종류</label><select id="fatesType"><option value="suit">수트</option><option value="tag">태그</option></select></div><div class="modal-row"><label>선언</label><select id="fatesValue"></select></div>`;const fill=()=>{const type=$('fatesType').value;$('fatesValue').innerHTML=(type==='suit'?Object.entries(SUIT_KO).map(([v,n])=>`<option value="${v}">${n}</option>`):ALL_TAGS.map(v=>`<option value="${v}">${v}</option>`)).join('');};fill();$('fatesType').onchange=fill;$('instantSave').onclick=()=>sendAction('INSTANT',{discardId:$('fatesDiscard').value,criterionType:$('fatesType').value,criterionValue:$('fatesValue').value});$('instantSkip').onclick=()=>sendAction('INSTANT',{skip:true});}
+  else if(p.kind==='oracle'){$('instantBody').innerHTML=`<p>덱 위 5장을 확인했습니다. <b>덱 맨 아래로 보낼 카드</b>를 선택하세요. 나머지는 원래 순서대로 덱 위에 돌아갑니다.</p><div class="checkbox-list">${(p.cards||[]).map(id=>`<label><input type="checkbox" value="${esc(id)}" data-oracle> ${esc(byId(id).n)}</label>`).join('')}</div>`;$('instantSkip').textContent='아래로 보내지 않음';$('instantSave').onclick=()=>sendAction('INSTANT',{bottomIds:[...document.querySelectorAll('[data-oracle]:checked')].map(x=>x.value)});$('instantSkip').onclick=()=>sendAction('INSTANT',{bottomIds:[]});}
+  else if(p.kind==='altar'){const heroes=clientLiveHeroes();$('instantBody').innerHTML=`<p>손의 영웅 1명을 추가로 사후세계에 보낼 수 있습니다. 보냈다면 덱 맨 위 카드로 즉시 대체합니다.</p><select id="altarHero">${optionHtml(heroes)}</select>`;$('instantSave').onclick=()=>sendAction('INSTANT',{heroId:$('altarHero').value});$('instantSkip').onclick=()=>sendAction('INSTANT',{skip:true});}
+  if(!$('instantDialog').open)$('instantDialog').showModal();
+}
+function renderChoiceDialog(){
+  const t=view.finalizeTask,stage=t.stage;$('choiceTitle').textContent=STAGE_LABEL[stage];$('choiceHelp').textContent=stage===1?'보너스 CLEAR는 선택입니다. 원하는 효과부터 처리하거나 사용하지 않을 수 있습니다.':stage===2?'페널티 CLEAR는 필수입니다. 여러 장이면 원하는 순서로 하나씩 처리하세요.':'태그 ADD 보너스는 선택입니다. 원하는 순서로 적용하거나 건너뛸 수 있습니다.';let html='';
+  const live=clientLiveHeroes(),all=clientAll();
+  for(const id of t.remaining){const c=byId(id);if(stage===1){const targets=clientPenaltyTargets(id==='magic_bridle');html+=`<div class="choice-block" data-block="${id}"><h3>${esc(c.n)}</h3><div class="small">${id==='moly'?'원하는 카드 1장의 페널티 제거':'원하는 몬스터 1장의 페널티 제거'}</div><div class="row"><select data-target>${optionHtml(targets,'제거할 페널티 선택')}</select><button class="btn good" data-resolve="${id}">적용</button><button class="btn" data-skip="${id}">사용 안 함</button></div></div>`;}
+    else if(stage===2){if(id==='dionysus')html+=`<div class="choice-block"><h3>${esc(c.n)}</h3><div class="small">영웅 1명의 모든 태그와 보너스를 제거합니다.</div><div class="row"><select data-target>${optionHtml(all.filter(x=>byId(x)?.s==='hero'),'대상 영웅')}</select><button class="btn danger" data-resolve="${id}">지금 적용</button></div></div>`;else html+=`<div class="choice-block"><h3>${esc(c.n)}</h3><div class="small">${esc(c.e)}</div><div class="row"><button class="btn danger" data-resolve="${id}">이 효과를 다음으로 처리</button></div></div>`;}
+    else if(stage===3){let tags=id==='athena'?(byId('athena').t||[]):id==='winged_sandals'?['민첩']:ALL_TAGS;html+=`<div class="choice-block"><h3>${esc(c.n)}</h3><div class="row"><select data-target>${optionHtml(live,'대상 영웅')}</select><select data-tag>${tags.map(x=>`<option value="${x}">${x}</option>`).join('')}</select><button class="btn good" data-resolve="${id}">태그 추가</button><button class="btn" data-skip="${id}">사용 안 함</button></div></div>`;}}
+  $('choiceBody').innerHTML=html||'<div class="small">처리할 효과가 없습니다. 상태를 동기화하는 중입니다.</div>';
+  bindClick('[data-resolve]',el=>{const block=el.closest('.choice-block'),target=block?.querySelector('[data-target]')?.value||'',tag=block?.querySelector('[data-tag]')?.value||'';sendAction('FINALIZE',{cardId:el.dataset.resolve,targetId:target,tag});});bindClick('[data-skip]',el=>sendAction('FINALIZE',{cardId:el.dataset.skip,skip:true}));if(!$('choiceDialog').open)$('choiceDialog').showModal();
+}
+function monsterClientQualifies(monsterId,heroId){const tags=clientTags(heroId);if(monsterId==='antaeus')return tags.includes('완력');if(monsterId==='medusa')return tags.includes('영악함')||tags.includes('민첩');if(monsterId==='minotaur')return tags.includes('영악함')||tags.includes('완력');if(monsterId==='scylla_charybdis')return tags.includes('민첩');if(monsterId==='sirens')return tags.includes('영악함');return false;}
+function helmetSelect(ids){if(!view.ownHand.includes('helmet_of_hades')||view.ownSpecial.helmetUsed||!ids.length)return'';return`<div class="row"><span class="small">하데스의 투구(선택)</span><select data-helmet>${optionHtml(ids,'보호하지 않음')}</select></div>`;}
+function renderOmegaDialog(){
+  const t=view.finalizeTask,live=clientLiveHeroes();let html='';
+  for(const id of t.remaining){const c=byId(id);if(HOSTILE_MONSTERS.includes(id)){if(id==='calydonian_boar'||id==='hydra'){const stopped=id==='calydonian_boar'?live.length>=3:live.some(h=>clientTags(h).length>=3);const deaths=stopped?[]:live;html+=`<div class="omega-item"><div><div class="label">${esc(c.n)}</div><div class="cond">${stopped?'현재 조건 충족 → 영웅 피해 없음':'현재 조건 미충족 → 살아 있는 모든 영웅이 사후세계로 이동'}</div>${helmetSelect(deaths)}</div><button class="btn danger" data-omega="${id}">이 카드 처리</button></div>`;}else{const qualifiers=live.filter(h=>monsterClientQualifies(id,h)),non=live.filter(h=>!monsterClientQualifies(id,h));const allDie=!qualifiers.length;html+=`<div class="omega-item"><div style="flex:1"><div class="label">${esc(c.n)}</div><div class="cond">${allDie?'막을 수 있는 영웅 없음 → 모두 사후세계':'막을 수 있는 영웅: '+qualifiers.map(x=>byId(x).n).join(', ')}</div>${!allDie&&non.length?`<div class="checkbox-list">${non.map(h=>`<label><input type="checkbox" data-death value="${h}"> ${esc(byId(h).n)} 먼저 맞서기(사후세계)</label>`).join('')}</div>`:''}${helmetSelect(allDie?live:non)}</div><button class="btn danger" data-omega="${id}">이 카드 처리</button></div>`;}}
+    else if(id==='heracles'){const targets=live.filter(h=>h!=='heracles');html+=`<div class="omega-item"><div style="flex:1"><div class="label">헤라클레스</div><div class="row"><select data-target>${optionHtml(targets,'사후세계로 보낼 영웅')}</select></div>${helmetSelect(targets)}</div><button class="btn danger" data-omega="${id}">처리</button></div>`;}
+    else if(id==='pomegranate'){const gods=view.ownHand.filter(x=>byId(x)?.s==='god');html+=`<div class="omega-item"><div style="flex:1"><div class="label">석류</div><div class="row"><select data-target>${optionHtml(gods,'사후세계로 보낼 신')}</select></div></div><button class="btn danger" data-omega="${id}">처리</button></div>`;}}
+  $('omegaBody').innerHTML=html||'<div class="small">처리할 Ω 효과가 없습니다. 상태를 동기화하는 중입니다.</div>';
+  bindClick('[data-omega]',el=>{const block=el.closest('.omega-item'),deaths=[...(block?.querySelectorAll('[data-death]:checked')||[])].map(x=>x.value),targetId=block?.querySelector('[data-target]')?.value||'',helmetSave=block?.querySelector('[data-helmet]')?.value||'';sendAction('FINALIZE',{cardId:el.dataset.omega,deaths,targetId,helmetSave});});if(!$('omegaDialog').open)$('omegaDialog').showModal();
+}
+
+// ── results ─────────────────────────────────────────────────────────────────
+function showEnd(r){const names=view.players.map(p=>p.name),win=r.winners.length===1?`${esc(names[r.winners[0]])} 승리!`:`${r.winners.map(i=>esc(names[i])).join(', ')} 공동 승리!`;const rows=r.order.map((x,i)=>{const hand=(r.hands[x.p]||[]).map(id=>byId(id)).filter(Boolean),aft=(r.afterlives[x.p]||[]).map(id=>byId(id)).filter(Boolean);return`<tr><td>${i+1}위 · ${esc(names[x.p])}</td><td>${x.s}</td><td>${x.b}</td><td style="font-size:11px">${esc(hand.map(c=>c.n).join(', ')||'-')}</td><td style="font-size:11px;color:#94a3b8">${esc(aft.map(c=>c.n).join(', ')||'없음')}</td></tr>`;}).join('');$('endBody').innerHTML=`<div class="winner">${win}</div><table class="ranking" style="margin-top:14px"><thead><tr><th>순위</th><th>점수</th><th>기본힘 합</th><th>손패</th><th>💀 사후세계</th></tr></thead><tbody>${rows}</tbody></table><div style="margin-top:12px;color:#cbd5e1;font-size:12px">엔드게임 효과 처리 후 BoardMate 방에 결과가 자동 저장되었습니다.</div>`;if(!$('endDialog').open)$('endDialog').showModal();}
+
+async function withTimeout(promise,ms,label){let timer;const timeout=new Promise((_,rej)=>{timer=setTimeout(()=>rej(new Error(label)),ms);});try{return await Promise.race([promise,timeout]);}finally{clearTimeout(timer);}}
+async function boot(){
+  if(!configured()||!roomId)showFatal('BoardMate 방 정보가 없습니다. 다인플 방에서 그리스의 전설들을 열어주세요.');me=await withTimeout(getMe(),8000,'로그인 정보를 불러오지 못했습니다.');if(!me)showFatal('로그인이 필요합니다.');({room:roomInfo,members}=await withTimeout(loadRoom(),8000,'BoardMate 방 정보를 불러오지 못했습니다.'));if(roomInfo.game!==GAME_ID)showFatal('그리스의 전설들 방이 아닙니다. (방 게임: '+roomInfo.game+')');const found=members.find(m=>m.user_id===me.user_id);if(!found)showFatal('이 방의 참가자가 아닙니다.');mySeat=Number(found.seat);isHost=roomInfo.host_id===me.user_id;isController=isHost;renderRoom();$('netBadge').textContent='BoardMate 연결됨';
+  if(!subscriptionsReady){subscriptionsReady=true;void subscribeRoomBroadcast('frg_action',msg=>{if(isController&&msg?.action)void hostAction(Number(msg.seat),msg.action,msg.payload||{});}).catch(e=>console.warn('frg_action subscribe',e));void subscribeRoomBroadcast('state_changed',msg=>{const rev=Number(msg?.revision||0);if(rev>revision)void syncState(false);}).catch(e=>console.warn('state_changed subscribe',e));}
+  const row=await withTimeout(loadFantasyState(),10000,'게임 상태를 불러오지 못했습니다.');revision=Number(row?.revision||0);if(row?.state){const ctrl=String(row.state.controllerUserId||row.controller_user_id||roomInfo.host_id);isController=ctrl===String(me.user_id);if(isController)reconstructController(row.state,row.private);else fullState=null;view=makeView(row.state,row.private,mySeat);renderAll();if(view.gameOver&&view.result)showEnd(view.result);}else{isController=true;await startNewGame();if(!view)await syncState(true);}pollTimer=setInterval(()=>void syncState(false),10000);window.addEventListener('beforeunload',()=>{if(pollTimer)clearInterval(pollTimer);});setInterval(()=>void touchPresence(true),15000);
+}
+$('detailClose').onclick=()=>$('detailDialog').close();$('endClose').onclick=()=>$('endDialog').close();['choiceDialog','omegaDialog','instantDialog'].forEach(id=>$(id)?.addEventListener('cancel',e=>e.preventDefault()));
+boot().catch(e=>{console.error(e);$('netBadge').textContent='연결 실패';showFatal(e.message||'게임을 열 수 없습니다.');});
+})();
+</script>
+</body>
+</html>

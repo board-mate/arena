@@ -1,0 +1,12 @@
+BoardMate Arena v11.4.62 업로드 순서
+
+1) GitHub 저장소 루트에 다음 파일을 업로드/덮어쓰기
+   - app.js
+   - index.html
+   - sw.js
+   - online-fantasy-realms-greek.html
+2) 처음 그리스의 전설들을 추가하는 경우 Supabase SQL Editor에서 SUPABASE_FANTASY_REALMS_GREEK_V1.sql 실행
+3) GitHub Pages 배포 완료 후 강력 새로고침(Ctrl+F5)
+4) 3인 이상 방 생성 → 판타지 왕국: 그리스의 전설들 선택 → 게임 시작
+
+HANDOFF_VERSION.txt와 README는 배포 문서용이며 런타임 필수 파일은 아닙니다.

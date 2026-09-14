@@ -20,7 +20,7 @@ const unlockAlarmAudio=(...a)=>__alarmApi.unlockAlarmAudio(...a);
 window.__boardmateAppStarted=true;
 (async()=>{
   try{
-    const mod=await import('./alarm.js?v=11.4.60');
+    const mod=await import('./alarm.js?v=11.4.62');
     for(const key of Object.keys(__alarmApi)) if(typeof mod[key]==='function') __alarmApi[key]=mod[key];
     window.dispatchEvent(new Event('boardmate:alarm-ready'));
   }catch(err){
@@ -79,6 +79,7 @@ function gameInfo(game){
     kraken:{name:'노터치 크라켄',icon:'🐙',min:3,max:8},
     cascadia:{name:'캐스캐디아',icon:'🌲',min:2,max:4,tier:'beta'},
     fantasyrealms:{name:'판타지 왕국',icon:'🏰',min:3,max:6,page:'online-fantasy-realms.html'},
+    fantasyrealmsgreek:{name:'판타지 왕국: 그리스의 전설들',icon:'🏛️',min:3,max:6,page:'online-fantasy-realms-greek.html'},
     plakoro:{name:'프라코로 포켓몬',icon:'🎲',min:2,max:2,page:'online-plakoro.html'},
     powergrid:{name:'파워그리드',icon:'🔌',min:3,max:6,page:'online-powergrid.html'},
     quacks:{name:'돌팔이 약장수',icon:'🧪',min:2,max:4,page:'online-quacks.html',mode:'realtime',tier:'alpha'},
@@ -129,7 +130,7 @@ function ensureSiteFeatures(){
   if(!document.querySelector('link[rel="manifest"]')){const l=document.createElement('link');l.rel='manifest';l.href='./manifest.webmanifest';document.head.appendChild(l);}
   if(!document.querySelector('meta[name="theme-color"]')){const m=document.createElement('meta');m.name='theme-color';m.content='#141922';document.head.appendChild(m);}
   if(!document.querySelector('link[rel="manifest"]')){const l=document.createElement('link');l.rel='manifest';l.href='./manifest.webmanifest';document.head.appendChild(l);}
-  if('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js?v=11.4.60',{scope:'./'}).catch(()=>{});
+  if('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js?v=11.4.62',{scope:'./'}).catch(()=>{});
 }
 async function installBoardMate(){
   if(deferredInstallPrompt){
@@ -424,7 +425,7 @@ async function renderMyPage(){
 
 async function renderCreateRoom(){
   if(!onlineConfigured())return renderMulti();const me=await authProfile();if(!me){location.hash='#/login';return;}
-  const games=['maskmen','acquire','calico','cascadia','plakoro','powergrid','quacks','mandom','planetx','samurai','eldorado','airlandsea','thegame','kraken','fantasyrealms','avalon','secrethitler','onenightwerewolf'];let selected='maskmen';
+  const games=['maskmen','acquire','calico','cascadia','plakoro','powergrid','quacks','mandom','planetx','samurai','eldorado','airlandsea','thegame','kraken','fantasyrealms','fantasyrealmsgreek','avalon','secrethitler','onenightwerewolf'];let selected='maskmen';
   const tierLabel=(x)=>x.tier==='alpha'?'ALPHA · 보완 필요':x.tier==='beta'?'BETA · 보완 중':'정상 작동';
   const tierClass=(x)=>x.tier==='alpha'?'tier-alpha':x.tier==='beta'?'tier-beta':'tier-stable';
   const renderGame=(g)=>{const x=gameInfo(g);return `<button class="library-card game-choice ${g==='maskmen'?'selected':''}" data-room-game="${g}"><div class="library-icon">${x.icon}</div><div class="game-tier ${tierClass(x)}">${tierLabel(x)}</div><h2>${x.name}</h2><p>${x.min}명부터 · 최대 ${x.max}명</p></button>`;};

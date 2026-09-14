@@ -1,2 +1,1 @@
-BoardMate Arena v11.4.60
-Emergency boot syntax fix + v11.4.59 alarm/Planet X features retained
+V11.4.62 – Fantasy Realms: Greek Legends rules/endgame fix (2026-09-14)
