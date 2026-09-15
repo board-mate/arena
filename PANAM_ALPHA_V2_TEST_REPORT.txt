@@ -1,0 +1,19 @@
+BoardMate Arena v11.4.66 ALPHA — PAN AM v2 static verification
+
+PASS  JavaScript module syntax (node --check)
+PASS  app.js / alarm.js / multi-common.js syntax
+PASS  destination deck = 50 cards
+PASS  destination unique cities = 41
+PASS  event cards = 28 (7 rounds × 4)
+PASS  every event has exact stock/roll metadata flag
+PASS  Pan Am die = 6 faces: PAN AM / S+E / S+A / A+E / S+A / A
+PASS  route endpoint city references valid
+PASS  no isolated city in BoardMate route graph
+PASS  Pan Am expansion path route ids resolve
+PASS  no TTS / Steam / map-script history text in Pan Am game/info pages
+
+Remaining live verification:
+- Supabase room with 2–4 accounts
+- full 7-round playthrough
+- simultaneous reconnect/revision conflict behavior
+- route expansion order against physical board during long games

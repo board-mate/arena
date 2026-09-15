@@ -38,8 +38,8 @@
       function loadApp(attempt){
         var s=document.createElement('script');
         s.type='module';
-        s.src='./app.js?v=11.4.65'+(attempt?'&retry='+Date.now():'');
-        s.onload=function(){setTimeout(function(){if(!window.__boardmateAppStarted)showFallback('앱 파일의 실행이 완료되지 않았습니다. v11.4.65 복구 페이지에서 캐시를 한 번 초기화해 주세요.');},1200);};
+        s.src='./app.js?v=11.4.66'+(attempt?'&retry='+Date.now():'');
+        s.onload=function(){setTimeout(function(){if(!window.__boardmateAppStarted)showFallback('앱 파일의 실행이 완료되지 않았습니다. v11.4.66 복구 페이지에서 캐시를 한 번 초기화해 주세요.');},1200);};
         s.onerror=function(){s.remove();if(attempt<2)setTimeout(function(){loadApp(attempt+1);},600*(attempt+1));else showFallback('앱 파일 로딩에 3회 실패했습니다.');};
         document.head.appendChild(s);
       }
