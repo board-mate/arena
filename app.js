@@ -20,7 +20,7 @@ const unlockAlarmAudio=(...a)=>__alarmApi.unlockAlarmAudio(...a);
 window.__boardmateAppStarted=true;
 (async()=>{
   try{
-    const mod=await import('./alarm.js?v=11.4.62');
+    const mod=await import('./alarm.js?v=11.4.63');
     for(const key of Object.keys(__alarmApi)) if(typeof mod[key]==='function') __alarmApi[key]=mod[key];
     window.dispatchEvent(new Event('boardmate:alarm-ready'));
   }catch(err){
@@ -130,7 +130,7 @@ function ensureSiteFeatures(){
   if(!document.querySelector('link[rel="manifest"]')){const l=document.createElement('link');l.rel='manifest';l.href='./manifest.webmanifest';document.head.appendChild(l);}
   if(!document.querySelector('meta[name="theme-color"]')){const m=document.createElement('meta');m.name='theme-color';m.content='#141922';document.head.appendChild(m);}
   if(!document.querySelector('link[rel="manifest"]')){const l=document.createElement('link');l.rel='manifest';l.href='./manifest.webmanifest';document.head.appendChild(l);}
-  if('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js?v=11.4.62',{scope:'./'}).catch(()=>{});
+  if('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js?v=11.4.63',{scope:'./'}).catch(()=>{});
 }
 async function installBoardMate(){
   if(deferredInstallPrompt){
@@ -498,7 +498,7 @@ async function renderRoom(roomId){
   await touch();
   const draw=async()=>{data=await load();const {room,members}=data,isHost=room.host_id===me.user_id,gi=gameInfo(room.game),min=(room.game==='powergrid'?Math.max(3,Number(room.min_players||gi.min)):Number(room.min_players||gi.min));void processSingleRoomAlarm(room,me,{gameName:gi.name,gameHref:gameEntryHref(room)});
     let cancelled=room.status==='cancelled';
-    if(!cancelled&&room.status==='finished'&&['avalon','secrethitler','onenightwerewolf','plakoro','planetx'].includes(room.game)){
+    if(!cancelled&&room.status==='finished'&&['avalon','secrethitler','onenightwerewolf','plakoro','planetx','eldorado'].includes(room.game)){
       try{cancelled=Boolean((await callRpc('boardmate_get_cancel_status',{p_token:memberToken(),p_room_id:roomId}))?.cancelled);}catch{}
     }
     if(cancelled){shell(`<div class="page-head"><div><h1>🛑 ${esc(room.title)}</h1><p>${gi.name} · 참가자 전원 동의로 취소된 게임입니다.</p></div></div><section class="lobby-card" style="text-align:center"><h2>게임이 취소되었습니다</h2><p>이번 게임은 승패와 ELO에 반영되지 않습니다.</p><div class="actions" style="justify-content:center"><a class="primary link-btn" href="#/multi">다인플 목록</a><a class="ghost link-btn" href="#/">홈으로</a></div></section>`);return;}
