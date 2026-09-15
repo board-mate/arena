@@ -1,0 +1,17 @@
+BoardMate Arena ALPHA Safe Merge — 정적 검증 결과
+
+[PASS] online-eldorado.html module JavaScript: node --check 통과
+[PASS] online-samurai.html: 원본과 SHA-256 동일
+[PASS] online-quacks.html: 원본과 SHA-256 동일
+[PASS] app.js: 원본과 SHA-256 동일
+[PASS] Arena 등급: quacks / samurai / eldorado 모두 alpha
+[PASS] Eldorado: 기존 프리셋 맵 선택 기능 유지
+[PASS] Eldorado: 신규 조립 맵은 3~5개 서로 다른 타일 사용
+[PASS] Eldorado: 조립 타일 순서 변경 및 180도 회전 지원
+[PASS] Eldorado: 조립 상태는 state.mapLayout에 저장
+[PASS] Eldorado: 타일 경계 봉쇄선은 기존 gateFor / board.gates 구조 사용
+[PASS] Eldorado: 3~5 타일의 모든 순열/회전 조합 29,760개에 대해 4개 출발 위치에서 도착지까지 그래프 경로 존재 확인
+[PASS] Eldorado: 동일 29,760개 조합에서 각 타일 경계에 통과 가능한 인접 edge가 최소 1개 이상 존재 확인
+[PASS] Eldorado: Heroes/Hexes/확장 모티브 문구 미노출
+
+주의: 위 검증은 정적/논리 검증입니다. 실제 Supabase 방 생성 → 2개 브라우저 동시 접속 → 저장/재접속 시나리오는 배포 환경의 Supabase 설정과 실제 네트워크가 필요합니다.

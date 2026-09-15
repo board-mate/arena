@@ -1,0 +1,846 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<meta name="theme-color" content="#141922"/>
+<title>돌팔이 약장수 — BoardMate Arena</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  font-family:"Noto Sans KR",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  --ink:#18202d;--muted:#697386;--line:#ded9d0;--card:#fff;
+  --brand:#f36f21;--brand-dark:#cf5412;--brand-pale:#fff4ec;
+  --navy:#141922;
+  --steam-bg:#1b2838;--steam-mid:#2a475e;--steam-accent:#66c0f4;--steam-green:#a4d007;
+  --quacks-purple:#6b3fa0;--quacks-yellow:#f1c40f;--quacks-red:#e74c3c;
+  --quacks-dark:#1e1f29;--quacks-card:#282a36;
+  color:var(--ink);background:#f6f3ed;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;min-width:320px;min-height:100vh}
+button,input,a{font:inherit;cursor:pointer}
+a{color:inherit;text-decoration:none}
+
+/* ── 상단바 ── */
+.topbar{
+  height:56px;background:var(--navy);color:#fff;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 24px;position:sticky;top:0;z-index:30;
+  box-shadow:0 2px 14px #0004;
+}
+.brand{font-weight:900;font-size:19px;letter-spacing:-.04em}
+.brand span{color:#ff8a43}
+.back-link{
+  font-size:13px;font-weight:700;color:#aab4c3;
+  display:flex;align-items:center;gap:5px;
+  padding:7px 11px;border-radius:9px;border:1px solid #ffffff18;
+  transition:border-color .15s,color .15s;
+}
+.back-link:hover{color:#fff;border-color:#ffffff40}
+
+/* ── 히어로 배너 — 돌팔이 약장수 특유 마법약 분위기 ── */
+.workshop-hero{
+  background:linear-gradient(160deg,#12141e 0%,#1e1024 40%,#0e1a2e 100%);
+  color:#c6d4df;padding:0 0 28px;
+}
+.hero-capsule{
+  width:100%;max-width:900px;margin:0 auto;
+  display:grid;grid-template-columns:460px 1fr;
+}
+.hero-image{position:relative;overflow:hidden;background:#0a0b14}
+.hero-image-placeholder{
+  width:100%;height:260px;
+  background:linear-gradient(135deg,#120b1f 0%,#2a1040 50%,#1a0c30 100%);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:14px;position:relative;overflow:hidden;
+}
+/* 부글부글 거품 장식 */
+.hero-image-placeholder::before{
+  content:"";position:absolute;
+  width:180px;height:180px;border-radius:50%;
+  background:radial-gradient(circle,#6b3fa022 0%,transparent 70%);
+  top:-30px;left:-30px;
+}
+.hero-image-placeholder::after{
+  content:"";position:absolute;
+  width:140px;height:140px;border-radius:50%;
+  background:radial-gradient(circle,#f1c40f18 0%,transparent 70%);
+  bottom:-20px;right:-20px;
+}
+.cauldron-svg{position:relative;z-index:1}
+.hero-subtitle-img{font-size:11px;color:#9b7fd4;margin:0;position:relative;z-index:1}
+.hero-meta{
+  background:#16202d;
+  padding:22px 20px 16px;
+  display:flex;flex-direction:column;gap:13px;
+}
+.hero-title{
+  font-size:24px;font-weight:900;color:#fff;
+  letter-spacing:-.03em;margin:0;line-height:1.2;
+}
+.hero-eng{font-size:12px;color:#8f98a0;margin:3px 0 0;font-weight:400}
+.tag-row{display:flex;gap:6px;flex-wrap:wrap}
+.tag{
+  font-size:11px;font-weight:700;padding:4px 10px;
+  border-radius:3px;letter-spacing:.02em;
+  background:#1b2838;color:var(--steam-accent);
+  border:1px solid #2a3f55;
+}
+.tag.purple{color:#c084fc;border-color:#3d1f5a}
+.tag.yellow{color:#fbbf24;border-color:#3d3010}
+.tag.orange{color:#fb923c;border-color:#3d2210}
+.hero-stats{display:flex;gap:16px;flex-wrap:wrap}
+.hero-stat label{font-size:10px;color:#8f98a0;font-weight:700;text-transform:uppercase;letter-spacing:.06em;display:block}
+.hero-stat b{font-size:18px;color:#fff;font-weight:900;display:block;margin-top:2px}
+.hero-stat small{font-size:11px;color:#9b7fd4}
+.play-btn{
+  background:linear-gradient(90deg,#75b022,#588a1b);
+  color:#fff;font-size:14px;font-weight:900;
+  border:0;border-radius:4px;padding:12px 0;width:100%;
+  box-shadow:0 2px 4px #00000033;
+  transition:filter .15s;
+}
+.play-btn:hover{filter:brightness(1.1)}
+.play-btn-sub{font-size:11px;color:#688a2c;margin:4px 0 0;text-align:center;font-weight:400}
+
+/* ── 본문 레이아웃 ── */
+.workshop-body{
+  max-width:900px;margin:0 auto;
+  padding:24px 20px 60px;
+  display:grid;grid-template-columns:minmax(0,1fr) 220px;
+  gap:20px;
+}
+.main-col{display:flex;flex-direction:column;gap:18px}
+.side-col{display:flex;flex-direction:column;gap:14px}
+
+/* ── 섹션 패널 ── */
+.panel{
+  background:var(--card);border:1px solid var(--line);
+  border-radius:16px;padding:20px;
+  box-shadow:0 6px 18px #1318230a;
+}
+.panel h2{
+  margin:0 0 14px;font-size:16px;font-weight:900;
+  letter-spacing:-.02em;
+  padding-bottom:10px;border-bottom:1px solid var(--line);
+}
+.panel-steam{
+  background:#16202d;border:1px solid #2a3f55;
+  border-radius:10px;padding:16px;color:#c6d4df;
+}
+.panel-steam h3{
+  margin:0 0 12px;font-size:13px;font-weight:900;
+  text-transform:uppercase;letter-spacing:.06em;color:#8f98a0;
+}
+
+/* ── 게임 설명 ── */
+.desc-block{font-size:14px;line-height:1.75;color:#334155}
+.desc-block p{margin:0 0 12px}
+.desc-block p:last-child{margin:0}
+.desc-block strong{color:var(--ink)}
+.rule-highlight{
+  background:linear-gradient(90deg,#f5f0ff,#fdf4ff);
+  border-left:3px solid var(--quacks-purple);
+  border-radius:0 8px 8px 0;padding:10px 14px;margin:14px 0;
+  font-size:13px;color:#4a2070;
+}
+
+/* ── 약재 칩 테이블 ── */
+.chip-table{
+  width:100%;border-collapse:collapse;font-size:13px;
+  margin:12px 0;
+}
+.chip-table th{
+  text-align:left;padding:8px 10px;
+  font-size:11px;font-weight:900;color:var(--muted);
+  border-bottom:2px solid var(--line);
+  letter-spacing:.04em;
+}
+.chip-table td{
+  padding:9px 10px;border-bottom:1px solid #f0f2f5;
+  vertical-align:middle;
+}
+.chip-table tr:last-child td{border:0}
+.chip-dot{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:28px;height:28px;border-radius:50%;
+  font-size:11px;font-weight:900;color:#fff;
+  box-shadow:0 2px 5px #0002;
+  flex-shrink:0;
+}
+.chip-dot.white{background:#dde3ea;color:#334155;border:1px solid #cbd5e1}
+.chip-dot.orange{background:#e08a2c}
+.chip-dot.green{background:#22c55e}
+.chip-dot.blue{background:#3b82f6}
+.chip-dot.red{background:#e74c3c}
+.chip-dot.yellow{background:#f1c40f;color:#332900}
+.chip-dot.purple{background:#9b59b6}
+.chip-dot.black{background:#1c1c2e;border:1px solid #4b5167}
+.chip-name{font-weight:900;margin-left:8px}
+.chip-ability{color:var(--muted);font-size:12px;line-height:1.55}
+.chip-cost{
+  font-size:11px;font-weight:700;
+  background:#f8fafc;border:1px solid #e2e8f0;
+  border-radius:6px;padding:3px 7px;
+  white-space:nowrap;color:#475569;
+}
+
+/* ── 스크린샷 그리드 ── */
+.screenshot-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.screenshot{border-radius:8px;overflow:hidden;border:1px solid var(--line);background:#0a1628}
+.screenshot-ph{
+  height:112px;background:linear-gradient(135deg,#12141e,#1e1024);
+  display:flex;align-items:center;justify-content:center;
+}
+
+/* ── 진행 단계 ── */
+.rule-steps{display:flex;flex-direction:column;gap:10px}
+.rule-step{display:flex;gap:12px;align-items:flex-start}
+.step-num{
+  width:28px;height:28px;border-radius:50%;
+  background:var(--quacks-purple);color:#fff;font-weight:900;font-size:13px;
+  display:grid;place-items:center;flex-shrink:0;margin-top:1px;
+}
+.step-body b{font-size:13px;display:block;margin-bottom:3px}
+.step-body p{font-size:12px;color:var(--muted);margin:0;line-height:1.6}
+
+/* ── 확장 배지 ── */
+.expansion-list{display:flex;flex-direction:column;gap:8px}
+.expansion-item{
+  display:flex;align-items:center;gap:10px;
+  padding:10px 12px;border-radius:10px;
+  border:1px solid var(--line);background:#fafbfc;
+}
+.exp-icon{font-size:22px;width:36px;text-align:center;flex-shrink:0}
+.exp-text b{font-size:13px;display:block}
+.exp-text small{font-size:11px;color:var(--muted)}
+.exp-badge{
+  margin-left:auto;font-size:10px;font-weight:900;
+  padding:3px 8px;border-radius:999px;
+  background:#f0fdf4;color:#166534;flex-shrink:0;
+}
+
+/* ── 정보 패널 ── */
+.info-row{
+  display:flex;justify-content:space-between;align-items:baseline;
+  padding:8px 0;border-bottom:1px solid #f0f2f5;
+  font-size:13px;gap:8px;
+}
+.info-row:last-child{border:0;padding-bottom:0}
+.info-label{color:var(--muted);font-weight:700;flex-shrink:0}
+.info-val{color:var(--ink);text-align:right}
+
+/* ── 태그 클라우드 ── */
+.tag-cloud{display:flex;flex-wrap:wrap;gap:6px}
+.tag-chip{
+  font-size:11px;font-weight:700;padding:5px 10px;
+  border-radius:999px;background:#f1f5f9;color:#334155;
+  border:1px solid #dde3ea;
+}
+.tag-chip:hover{border-color:var(--brand);color:var(--brand)}
+
+/* ── 연관 게임 ── */
+.related-list{display:flex;flex-direction:column;gap:8px}
+.related-card{
+  display:flex;align-items:center;gap:10px;
+  padding:10px;border-radius:10px;border:1px solid var(--line);
+  background:white;transition:border-color .15s,transform .12s;
+}
+.related-card:hover{border-color:#f1b48d;transform:translateY(-1px)}
+.related-icon{font-size:24px;width:40px;height:40px;border-radius:9px;display:grid;place-items:center;flex-shrink:0}
+.related-text b{font-size:13px;font-weight:900;display:block}
+.related-text small{font-size:11px;color:var(--muted)}
+.tier-badge{font-size:10px;font-weight:900;padding:3px 7px;border-radius:999px;flex-shrink:0;margin-left:auto}
+.tier-badge.alpha{background:#fff1b8;color:#7c5c00}
+.tier-badge.beta{background:#f0fdf4;color:#166534}
+.tier-badge.stable{background:#eff6ff;color:#1d4ed8}
+
+/* ── 구독 패널 ── */
+.sub-stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+.sub-stat{text-align:center;background:#1b2838;border-radius:6px;padding:10px 6px}
+.sub-stat b{font-size:20px;color:#fff;font-weight:900;display:block}
+.sub-stat small{font-size:10px;color:#8f98a0}
+.sub-btn{
+  width:100%;background:#5c7e10;border:0;border-radius:4px;
+  color:#fff;font-size:13px;font-weight:900;padding:11px 0;
+  transition:filter .15s;
+}
+.sub-btn:hover{filter:brightness(1.12)}
+.sub-note{font-size:11px;color:#8f98a0;text-align:center;margin-top:6px;line-height:1.5}
+
+/* ── 업데이트 로그 ── */
+.changelog{display:flex;flex-direction:column;gap:6px}
+.cl-item{display:flex;gap:10px;align-items:flex-start;font-size:13px}
+.cl-date{
+  font-size:11px;color:var(--muted);font-weight:700;
+  white-space:nowrap;padding-top:2px;min-width:76px;
+}
+.cl-desc{color:#334155;line-height:1.6}
+
+/* ── 푸터 ── */
+.workshop-footer{
+  background:#0d1117;color:#8f98a0;
+  font-size:12px;text-align:center;padding:18px;
+  line-height:1.7;border-top:1px solid #1e2a38;
+}
+.workshop-footer a{color:var(--steam-accent)}
+
+@media(max-width:720px){
+  .hero-capsule{grid-template-columns:1fr}
+  .hero-meta{padding:18px}
+  .workshop-body{grid-template-columns:1fr}
+  .side-col{order:-1}
+  .screenshot-grid{grid-template-columns:1fr}
+}
+@media(max-width:480px){
+  .topbar{padding:0 14px}
+  .hero-image-placeholder{height:200px}
+  .hero-title{font-size:20px}
+  .chip-table{font-size:12px}
+  .chip-table td,.chip-table th{padding:7px 6px}
+}
+</style>
+</head>
+<body>
+
+<!-- 상단바 -->
+<header class="topbar">
+  <div class="brand">Board<span>Mate</span> Arena</div>
+  <a class="back-link" href="https://board-mate.github.io/arena/">← 게임 목록</a>
+</header>
+
+<!-- 히어로 -->
+<section class="workshop-hero">
+  <div class="hero-capsule">
+    <div class="hero-image">
+      <div class="hero-image-placeholder">
+        <div class="cauldron-svg">
+          <svg viewBox="0 0 200 160" xmlns="http://www.w3.org/2000/svg" width="220" height="176">
+            <!-- 증기 -->
+            <ellipse cx="72" cy="28" rx="6" ry="14" fill="#9b59b633" transform="rotate(-12,72,28)"/>
+            <ellipse cx="100" cy="18" rx="6" ry="16" fill="#9b59b644"/>
+            <ellipse cx="130" cy="26" rx="6" ry="13" fill="#9b59b633" transform="rotate(10,130,26)"/>
+            <!-- 솥 몸체 -->
+            <ellipse cx="100" cy="120" rx="60" ry="18" fill="#1a0c30"/>
+            <path d="M42 90 Q38 130 100 140 Q162 130 158 90 Q140 100 100 102 Q60 100 42 90Z" fill="#2a1040"/>
+            <!-- 솥 가장자리 -->
+            <ellipse cx="100" cy="90" rx="58" ry="16" fill="#3d1f6a"/>
+            <!-- 약재 색상 거품 -->
+            <circle cx="78" cy="84" r="7" fill="#e74c3c88"/>
+            <circle cx="100" cy="80" r="9" fill="#f1c40f88"/>
+            <circle cx="122" cy="84" r="6" fill="#3b82f688"/>
+            <circle cx="90" cy="76" r="5" fill="#22c55e88"/>
+            <circle cx="112" cy="77" r="5" fill="#9b59b688"/>
+            <!-- 손잡이 -->
+            <rect x="34" y="86" width="14" height="8" rx="4" fill="#5a3a8a"/>
+            <rect x="152" y="86" width="14" height="8" rx="4" fill="#5a3a8a"/>
+            <!-- 하이라이트 -->
+            <ellipse cx="100" cy="91" rx="35" ry="7" fill="#6b3fa022"/>
+            <text x="100" y="152" font-size="9" text-anchor="middle" fill="#9b7fd4">BoardMate · 돌팔이 약장수</text>
+          </svg>
+        </div>
+        <p class="hero-subtitle-img">The Quacks of Quedlinburg · 원작 Wolfgang Warsch</p>
+      </div>
+    </div>
+
+    <div class="hero-meta">
+      <div>
+        <h1 class="hero-title">🧪 돌팔이 약장수</h1>
+        <p class="hero-eng">The Quacks of Quedlinburg — BoardMate ALPHA · 성분책 세트1 구현</p>
+      </div>
+
+      <div class="tag-row">
+        <span class="tag">🤝 멀티플레이</span>
+        <span class="tag purple">⚡ 실시간</span>
+        <span class="tag yellow">🧪 약재 뽑기</span>
+        <span class="tag orange">⚗️ 알파</span>
+        <span class="tag">🎲 보드게임</span>
+      </div>
+
+      <div class="hero-stats">
+        <div class="hero-stat">
+          <label>인원</label>
+          <b>2–4명</b>
+          <small>온라인 동시진행</small>
+        </div>
+        <div class="hero-stat">
+          <label>플레이 시간</label>
+          <b>45–75분</b>
+          <small>9라운드</small>
+        </div>
+        <div class="hero-stat">
+          <label>진행</label>
+          <b>⚡ 실시간</b>
+          <small>동시 행동</small>
+        </div>
+      </div>
+
+      <div>
+        <button class="play-btn" onclick="window.location.href='./index.html#/multi'">
+          지금 플레이 — BoardMate Arena
+        </button>
+        <p class="play-btn-sub">로그인 후 방 만들기 → 돌팔이 약장수 선택</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 본문 -->
+<div class="workshop-body">
+
+  <div class="main-col">
+
+    <!-- 게임 소개 -->
+    <div class="panel">
+      <h2>게임 소개</h2>
+      <div class="desc-block">
+        <p>
+          <strong>돌팔이 약장수</strong>는 볼프강 바르쉬(Wolfgang Warsch)가 디자인한 2018년작 보드게임입니다.
+          플레이어는 각자 마법 약재가 든 주머니에서 칩을 하나씩 뽑아 솥 위의 칸을 채워나갑니다.
+          멈추면 안전하게 점수를 받고, 계속 뽑으면 더 많은 보상을 노릴 수 있지만 —
+          솥이 폭발하면 아무것도 못 받습니다.
+        </p>
+        <p>
+          BoardMate 구현은 <strong>세트1 성분책</strong>을 기준으로 현재 게임 로직을 구성했습니다.
+          Steam TTS 원본에 포함된 확장 요소는 참고 자료이며, 현재 BoardMate 게임에 전부 구현된 것으로 표시하지 않습니다.
+        </p>
+        <div class="rule-highlight">
+          ⚡ 이 게임은 <strong>실시간 동시 진행</strong>입니다. 플레이어들이 각자 자기 주머니에서 동시에 뽑고,
+          모두가 '멈춤' 또는 '폭발' 상태가 되면 라운드가 종료됩니다.
+          다른 플레이어의 차례를 기다릴 필요가 없습니다.
+        </div>
+        <p>
+          총 9라운드가 끝나면 점수 트랙·루비·보너스 점수를 합산해 가장 높은 점수를 얻은 플레이어가 승리합니다.
+        </p>
+      </div>
+    </div>
+
+    <!-- 게임 진행 -->
+    <div class="panel">
+      <h2>게임 진행 (한 라운드)</h2>
+      <div class="rule-steps">
+        <div class="rule-step">
+          <div class="step-num">1</div>
+          <div class="step-body">
+            <b>약재 뽑기 단계</b>
+            <p>주머니에서 칩을 하나 뽑아 솥의 다음 빈 칸에 올려놓습니다. 멈추려면 '멈춤' 버튼을 누르세요. 누적 흰색 수치가 7을 넘으면 솥이 폭발합니다.</p>
+          </div>
+        </div>
+        <div class="rule-step">
+          <div class="step-num">2</div>
+          <div class="step-body">
+            <b>플라스크 사용 (선택)</b>
+            <p>라운드 당 1회, 방금 뽑은 칩을 주머니로 되돌릴 수 있습니다. 폭발 직전 마지막 수단입니다.</p>
+          </div>
+        </div>
+        <div class="rule-step">
+          <div class="step-num">3</div>
+          <div class="step-body">
+            <b>평가 단계</b>
+            <p>모두가 멈추거나 폭발하면 솥의 최종 칸을 기준으로 점수와 금화(구매력)를 계산합니다. 폭발 시 점수와 루비 중 하나만 선택합니다.</p>
+          </div>
+        </div>
+        <div class="rule-step">
+          <div class="step-num">4</div>
+          <div class="step-body">
+            <b>구매 단계</b>
+            <p>금화로 성분책에서 새 약재 칩을 구매해 주머니에 넣습니다. 강한 칩을 채울수록 다음 라운드에 더 멀리 갈 수 있습니다.</p>
+          </div>
+        </div>
+        <div class="rule-step">
+          <div class="step-num">5</div>
+          <div class="step-body">
+            <b>쥐 마커 이동</b>
+            <p>점수 트랙에서 뒤처진 플레이어에게 쥐 마커 보너스가 주어져 따라잡을 기회가 생깁니다.</p>
+          </div>
+        </div>
+        <div class="rule-step">
+          <div class="step-num">9</div>
+          <div class="step-body">
+            <b>게임 종료</b>
+            <p>9라운드가 끝나면 루비로 점수를 올린 뒤 최종 점수를 집계합니다. 가장 높은 점수의 플레이어가 승리!</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 약재 칩 가이드 -->
+    <div class="panel">
+      <h2>약재 칩 — 세트1 능력</h2>
+      <table class="chip-table">
+        <thead>
+          <tr>
+            <th>약재</th>
+            <th>능력</th>
+            <th>구매 비용</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>
+              <div style="display:flex;align-items:center;gap:8px">
+                <span class="chip-dot white">흰</span>
+                <span class="chip-name">흰색 약재</span>
+              </div>
+            </td>
+            <td class="chip-ability">기본 칩. 솥 진행에만 사용됩니다. 초기 주머니에 7개 포함.</td>
+            <td><span class="chip-cost">기본 지급</span></td>
+          </tr>
+          <tr>
+            <td>
+              <div style="display:flex;align-items:center;gap:8px">
+                <span class="chip-dot orange">주</span>
+                <span class="chip-name">주황 약재</span>
+              </div>
+            </td>
+            <td class="chip-ability">뽑으면 1칸 추가 이동.</td>
+            <td><span class="chip-cost">1개 3원</span></td>
+          </tr>
+          <tr>
+            <td>
+              <div style="display:flex;align-items:center;gap:8px">
+                <span class="chip-dot green">거</span>
+                <span class="chip-name">초록 (거미)</span>
+              </div>
+            </td>
+            <td class="chip-ability">주머니에서 추가로 1개 더 뽑습니다.</td>
+            <td><span class="chip-cost">1개 4원 / 2개 8원 / 4개 14원</span></td>
+          </tr>
+          <tr>
+            <td>
+              <div style="display:flex;align-items:center;gap:8px">
+                <span class="chip-dot blue">까</span>
+                <span class="chip-name">파랑 (까마귀해골)</span>
+              </div>
+            </td>
+            <td class="chip-ability">다음에 뽑을 칩을 고르거나 1회 제거할 수 있습니다.</td>
+            <td><span class="chip-cost">1개 5원 / 2개 10원 / 4개 19원</span></td>
+          </tr>
+          <tr>
+            <td>
+              <div style="display:flex;align-items:center;gap:8px">
+                <span class="chip-dot red">버</span>
+                <span class="chip-name">빨강 (버섯)</span>
+              </div>
+            </td>
+            <td class="chip-ability">솥에 있는 주황 칩 1개당 1칸 추가 이동.</td>
+            <td><span class="chip-cost">1개 6원 / 2개 10원 / 4개 16원</span></td>
+          </tr>
+          <tr>
+            <td>
+              <div style="display:flex;align-items:center;gap:8px">
+                <span class="chip-dot yellow">만</span>
+                <span class="chip-name">노랑 (맨드레이크)</span>
+              </div>
+            </td>
+            <td class="chip-ability">흰색 수치를 1 낮춰 폭발 위험을 줄입니다. 2라운드부터 구매 가능.</td>
+            <td><span class="chip-cost">1개 8원 / 2개 12원 / 4개 18원</span></td>
+          </tr>
+          <tr>
+            <td>
+              <div style="display:flex;align-items:center;gap:8px">
+                <span class="chip-dot purple">유</span>
+                <span class="chip-name">보라 (유령의 숨결)</span>
+              </div>
+            </td>
+            <td class="chip-ability">솥의 모든 칩 값 합계가 홀수면 1칸, 짝수면 2칸 추가. 3라운드부터 구매 가능.</td>
+            <td><span class="chip-cost">1개 9원</span></td>
+          </tr>
+          <tr>
+            <td>
+              <div style="display:flex;align-items:center;gap:8px">
+                <span class="chip-dot black">해</span>
+                <span class="chip-name">검정 (해골나방)</span>
+              </div>
+            </td>
+            <td class="chip-ability">뽑은 즉시 라운드 종료. 단, 이 칩을 가진 플레이어는 폭발로 취급하지 않습니다.</td>
+            <td><span class="chip-cost">1개 10원</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 확장 -->
+    <div class="panel">
+      <h2>TTS 원본의 확장 요소 — BoardMate 미구현</h2>
+      <div class="expansion-list">
+        <div class="expansion-item">
+          <div class="exp-icon">🧹</div>
+          <div class="exp-text">
+            <b>허브 마녀 확장</b>
+            <small>Steam TTS 원본에 포함된 참고 요소입니다. 현재 BoardMate ALPHA에는 적용하지 않습니다.</small>
+          </div>
+          <span class="exp-badge">TTS 참고</span>
+        </div>
+        <div class="expansion-item">
+          <div class="exp-icon">⚗️</div>
+          <div class="exp-text">
+            <b>연금술사 확장</b>
+            <small>Steam TTS 원본에 포함된 참고 요소입니다. 현재 BoardMate ALPHA에는 적용하지 않습니다.</small>
+          </div>
+          <span class="exp-badge">TTS 참고</span>
+        </div>
+        <div class="expansion-item" style="opacity:.6">
+          <div class="exp-icon">🔮</div>
+          <div class="exp-text">
+            <b>점쟁이 카드 덱 (24장)</b>
+            <small>본편 14장 + 허브 마녀 전용 3장 + 연금술사 전용 3장. BoardMate 구현 예정.</small>
+          </div>
+          <span class="exp-badge" style="background:#fef9c3;color:#854d0e">예정</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 스크린샷 -->
+    <div class="panel">
+      <h2>스크린샷</h2>
+      <div class="screenshot-grid">
+        <div class="screenshot">
+          <div class="screenshot-ph">
+            <svg viewBox="0 0 200 112" xmlns="http://www.w3.org/2000/svg" width="200" height="112">
+              <rect width="200" height="112" fill="#1e1f29"/>
+              <!-- 솥 UI 미리보기 -->
+              <rect x="8" y="8" width="184" height="60" rx="8" fill="#282a36" stroke="#3a3d50" stroke-width="1"/>
+              <!-- 칩들 -->
+              <circle cx="28" cy="34" r="9" fill="#dde3ea" stroke="#cbd5e1" stroke-width="1"/>
+              <text x="28" y="38" font-size="8" text-anchor="middle" fill="#334155" font-weight="bold">3</text>
+              <circle cx="50" cy="34" r="9" fill="#dde3ea" stroke="#cbd5e1" stroke-width="1"/>
+              <text x="50" y="38" font-size="8" text-anchor="middle" fill="#334155" font-weight="bold">1</text>
+              <circle cx="72" cy="34" r="9" fill="#22c55e"/>
+              <text x="72" y="38" font-size="8" text-anchor="middle" fill="#fff" font-weight="bold">1</text>
+              <circle cx="94" cy="34" r="9" fill="#dde3ea" stroke="#cbd5e1" stroke-width="1"/>
+              <text x="94" y="38" font-size="8" text-anchor="middle" fill="#334155" font-weight="bold">2</text>
+              <circle cx="116" cy="34" r="9" fill="#f1c40f"/>
+              <text x="116" y="38" font-size="8" text-anchor="middle" fill="#332900" font-weight="bold">1</text>
+              <circle cx="138" cy="34" r="9" fill="#e08a2c"/>
+              <text x="138" y="38" font-size="8" text-anchor="middle" fill="#fff" font-weight="bold">1</text>
+              <circle cx="160" cy="34" r="9" fill="#3b82f6"/>
+              <text x="160" y="38" font-size="8" text-anchor="middle" fill="#fff" font-weight="bold">2</text>
+
+              <!-- 흰색 합계 표시 -->
+              <rect x="8" y="78" width="184" height="26" rx="6" fill="#282a36" stroke="#3a3d50" stroke-width="1"/>
+              <text x="18" y="95" font-size="9" fill="#9aa3c0" font-weight="bold">흰색 합계</text>
+              <text x="100" y="95" font-size="11" fill="#f1c40f" font-weight="900" text-anchor="middle">6 / 7</text>
+              <text x="170" y="95" font-size="9" fill="#e74c3c" font-weight="bold" text-anchor="end">⚠ 위험!</text>
+            </svg>
+          </div>
+        </div>
+        <div class="screenshot">
+          <div class="screenshot-ph">
+            <svg viewBox="0 0 200 112" xmlns="http://www.w3.org/2000/svg" width="200" height="112">
+              <rect width="200" height="112" fill="#1e1f29"/>
+              <!-- 점수 트랙 미리보기 -->
+              <text x="10" y="22" font-size="9" fill="#8f98a0" font-weight="bold">점수 트랙</text>
+              <!-- 트랙 셀들 -->
+              <rect x="8" y="28" width="24" height="28" rx="5" fill="#20232e" stroke="#4b5064" stroke-width="1"/>
+              <text x="20" y="46" font-size="9" text-anchor="middle" fill="#fff" font-weight="bold">0</text>
+              <rect x="36" y="28" width="24" height="28" rx="5" fill="#20232e" stroke="#4b5064" stroke-width="1"/>
+              <text x="48" y="46" font-size="9" text-anchor="middle" fill="#fff" font-weight="bold">1</text>
+              <rect x="64" y="28" width="24" height="28" rx="5" fill="#20232e" stroke="#4b5064" stroke-width="1"/>
+              <text x="76" y="46" font-size="9" text-anchor="middle" fill="#fff" font-weight="bold">2</text>
+              <rect x="92" y="28" width="24" height="28" rx="5" fill="#3b3420" stroke="#d4b04c" stroke-width="1"/>
+              <text x="104" y="46" font-size="9" text-anchor="middle" fill="#fbbf24" font-weight="bold">3</text>
+              <rect x="120" y="28" width="24" height="28" rx="5" fill="#20232e" stroke="#4b5064" stroke-width="1"/>
+              <text x="132" y="46" font-size="9" text-anchor="middle" fill="#fff" font-weight="bold">4</text>
+              <rect x="148" y="28" width="24" height="28" rx="5" fill="#3a1515" stroke="#c94e78" stroke-width="1.5"/>
+              <text x="160" y="46" font-size="9" text-anchor="middle" fill="#f87171" font-weight="bold">5</text>
+
+              <!-- 마커들 -->
+              <circle cx="20" cy="23" r="7" fill="#60a5fa" stroke="#fff" stroke-width="1"/>
+              <text x="20" y="27" font-size="7" text-anchor="middle" fill="#fff" font-weight="bold">나</text>
+              <circle cx="104" cy="23" r="7" fill="#f472b6" stroke="#fff" stroke-width="1"/>
+              <text x="104" y="27" font-size="7" text-anchor="middle" fill="#fff" font-weight="bold">2P</text>
+
+              <!-- 플레이어 상태 -->
+              <rect x="8" y="68" width="88" height="36" rx="6" fill="#282a36" stroke="#60a5fa" stroke-width="1.5"/>
+              <text x="16" y="82" font-size="8" fill="#60a5fa" font-weight="bold">나 · 0점</text>
+              <text x="16" y="96" font-size="8" fill="#9aa3c0">💰 5원 · 💎 2루비</text>
+
+              <rect x="104" y="68" width="88" height="36" rx="6" fill="#282a36" stroke="#3a3d50" stroke-width="1"/>
+              <text x="112" y="82" font-size="8" fill="#f472b6" font-weight="bold">2P · 3점</text>
+              <text x="112" y="96" font-size="8" fill="#9aa3c0">💰 8원 · 💎 1루비</text>
+            </svg>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 업데이트 이력 -->
+    <div class="panel">
+      <h2>주요 업데이트 이력 (TTS 원본)</h2>
+      <div class="changelog">
+        <div class="cl-item">
+          <span class="cl-date">2023.04.24</span>
+          <span class="cl-desc">마녀/약재/환자 랜덤 버튼 추가 · 흰색 칩 합계 솥 좌측 즉시 표시 · 한국 정발판 용어 통일</span>
+        </div>
+        <div class="cl-item">
+          <span class="cl-date">2023.04.22</span>
+          <span class="cl-desc">연금술사 한글 확장 정발판 용어에 맞게 즉시 업데이트</span>
+        </div>
+        <div class="cl-item">
+          <span class="cl-date">2022.02.07</span>
+          <span class="cl-desc">UI 흰색 테마로 변경 · 뒤집혀있던 쥐꼬리 마커 정상화</span>
+        </div>
+        <div class="cl-item">
+          <span class="cl-date">2021.07.12</span>
+          <span class="cl-desc">첫 등록 — 풀확장 · 허브 마녀·연금술사 한글화 완료</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 출처 -->
+    <div class="panel">
+      <h2>출처 및 원본</h2>
+      <div class="desc-block">
+        <p>
+          이 BoardMate Arena 구현은
+          <strong>Steam TTS 창작마당</strong>의
+          <a href="https://steamcommunity.com/sharedfiles/filedetails/?id=2545515073"
+             target="_blank" style="color:var(--brand);font-weight:700;text-decoration:underline">
+            From님 돌팔이 약장수 풀확장 (ID: 2545515073)
+          </a>을 참고해
+          BoardMate 멀티플레이어 아키텍처에 맞게 재구성한 웹 구현입니다.
+        </p>
+        <p>
+          점쟁이 카드 덱 구성(본편 14장 / 허브 마녀 전용 3장 / 연금술사 전용 3장)은
+          댓글 고기억는날님의 검증 내용을 반영했습니다.
+          게임 원작의 저작권·상표는 Wolfgang Warsch 및 Schmidt Spiele에게 귀속됩니다.
+        </p>
+      </div>
+    </div>
+
+  </div><!-- /main-col -->
+
+  <!-- 사이드 칼럼 -->
+  <div class="side-col">
+
+    <div class="panel-steam">
+      <h3>BoardMate에서 플레이</h3>
+      <div class="sub-stats">
+        <div class="sub-stat"><b>3,186</b><small>구독자</small></div>
+        <div class="sub-stat"><b>19</b><small>즐겨찾기</small></div>
+      </div>
+      <button class="sub-btn" onclick="window.location.href='./index.html#/multi'">
+        ▶ 지금 플레이하기
+      </button>
+      <p class="sub-note">Steam 설치 불필요 — 브라우저에서 바로 플레이</p>
+    </div>
+
+    <div class="panel">
+      <h2>게임 정보</h2>
+      <div class="info-row">
+        <span class="info-label">제목</span>
+        <span class="info-val"><strong>돌팔이 약장수</strong></span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">원작</span>
+        <span class="info-val">Wolfgang Warsch (2018)</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">인원</span>
+        <span class="info-val">2 – 4명</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">진행 방식</span>
+        <span class="info-val">⚡ 실시간 동시</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">라운드</span>
+        <span class="info-val">총 9라운드</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">성분책</span>
+        <span class="info-val">세트1 (풀 구현)</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">언어</span>
+        <span class="info-val">한국어</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">상태</span>
+        <span class="info-val" style="color:#b45309;font-weight:900">⚗️ 알파</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">TTS 등록일</span>
+        <span class="info-val">2021. 7. 12</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">TTS 업데이트</span>
+        <span class="info-val">2023. 4. 24</span>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>태그</h2>
+      <div class="tag-cloud">
+        <span class="tag-chip">마법약 뽑기</span>
+        <span class="tag-chip">덱빌딩</span>
+        <span class="tag-chip">푸쉬유어럭</span>
+        <span class="tag-chip">2~4인</span>
+        <span class="tag-chip">실시간</span>
+        <span class="tag-chip">한국어</span>
+        <span class="tag-chip">성분책 세트1</span>
+        <span class="tag-chip">BoardMate</span>
+        <span class="tag-chip">Wolfgang Warsch</span>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>다른 온라인 게임</h2>
+      <div class="related-list">
+        <a class="related-card" href="https://board-mate.github.io/arena/">
+          <div class="related-icon" style="background:#fff4e6">🥊</div>
+          <div class="related-text">
+            <b>마스크맨</b>
+            <small>3–6인 · 안정</small>
+          </div>
+          <span class="tier-badge stable">안정</span>
+        </a>
+        <a class="related-card" href="https://board-mate.github.io/arena/">
+          <div class="related-icon" style="background:#fff8e6">⛩️</div>
+          <div class="related-text">
+            <b>사무라이</b>
+            <small>2–4인 · 알파</small>
+          </div>
+          <span class="tier-badge alpha">알파</span>
+        </a>
+        <a class="related-card" href="https://board-mate.github.io/arena/">
+          <div class="related-icon" style="background:#fef3ee">✈️</div>
+          <div class="related-text">
+            <b>에어 랜드 &amp; 씨</b>
+            <small>2인 · 베타</small>
+          </div>
+          <span class="tier-badge beta">베타</span>
+        </a>
+        <a class="related-card" href="https://board-mate.github.io/arena/">
+          <div class="related-icon" style="background:#f5f3ff">🏛️</div>
+          <div class="related-text">
+            <b>판타지 왕국: 그리스의 전설들</b>
+            <small>3–6인 · 안정 · NEW</small>
+          </div>
+          <span class="tier-badge stable">안정</span>
+        </a>
+      </div>
+    </div>
+
+  </div><!-- /side-col -->
+</div><!-- /workshop-body -->
+
+<footer class="workshop-footer">
+  <div>
+    BoardMate Arena — 보드게임 모임원을 위한 온라인 아케이드 &nbsp;·&nbsp;
+    <a href="https://github.com/board-mate/arena" target="_blank">GitHub</a> &nbsp;·&nbsp;
+    <a href="https://board-mate.github.io/arena/" target="_blank">사이트로 이동</a>
+  </div>
+  <div style="margin-top:6px;font-size:11px;color:#5a6a7a">
+    게임 원작 © Wolfgang Warsch / Schmidt Spiele &nbsp;·&nbsp;
+    TTS 풀확장 한글판 © From &nbsp;·&nbsp;
+    BoardMate 구현 © board-mate contributors
+  </div>
+</footer>
+
+</body>
+</html>

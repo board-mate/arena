@@ -1,0 +1,778 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<meta name="theme-color" content="#141922"/>
+<title>엘도라도 — BoardMate Arena</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  font-family:"Noto Sans KR",-apple-system,BlinkMacSystemFont,sans-serif;
+  --ink:#1f2a24;--muted:#6d786f;--line:#d9d4bf;--card:#fffef8;
+  --brand:#d79c2e;--brand-dark:#b07f1c;--brand-pale:#fffaed;
+  --navy:#141922;
+  --green:#70a94e;--yellow:#e6b84b;--blue:#56a8c7;--red:#c75b45;
+  --gray:#8c8f8a;--mountain:#3e4743;--gold:#d79c2e;--purple:#85579f;
+  --steam-bg:#1b2838;--steam-accent:#66c0f4;--steam-green:#a4d007;
+  color:var(--ink);
+  background:
+    radial-gradient(circle at 8% 8%,rgba(215,156,46,.08),transparent 28%),
+    radial-gradient(circle at 88% 15%,rgba(112,169,78,.08),transparent 22%),
+    linear-gradient(135deg,#f8f5e9,#eef3e8 55%,#f4efe2);
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;min-width:320px}
+button,a{font:inherit;cursor:pointer}
+a{color:inherit;text-decoration:none}
+
+/* ── 상단바 ── */
+.topbar{
+  height:56px;background:var(--navy);color:#fff;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 24px;position:sticky;top:0;z-index:30;
+  box-shadow:0 2px 14px #0004;
+}
+.brand{font-weight:900;font-size:19px;letter-spacing:-.04em}
+.brand span{color:#ff8a43}
+.back-link{
+  font-size:13px;font-weight:700;color:#aab4c3;
+  padding:7px 11px;border-radius:9px;border:1px solid #ffffff18;
+  transition:border-color .15s,color .15s;
+}
+.back-link:hover{color:#fff;border-color:#ffffff40}
+
+/* ── 히어로 — 열대 정글·황금 탐험 분위기 ── */
+.workshop-hero{
+  background:linear-gradient(160deg,var(--steam-bg) 0%,#1e2f1a 60%,#162819 100%);
+  color:#c6d4df;padding:0 0 28px;
+}
+.hero-capsule{
+  width:100%;max-width:900px;margin:0 auto;
+  display:grid;grid-template-columns:460px 1fr;
+}
+.hero-image{
+  background:#0c1a0a;
+  display:flex;align-items:center;justify-content:center;
+  min-height:260px;
+}
+.hero-meta{
+  background:#16202d;
+  padding:22px 20px 18px;
+  display:flex;flex-direction:column;gap:13px;
+}
+.hero-title{font-size:24px;font-weight:900;color:#fff;letter-spacing:-.03em;margin:0;line-height:1.2}
+.hero-eng{font-size:12px;color:#8f98a0;margin:3px 0 0;font-weight:400}
+.tag-row{display:flex;gap:6px;flex-wrap:wrap}
+.tag{
+  font-size:11px;font-weight:700;padding:4px 10px;border-radius:3px;
+  background:#1b2838;color:var(--steam-accent);border:1px solid #2a3f55;
+}
+.tag.green{color:var(--steam-green);border-color:#2a3a10}
+.tag.gold{color:#fbbf24;border-color:#3d3010}
+.tag.orange{color:#fb923c;border-color:#3d2210}
+.hero-stats{display:flex;gap:16px;flex-wrap:wrap}
+.hero-stat label{font-size:10px;color:#8f98a0;font-weight:700;text-transform:uppercase;letter-spacing:.06em;display:block}
+.hero-stat b{font-size:18px;color:#fff;font-weight:900;display:block;margin-top:2px}
+.hero-stat small{font-size:11px;color:#8fcf6a}
+.play-btn{
+  background:linear-gradient(90deg,#75b022,#588a1b);
+  color:#fff;font-size:14px;font-weight:900;
+  border:0;border-radius:4px;padding:12px 0;width:100%;
+  box-shadow:0 2px 4px #00000033;transition:filter .15s;
+}
+.play-btn:hover{filter:brightness(1.1)}
+.play-btn-sub{font-size:11px;color:#688a2c;margin:4px 0 0;text-align:center;font-weight:400}
+
+/* ── 본문 ── */
+.workshop-body{
+  max-width:900px;margin:0 auto;
+  padding:24px 20px 60px;
+  display:grid;grid-template-columns:minmax(0,1fr) 220px;
+  gap:20px;
+}
+.main-col{display:flex;flex-direction:column;gap:18px}
+.side-col{display:flex;flex-direction:column;gap:14px}
+
+/* ── 패널 ── */
+.panel{
+  background:var(--card);border:1px solid var(--line);
+  border-radius:16px;padding:20px;
+  box-shadow:0 8px 24px rgba(37,47,40,.09);
+}
+.panel h2{
+  margin:0 0 14px;font-size:16px;font-weight:900;
+  letter-spacing:-.02em;
+  padding-bottom:10px;border-bottom:1px solid var(--line);
+  color:var(--ink);
+}
+.panel-steam{
+  background:#16202d;border:1px solid #2a3f55;
+  border-radius:10px;padding:16px;color:#c6d4df;
+}
+.panel-steam h3{
+  margin:0 0 12px;font-size:12px;font-weight:900;
+  text-transform:uppercase;letter-spacing:.06em;color:#8f98a0;
+}
+
+/* ── 게임 설명 ── */
+.desc-block{font-size:14px;line-height:1.75;color:#334155}
+.desc-block p{margin:0 0 12px}
+.desc-block p:last-child{margin:0}
+.rule-highlight{
+  background:var(--brand-pale);border-left:3px solid var(--gold);
+  border-radius:0 8px 8px 0;padding:10px 14px;margin:14px 0;
+  font-size:13px;color:#5a3d08;
+}
+
+/* ── 지형 타일 표 ── */
+.terrain-grid{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:4px 0;
+}
+.terrain-tile{
+  border-radius:10px;padding:10px 12px;
+  border:1px solid transparent;
+}
+.terrain-tile.green{background:#f0f9eb;border-color:#bde0a2}
+.terrain-tile.yellow{background:#fffbea;border-color:#f0d87e}
+.terrain-tile.blue{background:#eef7fb;border-color:#9dd1e8}
+.terrain-tile.gray{background:#f4f5f6;border-color:#c9cccf}
+.terrain-tile.mountain{background:#f2f3f2;border-color:#b0b8b4}
+.terrain-tile.red{background:#fdf2f0;border-color:#e9b9b2}
+.terrain-tile b{font-size:12px;font-weight:900;display:block;margin-bottom:4px}
+.terrain-tile small{font-size:11px;color:var(--muted);line-height:1.5;display:block}
+
+/* ── 카드 색상 범례 ── */
+.card-legend{display:flex;flex-direction:column;gap:7px}
+.card-legend-row{
+  display:flex;align-items:flex-start;gap:10px;
+  padding:9px 12px;border-radius:10px;border:1px solid var(--line);
+  background:#fafbf9;
+}
+.card-dot{
+  width:12px;height:12px;border-radius:3px;
+  flex-shrink:0;margin-top:3px;
+}
+.card-dot.green{background:var(--green)}
+.card-dot.yellow{background:var(--yellow)}
+.card-dot.blue{background:var(--blue)}
+.card-dot.white{background:#a5a5a5}
+.card-dot.purple{background:var(--purple)}
+.card-legend-row b{font-size:13px;font-weight:900}
+.card-legend-row small{font-size:11px;color:var(--muted);line-height:1.5;margin-top:2px;display:block}
+
+/* ── 맵 목록 ── */
+.map-list{display:flex;flex-direction:column;gap:6px}
+.map-item{
+  display:grid;grid-template-columns:1fr auto auto;
+  align-items:center;gap:10px;
+  padding:10px 12px;border-radius:10px;
+  border:1px solid var(--line);background:#fafbf9;
+  font-size:13px;
+}
+.map-item b{font-weight:900}
+.map-diff{
+  font-size:10px;font-weight:900;padding:3px 8px;
+  border-radius:999px;white-space:nowrap;
+}
+.map-diff.easy{background:#f0fdf4;color:#166534}
+.map-diff.mid{background:#fffbeb;color:#92400e}
+.map-diff.hard{background:#fef2f2;color:#991b1b}
+.map-diff.exp{background:#f5f3ff;color:#4c1d95}
+.map-gates{font-size:11px;color:var(--muted);white-space:nowrap}
+
+/* ── 진행 단계 ── */
+.rule-steps{display:flex;flex-direction:column;gap:10px}
+.rule-step{display:flex;gap:12px;align-items:flex-start}
+.step-num{
+  width:28px;height:28px;border-radius:50%;
+  background:#2f6843;color:#fff;font-weight:900;font-size:13px;
+  display:grid;place-items:center;flex-shrink:0;margin-top:1px;
+}
+.step-body b{font-size:13px;display:block;margin-bottom:3px}
+.step-body p{font-size:12px;color:var(--muted);margin:0;line-height:1.6}
+
+/* ── 주요 카드 목록 ── */
+.card-table{width:100%;border-collapse:collapse;font-size:13px;margin:4px 0}
+.card-table th{
+  text-align:left;padding:7px 10px;font-size:11px;font-weight:900;
+  color:var(--muted);border-bottom:2px solid var(--line);letter-spacing:.04em;
+}
+.card-table td{padding:8px 10px;border-bottom:1px solid #f0f2f5;vertical-align:middle}
+.card-table tr:last-child td{border:0}
+.color-pip{
+  display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;
+  vertical-align:middle;
+}
+.color-pip.green{background:var(--green)}
+.color-pip.yellow{background:var(--yellow)}
+.color-pip.blue{background:var(--blue)}
+.color-pip.white{background:#a5a5a5}
+.color-pip.purple{background:var(--purple)}
+.price-badge{
+  font-size:10px;font-weight:900;
+  background:var(--brand-pale);color:#7c5200;
+  border:1px solid #f0d890;border-radius:6px;
+  padding:2px 7px;white-space:nowrap;
+}
+.item-tag{
+  font-size:10px;font-weight:900;color:#9d4030;
+  background:#fff0ed;border:1px solid #f5ccc6;border-radius:6px;
+  padding:2px 6px;margin-left:4px;
+}
+
+/* ── 정보/태그/연관 사이드 ── */
+.info-row{
+  display:flex;justify-content:space-between;align-items:baseline;
+  padding:8px 0;border-bottom:1px solid #f0f2f5;
+  font-size:13px;gap:8px;
+}
+.info-row:last-child{border:0;padding-bottom:0}
+.info-label{color:var(--muted);font-weight:700;flex-shrink:0}
+.info-val{color:var(--ink);text-align:right}
+.tag-cloud{display:flex;flex-wrap:wrap;gap:6px}
+.tag-chip{
+  font-size:11px;font-weight:700;padding:5px 10px;
+  border-radius:999px;background:#f1f5f9;color:#334155;
+  border:1px solid #dde3ea;
+}
+.tag-chip:hover{border-color:var(--brand);color:var(--brand)}
+.related-list{display:flex;flex-direction:column;gap:8px}
+.related-card{
+  display:flex;align-items:center;gap:10px;
+  padding:10px;border-radius:10px;border:1px solid var(--line);
+  background:white;transition:border-color .15s,transform .12s;
+}
+.related-card:hover{border-color:#e0bf70;transform:translateY(-1px)}
+.related-icon{font-size:22px;width:38px;height:38px;border-radius:9px;display:grid;place-items:center;flex-shrink:0}
+.related-text b{font-size:13px;font-weight:900;display:block}
+.related-text small{font-size:11px;color:var(--muted)}
+.tier-badge{font-size:10px;font-weight:900;padding:3px 7px;border-radius:999px;flex-shrink:0;margin-left:auto}
+.tier-badge.alpha{background:#fff1b8;color:#7c5c00}
+.tier-badge.beta{background:#f0fdf4;color:#166534}
+.tier-badge.stable{background:#eff6ff;color:#1d4ed8}
+
+/* ── 플레이 버튼 패널 ── */
+.sub-btn{
+  width:100%;background:#5c7e10;border:0;border-radius:4px;
+  color:#fff;font-size:13px;font-weight:900;padding:11px 0;
+  margin-bottom:6px;transition:filter .15s;
+}
+.sub-btn:hover{filter:brightness(1.12)}
+.sub-note{font-size:11px;color:#8f98a0;text-align:center;line-height:1.5}
+
+/* ── 출처 ── */
+.source-link{color:var(--brand);font-weight:700;text-decoration:underline}
+
+/* ── 푸터 ── */
+.workshop-footer{
+  background:#0d1117;color:#8f98a0;
+  font-size:12px;text-align:center;padding:18px;line-height:1.7;
+  border-top:1px solid #1e2a38;
+}
+.workshop-footer a{color:var(--steam-accent)}
+
+@media(max-width:720px){
+  .hero-capsule{grid-template-columns:1fr}
+  .hero-image{min-height:200px}
+  .workshop-body{grid-template-columns:1fr}
+  .side-col{order:-1}
+  .terrain-grid{grid-template-columns:1fr 1fr}
+}
+@media(max-width:480px){
+  .topbar{padding:0 14px}
+  .terrain-grid{grid-template-columns:1fr}
+  .card-table{font-size:12px}
+}
+</style>
+</head>
+<body>
+
+<!-- 상단바 -->
+<header class="topbar">
+  <div class="brand">Board<span>Mate</span> Arena</div>
+  <a class="back-link" href="https://board-mate.github.io/arena/">← 게임 목록</a>
+</header>
+
+<!-- 히어로 -->
+<section class="workshop-hero">
+  <div class="hero-capsule">
+    <!-- 정글 일러스트 SVG -->
+    <div class="hero-image">
+      <svg viewBox="0 0 460 260" xmlns="http://www.w3.org/2000/svg" width="460" height="260">
+        <!-- 하늘/배경 -->
+        <defs>
+          <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#0c1a0a"/>
+            <stop offset="100%" stop-color="#1a3318"/>
+          </linearGradient>
+          <linearGradient id="gold-glow" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#f8d87a"/>
+            <stop offset="100%" stop-color="#c78825"/>
+          </linearGradient>
+        </defs>
+        <rect width="460" height="260" fill="url(#sky)"/>
+
+        <!-- 안개 레이어 -->
+        <ellipse cx="230" cy="160" rx="260" ry="80" fill="#1a3318" opacity=".5"/>
+
+        <!-- 정글 나무들 -->
+        <polygon points="60,220 80,120 100,220" fill="#2d5c1e"/>
+        <polygon points="50,220 75,100 100,220" fill="#234d17"/>
+        <polygon points="100,220 125,130 150,220" fill="#2d5c1e"/>
+        <polygon points="310,220 335,110 360,220" fill="#2d5c1e"/>
+        <polygon points="360,220 385,125 410,220" fill="#234d17"/>
+        <polygon points="390,220 415,105 440,220" fill="#2d5c1e"/>
+
+        <!-- 강 -->
+        <path d="M0 190 Q80 175 160 185 Q240 195 320 180 Q400 165 460 175 L460 215 Q400 200 320 215 Q240 230 160 220 Q80 210 0 225Z"
+              fill="#2a6fa8" opacity=".7"/>
+        <path d="M0 195 Q100 188 200 192 Q300 196 460 185"
+              stroke="#4aa0d4" stroke-width="1.5" fill="none" opacity=".5"/>
+
+        <!-- 헥스 타일들 — 경로 암시 -->
+        <!-- 초록 정글 -->
+        <polygon points="145,155 165,143 185,155 185,179 165,191 145,179" fill="#70a94e" opacity=".85"/>
+        <text x="165" y="172" font-size="11" text-anchor="middle" fill="#fff" font-weight="bold">🗡️ 1</text>
+
+        <polygon points="185,130 205,118 225,130 225,154 205,166 185,154" fill="#70a94e" opacity=".85"/>
+        <text x="205" y="147" font-size="11" text-anchor="middle" fill="#fff" font-weight="bold">🗡️ 2</text>
+
+        <!-- 강 (파랑) -->
+        <polygon points="225,155 245,143 265,155 265,179 245,191 225,179" fill="#56a8c7" opacity=".85"/>
+        <text x="245" y="172" font-size="11" text-anchor="middle" fill="#fff" font-weight="bold">🛶 1</text>
+
+        <!-- 마을 (노랑) -->
+        <polygon points="265,130 285,118 305,130 305,154 285,166 265,154" fill="#e6b84b" opacity=".85"/>
+        <text x="285" y="147" font-size="11" text-anchor="middle" fill="#4f3c10" font-weight="bold">🪙 2</text>
+
+        <!-- 산 -->
+        <polygon points="305,155 325,143 345,155 345,179 325,191 305,179" fill="#3e4743" opacity=".85"/>
+        <text x="325" y="172" font-size="13" text-anchor="middle" fill="#aab4ae">⛰️</text>
+
+        <!-- 엘도라도 골인 -->
+        <polygon points="345,120 375,103 405,120 405,154 375,171 345,154" fill="#d7a827" opacity=".9"/>
+        <text x="375" y="138" font-size="14" text-anchor="middle" fill="#fff" font-weight="bold">🏆</text>
+        <text x="375" y="153" font-size="9" text-anchor="middle" fill="#ffe88a" font-weight="bold">ELDORADO</text>
+
+        <!-- 탐험가 토큰 -->
+        <circle cx="165" cy="167" r="11" fill="#d4473d" stroke="#fff" stroke-width="2"/>
+        <text x="165" y="172" font-size="9" text-anchor="middle" fill="#fff" font-weight="bold">1P</text>
+        <circle cx="205" cy="144" r="11" fill="#336bc4" stroke="#fff" stroke-width="2"/>
+        <text x="205" y="149" font-size="9" text-anchor="middle" fill="#fff" font-weight="bold">2P</text>
+
+        <!-- 봉쇄선 -->
+        <line x1="240" y1="108" x2="240" y2="200" stroke="#b84b3f" stroke-width="3" stroke-dasharray="6,4"/>
+        <rect x="210" y="89" width="60" height="18" rx="9" fill="#8d3028"/>
+        <text x="240" y="102" font-size="9" text-anchor="middle" fill="#fff" font-weight="bold">봉쇄선</text>
+
+        <!-- 하단 레이블 -->
+        <text x="230" y="248" font-size="10" text-anchor="middle" fill="#4a7a40">BoardMate Arena · 엘도라도 PVP</text>
+      </svg>
+    </div>
+
+    <!-- 메타 -->
+    <div class="hero-meta">
+      <div>
+        <h1 class="hero-title">🧭 엘도라도</h1>
+        <p class="hero-eng">The Quest for El Dorado — BoardMate ALPHA · 맵 타일 조립 지원</p>
+      </div>
+
+      <div class="tag-row">
+        <span class="tag">🤝 멀티플레이</span>
+        <span class="tag">⏳ 턴 기반</span>
+        <span class="tag green">🗺️ 덱빌딩 경주</span>
+        <span class="tag gold">🏆 길막 전략</span>
+        <span class="tag orange">⚗️ 알파</span>
+      </div>
+
+      <div class="hero-stats">
+        <div class="hero-stat">
+          <label>인원</label>
+          <b>2–4명</b>
+          <small>온라인 턴제</small>
+        </div>
+        <div class="hero-stat">
+          <label>플레이 시간</label>
+          <b>30–60분</b>
+          <small>맵 난이도 따라 상이</small>
+        </div>
+        <div class="hero-stat">
+          <label>맵</label>
+          <b>3–5타일</b>
+          <small>순서·180° 회전 조립</small>
+        </div>
+      </div>
+
+      <div>
+        <button class="play-btn" onclick="window.location.href='./index.html#/multi'">
+          지금 플레이 — BoardMate Arena
+        </button>
+        <p class="play-btn-sub">로그인 후 방 만들기 → 엘도라도 선택</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 본문 -->
+<div class="workshop-body">
+
+  <div class="main-col">
+
+    <!-- 게임 소개 -->
+    <div class="panel">
+      <h2>게임 소개</h2>
+      <div class="desc-block">
+        <p>
+          <strong>엘도라도</strong>는 라이너 크니지아(Reiner Knizia)가 디자인한 덱빌딩 경주 게임입니다.
+          플레이어는 각자 탐험가 덱을 구성하며 정글·강·마을 헥스 타일로 이뤄진 보드를 가로질러
+          가장 먼저 <strong>엘도라도</strong>에 도달하는 것을 목표로 합니다.
+        </p>
+        <p>
+          앞서 나아가는 것만이 전략이 아닙니다. 봉쇄선(Blockade)을 활용해 후발 탐험가의 진로를 막거나,
+          강력한 카드로 한 번에 여러 칸을 건너뛸 수도 있습니다.
+        </p>
+        <div class="rule-highlight">
+          🔑 <strong>핵심 규칙:</strong> 헥스 칸마다 통과 비용이 있습니다.
+          카드를 내서 그 칸의 색상·수치를 충족해야 이동할 수 있습니다.
+          한 번 쓴 카드는 버려지고, 덱이 소진되면 버린 더미를 섞어 다시 씁니다.
+        </div>
+      </div>
+    </div>
+
+    <!-- 게임 진행 -->
+    <div class="panel">
+      <h2>게임 진행</h2>
+      <div class="rule-steps">
+        <div class="rule-step">
+          <div class="step-num">1</div>
+          <div class="step-body">
+            <b>카드 내기 · 이동</b>
+            <p>손패에서 카드를 내어 인접 칸의 이동 비용을 충족하면 그 칸으로 이동합니다. 같은 턴에 여러 장을 내서 여러 칸을 연속 이동할 수 있습니다.</p>
+          </div>
+        </div>
+        <div class="rule-step">
+          <div class="step-num">2</div>
+          <div class="step-body">
+            <b>구매 (선택)</b>
+            <p>내고 남은 금화(🪙) 파워로 시장에서 새 카드를 구매합니다. 구매한 카드는 버린 더미 맨 아래로 들어갑니다.</p>
+          </div>
+        </div>
+        <div class="rule-step">
+          <div class="step-num">3</div>
+          <div class="step-body">
+            <b>봉쇄선 통과</b>
+            <p>맵 타일 경계의 봉쇄선을 처음 통과할 때 표시된 색상과 수치를 충족해야 합니다. 통과한 봉쇄선은 제거되고, 제거한 플레이어의 동률 판정 자료가 됩니다.</p>
+          </div>
+        </div>
+        <div class="rule-step">
+          <div class="step-num">4</div>
+          <div class="step-body">
+            <b>턴 종료 · 손패 보충</b>
+            <p>사용한 카드는 버린 더미로 보내고, 남은 손패는 유지하거나 원하는 만큼 버릴 수 있습니다. 이후 손패가 4장이 되도록 덱에서 보충합니다.</p>
+          </div>
+        </div>
+        <div class="rule-step">
+          <div class="step-num">🏆</div>
+          <div class="step-body">
+            <b>승리 조건</b>
+            <p>2인전은 각자의 탐험가 2개가 모두 도착해야 하며, 3–4인전은 탐험가 1개가 도착하면 최종 라운드가 발동합니다. 동률이면 제거한 봉쇄선 수와 최고 봉쇄 수치 등을 비교합니다.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 지형 타일 -->
+    <div class="panel">
+      <h2>지형 타일</h2>
+      <div class="terrain-grid">
+        <div class="terrain-tile green">
+          <b>🗡️ 정글</b>
+          <small>초록 카드 파워가 필요합니다. 가장 흔한 지형.</small>
+        </div>
+        <div class="terrain-tile yellow">
+          <b>🪙 마을</b>
+          <small>금화 파워로 이동. 카드 구매에도 쓸 수 있습니다.</small>
+        </div>
+        <div class="terrain-tile blue">
+          <b>🛶 강</b>
+          <small>파랑 파워가 필요합니다. 선원·선장 카드가 유리합니다.</small>
+        </div>
+        <div class="terrain-tile gray">
+          <b>🪨 돌무더기</b>
+          <small>표시된 수만큼 손패의 카드를 사용해야 통과합니다. 카드 색상·힘은 무관합니다.</small>
+        </div>
+        <div class="terrain-tile mountain">
+          <b>⛰️ 산</b>
+          <small>이동 불가. 경로를 결정하는 지형 장애물.</small>
+        </div>
+        <div class="terrain-tile red">
+          <b>🏕️ 베이스캠프</b>
+          <small>표시된 수만큼 손패의 카드를 게임에서 완전히 제거해야 통과합니다.</small>
+        </div>
+      </div>
+    </div>
+
+    <!-- 카드 색상 -->
+    <div class="panel">
+      <h2>카드 색상 &amp; 역할</h2>
+      <div class="card-legend">
+        <div class="card-legend-row">
+          <div class="card-dot green"></div>
+          <div>
+            <b>초록 — 정글 탐험</b>
+            <small>🗡️ 정글 파워. 길잡이(2), 인도자(3), 개척자(5) 등 정글 돌파에 특화됩니다.</small>
+          </div>
+        </div>
+        <div class="card-legend-row">
+          <div class="card-dot yellow"></div>
+          <div>
+            <b>노랑 — 금화</b>
+            <small>🪙 마을 이동 겸 구매력. 사진사(2), 기자(3), 백만장자(4) 등.</small>
+          </div>
+        </div>
+        <div class="card-legend-row">
+          <div class="card-dot blue"></div>
+          <div>
+            <b>파랑 — 수상 이동</b>
+            <small>🛶 강 파워. 선장(3), 특제 노(6·파기) 등 수상 지형에 강합니다.</small>
+          </div>
+        </div>
+        <div class="card-legend-row">
+          <div class="card-dot white"></div>
+          <div>
+            <b>흰색 — 만능</b>
+            <small>🗡️/🛶/🪙 중 하나로 선택해 사용. 잡역부(1), 모험가(2), 프로펠러 비행기(4·파기).</small>
+          </div>
+        </div>
+        <div class="card-legend-row">
+          <div class="card-dot purple"></div>
+          <div>
+            <b>보라 — 특수 능력</b>
+            <small>이동·드로우·파기 등 특수 행동. 원주민(인접 칸 이동), 측량사(2장 드로우) 등.</small>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 주요 카드 -->
+    <div class="panel">
+      <h2>주요 시장 카드</h2>
+      <table class="card-table">
+        <thead>
+          <tr>
+            <th>카드명</th>
+            <th>효과</th>
+            <th>비용</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="color-pip green"></span><strong>길잡이</strong></td>
+            <td>정글 이동 2</td>
+            <td><span class="price-badge">🪙 1</span></td>
+          </tr>
+          <tr>
+            <td><span class="color-pip green"></span><strong>인도자</strong></td>
+            <td>정글 이동 3</td>
+            <td><span class="price-badge">🪙 3</span></td>
+          </tr>
+          <tr>
+            <td><span class="color-pip white"></span><strong>잡역부</strong></td>
+            <td>🗡/🛶/🪙 중 하나를 1로 선택 사용</td>
+            <td><span class="price-badge">🪙 2</span></td>
+          </tr>
+          <tr>
+            <td><span class="color-pip yellow"></span><strong>보물상자</strong><span class="item-tag">파기</span></td>
+            <td>금화 4</td>
+            <td><span class="price-badge">🪙 3</span></td>
+          </tr>
+          <tr>
+            <td><span class="color-pip purple"></span><strong>송신기</strong><span class="item-tag">파기</span></td>
+            <td>시장/예비 시장 카드 1장 무료 획득</td>
+            <td><span class="price-badge">🪙 4</span></td>
+          </tr>
+          <tr>
+            <td><span class="color-pip purple"></span><strong>원주민</strong></td>
+            <td>인접 1칸 이동 (비용 무시 · 산·점유 불가)</td>
+            <td><span class="price-badge">🪙 5</span></td>
+          </tr>
+          <tr>
+            <td><span class="color-pip white"></span><strong>프로펠러 비행기</strong><span class="item-tag">파기</span></td>
+            <td>🗡/🛶/🪙 중 하나를 4로 선택 사용</td>
+            <td><span class="price-badge">🪙 4</span></td>
+          </tr>
+          <tr>
+            <td><span class="color-pip purple"></span><strong>나침반</strong><span class="item-tag">파기</span></td>
+            <td>카드 3장 드로우</td>
+            <td><span class="price-badge">🪙 2</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 맵 조립 -->
+    <div class="panel">
+      <h2>맵 타일 조립 — ALPHA</h2>
+      <div class="desc-block">
+        <p>
+          실제 플레이 화면에서 방장은 <strong>첫 행동 전</strong>에 기본 지형 타일을 3~5개 선택해
+          코스의 순서를 바꾸고 각 타일을 <strong>180° 회전</strong>할 수 있습니다.
+          적용한 조립 결과는 Supabase 방 상태에 함께 저장되어 모든 참가자에게 동일하게 표시됩니다.
+        </p>
+        <div class="rule-highlight">
+          🧩 <strong>조립 구조:</strong> 출발지 → 지형 타일 3~5개 → 엘도라도 도착지.
+          지형 타일과 지형 타일 사이에는 봉쇄선이 자동 배치되며 기존 이동·봉쇄 판정 로직을 그대로 사용합니다.
+        </div>
+      </div>
+      <div class="map-list">
+        <div class="map-item"><div><b>정글 길</b> <small style="color:var(--muted)">정글 중심</small></div><span class="map-diff easy">타일</span><span class="map-gates">🗡️</span></div>
+        <div class="map-item"><div><b>강줄기</b> <small style="color:var(--muted)">강 중심</small></div><span class="map-diff mid">타일</span><span class="map-gates">🛶</span></div>
+        <div class="map-item"><div><b>황금 마을</b> <small style="color:var(--muted)">마을 중심</small></div><span class="map-diff easy">타일</span><span class="map-gates">🪙</span></div>
+        <div class="map-item"><div><b>산등성이</b> <small style="color:var(--muted)">우회로</small></div><span class="map-diff hard">타일</span><span class="map-gates">⛰️</span></div>
+        <div class="map-item"><div><b>베이스캠프</b> <small style="color:var(--muted)">카드 제거</small></div><span class="map-diff hard">타일</span><span class="map-gates">🏕️</span></div>
+        <div class="map-item"><div><b>혼합 지형</b> <small style="color:var(--muted)">균형형</small></div><span class="map-diff mid">타일</span><span class="map-gates">🧭</span></div>
+      </div>
+    </div>
+
+    <!-- 출처 -->
+    <div class="panel">
+      <h2>출처</h2>
+      <div class="desc-block">
+        <p>
+          BoardMate Arena 구현은
+          <a class="source-link" href="https://steamcommunity.com/sharedfiles/filedetails/?id=2457674748" target="_blank">
+            3JA2님 TTS 한글 스크립트 (ID: 2457674748)
+          </a>를 참고해 재구성한 웹 구현입니다.
+          한글 룰북은
+          <a class="source-link" href="https://blog.naver.com/nimiralism/221158450437" target="_blank">천사눈망울님 번역본</a>을 참고하세요.
+          원작 저작권·상표는 Reiner Knizia 및 RAVENSBURGER에 귀속됩니다.
+        </p>
+      </div>
+    </div>
+
+  </div><!-- /main-col -->
+
+  <!-- 사이드 칼럼 -->
+  <div class="side-col">
+
+    <div class="panel-steam">
+      <h3>BoardMate에서 플레이</h3>
+      <button class="sub-btn" onclick="window.location.href='./index.html#/multi'">
+        ▶ 지금 플레이하기
+      </button>
+      <p class="sub-note">Steam 설치 불필요<br>브라우저에서 바로 플레이</p>
+    </div>
+
+    <div class="panel">
+      <h2>게임 정보</h2>
+      <div class="info-row">
+        <span class="info-label">원작</span>
+        <span class="info-val">Reiner Knizia (2017)</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">인원</span>
+        <span class="info-val">2 – 4명</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">진행 방식</span>
+        <span class="info-val">⏳ 비동기 턴제</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">카드 수</span>
+        <span class="info-val">시장 27종 + 시작 3종</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">맵</span>
+        <span class="info-val">기본 맵 + 3~5타일 조립</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">언어</span>
+        <span class="info-val">한국어</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">상태</span>
+        <span class="info-val" style="color:#b45309;font-weight:900">⚗️ 알파</span>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>태그</h2>
+      <div class="tag-cloud">
+        <span class="tag-chip">덱빌딩</span>
+        <span class="tag-chip">경주게임</span>
+        <span class="tag-chip">길막전략</span>
+        <span class="tag-chip">2~4인</span>
+        <span class="tag-chip">비동기턴제</span>
+        <span class="tag-chip">한국어</span>
+        <span class="tag-chip">맵 타일 조립</span>
+        <span class="tag-chip">BoardMate</span>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>다른 온라인 게임</h2>
+      <div class="related-list">
+        <a class="related-card" href="https://board-mate.github.io/arena/">
+          <div class="related-icon" style="background:#fff4e6">🥊</div>
+          <div class="related-text">
+            <b>마스크맨</b>
+            <small>3–6인 · 안정</small>
+          </div>
+          <span class="tier-badge stable">안정</span>
+        </a>
+        <a class="related-card" href="https://board-mate.github.io/arena/">
+          <div class="related-icon" style="background:#fff8e6">⛩️</div>
+          <div class="related-text">
+            <b>사무라이</b>
+            <small>2–4인 · 알파</small>
+          </div>
+          <span class="tier-badge alpha">알파</span>
+        </a>
+        <a class="related-card" href="https://board-mate.github.io/arena/">
+          <div class="related-icon" style="background:#fef3f0">✈️</div>
+          <div class="related-text">
+            <b>에어 랜드 &amp; 씨</b>
+            <small>2인 · 베타</small>
+          </div>
+          <span class="tier-badge beta">베타</span>
+        </a>
+        <a class="related-card" href="https://board-mate.github.io/arena/">
+          <div class="related-icon" style="background:#f0fdf4">🌲</div>
+          <div class="related-text">
+            <b>캐스캐디아</b>
+            <small>2–4인 · 베타</small>
+          </div>
+          <span class="tier-badge beta">베타</span>
+        </a>
+        <a class="related-card" href="https://board-mate.github.io/arena/">
+          <div class="related-icon" style="background:#f5f3ff">🏛️</div>
+          <div class="related-text">
+            <b>판타지 왕국: 그리스</b>
+            <small>3–6인 · 안정</small>
+          </div>
+          <span class="tier-badge stable">안정</span>
+        </a>
+      </div>
+    </div>
+
+  </div><!-- /side-col -->
+</div>
+
+<footer class="workshop-footer">
+  <div>
+    BoardMate Arena — 보드게임 모임원을 위한 온라인 아케이드 &nbsp;·&nbsp;
+    <a href="https://github.com/board-mate/arena" target="_blank">GitHub</a> &nbsp;·&nbsp;
+    <a href="https://board-mate.github.io/arena/" target="_blank">사이트로 이동</a>
+  </div>
+  <div style="margin-top:6px;font-size:11px;color:#5a6a7a">
+    게임 원작 © Reiner Knizia / RAVENSBURGER &nbsp;·&nbsp;
+    TTS 한글판 © 3JA2 &nbsp;·&nbsp;
+    BoardMate 구현 © board-mate contributors
+  </div>
+</footer>
+
+</body>
+</html>

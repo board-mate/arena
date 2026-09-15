@@ -9,7 +9,7 @@
 <meta name="board-mate-min-players" content="2" />
 <meta name="board-mate-max-players" content="4" />
 <meta name="board-mate-multiplayer" content="true" />
-<script type="application/json" id="boardMateGameManifest">{"id":"eldorado-pvp","name":"엘도라도 PVP","version":"1.2.0-long-map","minPlayers":2,"maxPlayers":4,"multiplayer":true,"turnBased":true,"entry":"single-html","stateMode":"shared"}</script>
+<script type="application/json" id="boardMateGameManifest">{"id":"eldorado-pvp","name":"엘도라도 PVP","version":"1.3.0-alpha-map-assembly","minPlayers":2,"maxPlayers":4,"multiplayer":true,"turnBased":true,"entry":"single-html","stateMode":"shared"}</script>
 <style>
 :root{
   --ink:#1f2a24;--muted:#6d786f;--paper:#fffdf4;--panel:#fffef8;--line:#d9d4bf;
@@ -42,8 +42,25 @@ button,input{font:inherit} button{cursor:pointer} button:disabled{opacity:.45;cu
 .overlay{position:fixed;inset:0;z-index:50;background:#17231dcc;display:grid;place-items:center;padding:18px;backdrop-filter:blur(3px)}.modal{width:min(650px,96vw);max-height:88vh;overflow:auto;background:#fffef9;border-radius:20px;padding:18px;box-shadow:0 24px 80px #0007}.modal h2{margin:0 0 10px;color:#2c5b3a}.modal p{color:#647067;line-height:1.55}.modal-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.modal-actions{display:flex;justify-content:flex-end;gap:7px;flex-wrap:wrap;margin-top:14px}.choice-row{display:flex;gap:8px;flex-wrap:wrap}.choice-card{border:2px solid #ddd4bf;border-radius:12px;padding:8px;background:#fff;min-width:110px;font-weight:850}.choice-card.active{border-color:#d49b27;background:#fff8df}
 .toast{position:fixed;z-index:90;left:50%;bottom:22px;transform:translateX(-50%);background:#1d2a22;color:#fff;padding:10px 14px;border-radius:999px;font-size:.8rem;font-weight:800;box-shadow:0 10px 30px #0005;max-width:92vw;text-align:center}.footer{text-align:center;color:#7d847e;font-size:.7rem;line-height:1.5;padding:4px 8px 10px}
 .winner{padding:14px;border-radius:14px;background:#fff7d8;border:2px solid #e3bb4f;text-align:center}.winner h2{margin:0 0 7px}
+/* ── ALPHA: 맵 타일 조립 UI ── */
+.map-builder{display:grid;gap:14px}
+.builder-help{font-size:.78rem;line-height:1.55;color:#667168;background:#f7faf5;border:1px dashed #cbd7ca;border-radius:12px;padding:9px 10px}
+.tile-palette{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.tile-option{border:1px solid #d8d1bf;border-radius:13px;background:#fff;padding:9px;text-align:left}
+.tile-option:hover:not(:disabled){border-color:#6f9a78;box-shadow:0 4px 14px #0001}
+.tile-option b{display:block;font-size:.82rem;margin-bottom:5px}.tile-option .tiny{display:block;margin-top:5px}
+.tile-mini{display:grid;grid-template-columns:repeat(4,12px);grid-auto-rows:11px;gap:1px;width:max-content;padding:5px;border-radius:9px;background:#f0eee4;border:1px solid #ded8c5}
+.tile-mini .m{width:12px;height:11px;clip-path:polygon(25% 0,75% 0,100% 50%,75% 100%,25% 100%,0 50%);background:#ddd}
+.tile-mini .g{background:var(--green)}.tile-mini .y{background:var(--yellow)}.tile-mini .b{background:var(--blue)}.tile-mini .x{background:var(--gray)}.tile-mini .r{background:var(--red)}.tile-mini .z{background:var(--mountain)}.tile-mini .e{opacity:.12}
+.assembly-strip{display:flex;align-items:stretch;gap:7px;overflow-x:auto;padding:6px 2px 9px}
+.assembly-arrow{display:grid;place-items:center;color:#9a7b2d;font-weight:1000;flex:0 0 16px}
+.assembled-tile{flex:0 0 150px;border:2px solid #ddd4bf;background:#fff;border-radius:14px;padding:9px}
+.assembled-tile .tile-head{display:flex;justify-content:space-between;gap:6px;align-items:start}.assembled-tile .tile-name{font-size:.8rem;font-weight:950}
+.assembled-tile .tile-controls{display:flex;gap:4px;flex-wrap:wrap;margin-top:7px}.assembled-tile .tile-controls .btn{padding:4px 6px;font-size:.68rem}.assembled-tile .tile-mini{margin-top:7px}
+.assembly-end{flex:0 0 76px;display:grid;place-items:center;text-align:center;border:2px dashed #cfc5a9;border-radius:14px;background:#fff8dc;font-size:.72rem;font-weight:950;color:#6e5b28;padding:8px}
+.assembly-start{background:#f8f0cf}.builder-summary{display:flex;gap:7px;flex-wrap:wrap}.builder-summary .pill{font-size:.72rem}.builder-section-title{font-weight:950;font-size:.9rem;margin-bottom:7px}.wide-modal{width:min(920px,96vw)}
 @media(max-width:1100px){.layout{grid-template-columns:1fr}.right{grid-template-columns:1fr 1fr}.right .hand-card,.right .control-card{grid-column:1/-1}}
-@media(max-width:720px){.app{padding:8px}.right{grid-template-columns:1fr}.market-grid,.reserve-grid,.modal-grid{grid-template-columns:repeat(2,1fr)}.player-chip{min-width:145px}.board-viewport{padding:6px}.topbar{align-items:flex-start}.hand-row .exp-card{flex-basis:118px}}
+@media(max-width:720px){.app{padding:8px}.right{grid-template-columns:1fr}.market-grid,.reserve-grid,.modal-grid{grid-template-columns:repeat(2,1fr)}.tile-palette{grid-template-columns:repeat(2,1fr)}.player-chip{min-width:145px}.board-viewport{padding:6px}.topbar{align-items:flex-start}.hand-row .exp-card{flex-basis:118px}}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="./config.js"></script>
@@ -150,14 +167,14 @@ const MAPS={
     ['S','B1','G1','Y2','M','B2','G1','X1','Y2','G2','B1','M','G1','Y2',null],
     ['S','G1','X1','B1','G2','Y2','B2','M','G1','Y1','G2','B2','X1','G1',null]
   ]},
-  lenient:{name:'Lenient Line',difficulty:'확장 모티브',note:'Dangers & Muisca 맵을 기본 지형으로 단순화',gates:[4,9,13],rows:[
+  lenient:{name:'Lenient Line',difficulty:'레거시 코스',note:'이전 버전 저장 호환용 코스',gates:[4,9,13],rows:[
     ['S','G1','B1','G2','Y1','B2','G1','Y2','X1','G2','B1','Y1','G2','B2','Y2','FG'],
     ['S','Y1','G1','B1','G2','Y2','M','G1','B2','Y1','G2','X1','B1','G2','Y1','FY'],
     ['S','G1','X1','Y1','B1','G2','B2','Y2','G1','R1','G2','B1','Y2','G1','B2','FB'],
     ['S','B1','G1','G2','Y1','M','B1','G2','Y2','B2','G1','Y1','M','G2','B1',null],
     ['S','G1','Y1','B1','G2','Y2','B2','G1','X1','Y1','B1','G2','Y2','G1','B1',null]
   ]},
-  zigzag:{name:'Zilly Zigzag',difficulty:'확장 모티브',note:'Dangers & Muisca 맵을 기본 지형으로 단순화',gates:[3,7,11,14],rows:[
+  zigzag:{name:'Zilly Zigzag',difficulty:'레거시 코스',note:'이전 버전 저장 호환용 코스',gates:[3,7,11,14],rows:[
     ['S','G1',null,'Y1','G2','B2','G1',null,'Y2','B1','G2','M','Y1','G2','B1','Y2','FG'],
     ['S','B1','G1','G2','M','Y2','B1','G2','X1','Y1','B2','G1','Y2','M','G2','B1','FY'],
     ['S','Y1','G2','X1','B1','G2','Y2','B2','G1','R1','G2','B1','X2','Y1','G2','B2','FB'],
@@ -165,6 +182,74 @@ const MAPS={
     ['S','B1','G1',null,'Y2','G2','B1','M','G1','Y1',null,'B2','G2','Y2','G1','B1',null]
   ]}
 };
+const PRESET_MAP_IDS=['arena','hills','home','winding','serpentine','cauldron','swamps'];
+// ALPHA 맵 조립용 기본 타일.
+// 기존 MAPS는 이전 저장 상태 호환을 위해 그대로 유지하고, 새 조립 맵은 아래 타일 데이터로 생성한다.
+const MAP_TILES={
+  jungle:{name:'정글 길',tag:'🗡 정글 중심',rows:[
+    ['G1','G1','G2','Y1'],['G1','Y1','G1','G2'],['Y1','G1','X1','G1'],['B1','G1','Y1','G2'],['G1','Y1','G1','G1']
+  ]},
+  river:{name:'강줄기',tag:'🛶 강 중심',rows:[
+    ['G1','B1','B2','G1'],['Y1','B1','B2','Y1'],['G1','B1','X1','G2'],['B1','B2','G1','Y1'],['G1','B1','B2','G1']
+  ]},
+  village:{name:'황금 마을',tag:'🪙 마을 중심',rows:[
+    ['G1','Y1','Y2','G1'],['Y1','G1','Y1','G2'],['G1','Y2','X1','Y1'],['B1','Y1','G1','Y2'],['G1','Y1','Y2','G1']
+  ]},
+  ridge:{name:'산등성이',tag:'⛰ 우회로',rows:[
+    ['G1','M','G2','Y1'],['Y1','G1','M','G2'],['G1','X1','G2','G1'],['B1','G1','M','Y1'],['G1','Y1','G2','M']
+  ]},
+  camp:{name:'베이스캠프',tag:'🏕 카드 제거',rows:[
+    ['G1','Y1','R1','G2'],['B1','G1','Y1','G1'],['G1','R1','G2','B1'],['Y1','G1','X1','G2'],['G1','B1','R1','Y1']
+  ]},
+  mixed:{name:'혼합 지형',tag:'🧭 균형형',rows:[
+    ['G1','Y1','B1','G2'],['B1','G1','Y2','G1'],['Y1','X1','G1','B2'],['G1','B1','G2','Y1'],['Y1','G1','B1','G2']
+  ]}
+};
+const DEFAULT_TILE_LAYOUT=[
+  {id:'jungle',flip:false},{id:'river',flip:false},{id:'village',flip:true},{id:'mixed',flip:false}
+];
+const MIN_MAP_TILES=3,MAX_MAP_TILES=5;
+
+function tileWidth(id){return MAP_TILES[id]?.rows?.[0]?.length||4}
+function normalizeTileLayout(layout){
+  const seen=new Set(),out=[];
+  for(const raw of Array.isArray(layout)?layout:[]){
+    const id=MAP_TILES[raw?.id]?raw.id:null;
+    if(!id||seen.has(id))continue;
+    seen.add(id);out.push({id,flip:Boolean(raw?.flip)});
+    if(out.length>=MAX_MAP_TILES)break;
+  }
+  for(const d of DEFAULT_TILE_LAYOUT){
+    if(out.length>=MIN_MAP_TILES)break;
+    if(!seen.has(d.id)){seen.add(d.id);out.push({...d});}
+  }
+  return out.slice(0,MAX_MAP_TILES);
+}
+function orientedTileRows(part){
+  const src=MAP_TILES[part.id]?.rows||MAP_TILES.mixed.rows;
+  const rows=src.map(r=>[...r]);
+  if(!part.flip)return rows;
+  return rows.reverse().map(r=>r.reverse());
+}
+function customRows(layout){
+  layout=normalizeTileLayout(layout);
+  const rows=Array.from({length:5},()=>['S']);
+  for(const part of layout){const t=orientedTileRows(part);for(let r=0;r<5;r++)rows[r].push(...t[r]);}
+  const finish=['FG','FY','FB',null,null];
+  for(let r=0;r<5;r++)rows[r].push(finish[r]);
+  return rows;
+}
+function customGateCols(layout){
+  layout=normalizeTileLayout(layout);
+  const out=[];let endCol=0;
+  layout.forEach((part,i)=>{endCol+=tileWidth(part.id);if(i<layout.length-1)out.push(endCol)});
+  return out;
+}
+function customMapDef(layout){
+  layout=normalizeTileLayout(layout);
+  return {name:`조립 맵 · ${layout.length}타일`,difficulty:`ALPHA · 조립형`,note:'타일 경계마다 봉쇄선',gates:customGateCols(layout),rows:customRows(layout)};
+}
+
 const BLOCKADE_POOL=[
   {symbol:'green',cost:1},{symbol:'yellow',cost:1},{symbol:'blue',cost:1},
   {symbol:'green',cost:2},{symbol:'yellow',cost:2},{symbol:'blue',cost:2}
@@ -194,9 +279,12 @@ function parseCell(code,c,r){
   }
   return null;
 }
-function mapDef(id=state?.mapId||'arena'){return MAPS[id]||MAPS.arena}
-function buildCells(mapId='arena'){
-  const rows=mapDef(mapId).rows,out=[];
+function mapDef(id=state?.mapId||'arena',layout=state?.mapLayout){
+  if(id==='custom')return customMapDef(layout||DEFAULT_TILE_LAYOUT);
+  return MAPS[id]||MAPS.arena;
+}
+function buildCells(mapId='arena',layout=state?.mapLayout){
+  const rows=mapDef(mapId,layout).rows,out=[];
   for(let r=0;r<rows.length;r++)for(let c=0;c<rows[r].length;c++){
     const cell=parseCell(rows[r][c],c,r);if(cell)out.push(cell);
   }
@@ -245,16 +333,17 @@ function freshState(){
     drawCards(p,4);return p;
   });
   const stock=Object.fromEntries(MARKET_IDS.map(id=>[id,3]));
-  return {version:2,gameId:'eldorado-pvp',mapId,current:0,round:1,phase:'action',players:ps,marketSlots:[...START_MARKET],stock,
+  return {version:3,gameId:'eldorado-pvp',mapId,current:0,round:1,phase:'action',players:ps,marketSlots:[...START_MARKET],stock,
     board:{cells,gates:md.gates.map((afterCol,i)=>({afterCol,...blocks[i],removed:false,removedBy:null}))},
     turn:{move:null,pending:null},finalTriggered:false,finishSeq:0,gameOver:false,finalOrder:null,log:[`게임 시작 · ${md.name} · 손패 4장`]};
 }
 function normalizeState(){
   if(!state)return;
-  state.version=2;state.mapId=state.mapId||'arena';state.stock=state.stock||{};
+  state.version=3;state.mapId=state.mapId||'arena';state.stock=state.stock||{};
+  if(state.mapId==='custom')state.mapLayout=normalizeTileLayout(state.mapLayout||DEFAULT_TILE_LAYOUT);
   for(const id of MARKET_IDS)if(state.stock[id]==null)state.stock[id]=3;
-  state.board=state.board||{cells:buildCells(state.mapId),gates:[]};
-  if(!Array.isArray(state.board.cells)||!state.board.cells.length)state.board.cells=buildCells(state.mapId);
+  state.board=state.board||{cells:buildCells(state.mapId,state.mapLayout),gates:[]};
+  if(!Array.isArray(state.board.cells)||!state.board.cells.length)state.board.cells=buildCells(state.mapId,state.mapLayout);
   state.turn=state.turn||{move:null,pending:null};
 }
 
@@ -305,18 +394,18 @@ function render(){
   if(!state)return renderWaiting();
   const seat=mySeat(),p=player(),mine=isMyTurn();
   app.innerHTML=`
-    <div class="topbar"><div class="brand"><h1>🧭 엘도라도 PVP</h1><div class="sub">이미지 미사용 · 기본판 + 추가/프로모 카드 · 장거리 추상 맵 · 봉쇄선 강조 · 2–4인 BoardMate Arena</div></div><div class="top-actions"><a class="btn small" href="./index.html#/multi">← 방 목록</a>${room?.host_id===me?.user_id?'<button class="btn small" id="mapBtn">맵 선택</button>':''}<button class="btn small" id="rulesBtn">규칙 요약</button></div></div>
+    <div class="topbar"><div class="brand"><h1>🧭 엘도라도 PVP</h1><div class="sub">ALPHA · 기존 멀티플레이 로직 유지 · 시작 전 맵 타일 조립 지원 · 2–4인 BoardMate Arena</div></div><div class="top-actions"><a class="btn small" href="./index.html#/multi">← 방 목록</a>${room?.host_id===me?.user_id?'<button class="btn small" id="mapBtn">맵 설정</button>':''}<button class="btn small" id="rulesBtn">규칙 요약</button></div></div>
     <section class="card status"><div><div class="turn-title">${state.round}라운드 · ${esc(p.name)} 차례${mine?' · 내 차례':''}</div><div class="phase">${phaseText()}</div></div><span class="connection ok">Arena 동기화</span></section>
     <div class="players">${state.players.map((x,i)=>playerChip(x,i,seat)).join('')}</div>
     <div class="layout"><div class="left">
-      <section class="card board-card"><div class="board-head"><div><h2>탐험 지도</h2><div class="map-meta"><span class="pill">${esc(mapDef().name)}</span><span class="pill">${esc(mapDef().difficulty)}</span></div></div><div class="legend"><span><i class="dot" style="background:var(--green)"></i>🗡 정글</span><span><i class="dot" style="background:var(--yellow)"></i>🪙 마을</span><span><i class="dot" style="background:var(--blue)"></i>🛶 강</span><span><i class="dot" style="background:var(--gray)"></i>🪨 돌무더기</span><span><i class="dot" style="background:var(--red)"></i>🏕 베이스캠프</span><span style="color:#9b342d;font-weight:900">┆ 봉쇄선 · 선을 넘을 때 표시된 기호/힘 필요</span></div></div><div class="board-viewport"><div class="board-stage" id="boardStage"></div></div></section>
+      <section class="card board-card"><div class="board-head"><div><h2>탐험 지도</h2><div class="map-meta"><span class="pill">${esc(mapDef().name)}</span><span class="pill">${esc(mapDef().difficulty)}</span>${state.mapId==='custom'?`<span class="pill">봉쇄선 ${state.board.gates.length}개</span>`:''}</div></div><div class="legend"><span><i class="dot" style="background:var(--green)"></i>🗡 정글</span><span><i class="dot" style="background:var(--yellow)"></i>🪙 마을</span><span><i class="dot" style="background:var(--blue)"></i>🛶 강</span><span><i class="dot" style="background:var(--gray)"></i>🪨 돌무더기</span><span><i class="dot" style="background:var(--red)"></i>🏕 베이스캠프</span><span style="color:#9b342d;font-weight:900">┆ 봉쇄선 · 선을 넘을 때 표시된 기호/힘 필요</span></div></div><div class="board-viewport"><div class="board-stage" id="boardStage"></div></div></section>
       <section class="card"><div class="section-title"><h3>📜 진행 기록</h3><span class="tiny">최근 40개</span></div><div class="log">${(state.log||[]).map(x=>`<div>${esc(x)}</div>`).join('')}</div></section>
     </div><div class="right">
       ${state.gameOver?endPanelHtml():''}
       <section class="card"><div class="section-title"><h3>🛒 시장</h3><span class="tiny">기본 18종 + 추가 9종 · 빈 칸이 생기면 예비 시장 구매 가능</span></div><div class="market-grid">${state.marketSlots.map((id,i)=>marketSlotHtml(id,i)).join('')}</div><details class="reserve"><summary>예비 시장 12종 보기</summary><div class="reserve-grid">${reserveIds().map(id=>marketCardHtml(id,'reserve')).join('')}</div></details></section>
       <section class="card hand-card"><div class="section-title"><h3>🃏 내 손패</h3><span class="tiny">덱 ${ownPlayer()?.deck.length||0} · 버림 ${ownPlayer()?.discard.length||0} · 제거 ${ownPlayer()?.trash.length||0}</span></div><div class="hand-row" id="handRow">${handHtml()}</div></section>
       <section class="card control-card"><div class="section-title"><h3>🎮 행동</h3><span class="tiny">${mine?'카드를 선택하세요':'상대 차례입니다'}</span></div>${controlHtml()}</section>
-      <div class="rule-note">팬메이드 웹 구현입니다. 상업용 카드/보드 이미지는 포함하지 않았고, 업로드해 주신 기본판/추가 카드 자료와 추천 맵 흐름을 바탕으로 텍스트·색상 UI로 구현했습니다. 동굴·저주·용·사원 같은 확장 전용 시스템은 이번 버전에서 생략했습니다.</div>
+      <div class="rule-note">팬메이드 웹 구현입니다. 상업용 카드/보드 이미지는 포함하지 않았습니다. 기존 카드·이동·시장·봉쇄선·Supabase 저장 로직은 유지하고, 게임 시작 전 방장이 기본 지형 타일을 조립해 맵을 만들 수 있도록 추가했습니다.</div>
     </div></div><div class="footer">The Quest for El Dorado의 상표/원작 권리는 각 권리자에게 있습니다. 이 파일은 모임 내 플레이용 비공식 구현입니다.</div>`;
   renderBoard();bindAll();
 }
@@ -604,20 +693,69 @@ function canChangeMap(){
   if(room?.host_id!==me?.user_id||state.gameOver||state.round!==1||state.current!==0||state.finalTriggered)return false;
   return state.players.every(p=>p.finishedPieces===0&&p.blockades.length===0&&p.discard.length===0&&p.played.length===0&&p.trash.length===0&&p.hand.length===4&&p.deck.length===4);
 }
-function showMapPicker(){
-  if(room?.host_id!==me?.user_id){toast('방장만 맵을 바꿀 수 있습니다.');return}
-  const enabled=canChangeMap();
-  modal(`<h2>🗺️ 맵 선택</h2><p>${enabled?'게임 시작 전에 사용할 추상 맵을 고르세요. 맵만 바뀌고 카드/플레이어 상태는 그대로입니다.':'맵 변경은 첫 행동 전에만 가능합니다.'}</p><div class="modal-grid">${Object.entries(MAPS).map(([id,m])=>`<button class="choice-card ${state.mapId===id?'active':''}" data-map="${id}" ${enabled?'':'disabled'}><b>${esc(m.name)}</b><br><span class="tiny">${esc(m.difficulty)} · ${esc(m.note)}</span></button>`).join('')}</div><div class="modal-actions"><button class="btn" data-close>닫기</button></div>`,m=>{m.querySelector('[data-close]').onclick=closeModal;m.querySelectorAll('[data-map]').forEach(b=>b.onclick=()=>selectMap(b.dataset.map))});
+function tileMiniHtml(part){
+  const rows=orientedTileRows(part);let html='<div class="tile-mini">';
+  for(let r=0;r<rows.length;r++)for(let c=0;c<rows[r].length;c++){
+    const code=rows[r][c],k=!code?'e':code[0]==='G'?'g':code[0]==='Y'?'y':code[0]==='B'?'b':code[0]==='X'?'x':code[0]==='R'?'r':code[0]==='M'?'z':'e';
+    html+=`<i class="m ${k}"></i>`;
+  }
+  return html+'</div>';
 }
-function selectMap(id){
-  if(!canChangeMap()||!MAPS[id])return;const md=MAPS[id],blocks=shuffle(BLOCKADE_POOL).slice(0,md.gates.length);state.mapId=id;state.board={cells:buildCells(id),gates:md.gates.map((afterCol,i)=>({afterCol,...blocks[i%blocks.length],removed:false,removedBy:null}))};
-  const starts=['0,0','0,1','0,2','0,3'];state.players.forEach((p,i)=>{p.positions=state.players.length===2?(i===0?[starts[0],starts[2]]:[starts[1],starts[3]]):[starts[i]]});state.log=[`게임 시작 · ${md.name} · 손패 4장`];closeModal();commit('change-map');
+function showMapPicker(){
+  if(room?.host_id!==me?.user_id){toast('방장만 맵을 설정할 수 있습니다.');return}
+  const enabled=canChangeMap();
+  let draft=normalizeTileLayout(state.mapId==='custom'?state.mapLayout:DEFAULT_TILE_LAYOUT);
+  const mount=()=>modal(`<div class="map-builder">
+    <div><h2>🗺️ 맵 설정 <span class="pill">ALPHA</span></h2><div class="builder-help">${enabled?'원본 버전의 프리셋 맵 선택 기능은 유지됩니다. 또는 아래 기본 지형 타일 <b>3~5개</b>를 골라 순서를 바꾸고 180° 회전해 사용자 맵을 만들 수 있습니다.':'맵 변경은 첫 행동 전에만 가능합니다. 현재 게임 상태는 변경되지 않습니다.'}</div></div>
+    <div><div class="builder-section-title">① 기존 프리셋 맵</div><div class="modal-grid">${PRESET_MAP_IDS.map(id=>{const pm=MAPS[id];return `<button class="choice-card ${state.mapId===id?'active':''}" data-preset-map="${id}" ${!enabled?'disabled':''}><b>${esc(pm.name)}</b><br><span class="tiny">${esc(pm.difficulty)} · ${pm.gates.length}개 봉쇄선</span></button>`}).join('')}</div></div>
+    <div><div class="builder-section-title">② 사용자 조립 타일 추가</div><div class="tile-palette">${Object.entries(MAP_TILES).map(([id,t])=>{const used=draft.some(x=>x.id===id);return `<button class="tile-option" data-add-tile="${id}" ${!enabled||used||draft.length>=MAX_MAP_TILES?'disabled':''}><b>${esc(t.name)}</b>${tileMiniHtml({id,flip:false})}<span class="tiny">${esc(t.tag)} · ${used?'사용 중':'추가'}</span></button>`}).join('')}</div></div>
+    <div><div class="builder-section-title">③ 조립 맵 순서 / 방향 조정</div><div class="assembly-strip"><div class="assembly-end assembly-start">START<br>출발지</div>${draft.map((part,i)=>`<div class="assembly-arrow">→</div><div class="assembled-tile"><div class="tile-head"><span class="tile-name">${i+1}. ${esc(MAP_TILES[part.id]?.name||part.id)}</span><span class="tiny">${part.flip?'180°':''}</span></div>${tileMiniHtml(part)}<div class="tile-controls"><button class="btn" data-left="${i}" ${!enabled||i===0?'disabled':''}>←</button><button class="btn" data-right="${i}" ${!enabled||i===draft.length-1?'disabled':''}>→</button><button class="btn" data-flip="${i}" ${!enabled?'disabled':''}>↻ 180°</button><button class="btn danger" data-remove="${i}" ${!enabled||draft.length<=MIN_MAP_TILES?'disabled':''}>삭제</button></div></div>`).join('')}<div class="assembly-arrow">→</div><div class="assembly-end">EL DORADO<br>도착지</div></div></div>
+    <div class="builder-summary"><span class="pill">타일 ${draft.length}개</span><span class="pill">봉쇄선 ${Math.max(0,draft.length-1)}개</span><span class="pill">맵 길이 ${2+draft.reduce((n,x)=>n+tileWidth(x.id),0)}열</span></div>
+    <div class="modal-actions"><button class="btn" id="resetTiles" ${!enabled?'disabled':''}>기본 조합</button><button class="btn" id="randomTiles" ${!enabled?'disabled':''}>무작위 조합</button><button class="btn" data-close>닫기</button><button class="btn primary" id="applyTiles" ${!enabled?'disabled':''}>이 맵으로 적용</button></div>
+  </div>`,m=>{
+    m.querySelector('[data-close]').onclick=closeModal;
+    m.querySelectorAll('[data-preset-map]').forEach(b=>b.onclick=()=>applyPresetMap(b.dataset.presetMap));
+    m.querySelectorAll('[data-add-tile]').forEach(b=>b.onclick=()=>{if(draft.length>=MAX_MAP_TILES||draft.some(x=>x.id===b.dataset.addTile))return;draft.push({id:b.dataset.addTile,flip:false});mount()});
+    m.querySelectorAll('[data-left]').forEach(b=>b.onclick=()=>{const i=Number(b.dataset.left);[draft[i-1],draft[i]]=[draft[i],draft[i-1]];mount()});
+    m.querySelectorAll('[data-right]').forEach(b=>b.onclick=()=>{const i=Number(b.dataset.right);[draft[i],draft[i+1]]=[draft[i+1],draft[i]];mount()});
+    m.querySelectorAll('[data-flip]').forEach(b=>b.onclick=()=>{const i=Number(b.dataset.flip);draft[i].flip=!draft[i].flip;mount()});
+    m.querySelectorAll('[data-remove]').forEach(b=>b.onclick=()=>{draft.splice(Number(b.dataset.remove),1);draft=normalizeTileLayout(draft);mount()});
+    m.querySelector('#resetTiles')?.addEventListener('click',()=>{draft=clone(DEFAULT_TILE_LAYOUT);mount()});
+    m.querySelector('#randomTiles')?.addEventListener('click',()=>{
+      const ids=shuffle(Object.keys(MAP_TILES)),n=MIN_MAP_TILES+Math.floor(Math.random()*(MAX_MAP_TILES-MIN_MAP_TILES+1));
+      draft=ids.slice(0,n).map(id=>({id,flip:Math.random()<.5}));mount();
+    });
+    m.querySelector('#applyTiles')?.addEventListener('click',()=>applyTileMap(draft));
+  },'wide-modal');
+  mount();
+}
+function applyPresetMap(id){
+  if(!canChangeMap()||!PRESET_MAP_IDS.includes(id)||!MAPS[id])return;
+  const md=MAPS[id],blocks=shuffle(BLOCKADE_POOL);
+  state.mapId=id;delete state.mapLayout;
+  state.board={cells:buildCells(id),gates:md.gates.map((afterCol,i)=>({afterCol,...blocks[i%blocks.length],removed:false,removedBy:null}))};
+  const starts=['0,0','0,1','0,2','0,3'];
+  state.players.forEach((p,i)=>{p.positions=state.players.length===2?(i===0?[starts[0],starts[2]]:[starts[1],starts[3]]):[starts[i]]});
+  state.log=[`게임 시작 · ${md.name} · 손패 4장`];
+  closeModal();commit('change-map');
+}
+function applyTileMap(layout){
+  if(!canChangeMap()){toast('맵 조립은 첫 행동 전에만 가능합니다.');return}
+  const clean=normalizeTileLayout(layout);
+  if(clean.length<MIN_MAP_TILES||clean.length>MAX_MAP_TILES){toast('타일은 3~5개를 사용하세요.');return}
+  const md=customMapDef(clean),blocks=shuffle(BLOCKADE_POOL);
+  state.mapId='custom';state.mapLayout=clean;
+  state.board={cells:buildCells('custom',clean),gates:md.gates.map((afterCol,i)=>({afterCol,...blocks[i%blocks.length],removed:false,removedBy:null}))};
+  const starts=['0,0','0,1','0,2','0,3'];
+  state.players.forEach((p,i)=>{p.positions=state.players.length===2?(i===0?[starts[0],starts[2]]:[starts[1],starts[3]]):[starts[i]]});
+  state.log=[`게임 시작 · 조립 맵 ${clean.length}타일 · 손패 4장`];
+  closeModal();commit('assemble-map');
 }
 
 function showRules(){
-  modal(`<h2>🧭 규칙 요약</h2><ul style="line-height:1.7;color:#526057"><li>각자 시작 덱 8장(선원 1, 탐험가 3, 여행가 4)에서 손패 4장으로 시작합니다.</li><li>이동 카드는 같은 색 지형을 힘만큼 연속 이동할 수 있으며, 한 칸의 높은 요구치를 여러 카드로 합칠 수 없습니다.</li><li>🪨 돌무더기는 표시된 장수만큼 아무 카드를 사용합니다. 🏕 베이스캠프는 그 장수만큼 카드를 게임에서 제거합니다.</li><li>한 턴에 카드 1장만 구매합니다. 시장 칸이 비어 있으면 예비 시장 카드도 살 수 있고, 남은 같은 종류 카드가 빈 칸으로 들어옵니다.</li><li><b>추가 카드:</b> 특제 노, 정찰자, 식물학자, 선교사, 막일꾼, 등고선 지도, 길 안내도, 쌍안경, 전보를 예비 시장에 추가했습니다.</li><li><b>맵:</b> 기본 코스와 추천 루트/확장 맵 모티브의 추상 코스를 선택할 수 있습니다. 동굴·저주·용·사원 전용 규칙은 생략되어 모든 맵을 기본 지형 규칙으로 플레이합니다.</li><li>2인전은 각자 말 2개가 모두 도착해야 합니다. 3–4인전은 말 1개가 도착하면 최종 라운드가 발동합니다.</li><li>동률이면 획득 봉쇄 수, 그래도 같으면 가장 높은 봉쇄 수치로 비교합니다.</li></ul><div class="modal-actions"><button class="btn primary" data-close>닫기</button></div>`,m=>m.querySelector('[data-close]').onclick=closeModal);
+  modal(`<h2>🧭 규칙 요약</h2><ul style="line-height:1.7;color:#526057"><li>각자 시작 덱 8장(선원 1, 탐험가 3, 여행가 4)에서 손패 4장으로 시작합니다.</li><li>이동 카드는 같은 색 지형을 힘만큼 연속 이동할 수 있으며, 한 칸의 높은 요구치를 여러 카드로 합칠 수 없습니다.</li><li>🪨 돌무더기는 표시된 장수만큼 아무 카드를 사용합니다. 🏕 베이스캠프는 그 장수만큼 카드를 게임에서 제거합니다.</li><li>한 턴에 카드 1장만 구매합니다. 시장 칸이 비어 있으면 예비 시장 카드도 살 수 있고, 남은 같은 종류 카드가 빈 칸으로 들어옵니다.</li><li><b>추가 카드:</b> 특제 노, 정찰자, 식물학자, 선교사, 막일꾼, 등고선 지도, 길 안내도, 쌍안경, 전보를 예비 시장에 추가했습니다.</li><li><b>맵 설정:</b> 기존 프리셋 맵을 그대로 선택할 수 있고, 방장은 첫 행동 전에 기본 지형 타일 3~5개를 조립해 사용자 맵도 만들 수 있습니다. 조립 결과는 방 상태에 함께 저장되어 모든 참가자에게 동일하게 동기화됩니다.</li><li>2인전은 각자 말 2개가 모두 도착해야 합니다. 3–4인전은 말 1개가 도착하면 최종 라운드가 발동합니다.</li><li>동률이면 획득 봉쇄 수, 그래도 같으면 가장 높은 봉쇄 수치로 비교합니다.</li></ul><div class="modal-actions"><button class="btn primary" data-close>닫기</button></div>`,m=>m.querySelector('[data-close]').onclick=closeModal);
 }
-function modal(inner,onMount){closeModal();const ov=document.createElement('div');ov.className='overlay';ov.id='modalOverlay';ov.innerHTML=`<div class="modal">${inner}</div>`;document.body.appendChild(ov);onMount?.(ov.querySelector('.modal'))}
+function modal(inner,onMount,modalClass=''){closeModal();const ov=document.createElement('div');ov.className='overlay';ov.id='modalOverlay';ov.innerHTML=`<div class="modal ${modalClass}">${inner}</div>`;document.body.appendChild(ov);onMount?.(ov.querySelector('.modal'))}
 function closeModal(){$('#modalOverlay')?.remove()}
 
 await loadContext();if(state)render();

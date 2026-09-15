@@ -1,0 +1,632 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<meta name="theme-color" content="#141922"/>
+<title>사무라이 — BoardMate Arena</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet"/>
+<style>
+/* ── 토큰 ── */
+:root{
+  font-family:"Noto Sans KR",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  --ink:#18202d;--muted:#697386;--line:#ded9d0;--card:#fff;
+  --brand:#f36f21;--brand-dark:#cf5412;--brand-pale:#fff4ec;
+  --navy:#141922;--navy2:#1e2636;
+  --steam-bg:#1b2838;--steam-mid:#2a475e;--steam-accent:#66c0f4;--steam-green:#a4d007;
+  --red:#e94149;--yellow:#f4bd29;--green:#28a568;--blue:#42a7d6;
+  color:var(--ink);background:#f6f3ed;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;min-width:320px;min-height:100vh}
+button,input,a{font:inherit;cursor:pointer}
+a{color:inherit;text-decoration:none}
+img{display:block;max-width:100%}
+
+/* ── 상단바 (BoardMate 공통) ── */
+.topbar{
+  height:56px;background:var(--navy);color:#fff;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 24px;position:sticky;top:0;z-index:30;
+  box-shadow:0 2px 14px #0004;
+}
+.brand{font-weight:900;font-size:19px;letter-spacing:-.04em}
+.brand span{color:#ff8a43}
+.topbar-right{display:flex;align-items:center;gap:10px}
+.back-link{
+  font-size:13px;font-weight:700;color:#aab4c3;
+  display:flex;align-items:center;gap:5px;
+  padding:7px 11px;border-radius:9px;border:1px solid #ffffff18;
+  transition:border-color .15s,color .15s;
+}
+.back-link:hover{color:#fff;border-color:#ffffff40}
+
+/* ── Steam-스타일 히어로 배너 ── */
+.workshop-hero{
+  background:linear-gradient(180deg,var(--steam-bg) 0%,var(--steam-mid) 100%);
+  color:#c6d4df;
+  padding:0 0 32px;
+}
+.hero-capsule{
+  width:100%;max-width:900px;margin:0 auto;
+  display:grid;grid-template-columns:460px 1fr;
+  gap:0;
+}
+.hero-image{
+  position:relative;overflow:hidden;
+  background:#0a1628;
+}
+.hero-image img{
+  width:100%;height:260px;object-fit:cover;
+  display:block;
+  border-bottom:3px solid var(--steam-accent);
+}
+.hero-image-placeholder{
+  width:100%;height:260px;
+  background:linear-gradient(135deg,#0d1f35 0%,#1a3555 40%,#0f2840 100%);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:12px;
+}
+.hero-image-placeholder .big-icon{font-size:80px;line-height:1}
+.hero-image-placeholder p{font-size:13px;color:#66a0bf;margin:0}
+.hero-meta{
+  background:#16202d;
+  padding:22px 20px 16px;
+  display:flex;flex-direction:column;gap:14px;
+}
+.hero-title{
+  font-size:26px;font-weight:900;color:#fff;
+  letter-spacing:-.03em;margin:0;line-height:1.2;
+}
+.hero-subtitle{
+  font-size:12px;color:#8f98a0;margin:2px 0 0;
+  font-weight:400;
+}
+.tag-row{display:flex;gap:6px;flex-wrap:wrap}
+.tag{
+  font-size:11px;font-weight:700;padding:4px 10px;
+  border-radius:3px;letter-spacing:.02em;
+  background:#1b2838;color:var(--steam-accent);
+  border:1px solid #2a3f55;
+}
+.tag.green{color:var(--steam-green);border-color:#2d3a0a}
+.tag.orange{color:#f4a261;border-color:#3d2a18}
+.hero-stats{display:flex;gap:18px;flex-wrap:wrap}
+.hero-stat label{font-size:10px;color:#8f98a0;font-weight:700;text-transform:uppercase;letter-spacing:.06em;display:block}
+.hero-stat b{font-size:18px;color:#fff;font-weight:900;display:block;margin-top:2px}
+.hero-stat small{font-size:11px;color:#66a0bf}
+.play-btn{
+  background:linear-gradient(90deg,#75b022,#588a1b);
+  color:#fff;font-size:14px;font-weight:900;
+  border:0;border-radius:4px;padding:12px 0;width:100%;
+  box-shadow:0 2px 4px #00000033;
+  letter-spacing:.01em;
+  transition:filter .15s;
+}
+.play-btn:hover{filter:brightness(1.1)}
+.play-btn-sub{
+  font-size:11px;color:#688a2c;margin:4px 0 0;text-align:center;
+  font-weight:400;
+}
+
+/* ── 본문 레이아웃 ── */
+.workshop-body{
+  max-width:900px;margin:0 auto;
+  padding:24px 20px 60px;
+  display:grid;grid-template-columns:minmax(0,1fr) 220px;
+  gap:20px;
+}
+.main-col{display:flex;flex-direction:column;gap:18px}
+.side-col{display:flex;flex-direction:column;gap:14px}
+
+/* ── 섹션 패널 ── */
+.panel{
+  background:var(--card);border:1px solid var(--line);
+  border-radius:16px;padding:20px;
+  box-shadow:0 6px 18px #1318230a;
+}
+.panel h2{
+  margin:0 0 14px;font-size:16px;font-weight:900;
+  letter-spacing:-.02em;color:var(--ink);
+  padding-bottom:10px;border-bottom:1px solid var(--line);
+}
+.panel-steam{
+  background:#16202d;border:1px solid #2a3f55;
+  border-radius:10px;padding:16px;
+  box-shadow:0 6px 18px #00000022;
+  color:#c6d4df;
+}
+.panel-steam h3{
+  margin:0 0 12px;font-size:13px;font-weight:900;
+  text-transform:uppercase;letter-spacing:.06em;color:#8f98a0;
+}
+
+/* ── 게임 설명 ── */
+.desc-block{font-size:14px;line-height:1.75;color:#334155}
+.desc-block p{margin:0 0 12px}
+.desc-block p:last-child{margin:0}
+.desc-block strong{color:var(--ink)}
+.desc-block .rule-highlight{
+  background:var(--brand-pale);border-left:3px solid var(--brand);
+  border-radius:0 8px 8px 0;padding:10px 14px;margin:14px 0;
+  font-size:13px;
+}
+
+/* ── 스크린샷 갤러리 ── */
+.screenshot-grid{
+  display:grid;grid-template-columns:1fr 1fr;gap:8px;
+}
+.screenshot{
+  border-radius:8px;overflow:hidden;border:1px solid var(--line);
+  background:#0a1628;
+}
+.screenshot-ph{
+  height:108px;background:linear-gradient(135deg,#111827,#1e3352);
+  display:flex;align-items:center;justify-content:center;
+  font-size:28px;color:#2a4a6a;
+}
+
+/* ── 정보 목록 ── */
+.info-row{
+  display:flex;justify-content:space-between;align-items:baseline;
+  padding:8px 0;border-bottom:1px solid #f0f2f5;
+  font-size:13px;gap:8px;
+}
+.info-row:last-child{border:0;padding-bottom:0}
+.info-label{color:var(--muted);font-weight:700;flex-shrink:0}
+.info-val{color:var(--ink);font-weight:400;text-align:right}
+.info-val strong{font-weight:900}
+
+/* ── 태그 클라우드 ── */
+.tag-cloud{display:flex;flex-wrap:wrap;gap:6px}
+.tag-chip{
+  font-size:11px;font-weight:700;
+  padding:5px 10px;border-radius:999px;
+  background:#f1f5f9;color:#334155;
+  border:1px solid #dde3ea;
+}
+.tag-chip:hover{border-color:var(--brand);color:var(--brand)}
+
+/* ── 연관 게임 카드 ── */
+.related-list{display:flex;flex-direction:column;gap:8px}
+.related-card{
+  display:flex;align-items:center;gap:10px;
+  padding:10px;border-radius:10px;border:1px solid var(--line);
+  background:white;transition:border-color .15s,transform .12s;
+}
+.related-card:hover{border-color:#f1b48d;transform:translateY(-1px)}
+.related-icon{font-size:26px;width:40px;height:40px;border-radius:9px;display:grid;place-items:center;flex-shrink:0}
+.related-text{flex:1;min-width:0}
+.related-text b{font-size:13px;font-weight:900;display:block}
+.related-text small{font-size:11px;color:var(--muted)}
+.tier-badge{
+  font-size:10px;font-weight:900;padding:3px 7px;
+  border-radius:999px;flex-shrink:0;
+}
+.tier-badge.alpha{background:#fff1b8;color:#7c5c00}
+.tier-badge.beta{background:#f0fdf4;color:#166534}
+.tier-badge.stable{background:#eff6ff;color:#1d4ed8}
+
+/* ── 구독자 패널 ── */
+.sub-stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+.sub-stat{text-align:center;background:#1b2838;border-radius:6px;padding:10px 6px}
+.sub-stat b{font-size:20px;color:#fff;font-weight:900;display:block}
+.sub-stat small{font-size:10px;color:#8f98a0}
+.sub-btn{
+  width:100%;background:#5c7e10;border:0;border-radius:4px;
+  color:#fff;font-size:13px;font-weight:900;padding:11px 0;
+  transition:filter .15s;
+}
+.sub-btn:hover{filter:brightness(1.12)}
+.sub-note{font-size:11px;color:#8f98a0;text-align:center;margin-top:6px;line-height:1.5}
+
+/* ── 규칙 단계 ── */
+.rule-steps{display:flex;flex-direction:column;gap:10px}
+.rule-step{display:flex;gap:12px;align-items:flex-start}
+.step-num{
+  width:28px;height:28px;border-radius:50%;
+  background:var(--navy);color:#fff;font-weight:900;font-size:13px;
+  display:grid;place-items:center;flex-shrink:0;margin-top:1px;
+}
+.step-body b{font-size:13px;display:block;margin-bottom:3px}
+.step-body p{font-size:12px;color:var(--muted);margin:0;line-height:1.6}
+
+/* ── 보드 미리보기 (SVG) ── */
+.board-preview{
+  border:1px solid var(--line);border-radius:12px;overflow:hidden;
+  background:#fdf9f4;
+}
+
+/* ── 푸터 ── */
+.workshop-footer{
+  background:#0d1117;color:#8f98a0;
+  font-size:12px;text-align:center;padding:18px;
+  line-height:1.7;border-top:1px solid #1e2a38;
+}
+.workshop-footer a{color:var(--steam-accent)}
+
+/* ── 반응형 ── */
+@media(max-width:720px){
+  .hero-capsule{grid-template-columns:1fr}
+  .hero-meta{padding:18px}
+  .workshop-body{grid-template-columns:1fr}
+  .side-col{order:-1}
+  .screenshot-grid{grid-template-columns:1fr}
+}
+@media(max-width:480px){
+  .topbar{padding:0 14px}
+  .hero-image img,.hero-image-placeholder{height:200px}
+  .hero-title{font-size:21px}
+  .hero-stats{gap:12px}
+  .hero-stat b{font-size:15px}
+  .sub-stats{grid-template-columns:1fr 1fr}
+}
+</style>
+</head>
+<body>
+
+<!-- 상단바 -->
+<header class="topbar">
+  <div class="brand">Board<span>Mate</span> Arena</div>
+  <div class="topbar-right">
+    <a class="back-link" href="https://board-mate.github.io/arena/">← 게임 목록</a>
+  </div>
+</header>
+
+<!-- Steam 스타일 히어로 -->
+<section class="workshop-hero">
+  <div class="hero-capsule">
+    <!-- 게임 이미지 -->
+    <div class="hero-image">
+      <div class="hero-image-placeholder">
+        <span class="big-icon">⛩️</span>
+        <p>사무라이 · Samurai by Reiner Knizia</p>
+      </div>
+    </div>
+
+    <!-- 메타 정보 -->
+    <div class="hero-meta">
+      <div>
+        <h1 class="hero-title">사무라이</h1>
+        <p class="hero-subtitle">Samurai — 라이너 크니지아 원작 · 전략 타일 게임</p>
+      </div>
+
+      <div class="tag-row">
+        <span class="tag green">🤝 멀티플레이</span>
+        <span class="tag">⏳ 턴 기반</span>
+        <span class="tag orange">⚗️ 알파</span>
+        <span class="tag">🎲 전략</span>
+        <span class="tag">🧩 추상</span>
+      </div>
+
+      <div class="hero-stats">
+        <div class="hero-stat">
+          <label>인원</label>
+          <b>2–4명</b>
+          <small>온라인 턴제</small>
+        </div>
+        <div class="hero-stat">
+          <label>플레이 시간</label>
+          <b>30분</b>
+          <small>대략</small>
+        </div>
+        <div class="hero-stat">
+          <label>난이도</label>
+          <b>★★☆</b>
+          <small>낮음</small>
+        </div>
+      </div>
+
+      <div>
+        <button class="play-btn" onclick="window.location.href='./index.html#/multi'">
+          지금 플레이 — BoardMate Arena
+        </button>
+        <p class="play-btn-sub">로그인 후 방 만들기 → 사무라이 선택</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 본문 -->
+<div class="workshop-body">
+
+  <!-- 메인 칼럼 -->
+  <div class="main-col">
+
+    <!-- 게임 설명 -->
+    <div class="panel">
+      <h2>게임 소개</h2>
+      <div class="desc-block">
+        <p>
+          <strong>사무라이</strong>는 라이너 크니지아(Reiner Knizia)가 디자인한 타일 배치 추상 전략 게임입니다.
+          플레이어는 봉건 일본 지도 위에 육각 타일을 놓아 도시에 있는 세 종류의 코마(쌀, 부처, 사무라이 투구)를 차지하기 위해 경쟁합니다.
+        </p>
+        <p>
+          각 타일은 인접한 도시의 특정 코마에 영향력을 행사하거나, 강력한 사무라이 타일로 모든 코마에 동시에 영향력을 발휘합니다.
+          도시의 모든 빈 방향이 타일로 막히면 가장 높은 영향력을 가진 플레이어가 해당 코마를 획득합니다.
+        </p>
+        <div class="rule-highlight">
+          🏆 게임이 끝나면 각 코마 종류에서 가장 많이 획득한 플레이어를 세고,
+          두 종류 이상에서 우위를 점한 플레이어가 <strong>최종 승자</strong>가 됩니다.
+          동점이면 코마 총 개수로 결정합니다.
+        </div>
+        <p>
+          BoardMate Arena에서는 같은 시간에 접속하지 않아도 됩니다. 내 차례 알림을 받고 접속해 행동한 뒤 나가면,
+          다음 플레이어가 차례를 이어갑니다.
+        </p>
+      </div>
+    </div>
+
+    <!-- 게임 규칙 -->
+    <div class="panel">
+      <h2>진행 방식</h2>
+      <div class="rule-steps">
+        <div class="rule-step">
+          <div class="step-num">1</div>
+          <div class="step-body">
+            <b>손패 확인</b>
+            <p>각 플레이어는 손패 5장으로 행동합니다. 자기 턴에는 손패에서 배치할 타일을 선택하며, 턴 종료 시 다시 5장이 되도록 덱에서 보충합니다.</p>
+          </div>
+        </div>
+        <div class="rule-step">
+          <div class="step-num">2</div>
+          <div class="step-body">
+            <b>타일 놓기</b>
+            <p>지도의 빈 육각 칸에 타일을 하나 내려놓습니다. 타일마다 영향력 대상(쌀/부처/투구/전체)과 수치가 다릅니다.</p>
+          </div>
+        </div>
+        <div class="rule-step">
+          <div class="step-num">3</div>
+          <div class="step-body">
+            <b>코마 쟁탈 판정</b>
+            <p>타일을 놓은 후, 인접 도시의 빈 방향이 모두 막혔다면 각 코마별로 영향력이 가장 높은 플레이어가 코마를 가져갑니다.</p>
+          </div>
+        </div>
+        <div class="rule-step">
+          <div class="step-num">4</div>
+          <div class="step-body">
+            <b>빠른 타일 · 특수 타일</b>
+            <p>로닌·함선은 빠른 타일로 취급되어 일반 타일과 함께 활용할 수 있습니다. 조각교환·타일교환은 별도의 선택 절차로 처리됩니다.</p>
+          </div>
+        </div>
+        <div class="rule-step">
+          <div class="step-num">5</div>
+          <div class="step-body">
+            <b>게임 종료</b>
+            <p>한 종류의 조각 공급이 완전히 소진되거나, 무승부로 제외된 조각이 4개 이상이 되면 게임이 종료됩니다. 이후 세 종류 조각의 다수 획득 관계로 최종 순위를 계산합니다.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 스크린샷 영역 -->
+    <div class="panel">
+      <h2>스크린샷</h2>
+      <div class="screenshot-grid">
+        <div class="screenshot">
+          <div class="screenshot-ph">
+            <!-- SVG 보드 미리보기 -->
+            <svg viewBox="0 0 200 180" xmlns="http://www.w3.org/2000/svg" width="200" height="180">
+              <rect width="200" height="180" fill="#1a2e44"/>
+              <!-- 육각 타일들 -->
+              <polygon points="60,40 80,30 100,40 100,60 80,70 60,60" fill="#c8a96e" stroke="#6b4c1a" stroke-width="1.5"/>
+              <text x="80" y="53" font-size="12" text-anchor="middle" fill="#4a2800">🌾</text>
+
+              <polygon points="100,40 120,30 140,40 140,60 120,70 100,60" fill="#6fa8dc" stroke="#1a4a7a" stroke-width="1.5"/>
+              <text x="120" y="53" font-size="12" text-anchor="middle" fill="#fff">☸️</text>
+
+              <polygon points="60,80 80,70 100,80 100,100 80,110 60,100" fill="#e06c3c" stroke="#8b2500" stroke-width="1.5"/>
+              <text x="80" y="93" font-size="12" text-anchor="middle" fill="#fff">⛩️</text>
+
+              <polygon points="100,80 120,70 140,80 140,100 120,110 100,100" fill="#c8a96e" stroke="#6b4c1a" stroke-width="1.5"/>
+              <text x="120" y="93" font-size="12" text-anchor="middle" fill="#4a2800">⛩️</text>
+
+              <polygon points="80,110 100,100 120,110 120,130 100,140 80,130" fill="#4c8a5c" stroke="#1a4a2a" stroke-width="1.5"/>
+              <text x="100" y="123" font-size="12" text-anchor="middle" fill="#fff">🌾</text>
+
+              <text x="100" y="165" font-size="9" text-anchor="middle" fill="#8aafcc">BoardMate · 사무라이 게임보드</text>
+            </svg>
+          </div>
+        </div>
+        <div class="screenshot">
+          <div class="screenshot-ph">
+            <svg viewBox="0 0 200 108" xmlns="http://www.w3.org/2000/svg" width="200" height="108">
+              <rect width="200" height="108" fill="#16202d"/>
+              <!-- 손패 타일 UI -->
+              <rect x="10" y="15" width="34" height="46" rx="5" fill="#2a3f55" stroke="#66c0f4" stroke-width="1"/>
+              <text x="27" y="38" font-size="14" text-anchor="middle" fill="#fff">⛩️</text>
+              <text x="27" y="52" font-size="9" text-anchor="middle" fill="#a0c0df">사무라이 3</text>
+
+              <rect x="50" y="15" width="34" height="46" rx="5" fill="#2a3f55" stroke="#3d5a70" stroke-width="1"/>
+              <text x="67" y="38" font-size="14" text-anchor="middle" fill="#fff">🌾</text>
+              <text x="67" y="52" font-size="9" text-anchor="middle" fill="#a0c0df">쌀 2</text>
+
+              <rect x="90" y="15" width="34" height="46" rx="5" fill="#2a3f55" stroke="#3d5a70" stroke-width="1"/>
+              <text x="107" y="38" font-size="14" text-anchor="middle" fill="#fff">☸️</text>
+              <text x="107" y="52" font-size="9" text-anchor="middle" fill="#a0c0df">부처 2</text>
+
+              <rect x="130" y="15" width="34" height="46" rx="5" fill="#c8a96e" stroke="#f4bd29" stroke-width="2"/>
+              <text x="147" y="38" font-size="14" text-anchor="middle" fill="#4a2800">⛩️</text>
+              <text x="147" y="52" font-size="9" text-anchor="middle" fill="#6b4c1a">선택 중</text>
+
+              <rect x="170" y="15" width="22" height="46" rx="5" fill="#1b2838" stroke="#3d5a70" stroke-width="1" stroke-dasharray="3,2"/>
+              <text x="181" y="42" font-size="9" text-anchor="middle" fill="#3d5a70">+1</text>
+
+              <text x="100" y="84" font-size="9" text-anchor="middle" fill="#8f98a0">손패 — 타일을 클릭해 배치하세요</text>
+              <text x="100" y="98" font-size="8" text-anchor="middle" fill="#5a6a7a">플레이어: 🔴 나 · 🔵 턴 대기 · ⬜ 미입장</text>
+            </svg>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 원본 / 출처 -->
+    <div class="panel">
+      <h2>출처 및 원본</h2>
+      <div class="desc-block">
+        <p>
+          이 BoardMate Arena 구현은 <strong>Steam TTS 창작마당</strong>의
+          <a href="https://steamcommunity.com/sharedfiles/filedetails/?id=2484197405"
+             target="_blank" style="color:var(--brand);font-weight:700;text-decoration:underline">
+            캐슬런님 사무라이 모드 (ID: 2484197405)
+          </a>를 참고하여 BoardMate 멀티플레이어 아키텍처에 맞게 재구성한 웹 구현입니다.
+        </p>
+        <p>
+          원본 TTS 모드의 한글 룰북은
+          <a href="http://www.boardlife.co.kr/bbs_detail.php?bbs_num=1699&tb=info_files&id=&delivery=0&pg=1&game_id=5270"
+             target="_blank" style="color:var(--brand);">보드라이프 칼을쟁기로님 자료</a>를
+          참고하세요.
+          게임 원작의 저작권·상표는 Ravensburger 및 Reiner Knizia에게 귀속됩니다.
+        </p>
+      </div>
+    </div>
+
+  </div><!-- /main-col -->
+
+  <!-- 사이드 칼럼 -->
+  <div class="side-col">
+
+    <!-- Steam 스타일 구독 패널 -->
+    <div class="panel-steam">
+      <h3>BoardMate에서 플레이</h3>
+      <div class="sub-stats">
+        <div class="sub-stat">
+          <b>712</b><small>구독자</small>
+        </div>
+        <div class="sub-stat">
+          <b>4</b><small>즐겨찾기</small>
+        </div>
+      </div>
+      <button class="sub-btn" onclick="window.location.href='./index.html#/multi'">
+        ▶ 지금 플레이하기
+      </button>
+      <p class="sub-note">Steam 설치 불필요 — 브라우저에서 바로 플레이</p>
+    </div>
+
+    <!-- 게임 정보 -->
+    <div class="panel">
+      <h2>게임 정보</h2>
+      <div>
+        <div class="info-row">
+          <span class="info-label">제목</span>
+          <span class="info-val"><strong>사무라이</strong></span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">원작</span>
+          <span class="info-val">Reiner Knizia (1998)</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">인원</span>
+          <span class="info-val">2 – 4명</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">플레이</span>
+          <span class="info-val">온라인 턴제</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">진행</span>
+          <span class="info-val">⏳ 비동기</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">언어</span>
+          <span class="info-val">한국어</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">상태</span>
+          <span class="info-val"><span style="color:#b45309;font-weight:900">⚗️ 알파</span></span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">등록일</span>
+          <span class="info-val">2021. 5. 11</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">최근 업데이트</span>
+          <span class="info-val">v11.4.62</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 태그 -->
+    <div class="panel">
+      <h2>태그</h2>
+      <div class="tag-cloud">
+        <span class="tag-chip">전략</span>
+        <span class="tag-chip">추상게임</span>
+        <span class="tag-chip">타일배치</span>
+        <span class="tag-chip">라이너크니지아</span>
+        <span class="tag-chip">2~4인</span>
+        <span class="tag-chip">한국어</span>
+        <span class="tag-chip">비동기턴제</span>
+        <span class="tag-chip">봉건일본</span>
+        <span class="tag-chip">BoardMate</span>
+      </div>
+    </div>
+
+    <!-- 연관 게임 -->
+    <div class="panel">
+      <h2>다른 온라인 게임</h2>
+      <div class="related-list">
+        <a class="related-card" href="https://board-mate.github.io/arena/">
+          <div class="related-icon" style="background:#fff4e6">🥊</div>
+          <div class="related-text">
+            <b>마스크맨</b>
+            <small>3–6인 · 안정</small>
+          </div>
+          <span class="tier-badge stable">안정</span>
+        </a>
+        <a class="related-card" href="https://board-mate.github.io/arena/">
+          <div class="related-icon" style="background:#e6f6ff">⚔️</div>
+          <div class="related-text">
+            <b>맨덤의 던전</b>
+            <small>2–4인 · 안정</small>
+          </div>
+          <span class="tier-badge stable">안정</span>
+        </a>
+        <a class="related-card" href="https://board-mate.github.io/arena/">
+          <div class="related-icon" style="background:#fff3e6">🧭</div>
+          <div class="related-text">
+            <b>엘도라도</b>
+            <small>2–4인 · 알파</small>
+          </div>
+          <span class="tier-badge alpha">알파</span>
+        </a>
+        <a class="related-card" href="https://board-mate.github.io/arena/">
+          <div class="related-icon" style="background:#f0fff4">🌲</div>
+          <div class="related-text">
+            <b>캐스캐디아</b>
+            <small>2–4인 · 베타</small>
+          </div>
+          <span class="tier-badge beta">베타</span>
+        </a>
+        <a class="related-card" href="https://board-mate.github.io/arena/">
+          <div class="related-icon" style="background:#f5f3ff">🏛️</div>
+          <div class="related-text">
+            <b>판타지 왕국: 그리스의 전설들</b>
+            <small>3–6인 · 안정 · NEW</small>
+          </div>
+          <span class="tier-badge stable">안정</span>
+        </a>
+      </div>
+    </div>
+
+  </div><!-- /side-col -->
+</div><!-- /workshop-body -->
+
+<!-- 푸터 -->
+<footer class="workshop-footer">
+  <div>
+    BoardMate Arena — 보드게임 모임원을 위한 온라인 아케이드 &nbsp;·&nbsp;
+    <a href="https://github.com/board-mate/arena" target="_blank">GitHub</a> &nbsp;·&nbsp;
+    <a href="https://board-mate.github.io/arena/" target="_blank">사이트로 이동</a>
+  </div>
+  <div style="margin-top:6px;font-size:11px;color:#5a6a7a">
+    게임 원작 © Reiner Knizia / Ravensburger &nbsp;·&nbsp;
+    TTS 한글판 © 캐슬런 &nbsp;·&nbsp;
+    BoardMate 구현 © board-mate contributors
+  </div>
+</footer>
+
+</body>
+</html>
