@@ -1,0 +1,12 @@
+BoardMate Arena v11.4.65 ALPHA — Pan Am 적용 순서
+
+1. 이 ZIP의 웹 파일을 GitHub 저장소의 같은 위치에 업로드/덮어쓰기합니다.
+   - online-panam.html (신규)
+   - workshop-panam.html (신규, 선택적 게임 정보 페이지)
+   - app.js
+   - styles.css
+   - index.html
+   - sw.js
+2. Supabase SQL Editor에서 database/SUPABASE_PANAM_V11_4_65.sql 전체를 1회 실행합니다.
+3. GitHub Pages 배포가 끝난 뒤 Ctrl+F5로 새로고침합니다.
+4. 새 방 만들기 → ALPHA · 보완 필요 → 팬 암을 선택합니다.

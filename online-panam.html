@@ -1,0 +1,396 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>팬 암 · BoardMate Arena</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="./config.js"></script>
+<style>
+:root{
+  font-family:Pretendard,"Noto Sans KR",system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  --ink:#13243b;--muted:#64748b;--line:#d7e1ea;--paper:#fffdf6;--blue:#0d5a92;--blue2:#083b68;
+  --cream:#f4e9c8;--orange:#dd7b32;--green:#3b8a68;--danger:#b42318;--gold:#d5ad48;
+  --p0:#df5a4e;--p1:#d6a629;--p2:#4f8c68;--p3:#697386;
+  background:#e8f0f5;color:var(--ink)
+}
+*{box-sizing:border-box}body{margin:0;min-width:320px;background:linear-gradient(180deg,#d9eaf4 0,#f6f1e5 38%,#eef4f6 100%)}button,input,select{font:inherit}button{cursor:pointer}button:disabled{cursor:not-allowed;opacity:.45}a{color:inherit}
+.topbar{position:sticky;top:0;z-index:50;background:#0c2f51;color:#fff;border-bottom:4px solid #d8b75e;padding:9px 14px;display:flex;align-items:center;justify-content:space-between;gap:10px;box-shadow:0 3px 16px #0003}.topbar .links{display:flex;gap:7px;align-items:center;flex-wrap:wrap}.topbar a,.topbar button{border:1px solid #ffffff32;background:#ffffff10;color:white;border-radius:9px;padding:7px 10px;text-decoration:none;font-weight:900}.topbar .cancel{border-color:#fecaca;background:#7f1d1d;color:#fff}.topbar-title{text-align:center;font-weight:1000;letter-spacing:-.02em}.topbar-title small{display:block;font-size:10px;color:#a7c4db;font-weight:700}.sync{font-size:11px;color:#b9d2e4;min-width:68px;text-align:right}
+.wrap{width:min(1500px,calc(100% - 16px));margin:12px auto 48px}.panel{background:#fffdf8;border:1px solid #d5dce2;border-radius:16px;box-shadow:0 8px 24px #17344f14;padding:12px;margin-bottom:10px}.panel h2,.panel h3{margin:0 0 8px}.subtle{font-size:11px;color:var(--muted);line-height:1.55}.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 7px;border-radius:999px;font-size:10px;font-weight:900;background:#eef2ff;color:#3730a3}.badge.alpha{background:#fff7d6;color:#7a5600}.badge.phase{background:#dbeafe;color:#1e40af}
+.players{display:flex;gap:7px;overflow:auto;padding-bottom:2px}.player{min-width:190px;border:2px solid #cbd5e1;border-radius:13px;padding:8px;background:#f8fafc;position:relative}.player.active{outline:4px solid #f6c64e;border-color:#0d5a92}.player.me{box-shadow:inset 0 0 0 2px #0d5a9222}.player .name{font-weight:1000}.player small{display:block;color:#64748b;font-size:10px;margin-top:2px}.player .chips{display:flex;gap:4px;flex-wrap:wrap;margin-top:6px}.chip{font-size:10px;border:1px solid #d8dee7;border-radius:999px;padding:3px 6px;background:white}.chip.stock{background:#eaf3fb;color:#0b4a78}.chip.cash{background:#effaf4;color:#166534}.chip.income{background:#fff7ed;color:#9a3412}
+.layout{display:grid;grid-template-columns:minmax(720px,1.45fr) minmax(340px,.62fr);gap:10px}.stack{display:flex;flex-direction:column;gap:10px}.board-shell{background:#07395f;border-radius:16px;padding:8px;border:3px solid #092b46;box-shadow:inset 0 0 0 1px #ffffff22}.map{width:100%;height:auto;display:block;border-radius:10px;background:#0b4d79}.route{stroke:#c5d9e6;stroke-width:4;stroke-linecap:round;opacity:.72;cursor:pointer;transition:.12s}.route.open:hover{stroke:#fff;stroke-width:7;opacity:1}.route.pan-south{stroke:#f59e8a}.route.pan-europe{stroke:#d7b5ff}.route.pan-asia{stroke:#d9c357}.route.owned0{stroke:var(--p0);stroke-width:8;opacity:1}.route.owned1{stroke:var(--p1);stroke-width:8;opacity:1}.route.owned2{stroke:var(--p2);stroke-width:8;opacity:1}.route.owned3{stroke:var(--p3);stroke-width:8;opacity:1}.route.panowned{stroke:#ffffff;stroke-width:9;opacity:1;stroke-dasharray:10 6}.route.selectable{stroke:#8df0a8;stroke-width:8;opacity:1}.route-label{font-size:10px;font-weight:1000;fill:white;paint-order:stroke;stroke:#07395f;stroke-width:3}.city{cursor:pointer}.city circle{fill:#fff7d5;stroke:#0c2f51;stroke-width:2}.city text{font-size:9px;font-weight:900;fill:white;paint-order:stroke;stroke:#082942;stroke-width:2.5}.city.selectable circle{fill:#9af0b4;stroke:#14532d;stroke-width:4}.airport-ring{fill:none;stroke-width:5}.legend{display:flex;gap:8px;flex-wrap:wrap;margin-top:7px;color:#dbeafe;font-size:10px}.legend span{display:flex;align-items:center;gap:4px}.legend i{width:20px;height:4px;border-radius:999px;background:#fff}.legend .s i{background:#f59e8a}.legend .e i{background:#d7b5ff}.legend .a i{background:#d9c357}.legend .p i{background:white;border:1px dashed #0b1f33}
+.event-card{background:linear-gradient(180deg,#fbf5e7,#fffdf5);border:2px solid #7a6548;border-radius:13px;padding:12px;box-shadow:0 4px 0 #cdbb93}.event-card .r{font-size:11px;font-weight:900;color:#8a6c3f}.event-card h3{font-family:Georgia,"Times New Roman",serif;letter-spacing:.04em;margin:3px 0 7px}.event-meta{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}.event-meta .m{border:1px solid #cdbb93;border-radius:8px;padding:4px 7px;background:#fff8e7;font-size:10px;font-weight:900}.approx{font-size:9px;color:#9a6f25;margin-top:4px}.market{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.dest-card{border:1px solid #cbd5e1;border-radius:11px;padding:9px;background:#fff;min-height:82px}.dest-card b{display:block;font-size:12px}.dest-card small{color:#64748b;font-size:10px}.dest-card .bonus{margin-top:5px;color:#166534;font-weight:900;font-size:11px}.region-na{border-top:5px solid #4a90d6}.region-eu{border-top:5px solid #8c61c7}.region-as{border-top:5px solid #d28a2e}.region-pa{border-top:5px solid #57a66a}.region-sa{border-top:5px solid #cf5555}
+.action-grid{display:grid;grid-template-columns:repeat(5,minmax(150px,1fr));gap:7px;overflow:auto;padding-bottom:2px}.action-area{border:2px solid #d4dde5;border-radius:12px;background:#fbfdff;padding:8px;min-height:160px}.action-area h4{margin:0 0 6px;font-size:12px}.action-area .hint{font-size:9px;color:#64748b;min-height:28px}.bid-track{display:flex;gap:4px;flex-wrap:wrap;margin-top:5px}.bid{border:1px solid #b8c6d2;background:#fff;border-radius:8px;padding:5px 7px;font-size:10px;font-weight:900}.bid.hot{background:#fff2bf;border-color:#d19b1f}.occupant{font-size:10px;margin-top:5px;padding:4px 6px;border-radius:7px;background:#eef4f8}.worksite{display:flex;gap:4px;flex-wrap:wrap;margin-top:7px}.pawn{width:25px;height:25px;border-radius:50% 50% 42% 42%;display:grid;place-items:center;color:#fff;font-size:9px;font-weight:1000;border:2px solid #fff;box-shadow:0 1px 3px #0003}.p0{background:var(--p0)}.p1{background:var(--p1)}.p2{background:var(--p2)}.p3{background:var(--p3)}
+.status-box{border:2px solid #0d5a92;background:#eef8ff;border-radius:13px;padding:10px}.status-box b{font-size:13px}.status-box p{font-size:11px;color:#486174;margin:5px 0 0;line-height:1.55}.buttons{display:flex;gap:6px;flex-wrap:wrap;margin-top:9px}.btn{border:1px solid #b7c4cf;border-radius:9px;padding:7px 10px;background:#fff;color:#17324b;font-weight:900}.btn.primary{background:#0d5a92;color:#fff;border-color:#0d5a92}.btn.green{background:#18794e;color:#fff;border-color:#18794e}.btn.gold{background:#d9a92f;color:#312306;border-color:#b98813}.btn.red{background:#b42318;color:#fff;border-color:#b42318}.btn.ghost{background:#f8fafc}.btn.tiny{padding:4px 7px;font-size:10px}.btn.routepick{background:#e8fff0;border-color:#7ac894;color:#166534}.btn.citypick{background:#eef8ff;border-color:#8fc0df;color:#0c4a6e}
+.directive-hand{display:flex;gap:7px;overflow:auto;padding-bottom:4px}.directive{min-width:180px;max-width:220px;border:2px solid #171717;border-radius:10px;background:#fff;color:#111;padding:8px}.directive .head{background:#111;color:white;margin:-8px -8px 7px;padding:6px 8px;border-radius:7px 7px 0 0;font-weight:1000;font-size:11px}.directive p{font-size:10px;line-height:1.45;margin:4px 0}.directive small{color:#b91c1c;font-size:9px;font-weight:900}.directive.playable{outline:4px solid #f6c64e}.directive.secret{background:#f8f4ff}.log{height:180px;overflow:auto;background:#0d1c2a;color:#cbd5e1;border-radius:10px;padding:8px;font-size:10px}.log div{margin-bottom:4px}.rule-note{font-size:10px;line-height:1.55;color:#566b7d;background:#f8fafc;border:1px dashed #cbd5e1;border-radius:10px;padding:8px}.final{background:#fff9d9;border:2px solid #d9ad3d;border-radius:12px;padding:12px}.source-note{font-size:9px;color:#718096;line-height:1.5}
+.modal{position:fixed;inset:0;z-index:2000;background:#0f172abf;display:grid;place-items:center;padding:16px}.modal-card{width:min(680px,100%);max-height:85vh;overflow:auto;background:#fff;border-radius:18px;padding:16px;box-shadow:0 30px 90px #0008}.choice-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+@media(max-width:1050px){.layout{grid-template-columns:1fr}.action-grid{grid-template-columns:repeat(5,180px)}.map{min-width:780px}.board-shell{overflow:auto}}@media(max-width:600px){.topbar{align-items:flex-start}.topbar-title{display:none}.player{min-width:165px}.market{grid-template-columns:1fr}.choice-grid{grid-template-columns:1fr}.wrap{width:min(100% - 10px,1500px)}}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="links"><a href="./index.html#/">← 홈</a><a href="./index.html#/multi">다인플</a><a id="roomBack" href="./index.html#/multi">방</a></div>
+  <div class="topbar-title">✈️ PAN AM · 팬 암 <small>BoardMate Arena · ALPHA</small></div>
+  <div class="links"><button class="cancel" id="cancelBtn" type="button">게임 취소</button><span class="sync" id="sync">연결 중…</span></div>
+</header>
+<main class="wrap"><div id="app" class="panel">불러오는 중…</div></main>
+<script type="module">
+import {
+  configured,roomId,getMe,loadRoom,loadState,saveState,startStatePoll,submitMatch,
+  ratingBadges,esc,showFatal,endPanel,openCancelVotePanel,touchPresence
+} from './multi-common.js?v=11.4.65';
+
+const GAME='panam';
+const app=document.querySelector('#app');
+const syncEl=document.querySelector('#sync');
+const roomBack=document.querySelector('#roomBack');
+const clone=x=>JSON.parse(JSON.stringify(x));
+const money=n=>`$${Math.max(0,Math.round(Number(n)||0))}`;
+const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
+function shuffle(a){a=[...a];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+function log(s,msg){s.logs.unshift(msg);s.logs=s.logs.slice(0,180)}
+
+const REGIONS={
+  na:{name:'북아메리카',color:'#4a90d6'},eu:{name:'유럽',color:'#8c61c7'},as:{name:'아시아',color:'#d28a2e'},pa:{name:'태평양',color:'#57a66a'},sa:{name:'남아메리카',color:'#cf5555'}
+};
+const CITIES=[
+  {id:'miami',name:'마이애미',region:'na',x:278,y:305},{id:'newyork',name:'뉴욕',region:'na',x:300,y:250},{id:'sanfran',name:'샌프란시스코',region:'na',x:120,y:238},{id:'losangeles',name:'로스앤젤레스',region:'na',x:126,y:285},{id:'seattle',name:'시애틀',region:'na',x:118,y:185},{id:'mexico',name:'멕시코시티',region:'na',x:210,y:330},{id:'havana',name:'하바나',region:'na',x:295,y:330},{id:'bermuda',name:'버뮤다',region:'na',x:365,y:286},{id:'sanjuan',name:'산후안',region:'sa',x:362,y:342},{id:'caracas',name:'카라카스',region:'sa',x:420,y:380},{id:'rio',name:'리우데자네이루',region:'sa',x:500,y:442},{id:'buenos',name:'부에노스아이레스',region:'sa',x:470,y:492},{id:'lisbon',name:'리스본',region:'eu',x:535,y:265},{id:'london',name:'런던',region:'eu',x:545,y:200},{id:'paris',name:'파리',region:'eu',x:585,y:232},{id:'rome',name:'로마',region:'eu',x:640,y:265},{id:'reykjavik',name:'레이캬비크',region:'eu',x:470,y:145},{id:'horta',name:'오르타',region:'eu',x:470,y:235},{id:'karachi',name:'카라치',region:'as',x:755,y:292},{id:'bangkok',name:'방콕',region:'as',x:805,y:348},{id:'hongkong',name:'홍콩',region:'as',x:846,y:302},{id:'shanghai',name:'상하이',region:'as',x:860,y:248},{id:'tokyo',name:'도쿄',region:'as',x:910,y:220},{id:'honolulu',name:'호놀룰루',region:'pa',x:965,y:350},{id:'guam',name:'괌',region:'pa',x:940,y:300},{id:'manila',name:'마닐라',region:'pa',x:870,y:380},{id:'sydney',name:'시드니',region:'pa',x:900,y:470},{id:'auckland',name:'오클랜드',region:'pa',x:985,y:480}
+];
+const CITY=Object.fromEntries(CITIES.map(x=>[x.id,x]));
+const ROUTES=[
+  ['miami-havana','miami','havana',1,'south',1],['havana-sanjuan','havana','sanjuan',1,'south',2],['sanjuan-caracas','sanjuan','caracas',1,'south',3],['caracas-rio','caracas','rio',3,'south',4],['rio-buenos','rio','buenos',2,'south',5],
+  ['miami-newyork','miami','newyork',2,'europe',1],['newyork-bermuda','newyork','bermuda',2,'europe',2],['bermuda-horta','bermuda','horta',2,'europe',3],['horta-lisbon','horta','lisbon',2,'europe',4],['lisbon-paris','lisbon','paris',1,'europe',5],['paris-rome','paris','rome',1,'europe',6],
+  ['miami-mexico','miami','mexico',2,'asia',1],['mexico-sanfran','mexico','sanfran',3,'asia',2],['sanfran-honolulu','sanfran','honolulu',4,'asia',3],['honolulu-guam','honolulu','guam',3,'asia',4],['guam-tokyo','guam','tokyo',2,'asia',5],['tokyo-hongkong','tokyo','hongkong',2,'asia',6],['hongkong-bangkok','hongkong','bangkok',1,'asia',7],
+  ['seattle-sanfran','seattle','sanfran',1,null,0],['sanfran-losangeles','sanfran','losangeles',1,null,0],['losangeles-mexico','losangeles','mexico',2,null,0],['newyork-london','newyork','london',4,null,0],['newyork-reykjavik','newyork','reykjavik',3,null,0],['reykjavik-london','reykjavik','london',2,null,0],['reykjavik-horta','reykjavik','horta',2,null,0],['london-paris','london','paris',1,null,0],['london-lisbon','london','lisbon',2,null,0],['rome-karachi','rome','karachi',4,null,0],['paris-karachi','paris','karachi',4,null,0],['lisbon-rio','lisbon','rio',4,null,0],['karachi-bangkok','karachi','bangkok',3,null,0],['karachi-hongkong','karachi','hongkong',4,null,0],['bangkok-hongkong','bangkok','hongkong',1,null,0],['hongkong-shanghai','hongkong','shanghai',1,null,0],['shanghai-tokyo','shanghai','tokyo',1,null,0],['hongkong-manila','hongkong','manila',1,null,0],['manila-guam','manila','guam',2,null,0],['manila-sydney','manila','sydney',3,null,0],['sydney-auckland','sydney','auckland',1,null,0],['honolulu-auckland','honolulu','auckland',4,null,0],['honolulu-sydney','honolulu','sydney',4,null,0],['buenos-auckland','buenos','auckland',4,null,0]
+].map(x=>({id:x[0],a:x[1],b:x[2],d:x[3],path:x[4],order:x[5]}));
+const ROUTE=Object.fromEntries(ROUTES.map(x=>[x.id,x]));
+const ROUTE_BONUS={1:5,2:9,3:12,4:14};
+const PLANE={trimotor:{name:'트리모터',range:1},clipper:{name:'클리퍼',range:2},cruiser:{name:'크루저',range:3},jet:{name:'제트',range:4}};
+const PLANE_ORDER=['trimotor','clipper','cruiser','jet'];
+const BID_TRACKS={
+  A:[3,5,7,9],
+  B:[0,2,4,6],
+  trimotor:[0,2,4,6],
+  clipper:[2,4,6,8],
+  // 크루저/제트 입찰칸은 제공된 셋업 이미지에서 타일에 가려져 있어 ALPHA에서는 단계형 임시값을 사용합니다.
+  cruiser:[4,6,8,10],
+  jet:[6,8,10,12]
+};
+function bidValues(area,key){if(area==='A')return BID_TRACKS.A;if(area==='B')return BID_TRACKS.B;return BID_TRACKS[key]||BID_TRACKS.B}
+
+
+// 이벤트 효과 문구는 사용자가 제공한 한글화 카드 시트의 7행×4열 구성을 따릅니다.
+// 주식 변동/팬암 주사위 횟수는 업로드 자료에 카드 앞면 수치가 없어서 ALPHA 임시 메타값입니다.
+const EVENT_ROWS=[
+  [
+    {title:'남아메리카 진출',text:'확장 페이즈가 시작될 때, 팬 암은 남아메리카 경로 하나를 확장한다.',effect:'forceSouth',stock:['set',5],rolls:1},
+    {title:'시장 충격',text:'모든 플레이어는 $2를 잃는다.',effect:'lose2',stock:['set',3],rolls:1},
+    {title:'새로운 목적지',text:'각 플레이어는 덱에서 목적지 카드를 1장 뽑는다.',effect:'drawDestAll',stock:['set',5],rolls:1},
+    {title:'팬 암 창립',text:'확장 페이즈가 시작될 때, 팬 암은 아시아-태평양 경로 하나를 확장한다.',effect:'forceAsia',stock:['set',4],rolls:1,knownMeta:true}
+  ],
+  [
+    {title:'선택의 기회',text:'선 플레이어부터 돌아가며 항로 하나를 팬암에게 팔거나 목적지 카드 1장을 뽑는다.',effect:'sellOrDraw',stock:['up',1],rolls:1},
+    {title:'현금 유입',text:'모든 플레이어는 $4를 받는다.',effect:'gain4',stock:['down',1],rolls:1},
+    {title:'크루저 조기 도입',text:'비행기 칸에서 크루저 타일을 제거한다.',effect:'unlockCruiser',stock:['set',5],rolls:1},
+    {title:'태평양 진출',text:'확장 페이즈가 시작될 때, 팬 암은 아시아-태평양 경로 하나를 확장한다.',effect:'forceAsia',stock:['set',4],rolls:1,knownMeta:true}
+  ],
+  [
+    {title:'기단 재편',text:'각 플레이어는 트리모어나 클리퍼를 업그레이드하거나 목적지 카드 1장을 뽑는다.',effect:'upgradeOrDraw',stock:['up',1],rolls:1},
+    {title:'중고기 시장',text:'선 플레이어부터 돌아가면서 각 플레이어는 자신의 비행기 1대를 $5에 팔 수 있다.',effect:'maybeSellPlane',stock:['set',5],rolls:1},
+    {title:'유럽 진출',text:'확장 페이즈가 시작될 때, 팬 암은 유럽 경로 하나를 확장한다.',effect:'forceEurope',stock:['down',1],rolls:2},
+    {title:'호황',text:'이번 라운드의 수입단계에서 수입은 2배가 된다.',effect:'doubleIncome',stock:['up',1],rolls:1}
+  ],
+  [
+    {title:'항로 보조금',text:'각 플레이어는 현재 자신이 보유한 항로마다 $1씩 받는다.',effect:'routeDollar',stock:['up',1],rolls:2},
+    {title:'개척 장려',text:'이번 라운드에 항로를 개척한 플레이어는 $2를 받는다.',effect:'routeOpenBonus',stock:['down',1],rolls:2},
+    {title:'경기 부양',text:'모든 플레이어는 $4를 받는다.',effect:'gain4',stock:['set',6],rolls:2},
+    {title:'기단 확충',text:'각 플레이어는 트리모어나 클리퍼를 업그레이드하거나 트리모터 비행기 1대를 얻는다.',effect:'upgradeOrTrimotor',stock:['up',1],rolls:2}
+  ],
+  [
+    {title:'팬 암 매각 기회',text:'각 플레이어는 자신의 항로 하나를 팬 암에게 팔 수 있다.',effect:'maybeSellRoute',stock:['down',1],rolls:2},
+    {title:'제트 시대',text:'비행기 칸에서 제트 타일을 제거한다.',effect:'unlockJet',stock:['up',1],rolls:2},
+    {title:'장거리 수익',text:'각 플레이어는 자신이 보유한 가장 긴 항로 2개를 더해서 돈을 받는다.',effect:'longestTwo',stock:['set',7],rolls:2},
+    {title:'확장 선택',text:'선 플레이어부터 돌아가며 항로를 개척하거나 클리퍼 비행기 1대를 얻는다.',effect:'routeOrClipper',stock:['up',1],rolls:2}
+  ],
+  [
+    {title:'목적지 확대',text:'각 플레이어는 덱에서 목적지 카드를 1장 뽑는다.',effect:'drawDestAll',stock:['up',1],rolls:2},
+    {title:'지시 확대',text:'각 플레이어는 덱에서 지시 카드를 1장 뽑는다.',effect:'drawDirectiveAll',stock:['down',1],rolls:2},
+    {title:'기단 현대화',text:'선 플레이어부터 돌아가면서 각 플레이어는 자신의 비행기 1대를 업그레이드할 수 있다.',effect:'maybeUpgrade',stock:['set',8],rolls:2},
+    {title:'공항 확장',text:'선 플레이어부터 돌아가면서 각 플레이어는 자신의 공항을 배치할 수 있다.',effect:'maybePlaceAirport',stock:['up',1],rolls:3}
+  ],
+  [
+    {title:'주주 보상',text:'팬 암이 확장하고 나서 각 플레이어는 자기가 가진 항로마다 주식을 1장 얻는다.',effect:'stockPerRouteAfterPanam',stock:['up',1],rolls:3},
+    {title:'마지막 호황',text:'이번 라운드의 수입단계에서 수입은 2배가 된다.',effect:'doubleIncome',stock:['set',9],rolls:3},
+    {title:'지시 카드 매각권',text:'이번 라운드에 지시 카드를 뽑은 플레이어는 항로 하나를 팬 암에게 팔 수 있다.',effect:'directiveSeller',stock:['down',1],rolls:3},
+    {title:'전면 매각',text:'확장 페이즈가 시작될 때, 가지고 있는 모든 항로를 팬 암에게 팔 수 있다.',effect:'sellAllBeforePanam',stock:['set',11],rolls:3}
+  ]
+].map((row,ri)=>row.map((e,ci)=>({...e,id:`r${ri+1}${String.fromCharCode(65+ci)}`,round:ri+1})));
+const EVENT=Object.fromEntries(EVENT_ROWS.flat().map(e=>[e.id,e]));
+
+const DIRECTIVES={
+  lucky:{name:'행운권',text:'목적지 카드 맨 위 4장을 보고 1장은 가지고 나머지는 버린다.',timing:'이벤트 페이즈 · 공개 단계',code:'lucky'},
+  short:{name:'단거리 경주',text:'기술자 액션을 처리할 때 거리 1인 항로를 자유 개척할 수 있다.',timing:'해결 페이즈 · D 항로',code:'short'},
+  prescience:{name:'예지',text:'$3를 받고 다음 라운드 이벤트 카드를 살짝 본다.',timing:'이벤트 페이즈 · 주식 조정 단계',code:'prescience'},
+  rapid:{name:'급속 팽창',text:'기술자 액션을 처리할 때 항로를 하나 더 개척할 수 있다.',timing:'해결 페이즈 · D 항로',code:'rapid'},
+  secret:{name:'비밀 주식',text:'게임 종료 시 주식 1장을 공짜로 받는다.',timing:'게임 종료 시',code:'secret'},
+  opportunity:{name:'새로운 기회',text:'시장의 모든 목적지 카드를 버리고 새로 뽑고, 그 중 1장의 보너스를 받는다.',timing:'이벤트 페이즈 · 공개 단계',code:'opportunity'},
+  hub:{name:'중계 도시',text:'기술자 액션을 처리할 때 자신의 공항과 인접한 항로 하나를 자유 개척할 수 있다.',timing:'해결 페이즈 · D 항로',code:'hub'},
+  destination:{name:'목적지',text:'자신이 배치한 공항마다 $2씩 받는다.',timing:'해결 페이즈 · A 공항',code:'destination'},
+  planeSale:{name:'비행기 판매',text:'자신의 비행기 1대를 $4에 팔 수 있다.',timing:'해결 페이즈 · C 비행기',code:'planeSale'},
+  planeDiscount:{name:'비행기 할인',text:'이 페이즈에서 기술자 중 하나의 입찰 비용을 최대 $6까지 덜 내도 된다.',timing:'해결 페이즈 · C 비행기',code:'planeDiscount'},
+  upgrade:{name:'업그레이드',text:'자신의 비행기 중 1대를 업그레이드한다.',timing:'해결 페이즈 · C 비행기',code:'upgrade'},
+  freeDestination:{name:'자유 목적지',text:'이 페이즈의 입찰 중 하나는 돈을 내지 않아도 된다.',timing:'해결 페이즈 · B 목적지',code:'freeDestination'},
+  regionalAirport:{name:'지역 공항',text:'기술자 액션을 처리할 때 $2를 내고 공항을 배치할 수 있다.',timing:'해결 페이즈 · D 항로',code:'regionalAirport'},
+  advertising:{name:'광고',text:'현재 보유 중인 항로마다 $1씩 받는다.',timing:'해결 페이즈 · E 지시',code:'advertising'},
+  recon:{name:'항로 정찰',text:'$3을 받고 이번 페이즈에는 팬 암 주사위를 추가로 한 번 더 굴린다.',timing:'팬 암 페이즈 · 확장 단계',code:'recon'},
+  advisory:{name:'팬 암 자문위원회',text:'당신의 항로 중 하나를 팬 암에 판매한다.',timing:'팬 암 페이즈 · 확장 단계',code:'advisory'}
+};
+const DIRECTIVE_COUNTS={lucky:2,short:2,prescience:2,rapid:2,secret:8,opportunity:2,hub:2,destination:2,planeSale:2,planeDiscount:2,upgrade:2,freeDestination:2,regionalAirport:2,advertising:2,recon:2,advisory:4};
+function directiveDeck(){const a=[];for(const [id,n] of Object.entries(DIRECTIVE_COUNTS))for(let i=0;i<n;i++)a.push(id);return shuffle(a)}
+
+function destinationDeck(){
+  const base=CITIES.filter(c=>c.id!=='miami');const out=[];let k=0;
+  while(out.length<50){const c=base[k%base.length];const remoteness=['honolulu','guam','sydney','auckland','karachi','buenos','rio'].includes(c.id)?2:0;out.push({uid:`d${out.length}-${c.id}`,city:c.id,bonus:(out.length%3===0?1:0)+remoteness});k++}
+  return shuffle(out);
+}
+function drawDest(s,seat){if(!s.destDeck.length)return null;const c=s.destDeck.pop();s.players[seat].destinations.push(c);return c}
+function drawDirective(s,seat){if(!s.directiveDeck.length)return null;const d=s.directiveDeck.pop();s.players[seat].directives.push(d);s.roundFlags.drewDirective[seat]=true;return d}
+function fillMarket(s){for(let i=0;i<4;i++)if(!s.market[i]&&s.destDeck.length)s.market[i]=s.destDeck.pop()}
+function engineerCount(n){return n===2?5:n===3?4:3}
+function routeOwnerCount(s,seat){return Object.values(s.routes).filter(x=>x.owner===seat).length}
+function airportCount(s,seat){return Object.values(s.airports).filter(x=>x===seat).length}
+function playerColor(seat){return ['#df5a4e','#d6a629','#4f8c68','#697386'][seat]||'#334155'}
+function turnOrderFrom(first,n){return Array.from({length:n},(_,i)=>(first+i)%n)}
+function stockChangeText(meta){if(meta[0]==='set')return `주가 $${meta[1]}로 설정`;return meta[0]==='up'?`주가 +${meta[1]}`:`주가 -${meta[1]}`}
+function applyStockMeta(s,meta){if(meta[0]==='set')s.stockPrice=clamp(meta[1],3,11);else if(meta[0]==='up')s.stockPrice=clamp(s.stockPrice+meta[1],3,11);else s.stockPrice=clamp(s.stockPrice-meta[1],3,11)}
+function availablePlane(player,minRange=1,maxRange=4){for(const id of PLANE_ORDER){if(PLANE[id].range>=minRange&&PLANE[id].range<=maxRange&&player.fleet[id]>0)return id}return null}
+function canUpgradePlane(s,seat,onlyEarly=false){const p=s.players[seat];for(let i=0;i<PLANE_ORDER.length-1;i++){const a=PLANE_ORDER[i],b=PLANE_ORDER[i+1];if(onlyEarly&&i>1)continue;if(p.fleet[a]>0&&p.reserve[b]>0&&planeUnlocked(s,b))return true}return false}
+function upgradeFirstPlane(s,seat,onlyEarly=false){const p=s.players[seat];for(let i=0;i<PLANE_ORDER.length-1;i++){const a=PLANE_ORDER[i],b=PLANE_ORDER[i+1];if(onlyEarly&&i>1)continue;if(p.fleet[a]>0&&p.reserve[b]>0&&planeUnlocked(s,b)){p.fleet[a]--;p.reserve[a]++;p.reserve[b]--;p.fleet[b]++;log(s,`${p.name}: ${PLANE[a].name} → ${PLANE[b].name} 업그레이드`);return true}}return false}
+function planeUnlocked(s,id){if(id==='cruiser')return s.unlocks.cruiser||s.round>=3;if(id==='jet')return s.unlocks.jet||s.round>=6;return true}
+function returnPlane(s,seat,type){if(type)s.players[seat].fleet[type]++}
+function sellRouteToPanam(s,routeId,reason='팬 암 매각'){
+  const rr=s.routes[routeId],r=ROUTE[routeId];if(!rr||typeof rr.owner!=='number')return false;const seat=rr.owner,p=s.players[seat];
+  p.money+=ROUTE_BONUS[r.d];p.income=Math.max(0,p.income-r.d);returnPlane(s,seat,rr.plane);rr.owner='panam';rr.plane=null;log(s,`${p.name}: ${CITY[r.a].name}–${CITY[r.b].name} 항로를 팬 암에 매각 +${money(ROUTE_BONUS[r.d])} · ${reason}`);return true
+}
+function panamExpandPath(s,path){const list=ROUTES.filter(r=>r.path===path).sort((a,b)=>a.order-b.order);const r=list.find(r=>s.routes[r.id].owner!=='panam');if(!r){log(s,`팬 암 ${pathLabel(path)} 경로: 더 이상 확장할 항로 없음`);return}const rr=s.routes[r.id];if(typeof rr.owner==='number')sellRouteToPanam(s,r.id,`${pathLabel(path)} 경로 강제 매입`);else{rr.owner='panam';rr.plane=null;log(s,`팬 암: ${CITY[r.a].name}–${CITY[r.b].name} 항로 개척`)}}
+function pathLabel(p){return p==='south'?'남아메리카':p==='europe'?'유럽':'아시아-태평양'}
+function rollPanamFace(){const faces=['south','europe','asia','south+europe','europe+asia','panam'];return faces[Math.floor(Math.random()*faces.length)]}
+function planeSupplyForPlayer(){return{trimotor:3,clipper:3,cruiser:3,jet:1}}
+function initialState(){
+  const n=members.length,events=EVENT_ROWS.map(row=>row[Math.floor(Math.random()*row.length)].id),dDeck=destinationDeck(),dirDeck=directiveDeck();
+  const players=members.slice().sort((a,b)=>a.seat-b.seat).map(m=>({id:m.user_id,name:m.nickname,money:12,stock:0,income:0,fleet:{trimotor:2,clipper:1,cruiser:0,jet:0},reserve:planeSupplyForPlayer(),airportsLeft:5,destinations:[],directives:[],peek:null,pendingDiscount:0,freeDestination:false,routeModifier:null}));
+  const s={kind:'panam-v1',version:1,round:1,phase:'event',subphase:'',first:0,current:0,stockPrice:4,stockSupply:140,eventPlan:events,currentEvent:null,destDeck:dDeck,directiveDeck:dirDeck,market:[null,null,null,null],players,routes:Object.fromEntries(ROUTES.map(r=>[r.id,{owner:null,plane:null}])),airports:{},unlocks:{cruiser:false,jet:false},priorityQueue:[],nextPriorityQueue:[],remaining:Array(n).fill(0),placements:null,resolution:null,eventQueue:[],eventAfter:'engineer',roundFlags:{doubleIncome:false,routeOpenBonus:false,forced:[],stockPerRouteAfterPanam:false,directiveSeller:false,sellAllBeforePanam:false,drewDirective:Array(n).fill(false)},panam:null,logs:[],over:false,finalOrder:null};
+  fillMarket(s);players.forEach((_,seat)=>{drawDest(s,seat);drawDest(s,seat);drawDirective(s,seat)});startRound(s);return s
+}
+function startRound(s){
+  s.roundFlags={doubleIncome:false,routeOpenBonus:false,forced:[],stockPerRouteAfterPanam:false,directiveSeller:false,sellAllBeforePanam:false,drewDirective:Array(s.players.length).fill(false)};
+  s.players.forEach(p=>{p.pendingDiscount=0;p.freeDestination=false;p.routeModifier=null;p.peek=null});
+  const e=EVENT[s.eventPlan[s.round-1]];s.currentEvent=e.id;applyStockMeta(s,e.stock);log(s,`라운드 ${s.round} 이벤트 · ${e.title} · ${stockChangeText(e.stock)} · 팬 암 주사위 ${e.rolls}회`);
+  const q=[];const order=turnOrderFrom(s.first,s.players.length);
+  switch(e.effect){
+    case'forceSouth':s.roundFlags.forced.push('south');break;case'forceEurope':s.roundFlags.forced.push('europe');break;case'forceAsia':s.roundFlags.forced.push('asia');break;
+    case'lose2':s.players.forEach(p=>p.money=Math.max(0,p.money-2));break;case'gain4':s.players.forEach(p=>p.money+=4);break;
+    case'drawDestAll':order.forEach(seat=>drawDest(s,seat));break;case'drawDirectiveAll':order.forEach(seat=>drawDirective(s,seat));break;
+    case'unlockCruiser':s.unlocks.cruiser=true;break;case'unlockJet':s.unlocks.jet=true;break;case'doubleIncome':s.roundFlags.doubleIncome=true;break;
+    case'routeDollar':s.players.forEach((p,seat)=>p.money+=routeOwnerCount(s,seat));break;case'routeOpenBonus':s.roundFlags.routeOpenBonus=true;break;
+    case'longestTwo':s.players.forEach((p,seat)=>{const ds=ROUTES.filter(r=>s.routes[r.id].owner===seat).map(r=>r.d).sort((a,b)=>b-a);p.money+=(ds[0]||0)+(ds[1]||0)});break;
+    case'stockPerRouteAfterPanam':s.roundFlags.stockPerRouteAfterPanam=true;break;case'directiveSeller':s.roundFlags.directiveSeller=true;break;case'sellAllBeforePanam':s.roundFlags.sellAllBeforePanam=true;break;
+    case'sellOrDraw':order.forEach(seat=>q.push({seat,type:'sellOrDraw'}));break;case'upgradeOrDraw':order.forEach(seat=>q.push({seat,type:'upgradeOrDraw'}));break;case'maybeSellPlane':order.forEach(seat=>q.push({seat,type:'maybeSellPlane'}));break;
+    case'upgradeOrTrimotor':order.forEach(seat=>q.push({seat,type:'upgradeOrTrimotor'}));break;case'maybeSellRoute':order.forEach(seat=>q.push({seat,type:'maybeSellRoute'}));break;case'routeOrClipper':order.forEach(seat=>q.push({seat,type:'routeOrClipper'}));break;
+    case'maybeUpgrade':order.forEach(seat=>q.push({seat,type:'maybeUpgrade'}));break;case'maybePlaceAirport':order.forEach(seat=>q.push({seat,type:'maybePlaceAirport'}));break;
+  }
+  // 이벤트 페이즈용 지시 카드가 있는 플레이어만 사용 창을 받습니다.
+  for(const seat of order){if(s.players[seat].directives.some(id=>['lucky','prescience','opportunity'].includes(id)))q.unshift({seat,type:'eventDirectiveWindow'})}
+  s.eventQueue=q;s.eventAfter='engineer';if(q.length){s.phase='eventChoice';s.current=q[0].seat}else beginEngineer(s)
+}
+function advanceEventQueue(s){s.eventQueue.shift();if(s.eventQueue.length){s.current=s.eventQueue[0].seat;return}if(s.eventAfter==='panam')beginPanam(s);else beginEngineer(s)}
+function beginEngineer(s){
+  s.phase='engineer';s.subphase=s.priorityQueue.length?'priority':'assign';s.placements={A:null,B:[null,null,null,null],C:{trimotor:null,clipper:null,cruiser:null,jet:null},D:[],E:[]};
+  const pc=Array(s.players.length).fill(0);s.priorityQueue.forEach(seat=>pc[seat]++);s.remaining=s.players.map((_,seat)=>engineerCount(s.players.length)-pc[seat]);s.nextPriorityQueue=[];
+  if(s.subphase==='priority')s.current=s.priorityQueue[0];else s.current=nextSeatWithRemaining(s,s.first-1)
+}
+function nextSeatWithRemaining(s,from){for(let i=1;i<=s.players.length;i++){const seat=(from+i)%s.players.length;if(s.remaining[seat]>0)return seat}return null}
+function advanceEngineer(s,seat,usedNormal){
+  if(s.subphase==='priority'){
+    s.priorityQueue.shift();if(s.priorityQueue.length){s.current=s.priorityQueue[0];return}s.subphase='assign';const nx=nextSeatWithRemaining(s,s.first-1);if(nx==null)return beginResolution(s);s.current=nx;return
+  }
+  if(usedNormal)s.remaining[seat]=Math.max(0,s.remaining[seat]-1);const nx=nextSeatWithRemaining(s,seat);if(nx==null)beginResolution(s);else s.current=nx
+}
+function placeBidEngineer(s,seat,area,key,bid){
+  if(s.phase!=='engineer'||s.current!==seat)throw Error('현재 배치 차례가 아닙니다.');if(s.subphase==='priority'&&area==='E')throw Error('우선 탑승 기술자는 E 지시에 배치할 수 없습니다.');
+  const target=area==='A'?s.placements.A:area==='B'?s.placements.B[key]:s.placements.C[key];const b=Number(bid);if(!bidValues(area,key).includes(b))throw Error('입찰 금액이 올바르지 않습니다.');if(target&&b<=target.bid)throw Error('현재 입찰보다 높은 칸에 배치해야 합니다.');if(target?.seat===seat)throw Error('같은 입찰 트랙에서 자신을 다시 밀어낼 수 없습니다.');
+  if(target)s.remaining[target.seat]++;
+  const rec={seat,bid:b};if(area==='A')s.placements.A=rec;else if(area==='B')s.placements.B[key]=rec;else s.placements.C[key]=rec;log(s,`${s.players[seat].name}: ${area}${key!=null?`-${key}`:''} 입찰 $${b}`);advanceEngineer(s,seat,s.subphase==='assign')
+}
+function placeWorksite(s,seat,area){if(s.phase!=='engineer'||s.current!==seat)throw Error('현재 배치 차례가 아닙니다.');if(s.subphase==='priority'&&area==='E')throw Error('우선 탑승 기술자는 E 지시에 배치할 수 없습니다.');const a=s.placements[area];if(a.length>=8)throw Error('작업 현장이 가득 찼습니다.');a.push(seat);log(s,`${s.players[seat].name}: ${area==='D'?'항로':'지시'} 작업 현장 배치`);advanceEngineer(s,seat,s.subphase==='assign')}
+function passEngineer(s,seat){if(s.phase!=='engineer'||s.subphase!=='assign'||s.current!==seat)throw Error('지금은 패스할 수 없습니다.');log(s,`${s.players[seat].name}: 기술자 1명 패스`);advanceEngineer(s,seat,true)}
+function beginResolution(s){const q=[];if(s.placements.A)q.push({kind:'A',...s.placements.A});s.placements.B.forEach((x,i)=>x&&q.push({kind:'B',slot:i,...x}));for(const t of PLANE_ORDER){const x=s.placements.C[t];if(x)q.push({kind:'C',plane:t,...x})}s.placements.D.forEach(seat=>q.push({kind:'D',seat}));s.placements.E.forEach(seat=>q.push({kind:'E',seat}));s.phase='resolution';s.resolution={queue:q,index:0,marketRefreshed:false};if(!q.length)return finishResolution(s);s.current=q[0].seat}
+function currentTask(s){return s.phase==='resolution'?s.resolution.queue[s.resolution.index]||null:null}
+function payBid(s,seat,cost){const p=s.players[seat],c=Math.max(0,cost-(p.pendingDiscount||0));p.pendingDiscount=0;if(p.money<c){const sell=Math.max(0,s.stockPrice-2);while(p.money<c&&p.stock>0&&sell>0){p.stock--;s.stockSupply++;p.money+=sell;log(s,`${p.name}: 입찰금 마련을 위해 주식 1장 매각 +${money(sell)}`)}}if(p.money<c){p.money=0;log(s,`${p.name}: 입찰금을 마련하지 못해 액션 상실`);return false}p.money-=c;return true}
+function refreshMarketAfterB(s){if(s.resolution?.marketRefreshed)return;for(let i=0;i<4;i++)if(s.market[i])s.market[i].bonus=(s.market[i].bonus||0)+1;fillMarket(s);if(s.resolution)s.resolution.marketRefreshed=true}
+function advanceResolution(s){
+  const old=s.resolution.queue[s.resolution.index];const next=s.resolution.queue[s.resolution.index+1];if(old?.kind==='B'&&next?.kind!=='B')refreshMarketAfterB(s);
+  s.resolution.index++;if(s.resolution.index>=s.resolution.queue.length)return finishResolution(s);s.current=s.resolution.queue[s.resolution.index].seat
+}
+function finishResolution(s){
+  refreshMarketAfterB(s);s.priorityQueue=[...s.nextPriorityQueue];
+  if(s.roundFlags.directiveSeller){const q=turnOrderFrom(s.first,s.players.length).filter(seat=>s.roundFlags.drewDirective[seat]).map(seat=>({seat,type:'maybeSellRoute'}));if(q.length){s.eventQueue=q;s.eventAfter='panam';s.phase='eventChoice';s.current=q[0].seat;return}}
+  if(s.roundFlags.sellAllBeforePanam){const q=turnOrderFrom(s.first,s.players.length).map(seat=>({seat,type:'sellAll'}));s.eventQueue=q;s.eventAfter='panam';s.phase='eventChoice';s.current=q[0].seat;return}
+  beginPanam(s)
+}
+function resolveAirport(s,seat,cityId){const t=currentTask(s);if(!t||t.kind!=='A'||t.seat!==seat)throw Error('공항 액션 차례가 아닙니다.');if(s.airports[cityId]!=null)throw Error('이미 공항이 있는 도시입니다.');if(!payBid(s,seat,t.bid)){advanceResolution(s);return}const p=s.players[seat];let moved=false;if(p.airportsLeft>0)p.airportsLeft--;else{const old=Object.keys(s.airports).find(c=>s.airports[c]===seat);if(old){delete s.airports[old];moved=true}}s.airports[cityId]=seat;if(!moved)p.income+=1;log(s,`${p.name}: ${CITY[cityId].name} 공항 ${moved?'이동':'배치 · 수입 +1'}`);advanceResolution(s)}
+function resolveDestination(s,seat){const t=currentTask(s);if(!t||t.kind!=='B'||t.seat!==seat)throw Error('목적지 액션 차례가 아닙니다.');let cost=t.bid;if(s.players[seat].freeDestination){cost=0;s.players[seat].freeDestination=false}if(!payBid(s,seat,cost)){advanceResolution(s);return}const card=s.market[t.slot];if(card){s.market[t.slot]=null;s.players[seat].destinations.push(card);s.players[seat].money+=card.bonus||0;log(s,`${s.players[seat].name}: ${CITY[card.city].name} 목적지 획득${card.bonus?` +${money(card.bonus)}`:''}`)}advanceResolution(s)}
+function resolvePlane(s,seat){const t=currentTask(s);if(!t||t.kind!=='C'||t.seat!==seat)throw Error('비행기 액션 차례가 아닙니다.');if(!payBid(s,seat,t.bid)){advanceResolution(s);return}const p=s.players[seat],type=t.plane;if(!planeUnlocked(s,type)){log(s,`${p.name}: ${PLANE[type].name}은 아직 이용할 수 없어 액션 상실`)}else if(p.reserve[type]>0){p.reserve[type]--;p.fleet[type]++;log(s,`${p.name}: ${PLANE[type].name} 1대 획득`)}else log(s,`${p.name}: 남은 ${PLANE[type].name}이 없어 입찰금만 지불`);advanceResolution(s)}
+function endpointOptions(s,seat,cityId){const p=s.players[seat],city=CITY[cityId];if(s.airports[cityId]===seat||p.destinations.some(c=>c.city===cityId))return[[]];const opts=[];p.destinations.forEach((c,i)=>{if(CITY[c.city].region===city.region&&c.city!==cityId)opts.push([i])});for(let i=0;i<p.destinations.length;i++)for(let j=i+1;j<p.destinations.length;j++){const a=CITY[p.destinations[i].city].region,b=CITY[p.destinations[j].city].region;if(a===b&&a!==city.region)opts.push([i,j])}return opts}
+function landingPlan(s,seat,r,modifier=null){if(modifier==='short'&&r.d===1)return[];if(modifier==='hub'&&(s.airports[r.a]===seat||s.airports[r.b]===seat))return[];const A=endpointOptions(s,seat,r.a),B=endpointOptions(s,seat,r.b);let best=null;for(const a of A)for(const b of B){const all=[...new Set([...a,...b])];if(all.length===a.length+b.length&&(!best||all.length<best.length))best=all}return best}
+function routeClaimPlan(s,seat,routeId,modifier=null){const rr=s.routes[routeId],r=ROUTE[routeId];if(!r||rr.owner!=null)return null;const p=s.players[seat],plane=availablePlane(p,r.d);if(!plane)return null;const discard=landingPlan(s,seat,r,modifier);if(discard==null)return null;return{plane,discard}}
+function claimRoute(s,seat,routeId,{modifier=null,consumeTask=true}={}){const r=ROUTE[routeId],plan=routeClaimPlan(s,seat,routeId,modifier);if(!plan)throw Error('착륙 권한 또는 비행기가 부족합니다.');const p=s.players[seat];const cards=plan.discard.sort((a,b)=>b-a).map(i=>p.destinations[i]);plan.discard.sort((a,b)=>b-a).forEach(i=>p.destinations.splice(i,1));p.fleet[plan.plane]--;s.routes[routeId]={owner:seat,plane:plan.plane};p.income+=r.d;if(s.roundFlags.routeOpenBonus)p.money+=2;log(s,`${p.name}: ${CITY[r.a].name}–${CITY[r.b].name} 항로 개척 · 거리 ${r.d}${cards.length?` · 목적지 ${cards.map(c=>CITY[c.city].name).join(', ')} 사용`:''}${s.roundFlags.routeOpenBonus?' · +$2':''}`);p.routeModifier=null;if(consumeTask)advanceResolution(s)}
+function skipRouteTask(s,seat){const t=currentTask(s);if(!t||t.kind!=='D'||t.seat!==seat)throw Error('항로 액션 차례가 아닙니다.');s.players[seat].routeModifier=null;log(s,`${s.players[seat].name}: 항로 액션 포기`);advanceResolution(s)}
+function resolveDirectiveTask(s,seat){const t=currentTask(s);if(!t||t.kind!=='E'||t.seat!==seat)throw Error('지시 액션 차례가 아닙니다.');const d=drawDirective(s,seat);s.nextPriorityQueue.push(seat);log(s,`${s.players[seat].name}: 지시 카드 ${d?DIRECTIVES[d].name:'없음'} 획득 · 다음 라운드 우선 탑승`);advanceResolution(s)}
+function placeFreeAirport(s,seat,cityId,cost=0){if(s.airports[cityId]!=null)throw Error('이미 공항이 있는 도시입니다.');const p=s.players[seat];if(p.money<cost)throw Error('돈이 부족합니다.');p.money-=cost;let moved=false;if(p.airportsLeft>0)p.airportsLeft--;else{const old=Object.keys(s.airports).find(c=>s.airports[c]===seat);if(old){delete s.airports[old];moved=true}}s.airports[cityId]=seat;if(!moved)p.income+=1;log(s,`${p.name}: ${CITY[cityId].name} 공항 ${moved?'이동':'배치 · 수입 +1'}${cost?` · ${money(cost)} 지불`:''}`)}
+function beginPanam(s){
+  const q=[];for(const seat of turnOrderFrom(s.first,s.players.length))if(s.players[seat].directives.some(id=>['recon','advisory'].includes(id)))q.push({seat,type:'panamDirectiveWindow'});
+  if(q.length){s.phase='eventChoice';s.eventQueue=q;s.eventAfter='panamCore';s.current=q[0].seat;return}beginPanamCore(s)
+}
+function beginPanamCore(s){
+  const e=EVENT[s.currentEvent],steps=s.roundFlags.forced.map(path=>({type:'path',path}));for(let i=0;i<e.rolls;i++)steps.push({type:'roll'});s.panam={steps,index:0,offerSeats:[],stockSeats:[],stockIndex:0};s.phase='panam';processPanamSteps(s)
+}
+function processPanamSteps(s){
+  while(s.panam.index<s.panam.steps.length){let st=s.panam.steps[s.panam.index++];if(st.type==='roll'){const face=rollPanamFace();log(s,`팬 암 주사위: ${face==='panam'?'PAN AM':face.split('+').map(pathLabel).join(' + ')}`);if(face==='panam'){s.panam.offerSeats=turnOrderFrom(s.first,s.players.length);s.subphase='offer';s.current=s.panam.offerSeats[0];return}for(const p of face.split('+'))panamExpandPath(s,p)}else panamExpandPath(s,st.path)}finishPanamExpansion(s)
+}
+function panamOfferChoice(s,seat,routeId){if(s.phase!=='panam'||s.subphase!=='offer'||s.current!==seat)throw Error('팬 암 매각 선택 차례가 아닙니다.');if(routeId)sellRouteToPanam(s,routeId,'팬 암 주사위 제안');s.panam.offerSeats.shift();if(s.panam.offerSeats.length){s.current=s.panam.offerSeats[0]}else{s.subphase='';processPanamSteps(s)}}
+function finishPanamExpansion(s){
+  if(s.roundFlags.stockPerRouteAfterPanam)s.players.forEach((p,seat)=>{const n=Math.min(routeOwnerCount(s,seat),s.stockSupply);p.stock+=n;s.stockSupply-=n;log(s,`${p.name}: 보유 항로 ${n}개 → 주식 ${n}장 획득`)});
+  const mult=s.roundFlags.doubleIncome?2:1;s.players.forEach(p=>{p.money+=p.income*mult;log(s,`${p.name}: 수입 ${money(p.income*mult)}${mult===2?' (2배)':''}`)});
+  s.phase='stock';s.subphase='buyStock';s.panam.stockSeats=turnOrderFrom(s.first,s.players.length);s.panam.stockIndex=0;s.current=s.panam.stockSeats[0]
+}
+function buyStockAndPass(s,seat,qty){if(s.phase!=='stock'||s.current!==seat)throw Error('주식 구매 차례가 아닙니다.');const p=s.players[seat],q=Math.max(0,Math.floor(qty));const max=Math.min(Math.floor(p.money/s.stockPrice),s.stockSupply);if(q>max)throw Error('구매 가능한 수량을 초과했습니다.');p.money-=q*s.stockPrice;p.stock+=q;s.stockSupply-=q;log(s,`${p.name}: 팬 암 주식 ${q}장 구매 · ${money(q*s.stockPrice)}`);s.panam.stockIndex++;if(s.panam.stockIndex>=s.panam.stockSeats.length){endRound(s)}else s.current=s.panam.stockSeats[s.panam.stockIndex]}
+function endRound(s){if(s.round>=7)return finishGame(s);if(s.round===2)s.unlocks.cruiser=true;if(s.round===5)s.unlocks.jet=true;s.first=(s.first+1)%s.players.length;s.round++;startRound(s)}
+function finalStockOf(p){return p.stock+p.directives.filter(x=>x==='secret').length}
+function finishGame(s){s.over=true;s.phase='done';s.current=null;s.finalOrder=s.players.map((_,i)=>i).sort((a,b)=>finalStockOf(s.players[b])-finalStockOf(s.players[a])||s.players[b].money-s.players[a].money||a-b);log(s,'7라운드 종료 · 최종 주식 순위 확정')}
+
+function removeDirective(p,index){return p.directives.splice(index,1)[0]}
+function directivePlayable(s,seat,id){
+  const p=s.players[seat];if(id==='secret')return false;if(s.current!==seat)return false;
+  const task=currentTask(s);
+  if(['lucky','prescience','opportunity'].includes(id))return s.phase==='eventChoice'&&s.eventQueue[0]?.type==='eventDirectiveWindow';
+  if(['short','rapid','hub','regionalAirport'].includes(id))return s.phase==='resolution'&&task?.kind==='D'&&task.seat===seat;
+  if(id==='destination')return s.phase==='resolution'&&task?.kind==='A'&&task.seat===seat;
+  if(['planeSale','planeDiscount','upgrade'].includes(id))return s.phase==='resolution'&&task?.kind==='C'&&task.seat===seat;
+  if(id==='freeDestination')return s.phase==='resolution'&&task?.kind==='B'&&task.seat===seat;
+  if(id==='advertising')return s.phase==='resolution'&&task?.kind==='E'&&task.seat===seat;
+  if(['recon','advisory'].includes(id))return s.phase==='eventChoice'&&s.eventQueue[0]?.type==='panamDirectiveWindow';
+  return false
+}
+function playDirective(s,seat,index){const p=s.players[seat],id=p.directives[index];if(!directivePlayable(s,seat,id))throw Error('지금 사용할 수 없는 지시 카드입니다.');const d=DIRECTIVES[id];
+  if(id==='lucky'){removeDirective(p,index);const cards=[];for(let i=0;i<4&&s.destDeck.length;i++)cards.push(s.destDeck.pop());s.pendingChoice={type:'lucky',seat,cards};log(s,`${p.name}: 행운권 사용`);return}
+  if(id==='prescience'){removeDirective(p,index);p.money+=3;p.peek=s.round<7?s.eventPlan[s.round]:null;log(s,`${p.name}: 예지 사용 +$3`);return}
+  if(id==='opportunity'){removeDirective(p,index);s.market=[null,null,null,null];fillMarket(s);s.pendingChoice={type:'opportunity',seat};log(s,`${p.name}: 새로운 기회 사용`);return}
+  if(id==='short'){removeDirective(p,index);p.routeModifier='short';log(s,`${p.name}: 단거리 경주 사용`);return}
+  if(id==='rapid'){removeDirective(p,index);const idx=s.resolution.index;s.resolution.queue.splice(idx+1,0,{kind:'D',seat,bonus:true});log(s,`${p.name}: 급속 팽창 · 항로 액션 1회 추가`);return}
+  if(id==='hub'){removeDirective(p,index);p.routeModifier='hub';log(s,`${p.name}: 중계 도시 사용`);return}
+  if(id==='destination'){removeDirective(p,index);const gain=airportCount(s,seat)*2;p.money+=gain;log(s,`${p.name}: 목적지 지시 카드 +${money(gain)}`);return}
+  if(id==='planeSale'){removeDirective(p,index);s.pendingChoice={type:'sellPlane4',seat};return}
+  if(id==='planeDiscount'){removeDirective(p,index);p.pendingDiscount=Math.max(p.pendingDiscount,6);log(s,`${p.name}: 비행기 할인 · 이번 C 입찰 최대 $6 할인`);return}
+  if(id==='upgrade'){removeDirective(p,index);s.pendingChoice={type:'upgradePlane',seat};return}
+  if(id==='freeDestination'){removeDirective(p,index);p.freeDestination=true;log(s,`${p.name}: 자유 목적지 · 이번 B 입찰 무료`);return}
+  if(id==='regionalAirport'){removeDirective(p,index);s.pendingChoice={type:'regionalAirport',seat};return}
+  if(id==='advertising'){removeDirective(p,index);const gain=routeOwnerCount(s,seat);p.money+=gain;log(s,`${p.name}: 광고 +${money(gain)}`);return}
+  if(id==='recon'){removeDirective(p,index);p.money+=3;const e=EVENT[s.currentEvent];if(!s.panam)s.panam={};s.extraPanamRolls=(s.extraPanamRolls||0)+1;e;log(s,`${p.name}: 항로 정찰 +$3 · 팬 암 주사위 +1회`);return}
+  if(id==='advisory'){removeDirective(p,index);s.pendingChoice={type:'advisoryRoute',seat};return}
+}
+function resolvePendingChoice(s,seat,payload){const c=s.pendingChoice;if(!c||c.seat!==seat)throw Error('선택할 항목이 없습니다.');const p=s.players[seat];
+  if(c.type==='lucky'){const idx=Number(payload.index);const chosen=c.cards[idx];if(!chosen)throw Error('카드를 선택하세요.');p.destinations.push(chosen);s.pendingChoice=null;log(s,`${p.name}: 행운권으로 ${CITY[chosen.city].name} 획득`);return}
+  if(c.type==='opportunity'){const idx=Number(payload.index),card=s.market[idx];if(!card)throw Error('목적지를 선택하세요.');p.money+=card.bonus||0;s.pendingChoice=null;log(s,`${p.name}: 새로운 기회 보너스 +${money(card.bonus||0)}`);return}
+  if(c.type==='sellPlane4'){const type=payload.type;if(!PLANE[type]||p.fleet[type]<=0)throw Error('판매할 비행기가 없습니다.');p.fleet[type]--;p.reserve[type]++;p.money+=4;s.pendingChoice=null;log(s,`${p.name}: ${PLANE[type].name} 판매 +$4`);return}
+  if(c.type==='upgradePlane'){const type=payload.type,idx=PLANE_ORDER.indexOf(type),next=PLANE_ORDER[idx+1];if(idx<0||!next||p.fleet[type]<=0||p.reserve[next]<=0||!planeUnlocked(s,next))throw Error('업그레이드할 수 없습니다.');p.fleet[type]--;p.reserve[type]++;p.reserve[next]--;p.fleet[next]++;s.pendingChoice=null;log(s,`${p.name}: ${PLANE[type].name} → ${PLANE[next].name} 업그레이드`);return}
+  if(c.type==='regionalAirport'){placeFreeAirport(s,seat,payload.city,2);s.pendingChoice=null;return}
+  if(c.type==='advisoryRoute'){if(!sellRouteToPanam(s,payload.route,'팬 암 자문위원회'))throw Error('판매할 수 없는 항로입니다.');s.pendingChoice=null;return}
+}
+function eventChoiceAction(s,seat,action,payload={}){const t=s.eventQueue[0];if(s.phase!=='eventChoice'||!t||t.seat!==seat)throw Error('현재 선택 차례가 아닙니다.');const p=s.players[seat];
+  if(t.type==='eventDirectiveWindow'||t.type==='panamDirectiveWindow'){if(action!=='continue')throw Error('지시 카드를 사용하거나 계속을 누르세요.');advanceEventQueueFlexible(s);return}
+  if(t.type==='sellOrDraw'){if(action==='draw'){drawDest(s,seat);log(s,`${p.name}: 목적지 카드 1장 선택`)}else if(action==='sell'){if(!sellRouteToPanam(s,payload.route,'이벤트 매각'))throw Error('판매할 항로를 선택하세요.')}else throw Error('선택하세요.');advanceEventQueueFlexible(s);return}
+  if(t.type==='upgradeOrDraw'){if(action==='draw')drawDest(s,seat);else if(action==='upgrade'){if(!upgradeFirstPlane(s,seat,true))throw Error('업그레이드할 수 있는 트리모터/클리퍼가 없습니다.')}else throw Error('선택하세요.');advanceEventQueueFlexible(s);return}
+  if(t.type==='maybeSellPlane'){if(action==='skip'){}else if(action==='sell'){const type=payload.type;if(!PLANE[type]||p.fleet[type]<=0)throw Error('판매할 비행기가 없습니다.');p.fleet[type]--;p.reserve[type]++;p.money+=5;log(s,`${p.name}: ${PLANE[type].name} 판매 +$5`)}else throw Error('선택하세요.');advanceEventQueueFlexible(s);return}
+  if(t.type==='upgradeOrTrimotor'){if(action==='trimotor'){if(p.reserve.trimotor<=0)throw Error('남은 트리모터가 없습니다.');p.reserve.trimotor--;p.fleet.trimotor++;log(s,`${p.name}: 트리모터 1대 획득`)}else if(action==='upgrade'){if(!upgradeFirstPlane(s,seat,true))throw Error('업그레이드할 수 없습니다.')}else throw Error('선택하세요.');advanceEventQueueFlexible(s);return}
+  if(t.type==='maybeSellRoute'){if(action==='skip'){}else if(action==='sell'){if(!sellRouteToPanam(s,payload.route,'이벤트 매각'))throw Error('판매할 항로를 선택하세요.')}else throw Error('선택하세요.');advanceEventQueueFlexible(s);return}
+  if(t.type==='routeOrClipper'){if(action==='clipper'){if(p.reserve.clipper<=0)throw Error('남은 클리퍼가 없습니다.');p.reserve.clipper--;p.fleet.clipper++;log(s,`${p.name}: 클리퍼 1대 획득`)}else if(action==='route'){const plan=routeClaimPlan(s,seat,payload.route,null);if(!plan)throw Error('개척 가능한 항로가 아닙니다.');claimRoute(s,seat,payload.route,{consumeTask:false})}else throw Error('선택하세요.');advanceEventQueueFlexible(s);return}
+  if(t.type==='maybeUpgrade'){if(action==='skip'){}else if(action==='upgrade'){if(!upgradeFirstPlane(s,seat,false))throw Error('업그레이드할 수 없습니다.')}else throw Error('선택하세요.');advanceEventQueueFlexible(s);return}
+  if(t.type==='maybePlaceAirport'){if(action==='skip'){}else if(action==='airport'){placeFreeAirport(s,seat,payload.city,0)}else throw Error('선택하세요.');advanceEventQueueFlexible(s);return}
+  if(t.type==='sellAll'){if(action==='yes'){for(const r of ROUTES)if(s.routes[r.id].owner===seat)sellRouteToPanam(s,r.id,'전면 매각 이벤트')}else if(action!=='skip')throw Error('선택하세요.');advanceEventQueueFlexible(s);return}
+}
+function advanceEventQueueFlexible(s){s.eventQueue.shift();if(s.eventQueue.length){s.current=s.eventQueue[0].seat;return}if(s.eventAfter==='engineer')beginEngineer(s);else if(s.eventAfter==='panamCore')beginPanamCoreWithExtra(s);else beginPanam(s)}
+function beginPanamCoreWithExtra(s){const e=EVENT[s.currentEvent],steps=s.roundFlags.forced.map(path=>({type:'path',path}));for(let i=0;i<e.rolls+(s.extraPanamRolls||0);i++)steps.push({type:'roll'});s.extraPanamRolls=0;s.panam={steps,index:0,offerSeats:[],stockSeats:[],stockIndex:0};s.phase='panam';processPanamSteps(s)}
+
+let me,room,members,mySeat=-1,badges={},state=null,revision=0,saving=false,submitted=false,stopPoll=null;
+async function mutate(fn){if(saving||!state)return;saving=true;const next=clone(state);try{fn(next);const nr=await saveState(revision,next);revision=Number(nr);state=next;syncEl.textContent='동기화됨';render();if(state.over)void maybeSubmit()}catch(e){console.warn(e);alert(e.message||e);try{const row=await loadState();if(row){revision=Number(row.revision||0);state=row.state;render()}}catch{}}finally{saving=false}}
+async function maybeSubmit(){if(submitted||!state?.over||!state.finalOrder||room.host_id!==me.user_id)return;submitted=true;try{await submitMatch(state.finalOrder.map(i=>members.find(m=>Number(m.seat)===i)?.user_id).filter(Boolean));syncEl.textContent='결과 반영 완료'}catch(e){console.warn(e);if(!String(e.message||'').includes('already'))submitted=false}}
+function seatName(seat){return state?.players?.[seat]?.name||members?.find(m=>Number(m.seat)===seat)?.nickname||`P${seat+1}`}
+function routeName(id){const r=ROUTE[id];return r?`${CITY[r.a].name}–${CITY[r.b].name}`:id}
+function myOwnedRoutes(){return ROUTES.filter(r=>state.routes[r.id].owner===mySeat)}
+function routeSelectableForTask(r){const task=currentTask(state);if(state.pendingChoice?.seat===mySeat&&state.pendingChoice.type==='advisoryRoute')return state.routes[r.id].owner===mySeat;if(state.phase==='eventChoice'&&state.current===mySeat){const t=state.eventQueue[0];if(['sellOrDraw','maybeSellRoute'].includes(t?.type))return state.routes[r.id].owner===mySeat;if(t?.type==='routeOrClipper')return !!routeClaimPlan(state,mySeat,r.id,null)}if(state.phase==='panam'&&state.subphase==='offer'&&state.current===mySeat)return state.routes[r.id].owner===mySeat;if(state.phase==='resolution'&&currentTask(state)?.kind==='D'&&currentTask(state).seat===mySeat)return !!routeClaimPlan(state,mySeat,r.id,state.players[mySeat].routeModifier);return false}
+function citySelectable(city){if(state.pendingChoice?.seat===mySeat&&state.pendingChoice.type==='regionalAirport')return state.airports[city.id]==null;if(state.phase==='eventChoice'&&state.current===mySeat&&state.eventQueue[0]?.type==='maybePlaceAirport')return state.airports[city.id]==null;const t=currentTask(state);return state.phase==='resolution'&&t?.kind==='A'&&t.seat===mySeat&&state.airports[city.id]==null}
+function mapSvg(){
+  const routeLines=ROUTES.map(r=>{const a=CITY[r.a],b=CITY[r.b],owner=state.routes[r.id].owner;let cls='route ';if(owner==='panam')cls+='panowned';else if(typeof owner==='number')cls+=`owned${owner}`;else if(routeSelectableForTask(r))cls+='selectable';else if(r.path)cls+=r.path==='south'?'pan-south':r.path==='europe'?'pan-europe':'pan-asia';else cls+='open';const mx=(a.x+b.x)/2,my=(a.y+b.y)/2;return `<g><line data-route="${r.id}" class="${cls}" x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}"/><text class="route-label" x="${mx}" y="${my-4}" text-anchor="middle">${r.d}</text></g>`}).join('');
+  const cities=CITIES.map(c=>{const owner=state.airports[c.id],sel=citySelectable(c);return `<g class="city ${sel?'selectable':''}" data-city="${c.id}"><circle cx="${c.x}" cy="${c.y}" r="8"/>${typeof owner==='number'?`<circle class="airport-ring" cx="${c.x}" cy="${c.y}" r="13" stroke="${playerColor(owner)}"/>`:''}<text x="${c.x}" y="${c.y-13}" text-anchor="middle">${esc(c.name)}</text></g>`}).join('');
+  return `<svg class="map" viewBox="0 0 1060 540" role="img" aria-label="팬 암 BoardMate 세계 항로 지도"><defs><linearGradient id="ocean" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0a4773"/><stop offset="1" stop-color="#0d628f"/></linearGradient></defs><rect width="1060" height="540" fill="url(#ocean)"/><path d="M70 150 Q170 105 300 150 T430 220 Q350 300 210 350 Q90 320 70 150Z" fill="#d9d0ad" opacity=".32"/><path d="M440 120 Q590 80 710 150 Q780 210 725 330 Q650 350 540 300 Q480 245 440 120Z" fill="#d9d0ad" opacity=".28"/><path d="M720 160 Q890 120 1000 210 Q1030 315 950 420 Q840 390 760 330 Q710 260 720 160Z" fill="#d9d0ad" opacity=".28"/><path d="M360 330 Q470 325 560 420 Q520 520 440 520 Q360 450 360 330Z" fill="#d9d0ad" opacity=".25"/><g opacity=".14" stroke="#fff"><path d="M0 90H1060M0 180H1060M0 270H1060M0 360H1060M0 450H1060"/><path d="M150 0V540M300 0V540M450 0V540M600 0V540M750 0V540M900 0V540"/></g>${routeLines}${cities}<text x="530" y="28" text-anchor="middle" fill="#d9efff" font-size="18" font-weight="900" letter-spacing="5">PAN AMERICAN WORLD AIRWAYS · BoardMate</text></svg>`
+}
+function eventHtml(){const e=EVENT[state.currentEvent];return `<div class="event-card"><div class="r">ROUND ${state.round} · EVENT</div><h3>${esc(e.title)}</h3><div class="subtle">${esc(e.text)}</div><div class="event-meta"><span class="m">📈 ${esc(stockChangeText(e.stock))}</span><span class="m">🎲 기본 ${e.rolls}회</span><span class="m">💵 현재 주가 $${state.stockPrice}</span></div>${e.knownMeta?'':'<div class="approx">※ 이벤트 효과는 한글화 카드 자료 기준. 주가/주사위 메타는 카드 앞면 수치 자료가 없어 ALPHA 임시값입니다.</div>'}</div>`}
+function playerHtml(p,i){const turn=state.current===i&&!state.over;return `<div class="player ${turn?'active':''} ${i===mySeat?'me':''}" style="border-top:5px solid ${playerColor(i)}"><div class="name">${esc(badges[p.id]?.text||'🥉')} ${esc(p.name)}${i===mySeat?' · 나':''}${i===state.first?' · ✈ 선':''}</div><small>${turn?'현재 처리 차례':'대기'} · 목적지 ${p.destinations.length} · 지시 ${p.directives.length}</small><div class="chips"><span class="chip cash">💵 ${money(p.money)}</span><span class="chip stock">📈 ${p.stock}주${p.directives.filter(x=>x==='secret').length?` +비밀${p.directives.filter(x=>x==='secret').length}`:''}</span><span class="chip income">수입 ${p.income}</span><span class="chip">🛫 항로 ${routeOwnerCount(state,i)}</span><span class="chip">🏢 공항 ${airportCount(state,i)}</span></div></div>`}
+function phaseTitle(){if(state.over)return'게임 종료';if(state.phase==='eventChoice')return'이벤트 / 지시 카드 선택';if(state.phase==='engineer')return state.subphase==='priority'?'기술자 페이즈 · 우선 탑승':'기술자 페이즈 · 배치';if(state.phase==='resolution')return'해결 페이즈';if(state.phase==='panam')return'팬 암 페이즈 · 확장';if(state.phase==='stock')return'팬 암 페이즈 · 주식';return state.phase}
+function statusHtml(){let msg='';const t=currentTask(state);if(state.over)msg='7라운드가 끝났습니다.';else if(state.phase==='eventChoice')msg=`${seatName(state.current)}의 이벤트/지시 선택을 기다리는 중입니다.`;else if(state.phase==='engineer')msg=`${seatName(state.current)} · ${state.subphase==='priority'?'E 지시에서 우선 탑승한 기술자를 A~D에 재배치':'남은 기술자 '+state.remaining[state.current]+'명'}`;else if(state.phase==='resolution'&&t)msg=`${seatName(t.seat)} · ${t.kind}${t.kind==='A'?' 공항':t.kind==='B'?' 목적지':t.kind==='C'?' 비행기':t.kind==='D'?' 항로':' 지시'} 액션 해결`;else if(state.phase==='panam'&&state.subphase==='offer')msg=`${seatName(state.current)} · 팬 암 주사위 제안: 항로 1개를 팔거나 넘기세요.`;else if(state.phase==='stock')msg=`${seatName(state.current)} · 주가 $${state.stockPrice} · 원하는 만큼 주식 구매`;return `<div class="status-box"><b><span class="badge phase">${esc(phaseTitle())}</span> ${state.current!=null?`${esc(seatName(state.current))} 차례`:''}</b><p>${esc(msg)}</p></div>`}
+function bidTrackHtml(area,key,label,current,disabled=false){const cur=current?`${seatName(current.seat)} · $${current.bid}`:'비어 있음';return `<div class="occupant"><b>${esc(label)}</b> · ${esc(cur)}</div><div class="bid-track">${bidValues(area,key).map(v=>`<button class="bid ${current&&v>current.bid?'hot':''}" data-bid-area="${area}" data-bid-key="${key??''}" data-bid="${v}" ${(disabled||state.current!==mySeat||(current&&v<=current.bid))?'disabled':''}>$${v}</button>`).join('')}</div>`}
+function engineerPanel(){if(state.phase!=='engineer')return'';const prio=state.subphase==='priority';const market=state.market;return `<div class="panel"><h3>👷 기술자 배치 ${prio?'<span class="badge">우선 탑승 · A~D만</span>':''}</h3><div class="action-grid"><div class="action-area"><h4>A · 공항</h4><div class="hint">해결 시 원하는 도시에 공항 배치 · 수입 +1</div>${bidTrackHtml('A',null,'공항',state.placements.A)}</div><div class="action-area"><h4>B · 목적지</h4><div class="hint">시장 카드 4장 각각 독립 입찰</div>${market.map((c,i)=>bidTrackHtml('B',i,c?CITY[c.city].name:`빈 칸 ${i+1}`,state.placements.B[i],!c)).join('')}</div><div class="action-area"><h4>C · 비행기</h4><div class="hint">비행거리 1~4 · 크루저 R3, 제트 R6부터</div>${PLANE_ORDER.map(t=>bidTrackHtml('C',t,`${PLANE[t].name} R${PLANE[t].range}`,state.placements.C[t],!planeUnlocked(state,t))).join('')}</div><div class="action-area"><h4>D · 항로</h4><div class="hint">해결 시 비행기+착륙권한으로 항로 개척</div><div class="worksite">${state.placements.D.map(seat=>`<span class="pawn p${seat}">${seat+1}</span>`).join('')||'<span class="subtle">비어 있음</span>'}</div><button class="btn primary" data-work="D" ${state.current===mySeat?'':'disabled'}>항로에 배치</button></div><div class="action-area"><h4>E · 지시</h4><div class="hint">지시 카드 1장 + 다음 라운드 우선 탑승</div><div class="worksite">${state.placements.E.map(seat=>`<span class="pawn p${seat}">${seat+1}</span>`).join('')||'<span class="subtle">비어 있음</span>'}</div><button class="btn primary" data-work="E" ${(state.current===mySeat&&!prio)?'':'disabled'}>지시에 배치</button></div></div>${!prio&&state.current===mySeat?'<div class="buttons"><button class="btn ghost" id="passEngineer">기술자 1명 패스</button></div>':''}</div>`}
+function myDestinationsHtml(){const p=state.players[mySeat];return `<div class="panel"><h3>🧳 내 목적지 카드 <span class="badge">${p.destinations.length}장</span></h3><div class="market">${p.destinations.length?p.destinations.map(c=>`<div class="dest-card region-${CITY[c.city].region}"><b>${esc(CITY[c.city].name)}</b><small>${esc(REGIONS[CITY[c.city].region].name)} · 착륙 권한</small>${c.bonus?`<div class="bonus">획득 시 보너스 ${money(c.bonus)}</div>`:''}</div>`).join(''):'<div class="subtle">목적지 카드가 없습니다.</div>'}</div></div>`}
+function marketHtml(){return `<div class="panel"><h3>🗺️ 공개 목적지 시장</h3><div class="market">${state.market.map((c,i)=>c?`<div class="dest-card region-${CITY[c.city].region}"><b>${i+1}. ${esc(CITY[c.city].name)}</b><small>${esc(REGIONS[CITY[c.city].region].name)}</small><div class="bonus">보너스 ${money(c.bonus||0)}</div></div>`:`<div class="dest-card"><b>${i+1}. 빈 칸</b></div>`).join('')}</div></div>`}
+function fleetHtml(){const p=state.players[mySeat];return `<div class="panel"><h3>🛩️ 내 항공사</h3><div class="market">${PLANE_ORDER.map(t=>`<div class="dest-card"><b>${PLANE[t].name} · 비행거리 ${PLANE[t].range}</b><small>편대 ${p.fleet[t]}대 · 격납고 ${p.reserve[t]}대 ${planeUnlocked(state,t)?'':'· 🔒 잠김'}</small></div>`).join('')}</div><div class="rule-note" style="margin-top:8px">착륙 권한: 해당 도시에 내 공항 / 해당 도시 목적지 카드 보유 / 같은 지역 카드 1장 버림 / 다른 같은 지역 카드 2장 버림. BoardMate는 가능한 조합 중 버리는 카드 수가 가장 적은 조합을 자동 선택합니다.</div></div>`}
+function directiveHandHtml(){const p=state.players[mySeat];return `<div class="panel"><h3>📜 내 지시 카드 <span class="badge">${p.directives.length}장</span></h3><div class="directive-hand">${p.directives.length?p.directives.map((id,i)=>{const d=DIRECTIVES[id],play=directivePlayable(state,mySeat,id);return `<div class="directive ${play?'playable':''} ${id==='secret'?'secret':''}"><div class="head">${esc(d.name)}</div><p>${esc(d.text)}</p><small>${esc(d.timing)}</small>${play?`<button class="btn gold tiny" data-directive="${i}" style="margin-top:6px">사용</button>`:''}</div>`}).join(''):'<div class="subtle">지시 카드가 없습니다.</div>'}</div>${p.peek?`<div class="rule-note" style="margin-top:8px"><b>🔮 예지</b> · 다음 라운드 이벤트: ${esc(EVENT[p.peek]?.title||'없음')} — ${esc(EVENT[p.peek]?.text||'')}</div>`:''}</div>`}
+function resolutionControls(){const t=currentTask(state);if(state.phase!=='resolution'||!t)return'';const mine=t.seat===mySeat;let body='';if(t.kind==='A')body=`<p>입찰 $${t.bid}. 지도에서 공항이 없는 도시를 클릭하세요.</p>`;if(t.kind==='B'){const c=state.market[t.slot];body=`<p>${c?`${CITY[c.city].name} · 보너스 ${money(c.bonus||0)}`:'빈 목적지 칸'} · 입찰 $${t.bid}</p>${mine?'<button class="btn primary" id="resolveB">목적지 획득</button>':''}`};if(t.kind==='C')body=`<p>${PLANE[t.plane].name} · 비행거리 ${PLANE[t.plane].range} · 입찰 $${t.bid}</p>${mine?'<button class="btn primary" id="resolveC">비행기 획득</button>':''}`;if(t.kind==='D'){const modifier=state.players[t.seat].routeModifier;body=`<p>지도에서 개척 가능한 항로를 클릭하세요.${modifier?` · 지시 효과: ${modifier==='short'?'거리 1 자유 개척':'공항 인접 자유 개척'}`:''}</p>${mine?'<button class="btn ghost" id="skipD">항로 액션 포기</button>':''}`};if(t.kind==='E')body=`<p>지시 카드 1장을 뽑고 이 기술자는 다음 라운드 우선 탑승합니다.</p>${mine?'<button class="btn primary" id="resolveE">지시 카드 뽑기</button>':''}`;return `<div class="panel"><h3>✅ 해결 페이즈 · ${t.kind}</h3>${body}</div>`}
+function eventChoiceControls(){if(state.phase!=='eventChoice')return'';const t=state.eventQueue[0],mine=t?.seat===mySeat;if(!t)return'';let body='';const own=myOwnedRoutes();const planeBtns=PLANE_ORDER.filter(x=>state.players[mySeat].fleet[x]>0).map(x=>`<button class="btn" data-ev-plane="${x}">${PLANE[x].name}</button>`).join('');
+  if(t.type==='eventDirectiveWindow'||t.type==='panamDirectiveWindow')body=`<p>${t.type==='panamDirectiveWindow'?'팬 암 확장 전':'이벤트 처리 중'} 사용할 수 있는 지시 카드가 있으면 아래 카드 영역에서 사용하세요.</p>${mine?'<button class="btn primary" id="eventContinue">계속</button>':''}`;
+  else if(t.type==='sellOrDraw')body=`<p>항로 1개를 팬 암에 팔거나 목적지 카드 1장을 뽑습니다.</p>${mine?`<button class="btn primary" data-event="draw">목적지 1장</button>${own.map(r=>`<button class="btn" data-event="sell" data-route-id="${r.id}">${routeName(r.id)} 매각</button>`).join('')}`:''}`;
+  else if(t.type==='upgradeOrDraw')body=`<p>트리모터/클리퍼 업그레이드 또는 목적지 1장.</p>${mine?'<button class="btn" data-event="upgrade">업그레이드</button><button class="btn primary" data-event="draw">목적지 1장</button>':''}`;
+  else if(t.type==='maybeSellPlane')body=`<p>비행기 1대를 $5에 팔 수 있습니다.</p>${mine?`${planeBtns}<button class="btn ghost" data-event="skip">넘기기</button>`:''}`;
+  else if(t.type==='upgradeOrTrimotor')body=`<p>트리모터/클리퍼 업그레이드 또는 트리모터 1대 획득.</p>${mine?'<button class="btn" data-event="upgrade">업그레이드</button><button class="btn primary" data-event="trimotor">트리모터 1대</button>':''}`;
+  else if(t.type==='maybeSellRoute')body=`<p>항로 1개를 팬 암에 팔 수 있습니다.</p>${mine?`${own.map(r=>`<button class="btn" data-event="sell" data-route-id="${r.id}">${routeName(r.id)} 매각</button>`).join('')}<button class="btn ghost" data-event="skip">넘기기</button>`:''}`;
+  else if(t.type==='routeOrClipper')body=`<p>정상 규칙으로 항로 1개를 개척하거나 클리퍼 1대를 얻습니다.</p>${mine?'<button class="btn primary" data-event="clipper">클리퍼 1대</button><div class="subtle" style="margin-top:6px">항로를 고르려면 지도에서 초록색 항로를 클릭하세요.</div>':''}`;
+  else if(t.type==='maybeUpgrade')body=`<p>비행기 1대를 업그레이드할 수 있습니다.</p>${mine?'<button class="btn" data-event="upgrade">업그레이드</button><button class="btn ghost" data-event="skip">넘기기</button>':''}`;
+  else if(t.type==='maybePlaceAirport')body=`<p>공항을 무료로 배치할 수 있습니다. 지도에서 초록색 도시를 클릭하거나 넘기세요.</p>${mine?'<button class="btn ghost" data-event="skip">넘기기</button>':''}`;
+  else if(t.type==='sellAll')body=`<p>팬 암 확장 전에 현재 보유한 모든 항로를 팬 암에게 팔 수 있습니다.</p>${mine?'<button class="btn red" data-event="yes">모두 매각</button><button class="btn ghost" data-event="skip">유지</button>':''}`;
+  return `<div class="panel"><h3>🎴 이벤트 선택 · ${esc(seatName(t.seat))}</h3>${body}</div>`
+}
+function panamControls(){if(state.phase==='panam'&&state.subphase==='offer'){const mine=state.current===mySeat,own=myOwnedRoutes();return `<div class="panel"><h3>🌐 PAN AM 제안</h3><p class="subtle">주사위에 PAN AM이 나왔습니다. 각 플레이어는 항로 1개를 자유롭게 매각할 수 있습니다.</p>${mine?`<div class="buttons">${own.map(r=>`<button class="btn" data-pan-sell="${r.id}">${routeName(r.id)} · +${money(ROUTE_BONUS[r.d])}</button>`).join('')}<button class="btn ghost" id="panSkip">판매 안 함</button></div>`:''}</div>`}if(state.phase==='stock'){const p=state.players[mySeat],mine=state.current===mySeat,max=Math.min(Math.floor(p.money/state.stockPrice),state.stockSupply);return `<div class="panel"><h3>📈 주식 구매 · 현재 $${state.stockPrice}</h3><p class="subtle">선 플레이어부터 원하는 만큼 팬 암 주식을 구매합니다. 공급 ${state.stockSupply}주.</p>${mine?`<div class="buttons"><input id="stockQty" type="number" min="0" max="${max}" value="${Math.min(max,1)}" style="width:90px;border:1px solid #cbd5e1;border-radius:8px;padding:7px"><button class="btn primary" id="buyStock">구매 후 완료</button><button class="btn ghost" id="skipStock">0장 · 넘기기</button></div><div class="subtle">최대 ${max}장 구매 가능 · 보유 현금 ${money(p.money)}</div>`:''}</div>`}return''}
+function pendingChoiceModal(){const c=state.pendingChoice;if(!c||c.seat!==mySeat)return'';let body='';if(c.type==='lucky')body=`<h3>행운권 · 목적지 1장 선택</h3><div class="choice-grid">${c.cards.map((x,i)=>`<button class="btn citypick" data-pending-index="${i}">${CITY[x.city].name} · 보너스 ${money(x.bonus||0)}</button>`).join('')}</div>`;if(c.type==='opportunity')body=`<h3>새로운 기회 · 새 시장 보너스 1개 선택</h3><div class="choice-grid">${state.market.map((x,i)=>`<button class="btn citypick" data-pending-index="${i}">${CITY[x.city].name} · ${money(x.bonus||0)}</button>`).join('')}</div>`;if(c.type==='sellPlane4')body=`<h3>비행기 판매 · $4</h3><div class="choice-grid">${PLANE_ORDER.filter(t=>state.players[mySeat].fleet[t]>0).map(t=>`<button class="btn" data-pending-plane="${t}">${PLANE[t].name} · 편대 ${state.players[mySeat].fleet[t]}대</button>`).join('')}</div>`;if(c.type==='upgradePlane')body=`<h3>업그레이드</h3><div class="choice-grid">${PLANE_ORDER.slice(0,-1).filter(t=>{const n=PLANE_ORDER[PLANE_ORDER.indexOf(t)+1];return state.players[mySeat].fleet[t]>0&&state.players[mySeat].reserve[n]>0&&planeUnlocked(state,n)}).map(t=>`<button class="btn" data-pending-plane="${t}">${PLANE[t].name} → ${PLANE[PLANE_ORDER[PLANE_ORDER.indexOf(t)+1]].name}</button>`).join('')||'<div class="subtle">업그레이드 가능한 비행기가 없습니다.</div>'}</div>`;if(c.type==='regionalAirport')body=`<h3>지역 공항 · $2</h3><p class="subtle">지도에서 공항이 없는 도시를 클릭하세요.</p>`;if(c.type==='advisoryRoute')body=`<h3>팬 암 자문위원회</h3><div class="choice-grid">${myOwnedRoutes().map(r=>`<button class="btn" data-pending-route="${r.id}">${routeName(r.id)} · +${money(ROUTE_BONUS[r.d])}</button>`).join('')||'<div class="subtle">판매할 항로가 없습니다.</div>'}</div>`;return `<div class="modal"><div class="modal-card">${body}</div></div>`}
+function finalHtml(){if(!state.over)return'';const myPlace=state.finalOrder.indexOf(mySeat)+1;return `<div class="panel final"><h2>🏆 최종 결과</h2>${state.finalOrder.map((seat,n)=>{const p=state.players[seat];return `<div style="display:flex;justify-content:space-between;border-bottom:1px solid #e5d49e;padding:7px 0"><b>${n+1}위 · ${esc(p.name)}${seat===mySeat?' · 나':''}</b><span>${finalStockOf(p)}주 · ${money(p.money)}</span></div>`}).join('')}</div>${endPanel('팬 암 최종 결과','7라운드 종료 · 팬 암 주식 수 → 남은 돈 순으로 순위를 확정합니다.')}`}
+function render(){if(!state){app.innerHTML='<div class="subtle">방장이 게임 상태를 초기화할 때까지 기다리는 중입니다.</div>';return}roomBack.href=`./index.html#/room/${encodeURIComponent(roomId)}`;app.className='';app.innerHTML=`<div class="panel"><div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap"><div><h2 style="margin:0">✈️ ${esc(room.title||'팬 암')}</h2><div class="source-note">2–4인 · 7라운드 · 기술자 배치/입찰 · 항로 개척 · 팬 암 확장 · 주식 경쟁 · <b>ALPHA</b></div></div><div><span class="badge alpha">ALPHA</span> <span class="badge">Round ${state.round}/7</span></div></div><div class="players" style="margin-top:9px">${state.players.map(playerHtml).join('')}</div></div>${statusHtml()}<div class="layout" style="margin-top:10px"><section class="stack"><div class="board-shell">${mapSvg()}<div class="legend"><span class="s"><i></i>남아메리카 확장</span><span class="e"><i></i>유럽 확장</span><span class="a"><i></i>아시아-태평양 확장</span><span class="p"><i></i>PAN AM 소유</span></div></div>${engineerPanel()}${resolutionControls()}${eventChoiceControls()}${panamControls()}${directiveHandHtml()}${myDestinationsHtml()}${finalHtml()}</section><aside class="stack">${eventHtml()}${marketHtml()}${fleetHtml()}<div class="panel"><h3>📊 빠른 참조</h3><div class="rule-note"><b>항로 매각 보너스</b><br>거리 1 = $5 · 거리 2 = $9 · 거리 3 = $12 · 거리 4 = $14<br><b>라운드 순서</b><br>1 이벤트 → 2 기술자 → 3 해결 A→E → 4 팬 암(확장→수입→주식)<br><b>기술 해금</b><br>라운드 3 크루저 · 라운드 6 제트<br><b>입찰칸</b><br>공항 $3/$5/$7/$9 · 목적지 $0/$2/$4/$6 · 트리모터 $0/$2/$4/$6 · 클리퍼 $2/$4/$6/$8</div></div><div class="panel"><h3>📝 게임 로그</h3><div class="log">${state.logs.map(x=>`<div>${esc(x)}</div>`).join('')}</div></div><div class="panel source-note"><b>구현 기준</b><br>업로드된 「PA_Instructions_KR.pdf」와 「이벤트,지시 카드 한글화」의 규칙/문구를 우선 반영했습니다. 원본 보드·카드 이미지는 복제하지 않고 BoardMate용 추상 지도/UI로 재구성했습니다. 이벤트 카드의 개별 주가/주사위 수치와 목적지 카드별 보너스는 제공 자료에 전체 앞면 수치가 없어 ALPHA 임시값입니다. 크루저·제트 입찰칸도 셋업 이미지에서 타일에 가려져 단계형 임시값을 사용합니다.</div></aside></div>${pendingChoiceModal()}`;bind()}
+function bind(){
+  document.querySelector('#cancelBtn').onclick=()=>openCancelVotePanel();
+  document.querySelectorAll('[data-bid-area]').forEach(b=>b.onclick=()=>mutate(s=>placeBidEngineer(s,mySeat,b.dataset.bidArea,b.dataset.bidKey===''?null:(b.dataset.bidArea==='B'?Number(b.dataset.bidKey):b.dataset.bidKey),Number(b.dataset.bid))));
+  document.querySelectorAll('[data-work]').forEach(b=>b.onclick=()=>mutate(s=>placeWorksite(s,mySeat,b.dataset.work)));
+  document.querySelector('#passEngineer')?.addEventListener('click',()=>mutate(s=>passEngineer(s,mySeat)));
+  document.querySelector('#resolveB')?.addEventListener('click',()=>mutate(s=>resolveDestination(s,mySeat)));
+  document.querySelector('#resolveC')?.addEventListener('click',()=>mutate(s=>resolvePlane(s,mySeat)));
+  document.querySelector('#skipD')?.addEventListener('click',()=>mutate(s=>skipRouteTask(s,mySeat)));
+  document.querySelector('#resolveE')?.addEventListener('click',()=>mutate(s=>resolveDirectiveTask(s,mySeat)));
+  document.querySelectorAll('[data-directive]').forEach(b=>b.onclick=()=>mutate(s=>playDirective(s,mySeat,Number(b.dataset.directive))));
+  document.querySelector('#eventContinue')?.addEventListener('click',()=>mutate(s=>eventChoiceAction(s,mySeat,'continue')));
+  document.querySelectorAll('[data-event]').forEach(b=>b.onclick=()=>{const action=b.dataset.event,p={};if(b.dataset.routeId)p.route=b.dataset.routeId;if(action==='sell'&&!p.route)return;mutate(s=>eventChoiceAction(s,mySeat,action,p))});
+  document.querySelectorAll('[data-ev-plane]').forEach(b=>b.onclick=()=>mutate(s=>eventChoiceAction(s,mySeat,'sell',{type:b.dataset.evPlane})));
+  document.querySelectorAll('[data-route]').forEach(el=>el.addEventListener('click',()=>{const id=el.dataset.route;if(!routeSelectableForTask(ROUTE[id]))return;if(state.pendingChoice?.seat===mySeat&&state.pendingChoice.type==='advisoryRoute')return mutate(s=>resolvePendingChoice(s,mySeat,{route:id}));if(state.phase==='eventChoice'&&state.current===mySeat){const t=state.eventQueue[0];if(['sellOrDraw','maybeSellRoute'].includes(t?.type))return mutate(s=>eventChoiceAction(s,mySeat,'sell',{route:id}));if(t?.type==='routeOrClipper')return mutate(s=>eventChoiceAction(s,mySeat,'route',{route:id}))}if(state.phase==='panam'&&state.subphase==='offer'&&state.current===mySeat)return mutate(s=>panamOfferChoice(s,mySeat,id));const t=currentTask(state);if(state.phase==='resolution'&&t?.kind==='D'&&t.seat===mySeat)return mutate(s=>claimRoute(s,mySeat,id,{modifier:s.players[mySeat].routeModifier}))}));
+  document.querySelectorAll('[data-city]').forEach(el=>el.addEventListener('click',()=>{const city=el.dataset.city;if(!citySelectable(CITY[city]))return;if(state.pendingChoice?.seat===mySeat&&state.pendingChoice.type==='regionalAirport')return mutate(s=>resolvePendingChoice(s,mySeat,{city}));if(state.phase==='eventChoice'&&state.current===mySeat&&state.eventQueue[0]?.type==='maybePlaceAirport')return mutate(s=>eventChoiceAction(s,mySeat,'airport',{city}));const t=currentTask(state);if(t?.kind==='A'&&t.seat===mySeat)return mutate(s=>resolveAirport(s,mySeat,city))}));
+  document.querySelectorAll('[data-pan-sell]').forEach(b=>b.onclick=()=>mutate(s=>panamOfferChoice(s,mySeat,b.dataset.panSell)));
+  document.querySelector('#panSkip')?.addEventListener('click',()=>mutate(s=>panamOfferChoice(s,mySeat,null)));
+  document.querySelector('#buyStock')?.addEventListener('click',()=>{const q=Number(document.querySelector('#stockQty')?.value||0);mutate(s=>buyStockAndPass(s,mySeat,q))});
+  document.querySelector('#skipStock')?.addEventListener('click',()=>mutate(s=>buyStockAndPass(s,mySeat,0)));
+  document.querySelectorAll('[data-pending-index]').forEach(b=>b.onclick=()=>mutate(s=>resolvePendingChoice(s,mySeat,{index:Number(b.dataset.pendingIndex)})));
+  document.querySelectorAll('[data-pending-plane]').forEach(b=>b.onclick=()=>mutate(s=>resolvePendingChoice(s,mySeat,{type:b.dataset.pendingPlane})));
+  document.querySelectorAll('[data-pending-route]').forEach(b=>b.onclick=()=>mutate(s=>resolvePendingChoice(s,mySeat,{route:b.dataset.pendingRoute})));
+}
+async function onRow(row){if(!row)return;revision=Number(row.revision||0);if(row.state){state=row.state;render();if(state.over)void maybeSubmit()}}
+async function boot(){
+  if(!configured()||!roomId)showFatal('BoardMate 다인플 방에서 팬 암을 열어주세요.');me=await getMe();if(!me)showFatal('로그인이 필요합니다.');({room,members}=await loadRoom());if(room.game!==GAME)showFatal('팬 암 방이 아닙니다.');members=members.slice().sort((a,b)=>a.seat-b.seat);const mm=members.find(m=>m.user_id===me.user_id);if(!mm)showFatal('이 방의 참가자가 아닙니다.');if(members.length<2||members.length>4)showFatal('팬 암은 2~4인 게임입니다.');mySeat=Number(mm.seat);badges=await ratingBadges(GAME,members.map(m=>m.user_id)).catch(()=>({}));const row=await loadState();revision=Number(row?.revision||0);state=row?.state||null;if(!state&&room.host_id===me.user_id){state=initialState();revision=Number(await saveState(revision,state))}render();stopPoll=startStatePoll(onRow,{interval:7000});setInterval(()=>void touchPresence(true),15000)
+}
+boot().catch(e=>{console.error(e);showFatal(e.message||'팬 암을 열 수 없습니다.')});window.addEventListener('beforeunload',()=>stopPoll?.());
+</script>
+</body>
+</html>

@@ -20,7 +20,7 @@ const unlockAlarmAudio=(...a)=>__alarmApi.unlockAlarmAudio(...a);
 window.__boardmateAppStarted=true;
 (async()=>{
   try{
-    const mod=await import('./alarm.js?v=11.4.64');
+    const mod=await import('./alarm.js?v=11.4.65');
     for(const key of Object.keys(__alarmApi)) if(typeof mod[key]==='function') __alarmApi[key]=mod[key];
     window.dispatchEvent(new Event('boardmate:alarm-ready'));
   }catch(err){
@@ -87,6 +87,7 @@ function gameInfo(game){
     planetx:{name:'행성 X를 찾아서',icon:'🪐',min:2,max:4,page:'online-planetx.html'},
     samurai:{name:'사무라이',icon:'⛩️',min:2,max:4,page:'online-samurai.html',tier:'alpha'},
     eldorado:{name:'엘도라도',icon:'🧭',min:2,max:4,page:'online-eldorado.html',tier:'alpha'},
+    panam:{name:'팬 암',icon:'✈️',min:2,max:4,page:'online-panam.html',tier:'alpha'},
     airlandsea:{name:'에어 랜드 & 씨',icon:'✈️',min:2,max:2,page:'online-airlandsea.html',tier:'beta'},
     avalon:{name:'레지스탕스 아발론',icon:'⚔️',min:5,max:10,page:'online-avalon.html',mode:'realtime'},
     secrethitler:{name:'시크릿 히틀러',icon:'🗳️',min:5,max:10,page:'online-secret-hitler.html',mode:'realtime'},
@@ -130,7 +131,7 @@ function ensureSiteFeatures(){
   if(!document.querySelector('link[rel="manifest"]')){const l=document.createElement('link');l.rel='manifest';l.href='./manifest.webmanifest';document.head.appendChild(l);}
   if(!document.querySelector('meta[name="theme-color"]')){const m=document.createElement('meta');m.name='theme-color';m.content='#141922';document.head.appendChild(m);}
   if(!document.querySelector('link[rel="manifest"]')){const l=document.createElement('link');l.rel='manifest';l.href='./manifest.webmanifest';document.head.appendChild(l);}
-  if('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js?v=11.4.63',{scope:'./'}).catch(()=>{});
+  if('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js?v=11.4.65',{scope:'./'}).catch(()=>{});
 }
 async function installBoardMate(){
   if(deferredInstallPrompt){
@@ -425,7 +426,7 @@ async function renderMyPage(){
 
 async function renderCreateRoom(){
   if(!onlineConfigured())return renderMulti();const me=await authProfile();if(!me){location.hash='#/login';return;}
-  const games=['maskmen','acquire','calico','cascadia','plakoro','powergrid','quacks','mandom','planetx','samurai','eldorado','airlandsea','thegame','kraken','fantasyrealms','fantasyrealmsgreek','avalon','secrethitler','onenightwerewolf'];let selected='maskmen';
+  const games=['maskmen','acquire','calico','cascadia','plakoro','powergrid','quacks','mandom','planetx','samurai','eldorado','panam','airlandsea','thegame','kraken','fantasyrealms','fantasyrealmsgreek','avalon','secrethitler','onenightwerewolf'];let selected='maskmen';
   const tierLabel=(x)=>x.tier==='alpha'?'ALPHA · 보완 필요':x.tier==='beta'?'BETA · 보완 중':'정상 작동';
   const tierClass=(x)=>x.tier==='alpha'?'tier-alpha':x.tier==='beta'?'tier-beta':'tier-stable';
   const renderGame=(g)=>{const x=gameInfo(g);return `<button class="library-card game-choice ${g==='maskmen'?'selected':''}" data-room-game="${g}"><div class="library-icon">${x.icon}</div><div class="game-tier ${tierClass(x)}">${tierLabel(x)}</div><h2>${x.name}</h2><p>${x.min}명부터 · 최대 ${x.max}명</p></button>`;};
@@ -437,7 +438,7 @@ async function renderCreateRoom(){
     const title=document.querySelector('#roomTitle').value.trim(),st=document.querySelector('#roomStatus');
     st.textContent='';
     const social=['avalon','secrethitler','onenightwerewolf'].includes(selected);
-    const v21Games=['quacks','mandom','samurai','eldorado','airlandsea','planetx'];
+    const v21Games=['quacks','mandom','samurai','eldorado','panam','airlandsea','planetx'];
     try{
       let id;
       try{
@@ -448,6 +449,7 @@ async function renderCreateRoom(){
         const catalogRejected=/지원하지 않는 게임|boardmate_rooms_game_check|violates check constraint/i.test(msg);
         if(v21Games.includes(selected)&&(v10missing||catalogRejected)){
           if(selected==='planetx') throw new Error('행성 X PVP용 Supabase 업데이트가 필요합니다. SUPABASE_PLANETX_PVP_V1.sql을 SQL Editor에서 실행하세요.');
+          if(selected==='panam') throw new Error('팬 암용 Supabase 업데이트가 필요합니다. SUPABASE_PANAM_V11_4_65.sql을 SQL Editor에서 실행하세요.');
           throw new Error('새 게임용 Supabase 업데이트가 필요합니다. SUPABASE_REPAIR_ALL_GAMES_V24.sql을 SQL Editor에서 실행하세요.');
         }
         if(!v10missing)throw v10e;
@@ -498,7 +500,7 @@ async function renderRoom(roomId){
   await touch();
   const draw=async()=>{data=await load();const {room,members}=data,isHost=room.host_id===me.user_id,gi=gameInfo(room.game),min=(room.game==='powergrid'?Math.max(3,Number(room.min_players||gi.min)):Number(room.min_players||gi.min));void processSingleRoomAlarm(room,me,{gameName:gi.name,gameHref:gameEntryHref(room)});
     let cancelled=room.status==='cancelled';
-    if(!cancelled&&room.status==='finished'&&['maskmen','acquire','calico','cascadia','pocketnova','thegame','kraken','fantasyrealms','fantasyrealmsgreek','powergrid','avalon','secrethitler','onenightwerewolf','plakoro','quacks','mandom','samurai','eldorado','airlandsea','planetx'].includes(room.game)){
+    if(!cancelled&&room.status==='finished'&&['maskmen','acquire','calico','cascadia','pocketnova','thegame','kraken','fantasyrealms','fantasyrealmsgreek','powergrid','avalon','secrethitler','onenightwerewolf','plakoro','quacks','mandom','samurai','eldorado','panam','airlandsea','planetx'].includes(room.game)){
       try{cancelled=Boolean((await callRpc('boardmate_get_cancel_status',{p_token:memberToken(),p_room_id:roomId}))?.cancelled);}catch{}
     }
     if(cancelled){shell(`<div class="page-head"><div><h1>🛑 ${esc(room.title)}</h1><p>${gi.name} · 참가자 전원 동의로 취소된 게임입니다.</p></div></div><section class="lobby-card" style="text-align:center"><h2>게임이 취소되었습니다</h2><p>이번 게임은 승패와 ELO에 반영되지 않습니다.</p><div class="actions" style="justify-content:center"><a class="primary link-btn" href="#/multi">다인플 목록</a><a class="ghost link-btn" href="#/">홈으로</a></div></section>`);return;}

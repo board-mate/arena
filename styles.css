@@ -177,3 +177,5 @@
 html[data-boardmate-my-turn="1"] .topbar{box-shadow:0 0 0 3px #ffb000 inset}
 html[data-boardmate-my-turn="1"] .top-date{visibility:hidden}
 @media(max-width:760px){#boardmate-turn-banner{top:10px;right:10px;padding:8px 12px;font-size:12px}}
+
+.game-pill.panam{background:#dff2ff;color:#075985}

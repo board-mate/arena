@@ -1,0 +1,24 @@
+BoardMate Arena v11.4.65 ALPHA — Pan Am static verification
+
+PASS
+- app.js syntax
+- alarm.js syntax
+- multi-common.js syntax
+- sw.js syntax
+- online-panam.html module syntax
+- Pan Am catalog entry exists in app.js
+- Pan Am create-room list exists
+- Pan Am finished/cancel room handling exists
+- Supabase room/rating constraints include panam
+- Supabase min/max = 2/4 support and Korean name helper included
+- Supabase turn tracking routes panam to state.current
+- Supabase cancellation supports panam and nickname lookup uses boardmate_profiles
+- Starting stock supply = 140 stock units (40x1 + 20x5)
+- Known bidding tracks: Airport 3/5/7/9, Destination 0/2/4/6, Trimotor 0/2/4/6, Clipper 2/4/6/8
+- Directive deck count = 40
+- Pan Am visible HTMLs contain no requested workshop-history metadata
+
+ALPHA / not E2E verified
+- Live Supabase two-browser race/revision behavior requires deployed environment.
+- Event stock-price/die-count metadata, exact 50-card destination distribution/bonuses, and covered Cruiser/Jet bidding values remain provisional where supplied source pages do not expose the exact values.
+- Board map is an abstract BoardMate reconstruction rather than a scan of the commercial board.
