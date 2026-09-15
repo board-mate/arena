@@ -64,16 +64,55 @@ function vibrate(){
 function safeTitleBase(){
   return String(document.title||'BoardMate').replace(/^🔔 내 차례(?: \(\d+\))? · /,'');
 }
-export function setBrowserTurnIndicator(count=0){
+function ensureTurnBannerStyle(){
+  if(document.getElementById('boardmate-turn-banner-style'))return;
+  const style=document.createElement('style');
+  style.id='boardmate-turn-banner-style';
+  style.textContent=`
+#boardmate-turn-banner{position:fixed;top:12px;right:14px;left:auto;transform:none;z-index:2147483001;background:#ffb000;color:#1b1b1b;font:900 14px/1.2 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;padding:10px 16px;border-radius:999px;box-shadow:0 8px 24px #0003;border:2px solid #fff;pointer-events:auto;cursor:pointer;white-space:nowrap;transition:transform .12s ease,filter .12s ease;max-width:calc(100vw - 28px)}
+#boardmate-turn-banner:hover{filter:brightness(1.04);transform:translateY(-1px)}
+#boardmate-turn-banner:active{transform:translateY(0) scale(.98)}
+#boardmate-turn-banner:focus-visible{outline:3px solid #fff;outline-offset:2px}
+html[data-boardmate-my-turn="1"] .top-date{visibility:hidden}
+@media(max-width:760px){#boardmate-turn-banner{top:10px;right:10px;padding:8px 12px;font-size:12px;max-width:calc(100vw - 20px)}}`;
+  document.head.appendChild(style);
+}
+function sameTargetUrl(target){
+  try{
+    const a=new URL(target,location.href),b=new URL(location.href);
+    return a.pathname===b.pathname&&a.search===b.search&&a.hash===b.hash;
+  }catch{return false;}
+}
+export function setBrowserTurnIndicator(count=0,options={}){
   const n=Math.max(0,Number(count)||0),base=safeTitleBase();
+  const opts=typeof options==='string'?{href:options}:(options||{});
+  const href=String(opts.href||'');
   document.title=n?`🔔 내 차례${n>1?` (${n})`:''} · ${base}`:base;
   try{document.documentElement.dataset.boardmateMyTurn=n?'1':'0';}catch{}
   try{
+    ensureTurnBannerStyle();
     let banner=document.getElementById('boardmate-turn-banner');
     if(n){
-      if(!banner){banner=document.createElement('div');banner.id='boardmate-turn-banner';banner.textContent='🎯 내 차례입니다';document.body.appendChild(banner);}
+      if(!banner){
+        banner=document.createElement('button');
+        banner.type='button';
+        banner.id='boardmate-turn-banner';
+        document.body.appendChild(banner);
+      }
+      banner.textContent=n>1?`🎯 내 차례 ${n}건`:'🎯 내 차례입니다';
+      banner.title=n>1?'내 차례인 게임 목록 열기':'내 차례인 게임으로 이동';
+      banner.dataset.href=href;
       banner.style.display='block';
-    }else if(banner){banner.style.display='none';}
+      banner.onclick=()=>{
+        const target=banner.dataset.href||'./index.html#/multi';
+        if(sameTargetUrl(target))window.scrollTo({top:0,behavior:'smooth'});
+        else window.location.href=target;
+      };
+    }else if(banner){
+      banner.style.display='none';
+      banner.dataset.href='';
+      banner.onclick=null;
+    }
   }catch{}
   try{
     let icon=document.querySelector('link[data-boardmate-turn-favicon]');
@@ -141,7 +180,7 @@ export function resetRoomAlarmBaseline(){roomSnapshot=null;}
 export async function processRoomAlarms(rooms,me,{gameName=x=>x?.game||'게임',gameHref=hrefForRoom}={}){
   if(!Array.isArray(rooms)||!me?.user_id){setBrowserTurnIndicator(0);return;}
   const myTurnRooms=rooms.filter(r=>Boolean(r.mine)&&turnIsMine(r,me));
-  setBrowserTurnIndicator(myTurnRooms.length);
+  setBrowserTurnIndicator(myTurnRooms.length,{href:myTurnRooms.length===1?gameHref(myTurnRooms[0]):'./index.html#/multi'});
   const current=new Map(rooms.map(r=>[String(r.id),r]));
   if(!roomSnapshot){
     roomSnapshot=current;
@@ -175,7 +214,7 @@ const singleRoomState=new Map();
 export async function processSingleRoomAlarm(room,me,{gameName='게임',gameHref}={}){
   if(!room?.id||!me?.user_id){setBrowserTurnIndicator(0);return;}
   const id=String(room.id),prev=singleRoomState.get(id),myTurn=turnIsMine(room,me);
-  setBrowserTurnIndicator(myTurn?1:0);
+  setBrowserTurnIndicator(myTurn?1:0,{href:myTurn?(gameHref||hrefForRoom(room)):'./index.html#/multi'});
   singleRoomState.set(id,{...room});
   const href=gameHref||hrefForRoom(room);
   if(!prev){

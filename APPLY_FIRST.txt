@@ -1,0 +1,11 @@
+BoardMate Arena v11.4.64 ALPHA patch
+
+1) GitHub에 이 폴더의 웹 파일을 같은 경로로 덮어쓰기
+2) Supabase SQL Editor에서 database/SUPABASE_CANCEL_NICKNAME_FIX_V11_4_64.sql 1회 실행
+3) 브라우저 강력 새로고침 (Ctrl+F5) 또는 recovery.html 캐시 복구
+
+수정 사항
+- 내 차례 배너: 우측 상단, 클릭 가능
+- 1개 방: 해당 게임 바로 이동 / 여러 방: 다인플 목록 이동
+- 취소 RPC의 잘못된 m.nickname 참조 수정 → boardmate_profiles.nickname JOIN
+- ALPHA 유지
