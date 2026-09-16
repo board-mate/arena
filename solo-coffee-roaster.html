@@ -510,7 +510,7 @@ const BEANS = [
 // 온도 게이지: 턴 디스크 위치 → 뽑을 토큰 수
 // 위치 6~14, 빨간 구역은 11,12 (첫 번째 크랙)
 const TEMP_DRAW = {6:6,7:7,8:8,9:9,10:10,11:11,12:12,13:13,14:14};
-const RED_ZONES = [11, 12]; // 이 위치에서는 로스트 +2
+const RED_ZONES = [10, 12]; // 연기 스택이 놓이는 빨간 구역: 로스트 +2
 // 연기 토큰 배치: 턴 디스크 위치 10,12에 스택 배치
 const SMOKE_POSITIONS = [10, 12]; // 각각 2개, 3개 스택
 
@@ -582,11 +582,12 @@ function initChallenge(bean) {
   const bag = buildBag(bean);
   const moisture = bean.contents.moisture || 0;
   // 턴 디스크 시작 위치: 수분 토큰 수에 따라
-  let startPos = 6;
-  if (moisture <= 2) startPos = 6;
-  else if (moisture <= 4) startPos = 7;
-  else if (moisture <= 6) startPos = 8;
-  else startPos = 9;
+  // 규칙서 온도 게이지: 수분 7/8→6, 5/6→7, 3/4→8, 1/2→9, 0→10
+  let startPos = 10;
+  if (moisture >= 7) startPos = 6;
+  else if (moisture >= 5) startPos = 7;
+  else if (moisture >= 3) startPos = 8;
+  else if (moisture >= 1) startPos = 9;
   // 연기 토큰 보드에 배치
   const smokeOnBoard = { 10: 2, 12: 3 };
 
@@ -608,25 +609,36 @@ function initChallenge(bean) {
       cleanup: false,
       wildcard: false,
     },
+    // 즉시 효과를 쓰기 위해 로스팅 보드 왼쪽에 실제로 올려둔 토큰
+    leftBoard: { redraw2:null, draw2extra:null, drawing5:null, cleanup:null, wildcard:null },
     wildcardOnBoard: true, // 처음엔 보드에 있음
     wildcardInHand: false, // 손에 들어왔으면
-    // 오른쪽 보드 플레이버 슬롯 (각 행: body×2, acidity×2, aroma×2)
-    rightBoard: {
-      body:    [null, null],
-      acidity: [null, null],
-      aroma:   [null, null],
+    // 오른쪽 보드(I면): 사용한 플레이버 토큰을 배치해 유니크 효과 토큰을 획득
+    // any = Body / Acidity / Aroma 중 아무 플레이버 토큰이나 가능
+    rightBoardRows: {
+      r3extra:   { req:['body','acidity'], slots:[null,null] },
+      sweetness: { req:['acidity','aroma'], slots:[null,null] },
+      drawSelect:{ req:['aroma','body'], slots:[null,null] },
+      redraw2cup:{ req:['any','acidity'], slots:[null,null] },
+      extraTray: { req:['any','aroma'], slots:[null,null] },
     },
     // 유니크 효과 토큰 획득 여부
     uniqueTokens: {
-      r3extra: false,    // 로스트 레벨 3 추가 토큰
-      sweetness: false,  // 스위트니스
-      drawSelect: false, // 뽑아서 선택
-      redraw2cup: false, // 재뽑기 2 (컵)
-      extraTray: false,  // 추가 트레이
+      r3extra: false,    // 컵의 로스트 레벨 3 토큰
+      sweetness: false,  // 스위트니스 플레이버
+      drawSelect: false, // 2개 뽑아 1개 선택 × 2회
+      redraw2cup: false, // 컵 완성 후 2개 재뽑기
+      extraTray: false,  // 트레이 +2칸
     },
     // 컵 테스트
-    cup: [],    // 10칸 (상단 2칸: r3extra, sweetness 예약)
-    tray: [],   // 기본 2칸, extraTray시 +2칸
+    cup: Array(10).fill(null),
+    tray: [],
+    cupPending: [],
+    cupMode: 'idle',
+    drawSelectRemaining: 0,
+    drawSelectUsed: false,
+    redraw2Used: false,
+    cupSelected: [],
     // 보드에 배치된 특수 토큰 초기값
     specialOnBoard: {
       r3extra: true,
@@ -737,18 +749,20 @@ function calcScore(challenge) {
 
   // 2) 플레이버 점수
   const desired = bean.flavorReq;
-  const hasBody = cup.filter(t => t === 'body' || t === 'wild').length;
-  const hasAcidity = cup.filter(t => t === 'acidity' || t === 'wild').length;
-  const hasAroma = cup.filter(t => t === 'aroma' || t === 'wild').length;
-  const hasSweetness = cup.filter(t => t === 'sweetness').length;
-
-  let flavorCount = 0;
-  if (desired.includes('body') && hasBody > 0) flavorCount++;
-  if (desired.includes('acidity') && hasAcidity > 0) flavorCount++;
-  if (desired.includes('aroma') && hasAroma > 0) flavorCount++;
-  if (desired.includes('sweetness')) {
-    if (hasSweetness > 0 || (hasBody > 0 && hasAcidity > 0 && hasAroma > 0)) flavorCount++;
+  const present={
+    body:cup.some(t=>t==='body'),
+    acidity:cup.some(t=>t==='acidity'),
+    aroma:cup.some(t=>t==='aroma'),
+    sweetness:cup.some(t=>t==='sweetness'),
+  };
+  // 와일드는 Body/Acidity/Aroma 중 하나로만 계산할 수 있고 Sweetness를 대신할 수 없음
+  let wildLeft=cup.filter(t=>t==='wild').length,flavorCount=0;
+  for(const f of ['body','acidity','aroma']){
+    if(!desired.includes(f))continue;
+    if(present[f])flavorCount++;
+    else if(wildLeft>0){flavorCount++;wildLeft--;}
   }
+  if(desired.includes('sweetness')&&present.sweetness)flavorCount++;
   const flavorMap = {1:1,2:3,3:6,4:10};
   const flavorPts = flavorMap[flavorCount] || 0;
 
@@ -756,7 +770,7 @@ function calcScore(challenge) {
   const levelCounts = {};
   for (const t of cup) {
     if (!t) continue;
-    const tl = TOKEN_TYPES[t]?.roastLevel;
+    const tl = t==='r3_extra' ? 3 : TOKEN_TYPES[t]?.roastLevel;
     if (tl !== null && tl !== undefined && tl >= 1 && tl <= 4) {
       levelCounts[tl] = (levelCounts[tl] || 0) + 1;
     }
@@ -835,11 +849,48 @@ function beanCardHTML(bean, selected = false) {
 }
 
 // ═══════════════════════════════════════════════════════
+// 저장 데이터 호환 / 규칙 보정 상태
+// ═══════════════════════════════════════════════════════
+function ensureCoffeeChallengeState(ch) {
+  if (!ch) return;
+  ch.usedEffects = Object.assign({redraw2:false,draw2extra:false,drawing5:false,cleanup:false,wildcard:false}, ch.usedEffects||{});
+  ch.leftBoard = Object.assign({redraw2:null,draw2extra:null,drawing5:null,cleanup:null,wildcard:null}, ch.leftBoard||{});
+  // v11.4.72: 기존 단순 3행 보드 저장값은 규칙서 기반 5행 보드로 마이그레이션
+  const defaults={
+    r3extra:{req:['body','acidity'],slots:[null,null]},
+    sweetness:{req:['acidity','aroma'],slots:[null,null]},
+    drawSelect:{req:['aroma','body'],slots:[null,null]},
+    redraw2cup:{req:['any','acidity'],slots:[null,null]},
+    extraTray:{req:['any','aroma'],slots:[null,null]},
+  };
+  if(!ch.rightBoardRows){
+    ch.rightBoardRows=JSON.parse(JSON.stringify(defaults));
+  }else{
+    for(const [k,v] of Object.entries(defaults)){
+      ch.rightBoardRows[k]=ch.rightBoardRows[k]||JSON.parse(JSON.stringify(v));
+      ch.rightBoardRows[k].req=Array.isArray(ch.rightBoardRows[k].req)?ch.rightBoardRows[k].req:[...v.req];
+      ch.rightBoardRows[k].slots=Array.isArray(ch.rightBoardRows[k].slots)?ch.rightBoardRows[k].slots:[null,null];
+    }
+  }
+  ch.uniqueTokens=Object.assign({r3extra:false,sweetness:false,drawSelect:false,redraw2cup:false,extraTray:false},ch.uniqueTokens||{});
+  ch.selectedDrawn = Array.isArray(ch.selectedDrawn) ? ch.selectedDrawn : [];
+  ch.cup=Array.isArray(ch.cup)?ch.cup.slice(0,10):Array(10).fill(null);while(ch.cup.length<10)ch.cup.push(null);
+  ch.tray=Array.isArray(ch.tray)?ch.tray:[];
+  ch.cupPending=Array.isArray(ch.cupPending)?ch.cupPending:[];
+  ch.cupMode=ch.cupMode||'idle';
+  ch.drawSelectRemaining=Number(ch.drawSelectRemaining)||0;
+  ch.drawSelectUsed=!!ch.drawSelectUsed;
+  ch.redraw2Used=!!ch.redraw2Used;
+  ch.cupSelected=Array.isArray(ch.cupSelected)?ch.cupSelected:[];
+}
+
+// ═══════════════════════════════════════════════════════
 // 메인 렌더
 // ═══════════════════════════════════════════════════════
 function render() {
   const app = document.querySelector('#app');
   if (!G) { renderHome(app); return; }
+  if (G.challenge) ensureCoffeeChallengeState(G.challenge);
   if (G.screen === 'bean_select') { renderBeanSelect(app); return; }
   if (G.screen === 'game') { renderGame(app); return; }
   if (G.screen === 'scoring') { renderScoring(app); return; }
@@ -923,6 +974,7 @@ function renderBeanSelect(app) {
 function renderGame(app) {
   const ch = G.challenge;
   if (!ch) { renderHome(app); return; }
+  if (ch.phase === 'cup_test') { renderCupTest(app); return; }
 
   const inRedZone = RED_ZONES.includes(ch.turnPos);
   const canDraw = ch.bag.length > 0 && ch.drawn.length === 0 && ch.phase === 'roasting';
@@ -959,50 +1011,41 @@ function renderGame(app) {
 
   // 즉시 효과 (왼쪽 보드)
   const effects = [
-    { key:'redraw2', label:'2개 재뽑기', desc:'뽑은 토큰 중 2개 선택→백에 넣고 2개 새로 뽑기' },
-    { key:'draw2extra', label:'+2 추가 뽑기', desc:'백에서 2개 추가로 뽑기' },
-    { key:'drawing5', label:'5개 뽑아 2제거', desc:'백에서 5개 뽑아 2개 제거, 나머지 백으로' },
-    { key:'cleanup', label:'청소', desc:'뽑힌 연기/불량/버닝 모두 제거' },
-    { key:'wildcard', label:'와일드 카드', desc:'와일드 플레이버 토큰 획득 (한 번만)' },
+    { key:'wildcard', label:'와일드 플레이버', desc:'와일드 플레이버 토큰 획득', cost:'0/1 원두 또는 아무 플레이버' },
+    { key:'draw2extra', label:'+2 추가 뽑기', desc:'백에서 2개 추가로 뽑기', cost:'Body' },
+    { key:'redraw2', label:'2개 재뽑기', desc:'선택한 2개를 백에 넣고 2개 새로 뽑기', cost:'아무 플레이버' },
+    { key:'drawing5', label:'5개 뽑아 2제거', desc:'백에서 5개 뽑아 2개 제거, 나머지 백으로', cost:'Aroma' },
+    { key:'cleanup', label:'청소', desc:'뽑힌 연기/불량/버닝 모두 제거', cost:'아무 플레이버' },
   ];
   const leftBoardHTML = effects.map(e => {
     const used = ch.usedEffects[e.key];
-    const canUse = !used && hasDrawn;
+    const spent = ch.leftBoard?.[e.key];
+    const canUse = !used && ch.drawn.some(t=>immediateAccepts(e.key,t));
     return `<div class="effect-slot ${used ? 'used' : canUse ? 'active' : ''}">
       <div class="slot-label">${e.label}</div>
-      <div class="slot-desc">${e.desc}</div>
-      ${canUse ? `<button class="btn btn-sm btn-green effect-btn" data-effect="${e.key}">사용</button>` : ''}
+      <div class="slot-desc">${e.desc}<br><span style="color:var(--muted)">필요 토큰: ${e.cost} · 해당 토큰을 칸에 놓고 사용</span></div>
+      ${spent ? `<span class="slot-token">${tokenHTML(spent,'',26)}</span>` : ''}
+      ${canUse ? `<button class="btn btn-sm btn-green effect-btn" data-effect="${e.key}">토큰 놓고 사용</button>` : ''}
     </div>`;
   }).join('');
 
-  // 오른쪽 보드 (플레이버 효과)
-  const rightBoardHTML = ['body','acidity','aroma'].map(ftype => {
-    const slots = ch.rightBoard[ftype];
-    const ftypeLabel = ftype === 'body' ? 'Body (농축)' : ftype === 'acidity' ? 'Acidity (보존)' : 'Aroma (분산)';
-    const ftypeDesc = ftype === 'body' ? '원두 2개 → 합산 1개' : ftype === 'acidity' ? '원두 2개 로스팅 건너뜀' : '원두 1개 → 2개로 분리';
-    const bothFilled = slots[0] && slots[1];
-    // 유니크 토큰 이름
-    const uniqueNames = { body:'농축 토큰', acidity:'보존 토큰', aroma:'분산 토큰' };
-    return `<div class="flavor-row ${bothFilled ? 'earned' : ''}">
-      <span class="token ${tkCls(ftype)}" style="width:30px;height:30px;font-size:11px">${tkSym(ftype)}</span>
-      <div style="flex:1">
-        <div style="font-size:10px;font-weight:900;color:var(--text2)">${ftypeLabel}</div>
-        <div style="font-size:9px;color:var(--muted)">${ftypeDesc}</div>
-      </div>
-      <div style="display:flex;gap:4px">
-        <div class="flavor-slot ${slots[0] ? 'filled' : ''}">
-          ${slots[0] ? `<span class="token ${tkCls(slots[0])}" style="width:28px;height:28px;font-size:10px">${tkSym(slots[0])}</span>` : '·'}
-        </div>
-        <div class="flavor-slot ${slots[1] ? 'filled' : ''}">
-          ${slots[1] ? `<span class="token ${tkCls(slots[1])}" style="width:28px;height:28px;font-size:10px">${tkSym(slots[1])}</span>` : '·'}
-        </div>
-      </div>
-      <div class="unique-token-area">
-        ${bothFilled ? `<span style="font-size:10px;color:#70d070">✔ 획득</span>` : ''}
-      </div>
-      ${hasDrawn && !bothFilled ? `
-        <button class="btn btn-sm btn-gold flavor-btn" data-flavor="${ftype}" style="margin-left:4px">효과</button>
-      ` : ''}
+  // 오른쪽 보드: 사용한 플레이버 토큰을 5개 유니크 효과 행의 조건 칸에 배치
+  const uniqueMeta={
+    r3extra:{label:'로스트 레벨 3',icon:'3',desc:'컵 테스트에서 레벨 3 원두처럼 계산'},
+    sweetness:{label:'스위트니스',icon:'S',desc:'4번째 플레이버 토큰'},
+    drawSelect:{label:'뽑아서 선택',icon:'2→1',desc:'2개 뽑아 1개 선택을 두 번 수행'},
+    redraw2cup:{label:'컵 2개 재뽑기',icon:'↻2',desc:'컵 완성 후 2칸 교체'},
+    extraTray:{label:'추가 트레이',icon:'+2',desc:'트레이 2칸 추가'},
+  };
+  const reqLabel=r=>r==='body'?'B':r==='acidity'?'A':r==='aroma'?'R':'B/A/R';
+  const rightBoardHTML=Object.entries(ch.rightBoardRows).map(([key,row])=>{
+    const meta=uniqueMeta[key], earned=!!ch.uniqueTokens[key];
+    const slots=row.slots.map((placed,i)=>`<div class="flavor-slot ${placed?'filled':''}" title="${reqLabel(row.req[i])}">${placed?`<span class="token ${tkCls(placed)}" style="width:28px;height:28px;font-size:10px">${tkSym(placed)}</span>`:`<span style="font-size:9px">${reqLabel(row.req[i])}</span>`}</div>`).join('');
+    return `<div class="flavor-row ${earned?'earned':''}">
+      <div class="unique-token-area" style="margin-left:0;min-width:50px"><b>${meta.icon}</b></div>
+      <div style="flex:1"><div style="font-size:10px;font-weight:900;color:var(--text2)">${meta.label}</div><div style="font-size:9px;color:var(--muted)">${meta.desc}</div></div>
+      <div style="display:flex;gap:4px">${slots}</div>
+      <div style="font-size:9px;color:${earned?'#70d070':'var(--muted)'}">${earned?'✔ 획득':'조건 충족 시 획득'}</div>
     </div>`;
   }).join('');
 
@@ -1046,7 +1089,6 @@ function renderGame(app) {
     <div class="row" style="margin-top:8px">
       ${canDraw ? `<button class="btn btn-gold" id="btn-draw">🎲 토큰 뽑기</button>` : ''}
       ${hasDrawn ? `<button class="btn btn-primary" id="btn-roast-up">⬆️ 로스팅 (레벨 상승)</button>` : ''}
-      ${hasDrawn ? `<button class="btn btn-green" id="btn-end-turn">✅ 턴 종료 (백으로 반납)</button>` : ''}
     </div>
   </div>
 
@@ -1055,12 +1097,15 @@ function renderGame(app) {
     <div class="card-title">📋 로스팅 보드</div>
     <div class="roast-board">
       <div class="board-half left">
-        <div class="board-half-title">왼쪽 · 즉시 효과 (각 1회)</div>
+        <div class="board-half-title">왼쪽 · 즉시 효과 (토큰을 놓고 각 1회)</div>
         ${leftBoardHTML}
       </div>
       <div class="board-half right">
-        <div class="board-half-title">오른쪽 · 플레이버 효과 → 유니크 토큰</div>
+        <div class="board-half-title">오른쪽 · 사용한 플레이버 토큰 배치 → 유니크 효과 획득</div>
         ${rightBoardHTML}
+        <div class="row" style="margin-top:8px">
+          ${['body','acidity','aroma'].map(ft=>flavorTokenCandidates(ch,ft).length?`<button class="btn btn-sm btn-gold flavor-btn" data-flavor="${ft}">${ft==='body'?'Body 농축':ft==='acidity'?'Acidity 보존':'Aroma 분산'}</button>`:'').join('')}
+        </div>
       </div>
     </div>
   </div>
@@ -1086,7 +1131,6 @@ function renderGame(app) {
   bindClick('#btn-draw', startTurn);
   bindClick('#btn-draw2', startTurn);
   bindClick('#btn-roast-up', doRoastUp);
-  bindClick('#btn-end-turn', endTurn);
   bindClick('#btn-go-cup', () => {
     ch.phase = 'cup_test';
     G.screen = 'game'; // cup test는 같은 화면 내 다른 phase
@@ -1109,7 +1153,7 @@ function renderGame(app) {
   });
 
   document.querySelectorAll('.effect-btn').forEach(btn => {
-    btn.onclick = () => useImmediateEffect(btn.dataset.effect);
+    btn.onclick = () => showImmediateCostModal(btn.dataset.effect);
   });
 
   document.querySelectorAll('.flavor-btn').forEach(btn => {
@@ -1133,12 +1177,8 @@ function doRoastUp() {
     if (t === 'moisture') { addLog('수분 → 제거'); continue; }
     const result = roastToken(t, inRedZone);
     if (result.unchanged) {
-      newDrawn.push(t);
-      if (t === 'hard') {
-        // 하드 → r0, 카운터 변화 없음
-        ch.bag.push('r0');
-        addLog(`하드 원두 → 생두(0)로 변환`);
-      }
+      // 연기/불량/버닝/플레이버 등 로스팅되지 않는 토큰도 턴 종료 시 백으로 돌아갑니다.
+      ch.bag.push(t);
     } else if (result.newType === 'burnt') {
       const oldLevel = TOKEN_TYPES[t]?.roastLevel || 0;
       ch.roastCounter = Math.max(0, ch.roastCounter - oldLevel);
@@ -1169,23 +1209,83 @@ function endTurn() {
   render();
 }
 
-function useImmediateEffect(effectKey) {
-  const ch = G.challenge;
+function effectLabel(effectKey) {
+  return ({redraw2:'2개 재뽑기',draw2extra:'+2 추가 뽑기',drawing5:'5개 뽑아 2제거',cleanup:'청소',wildcard:'와일드 플레이버'})[effectKey] || effectKey;
+}
+function removeDrawnIndex(ch, idx) {
+  if (!Number.isInteger(idx) || idx < 0 || idx >= ch.drawn.length) return null;
+  const [token] = ch.drawn.splice(idx,1);
+  ch.selectedDrawn = ch.selectedDrawn.filter(i=>i!==idx).map(i=>i>idx?i-1:i);
+  return token;
+}
+function removeDrawnIndices(ch, idxs) {
+  const uniq=[...new Set(idxs.filter(Number.isInteger))].sort((a,b)=>b-a);
+  const removed=[];
+  for (const idx of uniq) if(idx>=0&&idx<ch.drawn.length) removed.push({idx,token:ch.drawn[idx]});
+  for (const idx of uniq) removeDrawnIndex(ch,idx);
+  return removed;
+}
+function flavorTokenCandidates(ch, flavorType) {
+  return ch.drawn.map((t,i)=>({t,i})).filter(x=>x.t===flavorType||x.t==='wild');
+}
+function isFlavorToken(t){return ['body','acidity','aroma','wild'].includes(t);}
+function immediateAccepts(effectKey,t){
+  // 실물 로스팅 보드 왼쪽 칸의 인쇄 조건을 따름
+  if(effectKey==='draw2extra') return t==='body'||t==='wild';
+  if(effectKey==='drawing5') return t==='aroma'||t==='wild';
+  if(effectKey==='redraw2'||effectKey==='cleanup') return isFlavorToken(t);
+  // 와일드 플레이버 획득 칸: 0/1 원두 또는 아무 플레이버
+  if(effectKey==='wildcard') return t==='r0'||t==='r1'||isFlavorToken(t);
+  return false;
+}
+function showImmediateCostModal(effectKey) {
+  const ch=G.challenge; ensureCoffeeChallengeState(ch);
+  if(ch.usedEffects[effectKey])return;
+  let excluded=new Set();
+  if(effectKey==='redraw2'){
+    const targets=ch.selectedDrawn.slice(0,2);
+    if(targets.length!==2){alert('먼저 재뽑을 토큰 2개를 선택하세요. 그 다음 별도의 토큰 1개를 액션 칸에 놓습니다.');return;}
+    excluded=new Set(targets);
+  }
+  const candidates=ch.drawn.map((t,i)=>({t,i})).filter(x=>!excluded.has(x.i)&&immediateAccepts(effectKey,x.t));
+  if(!candidates.length){alert('이 액션 칸에 놓을 수 있는 종류의 토큰이 없습니다.');return;}
+  const modal=document.querySelector('#modal'); modal.style.display='block';
+  modal.innerHTML=`<div class="modal-overlay"><div class="modal-box"><h3>📋 ${effectLabel(effectKey)} · 사용할 토큰 놓기</h3><p>해당 액션 칸에 인쇄된 종류와 맞는 토큰 1개를 놓고 즉시 효과를 사용합니다. 놓은 토큰은 이번 턴 로스팅 대상에서 빠집니다.</p><div class="drawn-area">${candidates.map(({t,i})=>`<button class="btn btn-ghost immediate-cost" data-cost-idx="${i}" style="padding:6px">${tokenHTML(t,'',38)}</button>`).join('')}</div><button class="btn btn-ghost" id="immediate-cancel" style="margin-top:12px">취소</button></div></div>`;
+  modal.querySelectorAll('.immediate-cost').forEach(b=>b.onclick=()=>{const idx=Number(b.dataset.costIdx);modal.style.display='none';modal.innerHTML='';useImmediateEffect(effectKey,idx)});
+  modal.querySelector('#immediate-cancel').onclick=()=>{modal.style.display='none';modal.innerHTML=''};
+}
+function consumeImmediateCost(ch,effectKey,costIdx){
+  const token=removeDrawnIndex(ch,costIdx);if(!token)return null;ch.leftBoard[effectKey]=token;ch.usedEffects[effectKey]=true;if(token==='r1'){ch.roastCounter=Math.max(0,ch.roastCounter-1);addLog('로스트 레벨 1 토큰을 보드에 놓아 로스트 카운터 -1');}addLog(`${effectLabel(effectKey)}: ${TOKEN_TYPES[token]?.label||token} 토큰을 액션 칸에 놓음`);return{token,index:costIdx};
+}
+function refundImmediateCost(ch,effectKey,record){
+  if(!record)return;const idx=Math.max(0,Math.min(record.index,ch.drawn.length));ch.drawn.splice(idx,0,record.token);if(record.token==='r1')ch.roastCounter++;ch.leftBoard[effectKey]=null;ch.usedEffects[effectKey]=false;
+}
+
+function useImmediateEffect(effectKey, costIdx) {
+  const ch = G.challenge; ensureCoffeeChallengeState(ch);
   if (ch.usedEffects[effectKey]) return;
-  ch.usedEffects[effectKey] = true;
+
+  // 액션 자체의 선행조건을 먼저 확인하고, 통과한 뒤에 비용 토큰을 보드에 놓습니다.
+  if(effectKey==='redraw2'){
+    const targets=ch.selectedDrawn.slice(0,2);
+    if(targets.length!==2 || targets.includes(costIdx)){alert('재뽑을 2개와 액션 칸에 놓을 토큰 1개는 서로 달라야 합니다.');return;}
+  }
+  if(effectKey==='draw2extra' && ch.bag.length<2){alert('백에 토큰이 2개 미만입니다.');return;}
+  if(effectKey==='drawing5' && ch.bag.length<5){alert('백에 토큰이 5개 미만입니다.');return;}
+  if(effectKey==='wildcard' && !ch.wildcardOnBoard){alert('와일드 플레이버 토큰을 이미 가져갔습니다.');return;}
+
+  const record=consumeImmediateCost(ch,effectKey,costIdx);if(!record)return;
 
   switch(effectKey) {
     case 'redraw2': {
       const sel = ch.selectedDrawn.slice(0, 2);
-      if (sel.length < 2) { alert('2개 선택 후 사용하세요.'); ch.usedEffects[effectKey] = false; return; }
       const removed = sel.map(i => ch.drawn[i]);
       ch.drawn = ch.drawn.filter((_, i) => !sel.includes(i));
       for (const t of removed) ch.bag.push(t);
-      // 2개 새로 뽑기
       for (let k = 0; k < 2 && ch.bag.length > 0; k++) {
         const idx = Math.floor(Math.random() * ch.bag.length);
         const t = ch.bag.splice(idx, 1)[0];
-        if (t === 'moisture') { addLog('수분 → 자동 제거'); k--; continue; }
+        if (t === 'moisture') { addLog('수분 → 자동 제거 (대체 토큰 없음)'); continue; }
         ch.drawn.push(t);
       }
       ch.selectedDrawn = [];
@@ -1193,35 +1293,32 @@ function useImmediateEffect(effectKey) {
       break;
     }
     case 'draw2extra': {
-      if (ch.bag.length < 2) { alert('백에 토큰이 2개 미만입니다.'); ch.usedEffects[effectKey] = false; return; }
       for (let k = 0; k < 2 && ch.bag.length > 0; k++) {
         const idx = Math.floor(Math.random() * ch.bag.length);
         const t = ch.bag.splice(idx, 1)[0];
-        if (t === 'moisture') { addLog('수분 → 자동 제거'); k--; continue; }
+        if (t === 'moisture') { addLog('수분 → 자동 제거 (대체 토큰 없음)'); continue; }
         ch.drawn.push(t);
       }
       addLog('+2 추가 뽑기 사용');
       break;
     }
     case 'drawing5': {
-      if (ch.bag.length < 5) { alert('백에 토큰이 5개 미만입니다.'); ch.usedEffects[effectKey] = false; return; }
       const five = [];
-      const bagCopy = [...ch.bag];
-      for (let k = 0; k < 5; k++) {
-        const idx = Math.floor(Math.random() * bagCopy.length);
-        five.push(bagCopy.splice(idx, 1)[0]);
+      for (let k = 0; k < 5 && ch.bag.length; k++) {
+        const idx = Math.floor(Math.random() * ch.bag.length);
+        five.push(ch.bag.splice(idx, 1)[0]);
       }
-      showDrawing5Modal(five);
-      break;
+      showDrawing5Modal(five,record);
+      return;
     }
     case 'cleanup': {
       const before = ch.drawn.length;
       ch.drawn = ch.drawn.filter(t => t !== 'smoke' && t !== 'reject' && t !== 'burnt');
+      ch.selectedDrawn=[];
       addLog(`청소 효과: ${before - ch.drawn.length}개 제거`);
       break;
     }
     case 'wildcard': {
-      if (!ch.wildcardOnBoard) { alert('이미 사용했습니다.'); ch.usedEffects[effectKey] = false; return; }
       ch.wildcardOnBoard = false;
       ch.wildcardInHand = true;
       ch.drawn.push('wild');
@@ -1232,7 +1329,7 @@ function useImmediateEffect(effectKey) {
   render();
 }
 
-function showDrawing5Modal(five) {
+function showDrawing5Modal(five,costRecord) {
   const modal = document.querySelector('#modal');
   modal.style.display = 'block';
   modal.innerHTML = `<div class="modal-overlay">
@@ -1270,9 +1367,8 @@ function showDrawing5Modal(five) {
     const ch = G.challenge;
     const toRemove = new Set(d5Selected);
     const toReturn = five.filter((_, i) => !toRemove.has(i));
-    for (const t of toReturn) {
-      if (t !== 'moisture') ch.bag.push(t);
-    }
+    // Drawing 5에서는 수분도 자동 제거하지 않음. 제거 대상으로 선택하지 않았다면 백으로 돌아갑니다.
+    for (const t of toReturn) ch.bag.push(t);
     // 제거된 토큰에 대해 카운터 조정
     for (const idx of d5Selected) {
       const t = five[idx];
@@ -1286,119 +1382,101 @@ function showDrawing5Modal(five) {
     render();
   };
   document.querySelector('#d5-cancel').onclick = () => {
-    G.challenge.usedEffects.drawing5 = false;
+    G.challenge.bag.push(...five);
+    refundImmediateCost(G.challenge,'drawing5',costRecord);
     modal.style.display = 'none'; modal.innerHTML = '';
     render();
   };
 }
 
+function rightReqMatches(req,flavorType){return req==='any'||req===flavorType;}
+function availableRightSpots(ch,flavorType){
+  const out=[];
+  for(const [key,row] of Object.entries(ch.rightBoardRows||{})){
+    if(ch.uniqueTokens?.[key])continue;
+    for(let i=0;i<2;i++) if(!row.slots[i]&&rightReqMatches(row.req[i],flavorType)) out.push({key,slot:i,req:row.req[i]});
+  }
+  return out;
+}
+function uniqueEffectName(key){return ({r3extra:'로스트 레벨 3',sweetness:'스위트니스',drawSelect:'뽑아서 선택',redraw2cup:'컵 2개 재뽑기',extraTray:'추가 트레이'})[key]||key;}
+function showRightBoardPlacementModal(flavorType){
+  const ch=G.challenge,spots=availableRightSpots(ch,flavorType),modal=document.querySelector('#modal');
+  if(!spots.length){alert('사용한 플레이버 토큰을 놓을 수 있는 오른쪽 보드 칸이 없습니다.');render();return;}
+  modal.style.display='block';
+  modal.innerHTML=`<div class="modal-overlay"><div class="modal-box"><h3>📋 사용한 ${flavorType==='body'?'Body':flavorType==='acidity'?'Acidity':'Aroma'} 토큰 배치</h3><p>플레이버 효과를 사용한 토큰은 오른쪽 보드의 알맞은 빈 칸에 놓아야 합니다. 원하는 칸을 고르세요.</p><div style="display:grid;gap:7px">${spots.map((sp,i)=>`<button class="btn btn-ghost right-place" data-sp="${i}">${uniqueEffectName(sp.key)} · ${sp.slot+1}번째 칸 (${sp.req==='any'?'아무 플레이버':sp.req})</button>`).join('')}</div></div></div>`;
+  modal.querySelectorAll('.right-place').forEach(b=>b.onclick=()=>{
+    const sp=spots[Number(b.dataset.sp)],row=ch.rightBoardRows[sp.key];
+    row.slots[sp.slot]=flavorType;
+    if(row.slots[0]&&row.slots[1]&&!ch.uniqueTokens[sp.key]){ch.uniqueTokens[sp.key]=true;addLog(`✨ ${uniqueEffectName(sp.key)} 유니크 효과 토큰 획득`);}
+    modal.style.display='none';modal.innerHTML='';render();
+  });
+}
+
 function showFlavorModal(flavorType) {
-  const ch = G.challenge;
+  const ch = G.challenge; ensureCoffeeChallengeState(ch);
+  const tokenCandidates=flavorTokenCandidates(ch,flavorType);
+  if(!tokenCandidates.length){alert('이 효과를 사용하려면 해당 플레이버 토큰 또는 와일드 플레이버 토큰이 이번 턴에 뽑혀 있어야 합니다.');return;}
+  if(!availableRightSpots(ch,flavorType).length){alert('효과 사용 후 토큰을 놓을 수 있는 오른쪽 보드 칸이 없습니다.');return;}
   const modal = document.querySelector('#modal');
   modal.style.display = 'block';
   const labelMap = { body:'Body - 농축', acidity:'Acidity - 보존', aroma:'Aroma - 분산' };
   const descMap = {
     body: '원두 2개(레벨 1~3, 합산 ≤4)를 1개로 합칩니다. (1+1=2, 1+2=3, 1+3=4, 2+2=4)',
     acidity: '원두 2개(레벨 0~4)를 로스팅 없이 백으로 보냅니다.',
-    aroma: '원두 1개(레벨 2~4)를 2개로 분리합니다. (2→1+1, 3→1+2 또는 1+2, 4→1+3 또는 2+2)',
+    aroma: '원두 1개(레벨 2~4)를 2개로 분리합니다.'
   };
-
-  const beanTokens = ch.drawn.filter(t => ['r0','r1','r2','r3','r4'].includes(t));
+  let flavorTokenIdx=tokenCandidates.find(x=>x.t===flavorType)?.i ?? tokenCandidates[0].i;
   const beanTokensHTML = ch.drawn.map((t, i) => {
-    const isBean = ['r0','r1','r2','r3','r4'].includes(t) || t === 'wild';
+    const isBean = ['r0','r1','r2','r3','r4'].includes(t);
     if (!isBean) return '';
     return `<span class="token ${tkCls(t)} clickable" data-fl-idx="${i}" style="width:44px;height:44px;font-size:16px">${tkSym(t)}</span>`;
   }).join('');
-
-  modal.innerHTML = `<div class="modal-overlay">
-    <div class="modal-box">
-      <h3>🌿 ${labelMap[flavorType]}</h3>
-      <p>${descMap[flavorType]}</p>
-      <p style="color:var(--text2)">대상 원두 토큰을 선택하세요:</p>
-      <div class="drawn-area" id="fl-tokens">${beanTokensHTML}</div>
+  modal.innerHTML = `<div class="modal-overlay"><div class="modal-box">
+      <h3>🌿 ${labelMap[flavorType]}</h3><p>${descMap[flavorType]}</p>
+      <p style="color:var(--text2)">① 사용할 플레이버 토큰:</p><div class="drawn-area">${tokenCandidates.map(({t,i})=>`<button class="btn btn-ghost flavor-cost ${i===flavorTokenIdx?'selected':''}" data-flavor-token-idx="${i}" style="padding:6px">${tokenHTML(t,'',38)}</button>`).join('')}</div>
+      <p style="color:var(--text2)">② 효과를 받을 원두 토큰:</p><div class="drawn-area" id="fl-tokens">${beanTokensHTML}</div>
       <div style="margin-top:8px;font-size:11px;color:var(--text2)">선택: <span id="fl-sel-count">0</span>개</div>
-      <div class="row" style="margin-top:12px">
-        <button class="btn btn-gold" id="fl-confirm">효과 적용</button>
-        <button class="btn btn-ghost" id="fl-cancel">취소</button>
-      </div>
-    </div>
-  </div>`;
-
+      <div class="row" style="margin-top:12px"><button class="btn btn-gold" id="fl-confirm">플레이버 토큰 사용 + 효과 적용</button><button class="btn btn-ghost" id="fl-cancel">취소</button></div>
+    </div></div>`;
   let flSelected = [];
   const updateFl = () => {
     document.querySelector('#fl-sel-count').textContent = flSelected.length;
-    document.querySelectorAll('[data-fl-idx]').forEach(el => {
-      el.classList.toggle('selected', flSelected.includes(Number(el.dataset.flIdx)));
-    });
+    document.querySelectorAll('[data-fl-idx]').forEach(el => el.classList.toggle('selected', flSelected.includes(Number(el.dataset.flIdx))));
+    document.querySelectorAll('[data-flavor-token-idx]').forEach(el=>el.classList.toggle('selected',Number(el.dataset.flavorTokenIdx)===flavorTokenIdx));
   };
-  document.querySelectorAll('[data-fl-idx]').forEach(el => {
-    el.onclick = () => {
-      const idx = Number(el.dataset.flIdx);
-      if (flSelected.includes(idx)) flSelected = flSelected.filter(i => i !== idx);
-      else flSelected.push(idx);
-      updateFl();
-    };
-  });
-  document.querySelector('#fl-confirm').onclick = () => {
-    applyFlavorEffect(flavorType, flSelected);
-    modal.style.display = 'none'; modal.innerHTML = '';
-  };
-  document.querySelector('#fl-cancel').onclick = () => {
-    modal.style.display = 'none'; modal.innerHTML = '';
-  };
+  document.querySelectorAll('[data-flavor-token-idx]').forEach(el=>el.onclick=()=>{flavorTokenIdx=Number(el.dataset.flavorTokenIdx);updateFl()});
+  document.querySelectorAll('[data-fl-idx]').forEach(el => {el.onclick = () => {const idx=Number(el.dataset.flIdx);if(flSelected.includes(idx))flSelected=flSelected.filter(i=>i!==idx);else flSelected.push(idx);updateFl();};});
+  document.querySelector('#fl-confirm').onclick = () => {const r=applyFlavorEffect(flavorType, flSelected, flavorTokenIdx);if(r===true){modal.style.display='none';modal.innerHTML='';}};
+  document.querySelector('#fl-cancel').onclick = () => {modal.style.display='none';modal.innerHTML='';};
+  updateFl();
 }
 
-function applyFlavorEffect(flavorType, selectedIdxs) {
-  const ch = G.challenge;
-  const selected = selectedIdxs.map(i => ({ idx: i, type: ch.drawn[i] }));
 
-  // 오른쪽 보드에 플레이버 토큰 배치
-  const slot = ch.rightBoard[flavorType];
-  const placeToken = flavorType; // body, acidity, aroma
-  if (!slot[0]) slot[0] = placeToken;
-  else if (!slot[1]) slot[1] = placeToken;
-
-  // 유니크 토큰 획득 체크
-  if (slot[0] && slot[1]) {
-    addLog(`✨ ${flavorType} 유니크 토큰 획득!`);
+function applyFlavorEffect(flavorType, selectedIdxs, flavorTokenIdx) {
+  const ch=G.challenge;ensureCoffeeChallengeState(ch);
+  const flavorToken=ch.drawn[flavorTokenIdx];
+  if(!(flavorToken===flavorType||flavorToken==='wild')){alert('해당 플레이버 토큰 또는 와일드 토큰을 선택하세요.');return false;}
+  const selected=selectedIdxs.map(i=>({idx:i,type:ch.drawn[i]}));
+  if(selectedIdxs.includes(flavorTokenIdx)){alert('효과용 플레이버 토큰과 대상 원두는 서로 다른 토큰이어야 합니다.');return false;}
+  if(flavorType==='body'){
+    if(selected.length!==2){alert('정확히 2개 선택');return false;}
+    const l1=TOKEN_TYPES[selected[0].type]?.roastLevel,l2=TOKEN_TYPES[selected[1].type]?.roastLevel,sum=(l1??-9)+(l2??-9);
+    if(sum>4||![1,2,3].includes(l1)||![1,2,3].includes(l2)){alert('조건 미충족: 레벨 1-3짜리 2개, 합계 ≤4');return false;}
+    removeDrawnIndices(ch,[...selectedIdxs,flavorTokenIdx]);ch.bag.push(`r${sum}`);addLog(`농축: ${selected[0].type}+${selected[1].type} → r${sum} · ${flavorToken==='wild'?'와일드':'Body'} 토큰 사용`);showRightBoardPlacementModal('body');return 'pending';
   }
-
-  if (flavorType === 'body') {
-    // 농축: 2개 → 1개
-    if (selected.length !== 2) { alert('정확히 2개 선택'); return; }
-    const l1 = TOKEN_TYPES[selected[0].type]?.roastLevel || 0;
-    const l2 = TOKEN_TYPES[selected[1].type]?.roastLevel || 0;
-    const sum = l1 + l2;
-    if (sum > 4 || !['r1','r2','r3'].includes(selected[0].type) || !['r1','r2','r3'].includes(selected[1].type)) {
-      alert('조건 미충족: 레벨 1-3짜리 2개, 합계 ≤4'); return;
-    }
-    const newType = `r${sum}`;
-    // 제거
-    ch.drawn = ch.drawn.filter((_, i) => !selectedIdxs.includes(i));
-    ch.bag.push(newType);
-    addLog(`농축: ${selected[0].type}+${selected[1].type} → ${newType} 백에 추가`);
-  } else if (flavorType === 'acidity') {
-    // 보존: 2개 로스팅 없이 백으로
-    if (selected.length !== 2) { alert('정확히 2개 선택'); return; }
-    ch.drawn = ch.drawn.filter((_, i) => !selectedIdxs.includes(i));
-    for (const s of selected) ch.bag.push(s.type);
-    addLog(`보존: ${selected.map(s=>s.type).join(',')} 그대로 백으로`);
-  } else if (flavorType === 'aroma') {
-    // 분산: 1개 → 2개
-    if (selected.length !== 1) { alert('1개 선택'); return; }
-    const lvl = TOKEN_TYPES[selected[0].type]?.roastLevel;
-    if (!lvl || lvl < 2 || lvl > 4) { alert('레벨 2-4 원두만 분산 가능'); return; }
-    // 분리 선택 모달
-    showDispersionModal(selected[0], () => {
-      ch.drawn = ch.drawn.filter((_, i) => !selectedIdxs.includes(i));
-      render();
-    });
-    return;
+  if(flavorType==='acidity'){
+    if(selected.length!==2||selected.some(x=>!['r0','r1','r2','r3','r4'].includes(x.type))){alert('원두 토큰 2개를 선택하세요.');return false;}
+    removeDrawnIndices(ch,[...selectedIdxs,flavorTokenIdx]);for(const x of selected)ch.bag.push(x.type);addLog(`보존: ${selected.map(x=>x.type).join(',')} 그대로 백으로 · ${flavorToken==='wild'?'와일드':'Acidity'} 토큰 사용`);showRightBoardPlacementModal('acidity');return 'pending';
   }
-  render();
+  if(flavorType==='aroma'){
+    if(selected.length!==1){alert('1개 선택');return false;}
+    const lvl=TOKEN_TYPES[selected[0].type]?.roastLevel;if(!lvl||lvl<2||lvl>4){alert('레벨 2-4 원두만 분산 가능');return false;}
+    showDispersionModal(selected[0],flavorTokenIdx,flavorToken);return 'pending';
+  }
+  return false;
 }
 
-function showDispersionModal(target, callback) {
+function showDispersionModal(target, flavorTokenIdx, flavorToken) {
   const ch = G.challenge;
   const lvl = TOKEN_TYPES[target.type]?.roastLevel;
   const modal = document.querySelector('#modal');
@@ -1431,10 +1509,9 @@ function showDispersionModal(target, callback) {
     btn.onclick = () => {
       const a = Number(btn.dataset.a), b = Number(btn.dataset.b);
       ch.bag.push(`r${a}`, `r${b}`);
-      ch.drawn.splice(target.idx, 1);
-      addLog(`분산: ${target.type} → r${a} + r${b} 백에 추가`);
-      modal.style.display = 'none'; modal.innerHTML = '';
-      callback();
+      removeDrawnIndices(ch,[target.idx,flavorTokenIdx]);
+      addLog(`분산: ${target.type} → r${a} + r${b} 백에 추가 · ${flavorToken==='wild'?'와일드':'Aroma'} 토큰 사용`);
+      showRightBoardPlacementModal('aroma');
     };
   });
   document.querySelector('#disp-cancel').onclick = () => {
@@ -1443,72 +1520,99 @@ function showDispersionModal(target, callback) {
 }
 
 // ── 컵 테스트 ──
-function renderCupTest(app) {
-  const ch = G.challenge;
-  ch.cup = [];
-  ch.tray = [];
-
-  // 특수 토큰 자리 설정 (상단 2칸)
-  if (ch.uniqueTokens.r3extra) ch.cup.push('r3_extra');
-  else ch.cup.push(null);
-  if (ch.uniqueTokens.sweetness) ch.cup.push('sweetness');
-  else ch.cup.push(null);
-
-  // 컵 채우기 시뮬레이션
-  let filledCount = ch.cup.filter(t => t !== null).length;
-  const maxTray = ch.uniqueTokens.extraTray ? 4 : 2;
-
-  const drawAndFill = () => {
-    if (filledCount >= 10 || ch.bag.length === 0) {
-      addLog(`컵 테스트 완료. 컵 토큰 수: ${ch.cup.filter(t=>t).length}`);
-      G.screen = 'scoring';
-      renderScoring(app);
-      return;
-    }
-    const idx = Math.floor(Math.random() * ch.bag.length);
-    const t = ch.bag.splice(idx, 1)[0];
-    if (t === 'moisture') {
-      addLog('수분 → 컵 테스트 중 제거');
-      drawAndFill();
-      return;
-    }
-    renderCupFillStep(app, t, () => drawAndFill());
-  };
-
-  // 즉시 컵 채우기 시작
-  addLog('컵 테스트 시작!');
-  fillCupAuto(ch, app);
+function drawCupTokens(ch,count){
+  const out=[];
+  while(out.length<count && ch.bag.length){
+    const idx=Math.floor(Math.random()*ch.bag.length),t=ch.bag.splice(idx,1)[0];
+    if(t==='moisture'){addLog('💧 컵 테스트: 수분 토큰 즉시 제거');continue;}
+    out.push(t);
+  }
+  return out;
 }
-
-function fillCupAuto(ch, app) {
-  // 간소화: 자동으로 최적 배치 (실제 게임은 플레이어 선택)
-  // 백 전체에서 토큰 뽑아 컵 채우기
-  const maxTray = ch.uniqueTokens.extraTray ? 4 : 2;
-  let cupCount = ch.cup.filter(t => t !== null).length;
-  const tray = [];
-
-  while (cupCount < 10 && ch.bag.length > 0) {
-    const idx = Math.floor(Math.random() * ch.bag.length);
-    const t = ch.bag.splice(idx, 1)[0];
-    if (t === 'moisture') continue;
-    // 트레이에 있으면 사용
-    if (tray.length < maxTray && ['smoke','reject','burnt','hard'].includes(t)) {
-      tray.push(t); // 나쁜 토큰은 트레이로
-    } else {
-      ch.cup.push(t);
-      cupCount++;
+function firstEmptyCup(ch){return ch.cup.findIndex(x=>!x);}
+function cupFilledCount(ch){return ch.cup.filter(Boolean).length;}
+function initCupTestState(ch){
+  ensureCoffeeChallengeState(ch);
+  if(ch.cupMode!=='idle')return;
+  ch.cup=Array(10).fill(null);ch.tray=[];ch.cupPending=[];ch.cupSelected=[];
+  if(ch.uniqueTokens.r3extra)ch.cup[0]='r3_extra';
+  if(ch.uniqueTokens.sweetness)ch.cup[1]='sweetness';
+  ch.drawSelectRemaining=ch.uniqueTokens.drawSelect?2:0;
+  ch.drawSelectUsed=false;ch.redraw2Used=false;ch.cupMode='filling';
+  addLog('☕ 컵 테스트 시작');
+}
+function finishCupIfNeeded(ch){
+  if(cupFilledCount(ch)>=10){
+    ch.cupPending=[];
+    ch.cupMode=ch.uniqueTokens.redraw2cup&&!ch.redraw2Used?'redraw_select':'ready_score';
+    return true;
+  }
+  if(!ch.bag.length&&!ch.cupPending.length){ch.cupMode='ready_score';return true;}
+  return false;
+}
+function renderCupTest(app){
+  const ch=G.challenge;initCupTestState(ch);finishCupIfNeeded(ch);
+  const maxTray=ch.uniqueTokens.extraTray?4:2;
+  const cupHTML=ch.cup.map((t,i)=>{
+    const special=t==='r3_extra'||t==='sweetness';
+    const cls=t==='r3_extra'?'tk-r3':t==='sweetness'?'tk-wild':t?tkCls(t):'';
+    const sym=t==='r3_extra'?'3★':t==='sweetness'?'S':t?tkSym(t):'·';
+    const selectable=ch.cupMode==='redraw_select'&&t&&!special;
+    return `<button class="cup-slot ${t?'filled':''} ${selectable?'clickable':''} ${ch.cupSelected.includes(i)?'selected':''}" data-cup-idx="${i}" ${selectable?'':'disabled'}>${t?`<span class="token ${cls}" style="width:42px;height:42px;font-size:13px">${sym}</span>`:'·'}</button>`;
+  }).join('');
+  const trayHTML=Array.from({length:maxTray},(_,i)=>{const t=ch.tray[i];return `<div class="cup-slot tray ${t?'filled':''}">${t?`<span class="token ${tkCls(t)}" style="width:38px;height:38px;font-size:12px">${tkSym(t)}</span>`:'·'}</div>`}).join('');
+  const pendingHTML=ch.cupPending.map((t,i)=>`<button class="token ${tkCls(t)} clickable ${ch.cupSelected.includes(i)?'selected':''}" data-pending-idx="${i}" style="width:46px;height:46px;font-size:15px">${tkSym(t)}</button>`).join('');
+  let action='';
+  if(ch.cupMode==='filling'){
+    if(ch.cupPending.length===0){
+      action=`<button class="btn btn-gold" id="cup-draw">${ch.drawSelectRemaining>0?'🎴 뽑아서 선택 ('+ch.drawSelectRemaining+'회 남음)':'🎲 토큰 1개 뽑기'}</button>`;
+    }else if(ch.drawSelectRemaining>0){
+      action=`<div class="notice">2개 중 컵에 넣을 1개를 선택하세요. 다른 1개는 백으로 돌아갑니다.</div>`;
+    }else{
+      action=`<div class="row"><button class="btn btn-primary" id="to-cup" ${firstEmptyCup(ch)<0?'disabled':''}>☕ 컵에 넣기</button><button class="btn btn-green" id="to-tray" ${ch.tray.length>=maxTray?'disabled':''}>▣ 트레이에 놓기</button></div>`;
     }
+  }else if(ch.cupMode==='redraw_select'){
+    action=`<div class="notice">유니크 효과: 컵에서 다시 뽑을 일반 토큰 2개를 선택하세요. 로스트 레벨 3/스위트니스 유니크 토큰은 선택할 수 없습니다.</div><button class="btn btn-gold" id="redraw-confirm" ${ch.cupSelected.length===2?'':'disabled'}>선택한 2개 재뽑기</button><button class="btn btn-ghost" id="skip-redraw">재뽑지 않고 채점</button>`;
+  }else if(ch.cupMode==='redraw_pick'){
+    action=`<div class="notice">새로 뽑힌 3개 중 컵에 넣을 2개를 선택하세요. 나머지 1개는 백으로 돌아갑니다.</div><button class="btn btn-gold" id="redraw-pick-confirm" ${ch.cupSelected.length===2?'':'disabled'}>2개 적용</button>`;
+  }else if(ch.cupMode==='ready_score'){
+    action=`<button class="btn btn-gold" id="cup-score">📊 채점하기</button>`;
   }
-  // 10개 미달이면 나머지를 컵으로
-  while (cupCount < 10 && tray.length > 0) {
-    ch.cup.push(tray.shift());
-    cupCount++;
-  }
-  ch.tray = tray;
+  app.innerHTML=`<div class="card"><div class="card-title">☕ 컵 테스트 — ${ch.bean.name}</div>
+    <div class="notice">백에서 토큰을 한 번에 1개씩 뽑아 컵 또는 트레이에 놓습니다. 컵 10칸이 차면 테스트가 끝납니다.</div>
+    <div class="cup-layout"><div><div style="font-size:11px;color:var(--text2);margin-bottom:6px">컵 (${cupFilledCount(ch)}/10)</div><div class="cup-grid">${cupHTML}</div></div><div><div style="font-size:11px;color:var(--text2);margin-bottom:6px">트레이 (${ch.tray.length}/${maxTray})</div><div class="tray-row">${trayHTML}</div></div></div>
+    ${ch.cupPending.length?`<div style="margin-top:12px"><div class="card-title">현재 뽑힌 토큰</div><div class="drawn-area">${pendingHTML}</div></div>`:''}
+    <div class="row" style="margin-top:14px">${action}</div>
+    <div class="card" style="margin-top:12px;padding:9px"><div class="card-title">획득한 유니크 효과</div><div style="font-size:10px;color:var(--text2)">${Object.entries(ch.uniqueTokens).filter(([,v])=>v).map(([k])=>uniqueEffectName(k)).join(' · ')||'없음'}</div></div>
+    <div class="card" style="margin-top:12px;padding:9px"><div class="card-title">📋 로그</div><div class="log-box">${logs.map(l=>`<div>${l}</div>`).join('')}</div></div>
+  </div>`;
 
-  addLog(`컵 채움: ${ch.cup.filter(t=>t).length}개 / 트레이: ${ch.tray.length}개`);
-  G.screen = 'scoring';
-  renderScoring(app);
+  const q=s=>document.querySelector(s);
+  q('#cup-draw')?.addEventListener('click',()=>{
+    if(ch.drawSelectRemaining>0){ch.cupPending=drawCupTokens(ch,2);ch.cupSelected=[];if(!ch.cupPending.length){finishCupIfNeeded(ch);}render();return;}
+    ch.cupPending=drawCupTokens(ch,1);ch.cupSelected=[];if(!ch.cupPending.length)finishCupIfNeeded(ch);render();
+  });
+  document.querySelectorAll('[data-pending-idx]').forEach(el=>el.onclick=()=>{
+    const i=Number(el.dataset.pendingIdx);
+    if(ch.cupMode==='redraw_pick'){
+      ch.cupSelected=ch.cupSelected.includes(i)?ch.cupSelected.filter(x=>x!==i):(ch.cupSelected.length<2?[...ch.cupSelected,i]:ch.cupSelected);
+    }else if(ch.drawSelectRemaining>0){
+      const chosen=ch.cupPending[i],other=ch.cupPending.filter((_,j)=>j!==i);const pos=firstEmptyCup(ch);
+      if(pos>=0)ch.cup[pos]=chosen;ch.bag.push(...other);ch.cupPending=[];ch.drawSelectRemaining--;if(ch.drawSelectRemaining===0)ch.drawSelectUsed=true;addLog(`뽑아서 선택: ${TOKEN_TYPES[chosen]?.label||chosen} 컵에 배치`);finishCupIfNeeded(ch);
+    }
+    render();
+  });
+  q('#to-cup')?.addEventListener('click',()=>{const pos=firstEmptyCup(ch);if(pos<0||!ch.cupPending.length)return;ch.cup[pos]=ch.cupPending.shift();addLog('토큰을 컵에 배치');finishCupIfNeeded(ch);render();});
+  q('#to-tray')?.addEventListener('click',()=>{if(ch.tray.length>=maxTray||!ch.cupPending.length)return;ch.tray.push(ch.cupPending.shift());addLog('토큰을 트레이에 배치');finishCupIfNeeded(ch);render();});
+  document.querySelectorAll('[data-cup-idx]').forEach(el=>el.onclick=()=>{if(ch.cupMode!=='redraw_select')return;const i=Number(el.dataset.cupIdx),t=ch.cup[i];if(!t||t==='r3_extra'||t==='sweetness')return;ch.cupSelected=ch.cupSelected.includes(i)?ch.cupSelected.filter(x=>x!==i):(ch.cupSelected.length<2?[...ch.cupSelected,i]:ch.cupSelected);render();});
+  q('#redraw-confirm')?.addEventListener('click',()=>{
+    if(ch.cupSelected.length!==2)return;const idxs=[...ch.cupSelected];for(const i of idxs){ch.bag.push(ch.cup[i]);ch.cup[i]=null;}ch.cupPending=drawCupTokens(ch,3);ch.cupSelected=[];ch.cupMode='redraw_pick';ch.redraw2Used=true;addLog('컵 2개 재뽑기: 기존 2개를 백으로 반환하고 3개 뽑음');render();
+  });
+  q('#skip-redraw')?.addEventListener('click',()=>{ch.cupMode='ready_score';ch.cupSelected=[];render();});
+  q('#redraw-pick-confirm')?.addEventListener('click',()=>{
+    if(ch.cupSelected.length!==2)return;const selected=new Set(ch.cupSelected),keep=ch.cupPending.filter((_,i)=>selected.has(i)),back=ch.cupPending.filter((_,i)=>!selected.has(i));for(const t of keep){const pos=firstEmptyCup(ch);if(pos>=0)ch.cup[pos]=t;}ch.bag.push(...back);ch.cupPending=[];ch.cupSelected=[];ch.cupMode='ready_score';addLog('컵 2개 재뽑기 완료');render();
+  });
+  q('#cup-score')?.addEventListener('click',()=>{G.screen='scoring';ch.phase='scoring';renderScoring(app);});
 }
 
 // ── 채점 화면 ──
@@ -1517,9 +1621,9 @@ function renderScoring(app) {
   const score = calcScore(ch);
   ch.roundScore = score;
 
-  // 채점 결과 저장
+  // 채점 결과 저장 (재렌더/복구 시 중복 기록 방지)
   if (!G.scores) G.scores = [];
-  G.scores.push({ bean: ch.bean, score });
+  if (!ch.scoreRecorded) { G.scores.push({ bean: ch.bean, score }); ch.scoreRecorded = true; }
 
   const cupHTML = ch.cup.map((t, i) => {
     if (!t) return `<div class="cup-slot" style="opacity:.3">·</div>`;
@@ -1674,7 +1778,7 @@ function boardmateCoffeeSave(){
 }
 function boardmateCoffeeRestore(){
   const raw=localStorage.getItem(BOARDMATE_COFFEE_SAVE);if(!raw)return false;
-  const d=JSON.parse(raw);if(!d?.G)return false;G=d.G;logs=Array.isArray(d.logs)?d.logs:[];render();return true;
+  const d=JSON.parse(raw);if(!d?.G)return false;G=d.G;logs=Array.isArray(d.logs)?d.logs:[];if(G.challenge)ensureCoffeeChallengeState(G.challenge);render();return true;
 }
 function boardmateCoffeeAbandon(){
   __coffeeAbandon=true;localStorage.removeItem(BOARDMATE_COFFEE_SAVE);G=null;logs=[];location.reload();
