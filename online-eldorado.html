@@ -58,9 +58,9 @@ button,input{font:inherit} button{cursor:pointer} button:disabled{opacity:.45;cu
 .assembled-tile .tile-head{display:flex;justify-content:space-between;gap:6px;align-items:start}.assembled-tile .tile-name{font-size:.8rem;font-weight:950}
 .assembled-tile .tile-controls{display:flex;gap:4px;flex-wrap:wrap;margin-top:7px}.assembled-tile .tile-controls .btn{padding:4px 6px;font-size:.68rem}.assembled-tile .tile-mini{margin-top:7px}
 .assembly-end{flex:0 0 76px;display:grid;place-items:center;text-align:center;border:2px dashed #cfc5a9;border-radius:14px;background:#fff8dc;font-size:.72rem;font-weight:950;color:#6e5b28;padding:8px}
-.assembly-start{background:#f8f0cf}.builder-summary{display:flex;gap:7px;flex-wrap:wrap}.builder-summary .pill{font-size:.72rem}.builder-section-title{font-weight:950;font-size:.9rem;margin-bottom:7px}.wide-modal{width:min(920px,96vw)}
+.assembly-start{background:#f8f0cf}.builder-summary{display:flex;gap:7px;flex-wrap:wrap}.builder-summary .pill{font-size:.72rem}.builder-section-title{font-weight:950;font-size:.9rem;margin-bottom:7px}.ref-terrain-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:7px}.ref-terrain-card{margin:0;border:1px solid #ddd4bf;border-radius:12px;background:#f7f3e7;padding:5px}.ref-terrain-card .terrain-ref{display:block;width:100%;aspect-ratio:1.08/1;border-radius:8px;background:#e6ded0;overflow:hidden}.ref-terrain-card figcaption{font-size:.62rem;font-weight:850;color:#667168;text-align:center;margin-top:4px}.wide-modal{width:min(920px,96vw)}
 @media(max-width:1100px){.layout{grid-template-columns:1fr}.right{grid-template-columns:1fr 1fr}.right .hand-card,.right .control-card{grid-column:1/-1}}
-@media(max-width:720px){.app{padding:8px}.right{grid-template-columns:1fr}.market-grid,.reserve-grid,.modal-grid{grid-template-columns:repeat(2,1fr)}.tile-palette{grid-template-columns:repeat(2,1fr)}.player-chip{min-width:145px}.board-viewport{padding:6px}.topbar{align-items:flex-start}.hand-row .exp-card{flex-basis:118px}}
+@media(max-width:720px){.app{padding:8px}.right{grid-template-columns:1fr}.market-grid,.reserve-grid,.modal-grid{grid-template-columns:repeat(2,1fr)}.tile-palette{grid-template-columns:repeat(2,1fr)}.ref-terrain-grid{grid-template-columns:repeat(2,1fr)}.player-chip{min-width:145px}.board-viewport{padding:6px}.topbar{align-items:flex-start}.hand-row .exp-card{flex-basis:118px}}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="./config.js"></script>
@@ -405,7 +405,7 @@ function render(){
       <section class="card"><div class="section-title"><h3>🛒 시장</h3><span class="tiny">기본 18종 + 추가 9종 · 빈 칸이 생기면 예비 시장 구매 가능</span></div><div class="market-grid">${state.marketSlots.map((id,i)=>marketSlotHtml(id,i)).join('')}</div><details class="reserve"><summary>예비 시장 12종 보기</summary><div class="reserve-grid">${reserveIds().map(id=>marketCardHtml(id,'reserve')).join('')}</div></details></section>
       <section class="card hand-card"><div class="section-title"><h3>🃏 내 손패</h3><span class="tiny">덱 ${ownPlayer()?.deck.length||0} · 버림 ${ownPlayer()?.discard.length||0} · 제거 ${ownPlayer()?.trash.length||0}</span></div><div class="hand-row" id="handRow">${handHtml()}</div></section>
       <section class="card control-card"><div class="section-title"><h3>🎮 행동</h3><span class="tiny">${mine?'카드를 선택하세요':'상대 차례입니다'}</span></div>${controlHtml()}</section>
-      <div class="rule-note">팬메이드 웹 구현입니다. 상업용 카드/보드 이미지는 포함하지 않았습니다. 기존 카드·이동·시장·봉쇄선·Supabase 저장 로직은 유지하고, 게임 시작 전 방장이 기본 지형 타일을 조립해 맵을 만들 수 있도록 추가했습니다.</div>
+      <div class="rule-note">팬메이드 웹 구현입니다. 업로드된 실물 지형 타일 이미지는 맵 조립 참고용으로만 로컬 포함했습니다. 기존 카드·이동·시장·봉쇄선·Supabase 저장 로직은 유지하고, 게임 시작 전 방장이 기본 지형 타일을 조립해 맵을 만들 수 있습니다.</div>
     </div></div><div class="footer">The Quest for El Dorado의 상표/원작 권리는 각 권리자에게 있습니다. 이 파일은 모임 내 플레이용 비공식 구현입니다.</div>`;
   renderBoard();bindAll();
 }
@@ -702,15 +702,42 @@ function tileMiniHtml(part){
   }
   return html+'</div>';
 }
+
+function tileSvg(rows,title='타일 참고'){
+  const W=180,H=154,cw=36,ch=28;
+  const fill=v=>v==='G'?'#6ea44b':v==='Y'?'#e1b347':v==='B'?'#58a8c6':v==='X'?'#8e948d':v==='R'?'#c85f4e':v==='M'?'#48514b':'#d8d4c6';
+  let cells='';
+  for(let r=0;r<rows.length;r++)for(let c=0;c<rows[r].length;c++){
+    const code=rows[r][c]||'',k=(code[0]||'E');
+    const x=18+c*cw+(r%2?10:0),y=20+r*ch;
+    cells+=`<path d="M${x+9},${y}H${x+27}L${x+36},${y+14}L${x+27},${y+28}H${x+9}L${x},${y+14}Z" fill="${fill(k)}" stroke="#f6f2e9" stroke-width="2"/>`;
+    if(code&&k!=='M'){cells+=`<text x="${x+18}" y="${y+18}" text-anchor="middle" font-size="10" font-weight="900" fill="${k==='Y'?'#594112':'#fff'}">${code.slice(1)||''}</text>`}
+    if(k==='M'){cells+=`<text x="${x+18}" y="${y+18}" text-anchor="middle" font-size="11" font-weight="900" fill="#fff">M</text>`}
+  }
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(title)} 타일 참고"><defs><linearGradient id="bgTile" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f4f0e4"/><stop offset="1" stop-color="#e8e0cd"/></linearGradient></defs><rect width="${W}" height="${H}" rx="12" fill="url(#bgTile)"/><text x="12" y="15" font-size="10" font-weight="900" fill="#6a6558">REFERENCE TILE</text>${cells}</svg>`;
+}
+
+function eldoradoTerrainReferenceHTML(){
+  const refs=[
+    {title:'정글 길',tag:'실물 분위기 참고',id:'jungle'},
+    {title:'강줄기',tag:'강 중심',id:'river'},
+    {title:'황금 마을',tag:'마을 중심',id:'village'},
+    {title:'산등성이',tag:'우회로',id:'ridge'},
+    {title:'베이스캠프',tag:'카드 제거',id:'camp'}
+  ];
+  const fig=(ref)=>{const tile=MAP_TILES[ref.id];return `<figure class="ref-terrain-card"><div class="terrain-ref">${tileSvg(tile.rows, ref.title)}</div><figcaption>${esc(ref.title)}<br><span class="tiny">${esc(ref.tag)}</span></figcaption></figure>`};
+  return `<div class="ref-terrain-grid">${refs.map(fig).join('')}</div>`;
+}
 function showMapPicker(){
   if(room?.host_id!==me?.user_id){toast('방장만 맵을 설정할 수 있습니다.');return}
   const enabled=canChangeMap();
   let draft=normalizeTileLayout(state.mapId==='custom'?state.mapLayout:DEFAULT_TILE_LAYOUT);
   const mount=()=>modal(`<div class="map-builder">
-    <div><h2>🗺️ 맵 설정 <span class="pill">ALPHA</span></h2><div class="builder-help">${enabled?'원본 버전의 프리셋 맵 선택 기능은 유지됩니다. 또는 아래 기본 지형 타일 <b>3~5개</b>를 골라 순서를 바꾸고 180° 회전해 사용자 맵을 만들 수 있습니다.':'맵 변경은 첫 행동 전에만 가능합니다. 현재 게임 상태는 변경되지 않습니다.'}</div></div>
-    <div><div class="builder-section-title">① 기존 프리셋 맵</div><div class="modal-grid">${PRESET_MAP_IDS.map(id=>{const pm=MAPS[id];return `<button class="choice-card ${state.mapId===id?'active':''}" data-preset-map="${id}" ${!enabled?'disabled':''}><b>${esc(pm.name)}</b><br><span class="tiny">${esc(pm.difficulty)} · ${pm.gates.length}개 봉쇄선</span></button>`}).join('')}</div></div>
-    <div><div class="builder-section-title">② 사용자 조립 타일 추가</div><div class="tile-palette">${Object.entries(MAP_TILES).map(([id,t])=>{const used=draft.some(x=>x.id===id);return `<button class="tile-option" data-add-tile="${id}" ${!enabled||used||draft.length>=MAX_MAP_TILES?'disabled':''}><b>${esc(t.name)}</b>${tileMiniHtml({id,flip:false})}<span class="tiny">${esc(t.tag)} · ${used?'사용 중':'추가'}</span></button>`}).join('')}</div></div>
-    <div><div class="builder-section-title">③ 조립 맵 순서 / 방향 조정</div><div class="assembly-strip"><div class="assembly-end assembly-start">START<br>출발지</div>${draft.map((part,i)=>`<div class="assembly-arrow">→</div><div class="assembled-tile"><div class="tile-head"><span class="tile-name">${i+1}. ${esc(MAP_TILES[part.id]?.name||part.id)}</span><span class="tiny">${part.flip?'180°':''}</span></div>${tileMiniHtml(part)}<div class="tile-controls"><button class="btn" data-left="${i}" ${!enabled||i===0?'disabled':''}>←</button><button class="btn" data-right="${i}" ${!enabled||i===draft.length-1?'disabled':''}>→</button><button class="btn" data-flip="${i}" ${!enabled?'disabled':''}>↻ 180°</button><button class="btn danger" data-remove="${i}" ${!enabled||draft.length<=MIN_MAP_TILES?'disabled':''}>삭제</button></div></div>`).join('')}<div class="assembly-arrow">→</div><div class="assembly-end">EL DORADO<br>도착지</div></div></div>
+    <div><h2>🗺️ 맵 설정 <span class="pill">ALPHA</span></h2><div class="builder-help">${enabled?'업로드된 실물 지형 이미지를 참고하면서 기존 프리셋을 선택하거나, 기본 지형 타일 <b>3~5개</b>를 골라 순서를 바꾸고 180° 회전해 사용자 맵을 만들 수 있습니다.':'맵 변경은 첫 행동 전에만 가능합니다. 현재 게임 상태는 변경되지 않습니다.'}</div></div>
+    <div><div class="builder-section-title">① 실물 지형 타일 레퍼런스</div>${eldoradoTerrainReferenceHTML()}<div class="tiny" style="margin-top:6px">이미지는 조립 방향과 지형 분포 참고용이며, 클릭 판정은 기존 BoardMate 맵 데이터로 처리합니다.</div></div>
+    <div><div class="builder-section-title">② 기존 프리셋 맵</div><div class="modal-grid">${PRESET_MAP_IDS.map(id=>{const pm=MAPS[id];return `<button class="choice-card ${state.mapId===id?'active':''}" data-preset-map="${id}" ${!enabled?'disabled':''}><b>${esc(pm.name)}</b><br><span class="tiny">${esc(pm.difficulty)} · ${pm.gates.length}개 봉쇄선</span></button>`}).join('')}</div></div>
+    <div><div class="builder-section-title">③ 사용자 조립 타일 추가</div><div class="tile-palette">${Object.entries(MAP_TILES).map(([id,t])=>{const used=draft.some(x=>x.id===id);return `<button class="tile-option" data-add-tile="${id}" ${!enabled||used||draft.length>=MAX_MAP_TILES?'disabled':''}><b>${esc(t.name)}</b>${tileMiniHtml({id,flip:false})}<span class="tiny">${esc(t.tag)} · ${used?'사용 중':'추가'}</span></button>`}).join('')}</div></div>
+    <div><div class="builder-section-title">④ 조립 맵 순서 / 방향 조정</div><div class="assembly-strip"><div class="assembly-end assembly-start">START<br>출발지</div>${draft.map((part,i)=>`<div class="assembly-arrow">→</div><div class="assembled-tile"><div class="tile-head"><span class="tile-name">${i+1}. ${esc(MAP_TILES[part.id]?.name||part.id)}</span><span class="tiny">${part.flip?'180°':''}</span></div>${tileMiniHtml(part)}<div class="tile-controls"><button class="btn" data-left="${i}" ${!enabled||i===0?'disabled':''}>←</button><button class="btn" data-right="${i}" ${!enabled||i===draft.length-1?'disabled':''}>→</button><button class="btn" data-flip="${i}" ${!enabled?'disabled':''}>↻ 180°</button><button class="btn danger" data-remove="${i}" ${!enabled||draft.length<=MIN_MAP_TILES?'disabled':''}>삭제</button></div></div>`).join('')}<div class="assembly-arrow">→</div><div class="assembly-end">EL DORADO<br>도착지</div></div></div>
     <div class="builder-summary"><span class="pill">타일 ${draft.length}개</span><span class="pill">봉쇄선 ${Math.max(0,draft.length-1)}개</span><span class="pill">맵 길이 ${2+draft.reduce((n,x)=>n+tileWidth(x.id),0)}열</span></div>
     <div class="modal-actions"><button class="btn" id="resetTiles" ${!enabled?'disabled':''}>기본 조합</button><button class="btn" id="randomTiles" ${!enabled?'disabled':''}>무작위 조합</button><button class="btn" data-close>닫기</button><button class="btn primary" id="applyTiles" ${!enabled?'disabled':''}>이 맵으로 적용</button></div>
   </div>`,m=>{
@@ -754,7 +781,7 @@ function applyTileMap(layout){
 }
 
 function showRules(){
-  modal(`<h2>🧭 규칙 요약</h2><ul style="line-height:1.7;color:#526057"><li>각자 시작 덱 8장(선원 1, 탐험가 3, 여행가 4)에서 손패 4장으로 시작합니다.</li><li>이동 카드는 같은 색 지형을 힘만큼 연속 이동할 수 있으며, 한 칸의 높은 요구치를 여러 카드로 합칠 수 없습니다.</li><li>🪨 돌무더기는 표시된 장수만큼 아무 카드를 사용합니다. 🏕 베이스캠프는 그 장수만큼 카드를 게임에서 제거합니다.</li><li>한 턴에 카드 1장만 구매합니다. 시장 칸이 비어 있으면 예비 시장 카드도 살 수 있고, 남은 같은 종류 카드가 빈 칸으로 들어옵니다.</li><li><b>추가 카드:</b> 특제 노, 정찰자, 식물학자, 선교사, 막일꾼, 등고선 지도, 길 안내도, 쌍안경, 전보를 예비 시장에 추가했습니다.</li><li><b>맵 설정:</b> 기존 프리셋 맵을 그대로 선택할 수 있고, 방장은 첫 행동 전에 기본 지형 타일 3~5개를 조립해 사용자 맵도 만들 수 있습니다. 조립 결과는 방 상태에 함께 저장되어 모든 참가자에게 동일하게 동기화됩니다.</li><li>2인전은 각자 말 2개가 모두 도착해야 합니다. 3–4인전은 말 1개가 도착하면 최종 라운드가 발동합니다.</li><li>동률이면 획득 봉쇄 수, 그래도 같으면 가장 높은 봉쇄 수치로 비교합니다.</li></ul><div class="modal-actions"><button class="btn primary" data-close>닫기</button></div>`,m=>m.querySelector('[data-close]').onclick=closeModal);
+  modal(`<h2>🧭 규칙 요약</h2><ul style="line-height:1.7;color:#526057"><li>각자 시작 덱 8장(선원 1, 탐험가 3, 여행가 4)에서 손패 4장으로 시작합니다.</li><li>이동 카드는 같은 색 지형을 힘만큼 연속 이동할 수 있으며, 한 칸의 높은 요구치를 여러 카드로 합칠 수 없습니다.</li><li>🪨 돌무더기는 표시된 장수만큼 아무 카드를 사용합니다. 🏕 베이스캠프는 그 장수만큼 카드를 게임에서 제거합니다.</li><li>한 턴에 카드 1장만 구매합니다. 시장 칸이 비어 있으면 예비 시장 카드도 살 수 있고, 남은 같은 종류 카드가 빈 칸으로 들어옵니다.</li><li><b>추가 카드:</b> 특제 노, 정찰자, 식물학자, 선교사, 막일꾼, 등고선 지도, 길 안내도, 쌍안경, 전보를 예비 시장에 추가했습니다.</li><li><b>맵 설정:</b> 업로드된 실물 지형 타일 레퍼런스를 보면서 기존 프리셋 맵을 선택하거나, 방장이 첫 행동 전에 기본 지형 타일 3~5개를 조립해 사용자 맵을 만들 수 있습니다. 조립 결과는 방 상태에 함께 저장되어 모든 참가자에게 동일하게 동기화됩니다.</li><li>2인전은 각자 말 2개가 모두 도착해야 합니다. 3–4인전은 말 1개가 도착하면 최종 라운드가 발동합니다.</li><li>동률이면 획득 봉쇄 수, 그래도 같으면 가장 높은 봉쇄 수치로 비교합니다.</li></ul><div class="modal-actions"><button class="btn primary" data-close>닫기</button></div>`,m=>m.querySelector('[data-close]').onclick=closeModal);
 }
 function modal(inner,onMount,modalClass=''){closeModal();const ov=document.createElement('div');ov.className='overlay';ov.id='modalOverlay';ov.innerHTML=`<div class="modal ${modalClass}">${inner}</div>`;document.body.appendChild(ov);onMount?.(ov.querySelector('.modal'))}
 function closeModal(){$('#modalOverlay')?.remove()}
