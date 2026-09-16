@@ -301,7 +301,7 @@ const MONSTERS = [
 
 // 아이템 정의
 const ITEMS = [
-  { id:'torch',  emoji:'🔦', name:'횃불',     desc:'공격력 3 미만 몬스터 무력화 (고블린·스켈레톤·오크)' },
+  { id:'torch',  emoji:'🔦', name:'횃불',     desc:'공격력 3 이하 몬스터 무력화 (고블린·스켈레톤·오크)' },
   { id:'grail',  emoji:'🏆', name:'성배',     desc:'짝수 번호 언데드 무력화 (스켈레톤·뱀파이어·리치)' },
   { id:'lance',  emoji:'🗡️', name:'창',       desc:'드래곤 무력화' },
   { id:'sword',  emoji:'⚔️', name:'용사의 검',desc:'입장 전 몬스터 종류 1종 선언 → 해당 종류 전체 무력화' },
@@ -318,9 +318,8 @@ const shuffle = a => { for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.ran
 const esc2    = s => String(s).replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));
 
 function itemBlocks(monster, equippedItems) {
-  // torch: power < 3 → 고블린(1), 스켈레톤(2) — 실제 룰: torch = 공격력 2 이하
-  // 룰북 v1.1: torch = power < 3 (1,2 해당)
-  if (equippedItems.includes('torch') && monster.power < 3) return true;
+  // 업로드된 장비 이미지 기준: 횃불은 공격력 3 이하 몬스터(고블린·스켈레톤·오크)를 무력화
+  if (equippedItems.includes('torch') && monster.power <= 3) return true;
   if (equippedItems.includes('grail') && monster.icons.includes('grail')) return true;
   if (equippedItems.includes('lance') && monster.icons.includes('lance')) return true;
   return false;

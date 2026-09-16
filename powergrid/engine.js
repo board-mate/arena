@@ -31,8 +31,8 @@
     return PAYOUT_TABLE[Math.max(0, Math.min(20, cities))];
   }
 
-  var STEP2_TRIGGER = { 2: 7, 3: 7, 4: 7, 5: 7, 6: 6 };
-  var END_GAME_CITIES = { 2: 18, 3: 17, 4: 17, 5: 15, 6: 14 };
+  var STEP2_TRIGGER = { 2: 10, 3: 7, 4: 7, 5: 7, 6: 6 };
+  var END_GAME_CITIES = { 2: 21, 3: 17, 4: 17, 5: 15, 6: 14 };
   var REGIONS_TO_USE = { 2: 3, 3: 3, 4: 4, 5: 5, 6: 5 };
 
   // Resource Supply Table (coal/oil/garbage/uranium) [step1, step2, step3]
@@ -111,10 +111,10 @@
   var SOCKET_NUMBERS = ALL_PLANT_NUMBERS.filter(function (n) { return n > 15; });
 
   var REMOVE_TABLE = { // [plugRemove, socketRemove]
-    2: [1, 5], 3: [2, 6], 4: [1, 3], 5: [0, 0], 6: [0, 0]
+    2: [2, 6], 3: [2, 6], 4: [1, 3], 5: [0, 0], 6: [0, 0]
   };
 
-  var MAX_PLANTS = function () { return 3; };
+  var MAX_PLANTS = function (numPlayers) { return Number(numPlayers) === 2 ? 4 : 3; };
 
   // ============================================================
   // 유틸리티
@@ -471,7 +471,7 @@
   function newGame(opts) {
     var numPlayers = opts.numPlayers;
     var seatNames = opts.seatNames; // string[]
-    if (!Number.isInteger(numPlayers) || numPlayers < 3 || numPlayers > 6) throw new Error('파워그리드는 3~6인 다인플만 지원합니다.');
+    if (!Number.isInteger(numPlayers) || numPlayers < 2 || numPlayers > 6) throw new Error('파워그리드는 2~6인 다인플을 지원합니다.');
     if (!seatNames || seatNames.length < numPlayers) throw new Error('플레이어 이름이 부족합니다.');
     var rng = mulberry32(opts.seed != null ? opts.seed : Date.now() % 2147483647);
 

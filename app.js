@@ -20,7 +20,7 @@ const unlockAlarmAudio=(...a)=>__alarmApi.unlockAlarmAudio(...a);
 window.__boardmateAppStarted=true;
 (async()=>{
   try{
-    const mod=await import('./alarm.js?v=11.4.66');
+    const mod=await import('./alarm.js?v=11.4.67');
     for(const key of Object.keys(__alarmApi)) if(typeof mod[key]==='function') __alarmApi[key]=mod[key];
     window.dispatchEvent(new Event('boardmate:alarm-ready'));
   }catch(err){
@@ -81,7 +81,7 @@ function gameInfo(game){
     fantasyrealms:{name:'판타지 왕국',icon:'🏰',min:3,max:6,page:'online-fantasy-realms.html'},
     fantasyrealmsgreek:{name:'판타지 왕국: 그리스의 전설들',icon:'🏛️',min:3,max:6,page:'online-fantasy-realms-greek.html'},
     plakoro:{name:'프라코로 포켓몬',icon:'🎲',min:2,max:2,page:'online-plakoro.html'},
-    powergrid:{name:'파워그리드',icon:'🔌',min:3,max:6,page:'online-powergrid.html'},
+    powergrid:{name:'파워그리드',icon:'🔌',min:2,max:6,page:'online-powergrid.html'},
     quacks:{name:'돌팔이 약장수',icon:'🧪',min:2,max:4,page:'online-quacks.html',mode:'realtime',tier:'alpha'},
     mandom:{name:'맨덤의 던전',icon:'⚔️',min:2,max:4,page:'online-mandom.html'},
     planetx:{name:'행성 X를 찾아서',icon:'🪐',min:2,max:4,page:'online-planetx.html'},
@@ -131,7 +131,7 @@ function ensureSiteFeatures(){
   if(!document.querySelector('link[rel="manifest"]')){const l=document.createElement('link');l.rel='manifest';l.href='./manifest.webmanifest';document.head.appendChild(l);}
   if(!document.querySelector('meta[name="theme-color"]')){const m=document.createElement('meta');m.name='theme-color';m.content='#141922';document.head.appendChild(m);}
   if(!document.querySelector('link[rel="manifest"]')){const l=document.createElement('link');l.rel='manifest';l.href='./manifest.webmanifest';document.head.appendChild(l);}
-  if('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js?v=11.4.66',{scope:'./'}).catch(()=>{});
+  if('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js?v=11.4.67',{scope:'./'}).catch(()=>{});
 }
 async function installBoardMate(){
   if(deferredInstallPrompt){
@@ -498,7 +498,7 @@ async function renderRoom(roomId){
   let touchBusy=false;
   const touch=async()=>{if(touchBusy)return;touchBusy=true;try{await callRpc('touch_boardmate_room',{p_token:memberToken(),p_room_id:roomId});}catch{}finally{touchBusy=false;}};
   await touch();
-  const draw=async()=>{data=await load();const {room,members}=data,isHost=room.host_id===me.user_id,gi=gameInfo(room.game),min=(room.game==='powergrid'?Math.max(3,Number(room.min_players||gi.min)):Number(room.min_players||gi.min));void processSingleRoomAlarm(room,me,{gameName:gi.name,gameHref:gameEntryHref(room)});
+  const draw=async()=>{data=await load();const {room,members}=data,isHost=room.host_id===me.user_id,gi=gameInfo(room.game),min=Number(room.min_players||gi.min);void processSingleRoomAlarm(room,me,{gameName:gi.name,gameHref:gameEntryHref(room)});
     let cancelled=room.status==='cancelled';
     if(!cancelled&&room.status==='finished'&&['maskmen','acquire','calico','cascadia','pocketnova','thegame','kraken','fantasyrealms','fantasyrealmsgreek','powergrid','avalon','secrethitler','onenightwerewolf','plakoro','quacks','mandom','samurai','eldorado','panam','airlandsea','planetx'].includes(room.game)){
       try{cancelled=Boolean((await callRpc('boardmate_get_cancel_status',{p_token:memberToken(),p_room_id:roomId}))?.cancelled);}catch{}

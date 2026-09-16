@@ -106,7 +106,7 @@ function setupView(){
   }).join('');
   app.innerHTML=`
     <div class="pg-topbar">
-      <div class="pg-title">🔌 파워그리드<br><small>${esc(room.title||'BoardMate 온라인')} · ${members.length}인 · 3~6인 전용</small></div>
+      <div class="pg-title">🔌 파워그리드<br><small>${esc(room.title||'BoardMate 온라인')} · ${members.length}인 · 2~6인</small></div>
       <a class="pg-btn small" href="./index.html#/room/${encodeURIComponent(roomId)}">← 방으로</a>
     </div>
     <div class="pg-card">
@@ -237,7 +237,7 @@ async function boot(){
   ({room,members}=await loadRoom());
   if(room.game!==GAME)showFatal('파워그리드 방이 아닙니다.');
   const m=members.find(x=>x.user_id===me.user_id); if(!m)showFatal('이 방의 참가자가 아닙니다.');
-  if(members.length<3||members.length>6)showFatal('파워그리드는 3~6인 다인플만 지원합니다.');
+  if(members.length<2||members.length>6)showFatal('파워그리드는 2~6인 다인플을 지원합니다.');
   mySeat=Number(m.seat);isHost=room.host_id===me.user_id;
   const row=await loadState(); if(row)await onRow(row); else setupView();
   stopPoll=startStatePoll(onRow,{interval:10000});

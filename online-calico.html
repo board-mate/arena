@@ -371,7 +371,7 @@ window.addEventListener('DOMContentLoaded',()=>{
         <div class="field">
           <span class="label">플레이어 이름 / 퀼트 보드</span>
           <div class="player-inputs" id="playerInputs"></div>
-          <small>보드 색에 맞는 원본 MyAutoma 보드 이미지를 게임판 배경으로 표시해 인쇄된 가장자리 타일까지 함께 볼 수 있습니다.</small>
+          <small>보드 색에 맞는 로컬 보드 이미지를 게임판 배경으로 표시해 인쇄된 가장자리 타일까지 함께 볼 수 있습니다.</small>
         </div>
         <div class="field">
           <label for="catMode">고양이 점수 타일</label>
@@ -472,6 +472,8 @@ window.addEventListener('DOMContentLoaded',()=>{
 
   // The user supplied these public GitHub Pages materials as the visual reference.
   const ASSET_BASE = 'https://myautoma.github.io/games/calico/img';
+  const LOCAL_BOARD_BASE = './assets/calico/boards';
+  const boardAsset = color => `${LOCAL_BOARD_BASE}/${color}.webp?v=11.4.67`;
   const SAVE_KEY = 'calico-pvp-arena-v8';
   const VERSION = 12;
   const GAME_ID = 'calico-pvp';
@@ -1242,7 +1244,7 @@ window.addEventListener('DOMContentLoaded',()=>{
     const helpText=interactive
       ? '왼쪽에서 타일을 클릭해 선택하세요. 슬롯을 직접 클릭하면 선택 취소.'
       : '실제 보드의 3개 디자인 칸 위치입니다.';
-    return `<div><div class="goal-preview" id="goal-preview-${p.name?p.name.replace(/[^a-z0-9]/gi,'_'):'board'}"><img src="${ASSET_BASE}/boards/${p.boardColor}.jpg" alt="${escapeHtml(p.name)} 퀼트 보드 미리보기"><div class="goal-preview-grid">${slots}</div></div><div class="goal-preview-help">${helpText}</div></div>`;
+    return `<div><div class="goal-preview" id="goal-preview-${p.name?p.name.replace(/[^a-z0-9]/gi,'_'):'board'}"><img src="${boardAsset(p.boardColor)}" alt="${escapeHtml(p.name)} 퀼트 보드 미리보기"><div class="goal-preview-grid">${slots}</div></div><div class="goal-preview-help">${helpText}</div></div>`;
   }
   function renderGoalDraft(){
     if(!pendingSetup)return;const holder=$('#goalDraftPlayers');holder.innerHTML='';const online=isArenaMode(),me=myPlayerIndex();
@@ -1477,7 +1479,7 @@ window.addEventListener('DOMContentLoaded',()=>{
     // 단추/고양이 그룹 판정에 포함될 수 있으므로 시각적 참고가 된다.
     const base=document.createElement('img');
     base.className='board-base';
-    base.src=`${ASSET_BASE}/boards/${p.boardColor}.jpg`;
+    base.src=`${boardAsset(p.boardColor)}`;
     base.alt=`${p.boardColor} Calico quilt board with printed edge tiles`;
     base.onload=()=>stage.classList.remove('board-image-missing');
     base.onerror=()=>{base.style.display='none';stage.classList.add('board-image-missing');};
@@ -1993,8 +1995,8 @@ window.addEventListener('DOMContentLoaded',()=>{
 
   function showBoardReference(){
     const p=state.players[viewedPlayer];
-    const src=`${ASSET_BASE}/boards/${p.boardColor}.jpg`;
-    showModal(`<h2>${escapeHtml(p.name)} · 원본 보드 가장자리 참고</h2><p style="color:var(--muted);line-height:1.5">실제 보드 디자인을 확인하기 위한 참고 이미지입니다. 고양이/단추 판정은 이미지가 아니라 내장된 보드 가장자리 데이터로 처리합니다.</p><img class="original-board" src="${src}" alt="${p.boardColor} Calico board" onerror="this.replaceWith(Object.assign(document.createElement('p'),{textContent:'네트워크 또는 원본 경로 문제로 이미지를 불러오지 못했습니다.'}))"><div class="modal-actions"><button class="btn" data-close-modal>닫기</button></div>`);
+    const src=`${boardAsset(p.boardColor)}`;
+    showModal(`<h2>${escapeHtml(p.name)} · 원본 보드 가장자리 참고</h2><p style="color:var(--muted);line-height:1.5">실제 보드 디자인을 확인하기 위한 참고 이미지입니다. 고양이/단추 판정은 이미지가 아니라 내장된 보드 가장자리 데이터로 처리합니다.</p><img class="original-board" src="${src}" alt="${p.boardColor} Calico board" onerror="this.replaceWith(Object.assign(document.createElement('p'),{textContent:'로컬 보드 이미지를 불러오지 못했습니다.'}))"><div class="modal-actions"><button class="btn" data-close-modal>닫기</button></div>`);
   }
 
   function showRules(){
