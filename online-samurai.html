@@ -360,7 +360,7 @@ const TOKEN_TYPES=[
   {id:'rice4',name:'논',str:4,affects:[FIG.RICE],fast:false,icon:'🌾',ko:'논4'},
   {id:'samurai2',name:'사무라이',str:2,affects:null,fast:false,icon:'⚔️',ko:'사무라이2'},
   {id:'samurai3',name:'사무라이',str:3,affects:null,fast:false,icon:'⚔️',ko:'사무라이3'},
-  {id:'exchange',name:'조각교환',str:0,affects:null,fast:false,icon:'🔄',ko:'조각교환',special:'exchange'},
+  {id:'exchange',name:'조각교환',str:0,affects:null,fast:true,icon:'🔄',ko:'조각교환',special:'exchange'},
   {id:'tokenswap',name:'타일교환',str:0,affects:null,fast:false,icon:'♻️',ko:'타일교환',special:'tokenswap'},
   {id:'samurai1b',name:'사무라이',str:1,affects:null,fast:false,icon:'⚔️',ko:'사무라이1'},
   {id:'samurai1c',name:'사무라이',str:1,affects:null,fast:false,icon:'⚔️',ko:'사무라이1'},
@@ -369,8 +369,8 @@ const TOKEN_TYPES=[
   {id:'ship1b',name:'함선',str:1,affects:null,fast:true,icon:'⛵',ko:'함선1',sea:true},
   {id:'ship2',name:'함선',str:2,affects:null,fast:true,icon:'⛵',ko:'함선2',sea:true},
   {id:'ronin1a',name:'로닌',str:1,affects:null,fast:true,icon:'🏇',ko:'로닌1'},
-  {id:'ronin1b',name:'로닌',str:1,affects:null,fast:true,icon:'🏇',ko:'로닌1'},
-  // 조각교환·타일교환도 빠른 타일
+  {id:'ronin1b',name:'사무라이',str:2,affects:null,fast:false,icon:'⚔️',ko:'사무라이2'}, // legacy id 유지: 저장방 호환용
+  // 빠른 타일은 로닌 1장, 함선 3장, 조각교환 1장. 타일교환은 일반 타일.
 ];
 
 // 각 플레이어에게 나눠주는 20개 토큰 세트 (id 배열)
@@ -737,21 +737,14 @@ function placeToken(tokenIdx,cellId){
   const tokenId=player.hand[tokenIdx];
   const tk=TOKEN_TYPES.find(t=>t.id===tokenId);
   if(!tk) return;
-  const cell=G.cells.find(c=>c.id===cellId);
-  if(!cell) return;
-
-  // 유효성 검사
-  if(tk.sea&&cell.type!=='sea') return;
-  if(!tk.sea&&cell.type==='sea') return;
-  if(['village','city','edo'].includes(cell.type)) return;
-  if(G.placed[cellId]) return; // 이미 타일 있음
   if(!tk.fast&&G.playedSlowThisTurn){showToast('이번 턴에 일반 타일은 1장만 낼 수 있습니다.');return;}
 
-  // 특수 타일 처리
+  // 특수 타일은 손패에서 선택하는 즉시 효과를 시작하므로 보드 배치 칸이 필요 없다.
   if(tk.special==='exchange'){
-    exchangeStep={type:'exchange',step:1,first:null};
+    exchangeStep={type:'exchange',step:1,first:null,firstFig:null};
     player.hand.splice(tokenIdx,1);
-    G.playedFastThisTurn=true; // exchange는 빠른 타일처럼 처리
+    selectedTokenIdx=null;
+    G.playedFastThisTurn=true;
     renderAll();
     showToast('교환할 첫 번째 조각이 있는 마을/도시를 클릭하세요');
     return;
@@ -759,11 +752,20 @@ function placeToken(tokenIdx,cellId){
   if(tk.special==='tokenswap'){
     exchangeStep={type:'tokenswap',step:1,first:null};
     player.hand.splice(tokenIdx,1);
-    G.playedFastThisTurn=true;
+    selectedTokenIdx=null;
+    G.playedSlowThisTurn=true;
     renderAll();
-    showToast('교체할 내 기존 타일 위치를 클릭하세요 (일반 타일만 가능)');
+    showToast('교체할 내 기존 일반 타일 위치를 클릭하세요');
     return;
   }
+
+  const cell=G.cells.find(c=>c.id===cellId);
+  if(!cell) return;
+  // 일반/빠른 영향력 타일 유효성 검사
+  if(tk.sea&&cell.type!=='sea') return;
+  if(!tk.sea&&cell.type==='sea') return;
+  if(['village','city','edo'].includes(cell.type)) return;
+  if(G.placed[cellId]) return; // 이미 타일 있음
 
   // 타일 배치
   G.placed[cellId]={playerId:G.active,tokenId,str:tk.str,affects:tk.affects,sea:!!tk.sea};
@@ -858,6 +860,26 @@ function captureFigure(settId,fig,landAdj){
   }
 }
 
+// 조각교환에서 도시/마을에 여러 조각이 있을 때 정확히 1개를 선택한다.
+function chooseExchangeFigure(cellId,onPick){
+  const figs=(G.figures[cellId]||[]).slice();
+  if(!figs.length){showToast('조각이 없는 곳입니다.');return;}
+  if(figs.length===1){onPick(figs[0]);return;}
+  const overlay=document.getElementById('modalOverlay');
+  const content=document.getElementById('modalContent');
+  content.innerHTML=`<h2>🔄 교환할 조각 선택</h2><p><b>${figTypeKo(cellId)}</b>에서 이동할 조각 1개를 선택하세요.</p><div class="modal-actions" id="exchangeFigButtons"></div><div class="modal-actions"><button class="btn" id="exchangeFigCancel">취소</button></div>`;
+  const box=content.querySelector('#exchangeFigButtons');
+  figs.forEach(fig=>{
+    const b=document.createElement('button');
+    b.className='btn primary';
+    b.textContent=`${FIG_ICON[fig]} ${FIG_KO[fig]}`;
+    b.addEventListener('click',()=>{overlay.classList.add('hidden');onPick(fig);});
+    box.appendChild(b);
+  });
+  content.querySelector('#exchangeFigCancel').addEventListener('click',()=>overlay.classList.add('hidden'));
+  overlay.classList.remove('hidden');
+}
+
 // 조각교환 처리
 function handleExchangeClick(cellId){
   if(!exchangeStep) return false;
@@ -868,34 +890,37 @@ function handleExchangeClick(cellId){
     if(!(G.figures[cellId]||[]).length) return true;
 
     if(exchangeStep.step===1){
-      exchangeStep.first=cellId;
-      exchangeStep.step=2;
-      showToast('두 번째 조각이 있는 마을/도시를 클릭하세요 (다른 종류)');
-      renderAll();
+      chooseExchangeFigure(cellId,fig=>{
+        exchangeStep.first=cellId;
+        exchangeStep.firstFig=fig;
+        exchangeStep.step=2;
+        showToast(`두 번째 위치에서 ${FIG_KO[fig]}와 다른 조각을 선택하세요`);
+        renderAll();
+      });
       return true;
-    }else{
-      // 두 번째 조각 선택
-      if(cellId===exchangeStep.first){showToast('다른 마을/도시를 선택하세요.');return true;}
-      const figs1=G.figures[exchangeStep.first]||[];
-      const figs2=G.figures[cellId]||[];
-      // 간략화: 첫 번째 조각과 두 번째 첫 조각을 교환
-      if(!figs1.length||!figs2.length){showToast('조각이 없는 곳을 선택했습니다.');exchangeStep=null;return true;}
-      // 같은 종류면 불가
-      if(figs1[0]===figs2[0]&&figs1.length===1&&figs2.length===1){
-        showToast('같은 종류의 조각은 교환할 수 없습니다 (도시에서 같은 종류 제한).');
-        exchangeStep=null;return true;
+    }
+
+    if(cellId===exchangeStep.first){showToast('다른 마을/도시를 선택하세요.');return true;}
+    chooseExchangeFigure(cellId,fig2=>{
+      const first=exchangeStep?.first,fig1=exchangeStep?.firstFig;
+      if(!first||!fig1){exchangeStep=null;renderAll();return;}
+      if(fig1===fig2){showToast('서로 다른 종류의 조각만 교환할 수 있습니다.');return;}
+      const a=G.figures[first]||[], b=G.figures[cellId]||[];
+      const i1=a.indexOf(fig1), i2=b.indexOf(fig2);
+      if(i1<0||i2<0){showToast('선택한 조각을 찾을 수 없습니다.');exchangeStep=null;renderAll();return;}
+      const aRest=a.filter((_,i)=>i!==i1), bRest=b.filter((_,i)=>i!==i2);
+      if(aRest.includes(fig2)||bRest.includes(fig1)){
+        showToast('한 도시에는 같은 종류의 조각을 둘 수 없습니다. 다른 조각을 선택하세요.');
+        return;
       }
-      // 교환
-      const tmp=G.figures[exchangeStep.first];
-      G.figures[exchangeStep.first]=G.figures[cellId];
-      G.figures[cellId]=tmp;
-      addLog(`${G.players[G.active].name}: 조각교환 ${exchangeStep.first} ↔ ${cellId}`);
+      a[i1]=fig2; b[i2]=fig1;
+      addLog(`${G.players[G.active].name}: 조각교환 ${figTypeKo(first)} ${FIG_ICON[fig1]} ↔ ${figTypeKo(cellId)} ${FIG_ICON[fig2]}`);
       exchangeStep=null;
       checkGameOver();
       renderAll();
       publishState('exchange');
-      return true;
-    }
+    });
+    return true;
   }
 
   if(exchangeStep.type==='tokenswap'){
@@ -1475,14 +1500,14 @@ function showRules(){
     <p>헬멧(⛩️), 불상(☸️), 논(🌾) 세 종류의 조각을 포획해 가장 많은 종류의 "최다 보유자"가 되세요.</p>
     <h3>타일 종류</h3>
     <ul>
-      <li><strong>일반 타일</strong> (턴당 1장): 헬멧/불상/논 전용 2~4, 사무라이(전체), 조각교환, 타일교환</li>
-      <li><strong>빠른 타일(侍)</strong> (무제한): 함선(바다만), 로닌(육지)</li>
+      <li><strong>일반 타일</strong> (턴당 1장): 헬멧/불상/논 전용 2~4, 사무라이 1·1·2·2·3, 타일교환</li>
+      <li><strong>빠른 타일(侍)</strong> (무제한): 함선 1·1·2(바다만), 로닌 1, 조각교환</li>
     </ul>
     <h3>포획</h3>
     <p>마을/도시/에도에 인접한 모든 육지 칸이 타일로 덮이면 즉시 포획됩니다. 바다 칸은 무시합니다. 영향력 최다 플레이어가 조각을 가져갑니다. 동점이면 조각은 보드 옆으로 제거됩니다.</p>
     <h3>특수 타일</h3>
     <ul>
-      <li><strong>조각교환(🔄):</strong> 보드 위 임의 두 조각의 위치를 바꿉니다 (같은 종류 불가).</li>
+      <li><strong>조각교환(🔄):</strong> 서로 다른 두 위치의 조각을 각각 1개씩 골라 위치를 바꿉니다. 한 도시에 같은 종류가 중복되면 안 됩니다.</li>
       <li><strong>타일교환(♻️):</strong> 내가 이미 놓은 일반 타일(侍 제외)을 다른 위치로 이동합니다.</li>
     </ul>
     <h3>게임 종료</h3>
