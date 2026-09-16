@@ -9,7 +9,7 @@
 <meta name="board-mate-min-players" content="2" />
 <meta name="board-mate-max-players" content="4" />
 <meta name="board-mate-multiplayer" content="true" />
-<script type="application/json" id="boardMateGameManifest">{"id":"eldorado-pvp","name":"엘도라도 PVP","version":"1.3.2-alpha-turn-cancel-fix","minPlayers":2,"maxPlayers":4,"multiplayer":true,"turnBased":true,"entry":"single-html","stateMode":"shared"}</script>
+<script type="application/json" id="boardMateGameManifest">{"id":"eldorado-pvp","name":"엘도라도 PVP","version":"1.4.0-modular-map","minPlayers":2,"maxPlayers":4,"multiplayer":true,"turnBased":true,"entry":"single-html","stateMode":"shared"}</script>
 <style>
 :root{
   --ink:#1f2a24;--muted:#6d786f;--paper:#fffdf4;--panel:#fffef8;--line:#d9d4bf;
@@ -30,8 +30,8 @@ button,input{font:inherit} button{cursor:pointer} button:disabled{opacity:.45;cu
 .connection{display:inline-flex;align-items:center;gap:6px;font-size:.75rem;font-weight:850;padding:5px 9px;border-radius:999px;border:1px solid #d7d2c4;background:#fff}.connection::before{content:"";width:8px;height:8px;border-radius:50%;background:#b8b1a2}.connection.ok{color:#2f6f43;background:#f1fbf4;border-color:#bcdac4}.connection.ok::before{background:#4b9b63}
 .players{display:flex;gap:8px;overflow:auto;padding-bottom:4px;margin-bottom:12px}.player-chip{min-width:170px;border:1px solid #d9d3c0;background:#fff;border-radius:14px;padding:9px 11px}.player-chip.active{border-color:#327349;box-shadow:inset 0 0 0 1px #327349;background:#f3fbf4}.player-chip .name{font-weight:900}.player-chip .meta{font-size:.76rem;color:var(--muted);margin-top:3px}.me{font-size:.65rem;background:#2f6843;color:#fff;padding:1px 5px;border-radius:999px;margin-left:4px}
 .layout{display:grid;grid-template-columns:minmax(650px,1fr) 440px;gap:14px;align-items:start}.left,.right{display:grid;gap:12px}.board-card{overflow:hidden}.board-head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px}.board-head h2{margin:0;font-size:1.05rem}.legend{display:flex;gap:7px;flex-wrap:wrap;font-size:.69rem;color:#59635c}.legend span{display:flex;align-items:center;gap:4px}.dot{width:10px;height:10px;border-radius:3px;display:inline-block}
-.board-viewport{overflow:auto;border:1px solid #e0dccd;border-radius:16px;background:linear-gradient(#f8f4e6,#eef4e8);padding:12px}.board-stage{position:relative;width:800px;height:390px;margin:0 auto;min-width:800px}
-.hex{position:absolute;width:var(--hex-w);height:var(--hex-h);clip-path:polygon(25% 0,75% 0,100% 50%,75% 100%,25% 100%,0 50%);border:0;padding:0;display:grid;place-items:center;text-align:center;font-weight:950;line-height:1;color:#fff;filter:drop-shadow(0 2px 2px #0003);transition:transform .1s,filter .1s}.hex::after{content:"";position:absolute;inset:3px;clip-path:inherit;border:1px solid rgba(255,255,255,.66);pointer-events:none}.hex:hover:not(:disabled){transform:scale(1.055);filter:drop-shadow(0 0 8px #fff8)}.hex.green{background:var(--green)}.hex.yellow{background:var(--yellow);color:#4f3c10}.hex.blue{background:var(--blue)}.hex.red{background:var(--red)}.hex.gray{background:var(--gray)}.hex.mountain{background:linear-gradient(145deg,#4c5550,#28312d)}.hex.start{background:#d8c47c;color:#403715}.hex.finish{box-shadow:inset 0 0 0 4px #f2d167;background:linear-gradient(145deg,#d7a827,#7ca04b)}.hex .cost{font-size:1rem}.hex .label{font-size:.56rem;font-weight:850;margin-top:3px;opacity:.94}.hex.target{filter:drop-shadow(0 0 10px #fff) drop-shadow(0 0 8px #f1b738);transform:scale(1.07)}.hex.occupied::before{content:"";position:absolute;inset:8px;clip-path:inherit;background:#0002}
+.board-viewport{overflow:auto;border:1px solid #d8d1bc;border-radius:16px;background:radial-gradient(circle at 30% 20%,#f7f0d4 0,#e5e3c8 38%,#ced9bf 100%);padding:12px;box-shadow:inset 0 0 34px #4b643422}.board-stage{position:relative;width:800px;height:390px;margin:0 auto;min-width:800px;isolation:isolate}
+.hex{position:absolute;width:var(--hex-w);height:var(--hex-h);clip-path:polygon(25% 0,75% 0,100% 50%,75% 100%,25% 100%,0 50%);border:0;padding:0;display:grid;place-items:center;text-align:center;font-weight:950;line-height:1;color:#fff;filter:drop-shadow(0 2px 2px #0003);transition:transform .1s,filter .1s}.hex::after{content:"";position:absolute;inset:3px;clip-path:inherit;border:1px solid rgba(255,255,255,.66);pointer-events:none}.hex:hover:not(:disabled){transform:scale(1.055);filter:drop-shadow(0 0 8px #fff8)}.hex.green{background:radial-gradient(circle at 35% 28%,#9ac96a 0 12%,transparent 13%),radial-gradient(circle at 68% 72%,#4f8d3c 0 14%,transparent 15%),linear-gradient(145deg,#7fb45b,#4f873b);color:#fff}.hex.yellow{background:radial-gradient(circle at 70% 24%,#f4d878 0 12%,transparent 13%),linear-gradient(145deg,#ecc85c,#c89b35);color:#4f3c10}.hex.blue{background:radial-gradient(circle at 30% 28%,#8fd0df 0 13%,transparent 14%),linear-gradient(145deg,#68b7cf,#3d91b1)}.hex.red{background:linear-gradient(145deg,#d9785e,#ae483b)}.hex.gray{background:radial-gradient(circle at 35% 30%,#bec2bc 0 10%,transparent 11%),linear-gradient(145deg,#9ca29c,#737a75)}.hex.mountain{background:radial-gradient(circle at 55% 30%,#66706a 0 10%,transparent 11%),linear-gradient(145deg,#4c5550,#28312d)}.hex.start{background:linear-gradient(145deg,#ead88d,#c9b064);color:#403715}.hex.finish{box-shadow:inset 0 0 0 4px #f2d167;background:linear-gradient(145deg,#d7a827,#7ca04b)}.hex .cost{font-size:1rem}.hex .label{font-size:.56rem;font-weight:850;margin-top:3px;opacity:.94}.hex.target{filter:drop-shadow(0 0 10px #fff) drop-shadow(0 0 8px #f1b738);transform:scale(1.07)}.hex.occupied::before{content:"";position:absolute;inset:8px;clip-path:inherit;background:#0002}
 .token{position:absolute;z-index:8;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;color:#fff;font-size:.7rem;font-weight:1000;border:3px solid #fff;box-shadow:0 3px 9px #0007;pointer-events:none;transform:translate(-50%,-50%)}.token.p0{background:#d4473d}.token.p1{background:#336bc4}.token.p2{background:#6f4aa3}.token.p3{background:#2b8b68}.token.second{transform:translate(-50%,-50%) translate(10px,10px);scale:.88}
 .gate-line{position:absolute;z-index:4;width:0;border-left:4px dashed #b84b3f;pointer-events:none;filter:drop-shadow(0 0 2px #fff);opacity:.9}.gate-line::before{content:'봉쇄선';position:absolute;top:-14px;left:-27px;background:#8d3028;color:#fff;border-radius:999px;padding:2px 7px;font-size:.56rem;font-weight:1000;white-space:nowrap}.gate-line.cleared{border-left-color:#4f8f63;opacity:.32}.gate-line.cleared::before{content:'통과 완료';background:#3f7351}.gate{position:absolute;z-index:6;background:#fff7dc;border:2px solid #a8751b;border-radius:10px;padding:5px 8px;font-size:.68rem;font-weight:950;box-shadow:0 4px 10px #0002;white-space:nowrap;pointer-events:none;transform:translateX(-50%)}.gate.cleared{opacity:.45;text-decoration:line-through}.gate .sym{font-size:.9rem}
 .section-title{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px}.section-title h3{margin:0;font-size:1rem}.tiny{font-size:.73rem;color:var(--muted)}.map-meta{display:flex;gap:6px;align-items:center;flex-wrap:wrap}.pill{display:inline-flex;align-items:center;border:1px solid #d8d1bf;background:#fff;border-radius:999px;padding:3px 7px;font-size:.66rem;font-weight:850;color:#5a655d}.pack-badge{display:inline-block;margin-top:5px;border-radius:999px;background:#f2ecff;color:#704c91;padding:2px 6px;font-size:.58rem;font-weight:900}
@@ -42,6 +42,7 @@ button,input{font:inherit} button{cursor:pointer} button:disabled{opacity:.45;cu
 .overlay{position:fixed;inset:0;z-index:50;background:#17231dcc;display:grid;place-items:center;padding:18px;backdrop-filter:blur(3px)}.modal{width:min(650px,96vw);max-height:88vh;overflow:auto;background:#fffef9;border-radius:20px;padding:18px;box-shadow:0 24px 80px #0007}.modal h2{margin:0 0 10px;color:#2c5b3a}.modal p{color:#647067;line-height:1.55}.modal-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.modal-actions{display:flex;justify-content:flex-end;gap:7px;flex-wrap:wrap;margin-top:14px}.choice-row{display:flex;gap:8px;flex-wrap:wrap}.choice-card{border:2px solid #ddd4bf;border-radius:12px;padding:8px;background:#fff;min-width:110px;font-weight:850}.choice-card.active{border-color:#d49b27;background:#fff8df}
 .toast{position:fixed;z-index:90;left:50%;bottom:22px;transform:translateX(-50%);background:#1d2a22;color:#fff;padding:10px 14px;border-radius:999px;font-size:.8rem;font-weight:800;box-shadow:0 10px 30px #0005;max-width:92vw;text-align:center}.footer{text-align:center;color:#7d847e;font-size:.7rem;line-height:1.5;padding:4px 8px 10px}
 .winner{padding:14px;border-radius:14px;background:#fff7d8;border:2px solid #e3bb4f;text-align:center}.winner h2{margin:0 0 7px}
+.map-tile-backdrop{position:absolute;z-index:0;border:3px solid #f7edd0cc;box-shadow:0 8px 18px #33451f28,inset 0 0 0 2px #6b6c4a22;clip-path:polygon(9% 0,91% 0,100% 20%,100% 80%,91% 100%,9% 100%,0 80%,0 20%);pointer-events:none;overflow:hidden}.map-tile-backdrop::before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(35deg,#ffffff08 0 3px,#00000005 3px 6px)}.map-tile-backdrop .tile-caption{position:absolute;left:14px;top:12px;padding:4px 8px;border-radius:999px;background:#fff9e6dd;border:1px solid #cbbd97;color:#5b573e;font-size:.66rem;font-weight:950;box-shadow:0 2px 7px #0002}.map-tile-backdrop.jungle{background:linear-gradient(135deg,#c9d9a9,#9fc17f)}.map-tile-backdrop.river{background:linear-gradient(135deg,#c4dcd1,#9bc6cf)}.map-tile-backdrop.village{background:linear-gradient(135deg,#e6d6a4,#d8bc70)}.map-tile-backdrop.ridge{background:linear-gradient(135deg,#c6c8b5,#9ca597)}.map-tile-backdrop.camp{background:linear-gradient(135deg,#d9b49c,#bd816e)}.map-tile-backdrop.mixed{background:linear-gradient(135deg,#cfcaa6,#9fb998)}.board-stage>.hex,.board-stage>.token,.board-stage>.gate,.board-stage>.gate-line{z-index:3}.board-stage>.gate-line{z-index:2}
 /* ── ALPHA: 맵 타일 조립 UI ── */
 .map-builder{display:grid;gap:14px}
 .builder-help{font-size:.78rem;line-height:1.55;color:#667168;background:#f7faf5;border:1px dashed #cbd7ca;border-radius:12px;padding:9px 10px}
@@ -58,9 +59,9 @@ button,input{font:inherit} button{cursor:pointer} button:disabled{opacity:.45;cu
 .assembled-tile .tile-head{display:flex;justify-content:space-between;gap:6px;align-items:start}.assembled-tile .tile-name{font-size:.8rem;font-weight:950}
 .assembled-tile .tile-controls{display:flex;gap:4px;flex-wrap:wrap;margin-top:7px}.assembled-tile .tile-controls .btn{padding:4px 6px;font-size:.68rem}.assembled-tile .tile-mini{margin-top:7px}
 .assembly-end{flex:0 0 76px;display:grid;place-items:center;text-align:center;border:2px dashed #cfc5a9;border-radius:14px;background:#fff8dc;font-size:.72rem;font-weight:950;color:#6e5b28;padding:8px}
-.assembly-start{background:#f8f0cf}.builder-summary{display:flex;gap:7px;flex-wrap:wrap}.builder-summary .pill{font-size:.72rem}.builder-section-title{font-weight:950;font-size:.9rem;margin-bottom:7px}.ref-terrain-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:7px}.ref-terrain-card{margin:0;border:1px solid #ddd4bf;border-radius:12px;background:#f7f3e7;padding:5px}.ref-terrain-card .terrain-ref{display:block;width:100%;aspect-ratio:1.08/1;border-radius:8px;background:#e6ded0;overflow:hidden}.ref-terrain-card figcaption{font-size:.62rem;font-weight:850;color:#667168;text-align:center;margin-top:4px}.wide-modal{width:min(920px,96vw)}
+.assembly-start{background:#f8f0cf}.builder-summary{display:flex;gap:7px;flex-wrap:wrap}.builder-summary .pill{font-size:.72rem}.builder-section-title{font-weight:950;font-size:.9rem;margin-bottom:7px}.wide-modal{width:min(920px,96vw)}
 @media(max-width:1100px){.layout{grid-template-columns:1fr}.right{grid-template-columns:1fr 1fr}.right .hand-card,.right .control-card{grid-column:1/-1}}
-@media(max-width:720px){.app{padding:8px}.right{grid-template-columns:1fr}.market-grid,.reserve-grid,.modal-grid{grid-template-columns:repeat(2,1fr)}.tile-palette{grid-template-columns:repeat(2,1fr)}.ref-terrain-grid{grid-template-columns:repeat(2,1fr)}.player-chip{min-width:145px}.board-viewport{padding:6px}.topbar{align-items:flex-start}.hand-row .exp-card{flex-basis:118px}}
+@media(max-width:720px){.app{padding:8px}.right{grid-template-columns:1fr}.market-grid,.reserve-grid,.modal-grid{grid-template-columns:repeat(2,1fr)}.tile-palette{grid-template-columns:repeat(2,1fr)}.player-chip{min-width:145px}.board-viewport{padding:6px}.topbar{align-items:flex-start}.hand-row .exp-card{flex-basis:118px}}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="./config.js"></script>
@@ -324,7 +325,7 @@ function drawOne(p){
 }
 function drawCards(p,n){for(let i=0;i<n;i++){const c=drawOne(p);if(!c)break;p.hand.push(c)}}
 function freshState(){
-  const mapId='arena',md=mapDef(mapId),cells=buildCells(mapId);
+  const mapId='custom',mapLayout=clone(DEFAULT_TILE_LAYOUT),md=mapDef(mapId,mapLayout),cells=buildCells(mapId,mapLayout);
   const startIds=['0,0','0,1','0,2','0,3'];
   const blocks=shuffle(BLOCKADE_POOL).slice(0,md.gates.length);
   const ps=members.map((m,i)=>{
@@ -333,7 +334,7 @@ function freshState(){
     drawCards(p,4);return p;
   });
   const stock=Object.fromEntries(MARKET_IDS.map(id=>[id,3]));
-  return {version:3,gameId:'eldorado-pvp',mapId,current:0,round:1,phase:'action',players:ps,marketSlots:[...START_MARKET],stock,
+  return {version:3,gameId:'eldorado-pvp',mapId,mapLayout,current:0,round:1,phase:'action',players:ps,marketSlots:[...START_MARKET],stock,
     board:{cells,gates:md.gates.map((afterCol,i)=>({afterCol,...blocks[i],removed:false,removedBy:null}))},
     turn:{move:null,pending:null},finalTriggered:false,finishSeq:0,gameOver:false,finalOrder:null,log:[`게임 시작 · ${md.name} · 손패 4장`]};
 }
@@ -398,14 +399,14 @@ function render(){
     <section class="card status"><div><div class="turn-title">${state.round}라운드 · ${esc(p.name)} 차례${mine?' · 내 차례':''}</div><div class="phase">${phaseText()}</div></div><span class="connection ok">Arena 동기화</span></section>
     <div class="players">${state.players.map((x,i)=>playerChip(x,i,seat)).join('')}</div>
     <div class="layout"><div class="left">
-      <section class="card board-card"><div class="board-head"><div><h2>탐험 지도</h2><div class="map-meta"><span class="pill">${esc(mapDef().name)}</span><span class="pill">${esc(mapDef().difficulty)}</span>${state.mapId==='custom'?`<span class="pill">봉쇄선 ${state.board.gates.length}개</span>`:''}</div></div><div class="legend"><span><i class="dot" style="background:var(--green)"></i>🗡 정글</span><span><i class="dot" style="background:var(--yellow)"></i>🪙 마을</span><span><i class="dot" style="background:var(--blue)"></i>🛶 강</span><span><i class="dot" style="background:var(--gray)"></i>🪨 돌무더기</span><span><i class="dot" style="background:var(--red)"></i>🏕 베이스캠프</span><span style="color:#9b342d;font-weight:900">┆ 봉쇄선 · 선을 넘을 때 표시된 기호/힘 필요</span></div></div><div class="board-viewport"><div class="board-stage" id="boardStage"></div></div></section>
+      <section class="card board-card"><div class="board-head"><div><h2>탐험 지도</h2><div class="map-meta"><span class="pill">${esc(mapDef().name)}</span><span class="pill">${esc(mapDef().difficulty)}</span>${state.mapId==='custom'?`<span class="pill">모듈 ${normalizeTileLayout(state.mapLayout||DEFAULT_TILE_LAYOUT).length}개</span><span class="pill">봉쇄선 ${state.board.gates.length}개</span>`:''}</div></div><div class="legend"><span><i class="dot" style="background:var(--green)"></i>🗡 정글</span><span><i class="dot" style="background:var(--yellow)"></i>🪙 마을</span><span><i class="dot" style="background:var(--blue)"></i>🛶 강</span><span><i class="dot" style="background:var(--gray)"></i>🪨 돌무더기</span><span><i class="dot" style="background:var(--red)"></i>🏕 베이스캠프</span><span style="color:#9b342d;font-weight:900">┆ 봉쇄선 · 선을 넘을 때 표시된 기호/힘 필요</span></div></div><div class="board-viewport"><div class="board-stage" id="boardStage"></div></div></section>
       <section class="card"><div class="section-title"><h3>📜 진행 기록</h3><span class="tiny">최근 40개</span></div><div class="log">${(state.log||[]).map(x=>`<div>${esc(x)}</div>`).join('')}</div></section>
     </div><div class="right">
       ${state.gameOver?endPanelHtml():''}
       <section class="card"><div class="section-title"><h3>🛒 시장</h3><span class="tiny">기본 18종 + 추가 9종 · 빈 칸이 생기면 예비 시장 구매 가능</span></div><div class="market-grid">${state.marketSlots.map((id,i)=>marketSlotHtml(id,i)).join('')}</div><details class="reserve"><summary>예비 시장 12종 보기</summary><div class="reserve-grid">${reserveIds().map(id=>marketCardHtml(id,'reserve')).join('')}</div></details></section>
       <section class="card hand-card"><div class="section-title"><h3>🃏 내 손패</h3><span class="tiny">덱 ${ownPlayer()?.deck.length||0} · 버림 ${ownPlayer()?.discard.length||0} · 제거 ${ownPlayer()?.trash.length||0}</span></div><div class="hand-row" id="handRow">${handHtml()}</div></section>
       <section class="card control-card"><div class="section-title"><h3>🎮 행동</h3><span class="tiny">${mine?'카드를 선택하세요':'상대 차례입니다'}</span></div>${controlHtml()}</section>
-      <div class="rule-note">팬메이드 웹 구현입니다. 업로드된 실물 지형 타일 이미지는 맵 조립 참고용으로만 로컬 포함했습니다. 기존 카드·이동·시장·봉쇄선·Supabase 저장 로직은 유지하고, 게임 시작 전 방장이 기본 지형 타일을 조립해 맵을 만들 수 있습니다.</div>
+      <div class="rule-note">팬메이드 웹 구현입니다. 상업용 카드/보드 이미지는 포함하지 않았습니다. 기존 카드·이동·시장·봉쇄선·Supabase 저장 로직은 유지하고, 게임 시작 전 방장이 기본 지형 타일을 조립해 맵을 만들 수 있도록 추가했습니다.</div>
     </div></div><div class="footer">The Quest for El Dorado의 상표/원작 권리는 각 권리자에게 있습니다. 이 파일은 모임 내 플레이용 비공식 구현입니다.</div>`;
   renderBoard();bindAll();
 }
@@ -465,10 +466,24 @@ function endPanelHtml(){
   return `<section class="card winner"><h2>🏆 ${esc(winner?.name||'승자')}</h2><div>${order.map((i,n)=>`${n+1}위 ${esc(state.players[i].name)}`).join(' · ')}</div></section>`;
 }
 
+function renderModularBackdrops(stage,originX,originY,W,stepX,stageHeight){
+  if(state.mapId!=='custom')return;
+  const layout=normalizeTileLayout(state.mapLayout||DEFAULT_TILE_LAYOUT);
+  let startCol=1;
+  for(const part of layout){
+    const widthCols=tileWidth(part.id),left=originX+startCol*stepX-22;
+    const el=document.createElement('div');el.className=`map-tile-backdrop ${part.id}`;
+    el.style.left=`${left}px`;el.style.top=`${originY-7}px`;el.style.width=`${Math.max(220,widthCols*stepX+W+16)}px`;el.style.height=`${Math.max(330,stageHeight-originY-4)}px`;
+    el.innerHTML=`<div class="tile-caption">${esc(MAP_TILES[part.id]?.name||part.id)}${part.flip?' · 180°':''}</div>`;
+    stage.appendChild(el);startCol+=widthCols;
+  }
+}
+
 function renderBoard(){
   const stage=$('#boardStage');if(!stage)return;stage.innerHTML='';
   const W=74,H=64,stepX=W*.75,stepY=H+5,originX=10,originY=16;
   const maxC=Math.max(0,...state.board.cells.map(c=>c.c)),maxR=Math.max(0,...state.board.cells.map(c=>c.r));stage.style.width=`${Math.max(800,originX+(maxC+1)*stepX+W)}px`;stage.style.height=`${Math.max(390,originY+(maxR+1)*stepY+H)}px`;stage.style.minWidth=stage.style.width;
+  renderModularBackdrops(stage,originX,originY,W,stepX,parseFloat(stage.style.height));
   const pos=(c,r)=>({x:originX+c*stepX,y:originY+r*stepY+(c%2?stepY/2:0)});
   const targets=new Set(validTargets().map(x=>x.id));
   for(const cell of state.board.cells){
@@ -702,42 +717,15 @@ function tileMiniHtml(part){
   }
   return html+'</div>';
 }
-
-function tileSvg(rows,title='타일 참고'){
-  const W=180,H=154,cw=36,ch=28;
-  const fill=v=>v==='G'?'#6ea44b':v==='Y'?'#e1b347':v==='B'?'#58a8c6':v==='X'?'#8e948d':v==='R'?'#c85f4e':v==='M'?'#48514b':'#d8d4c6';
-  let cells='';
-  for(let r=0;r<rows.length;r++)for(let c=0;c<rows[r].length;c++){
-    const code=rows[r][c]||'',k=(code[0]||'E');
-    const x=18+c*cw+(r%2?10:0),y=20+r*ch;
-    cells+=`<path d="M${x+9},${y}H${x+27}L${x+36},${y+14}L${x+27},${y+28}H${x+9}L${x},${y+14}Z" fill="${fill(k)}" stroke="#f6f2e9" stroke-width="2"/>`;
-    if(code&&k!=='M'){cells+=`<text x="${x+18}" y="${y+18}" text-anchor="middle" font-size="10" font-weight="900" fill="${k==='Y'?'#594112':'#fff'}">${code.slice(1)||''}</text>`}
-    if(k==='M'){cells+=`<text x="${x+18}" y="${y+18}" text-anchor="middle" font-size="11" font-weight="900" fill="#fff">M</text>`}
-  }
-  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(title)} 타일 참고"><defs><linearGradient id="bgTile" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f4f0e4"/><stop offset="1" stop-color="#e8e0cd"/></linearGradient></defs><rect width="${W}" height="${H}" rx="12" fill="url(#bgTile)"/><text x="12" y="15" font-size="10" font-weight="900" fill="#6a6558">REFERENCE TILE</text>${cells}</svg>`;
-}
-
-function eldoradoTerrainReferenceHTML(){
-  const refs=[
-    {title:'정글 길',tag:'실물 분위기 참고',id:'jungle'},
-    {title:'강줄기',tag:'강 중심',id:'river'},
-    {title:'황금 마을',tag:'마을 중심',id:'village'},
-    {title:'산등성이',tag:'우회로',id:'ridge'},
-    {title:'베이스캠프',tag:'카드 제거',id:'camp'}
-  ];
-  const fig=(ref)=>{const tile=MAP_TILES[ref.id];return `<figure class="ref-terrain-card"><div class="terrain-ref">${tileSvg(tile.rows, ref.title)}</div><figcaption>${esc(ref.title)}<br><span class="tiny">${esc(ref.tag)}</span></figcaption></figure>`};
-  return `<div class="ref-terrain-grid">${refs.map(fig).join('')}</div>`;
-}
 function showMapPicker(){
   if(room?.host_id!==me?.user_id){toast('방장만 맵을 설정할 수 있습니다.');return}
   const enabled=canChangeMap();
   let draft=normalizeTileLayout(state.mapId==='custom'?state.mapLayout:DEFAULT_TILE_LAYOUT);
   const mount=()=>modal(`<div class="map-builder">
-    <div><h2>🗺️ 맵 설정 <span class="pill">ALPHA</span></h2><div class="builder-help">${enabled?'업로드된 실물 지형 이미지를 참고하면서 기존 프리셋을 선택하거나, 기본 지형 타일 <b>3~5개</b>를 골라 순서를 바꾸고 180° 회전해 사용자 맵을 만들 수 있습니다.':'맵 변경은 첫 행동 전에만 가능합니다. 현재 게임 상태는 변경되지 않습니다.'}</div></div>
-    <div><div class="builder-section-title">① 실물 지형 타일 레퍼런스</div>${eldoradoTerrainReferenceHTML()}<div class="tiny" style="margin-top:6px">이미지는 조립 방향과 지형 분포 참고용이며, 클릭 판정은 기존 BoardMate 맵 데이터로 처리합니다.</div></div>
-    <div><div class="builder-section-title">② 기존 프리셋 맵</div><div class="modal-grid">${PRESET_MAP_IDS.map(id=>{const pm=MAPS[id];return `<button class="choice-card ${state.mapId===id?'active':''}" data-preset-map="${id}" ${!enabled?'disabled':''}><b>${esc(pm.name)}</b><br><span class="tiny">${esc(pm.difficulty)} · ${pm.gates.length}개 봉쇄선</span></button>`}).join('')}</div></div>
-    <div><div class="builder-section-title">③ 사용자 조립 타일 추가</div><div class="tile-palette">${Object.entries(MAP_TILES).map(([id,t])=>{const used=draft.some(x=>x.id===id);return `<button class="tile-option" data-add-tile="${id}" ${!enabled||used||draft.length>=MAX_MAP_TILES?'disabled':''}><b>${esc(t.name)}</b>${tileMiniHtml({id,flip:false})}<span class="tiny">${esc(t.tag)} · ${used?'사용 중':'추가'}</span></button>`}).join('')}</div></div>
-    <div><div class="builder-section-title">④ 조립 맵 순서 / 방향 조정</div><div class="assembly-strip"><div class="assembly-end assembly-start">START<br>출발지</div>${draft.map((part,i)=>`<div class="assembly-arrow">→</div><div class="assembled-tile"><div class="tile-head"><span class="tile-name">${i+1}. ${esc(MAP_TILES[part.id]?.name||part.id)}</span><span class="tiny">${part.flip?'180°':''}</span></div>${tileMiniHtml(part)}<div class="tile-controls"><button class="btn" data-left="${i}" ${!enabled||i===0?'disabled':''}>←</button><button class="btn" data-right="${i}" ${!enabled||i===draft.length-1?'disabled':''}>→</button><button class="btn" data-flip="${i}" ${!enabled?'disabled':''}>↻ 180°</button><button class="btn danger" data-remove="${i}" ${!enabled||draft.length<=MIN_MAP_TILES?'disabled':''}>삭제</button></div></div>`).join('')}<div class="assembly-arrow">→</div><div class="assembly-end">EL DORADO<br>도착지</div></div></div>
+    <div><h2>🗺️ 맵 설정 <span class="pill">ALPHA</span></h2><div class="builder-help">${enabled?'원본 버전의 프리셋 맵 선택 기능은 유지됩니다. 또는 아래 기본 지형 타일 <b>3~5개</b>를 골라 순서를 바꾸고 180° 회전해 사용자 맵을 만들 수 있습니다.':'맵 변경은 첫 행동 전에만 가능합니다. 현재 게임 상태는 변경되지 않습니다.'}</div></div>
+    <div><div class="builder-section-title">① 기존 프리셋 맵</div><div class="modal-grid">${PRESET_MAP_IDS.map(id=>{const pm=MAPS[id];return `<button class="choice-card ${state.mapId===id?'active':''}" data-preset-map="${id}" ${!enabled?'disabled':''}><b>${esc(pm.name)}</b><br><span class="tiny">${esc(pm.difficulty)} · ${pm.gates.length}개 봉쇄선</span></button>`}).join('')}</div></div>
+    <div><div class="builder-section-title">② 사용자 조립 타일 추가</div><div class="tile-palette">${Object.entries(MAP_TILES).map(([id,t])=>{const used=draft.some(x=>x.id===id);return `<button class="tile-option" data-add-tile="${id}" ${!enabled||used||draft.length>=MAX_MAP_TILES?'disabled':''}><b>${esc(t.name)}</b>${tileMiniHtml({id,flip:false})}<span class="tiny">${esc(t.tag)} · ${used?'사용 중':'추가'}</span></button>`}).join('')}</div></div>
+    <div><div class="builder-section-title">③ 조립 맵 순서 / 방향 조정</div><div class="assembly-strip"><div class="assembly-end assembly-start">START<br>출발지</div>${draft.map((part,i)=>`<div class="assembly-arrow">→</div><div class="assembled-tile"><div class="tile-head"><span class="tile-name">${i+1}. ${esc(MAP_TILES[part.id]?.name||part.id)}</span><span class="tiny">${part.flip?'180°':''}</span></div>${tileMiniHtml(part)}<div class="tile-controls"><button class="btn" data-left="${i}" ${!enabled||i===0?'disabled':''}>←</button><button class="btn" data-right="${i}" ${!enabled||i===draft.length-1?'disabled':''}>→</button><button class="btn" data-flip="${i}" ${!enabled?'disabled':''}>↻ 180°</button><button class="btn danger" data-remove="${i}" ${!enabled||draft.length<=MIN_MAP_TILES?'disabled':''}>삭제</button></div></div>`).join('')}<div class="assembly-arrow">→</div><div class="assembly-end">EL DORADO<br>도착지</div></div></div>
     <div class="builder-summary"><span class="pill">타일 ${draft.length}개</span><span class="pill">봉쇄선 ${Math.max(0,draft.length-1)}개</span><span class="pill">맵 길이 ${2+draft.reduce((n,x)=>n+tileWidth(x.id),0)}열</span></div>
     <div class="modal-actions"><button class="btn" id="resetTiles" ${!enabled?'disabled':''}>기본 조합</button><button class="btn" id="randomTiles" ${!enabled?'disabled':''}>무작위 조합</button><button class="btn" data-close>닫기</button><button class="btn primary" id="applyTiles" ${!enabled?'disabled':''}>이 맵으로 적용</button></div>
   </div>`,m=>{
@@ -781,7 +769,7 @@ function applyTileMap(layout){
 }
 
 function showRules(){
-  modal(`<h2>🧭 규칙 요약</h2><ul style="line-height:1.7;color:#526057"><li>각자 시작 덱 8장(선원 1, 탐험가 3, 여행가 4)에서 손패 4장으로 시작합니다.</li><li>이동 카드는 같은 색 지형을 힘만큼 연속 이동할 수 있으며, 한 칸의 높은 요구치를 여러 카드로 합칠 수 없습니다.</li><li>🪨 돌무더기는 표시된 장수만큼 아무 카드를 사용합니다. 🏕 베이스캠프는 그 장수만큼 카드를 게임에서 제거합니다.</li><li>한 턴에 카드 1장만 구매합니다. 시장 칸이 비어 있으면 예비 시장 카드도 살 수 있고, 남은 같은 종류 카드가 빈 칸으로 들어옵니다.</li><li><b>추가 카드:</b> 특제 노, 정찰자, 식물학자, 선교사, 막일꾼, 등고선 지도, 길 안내도, 쌍안경, 전보를 예비 시장에 추가했습니다.</li><li><b>맵 설정:</b> 업로드된 실물 지형 타일 레퍼런스를 보면서 기존 프리셋 맵을 선택하거나, 방장이 첫 행동 전에 기본 지형 타일 3~5개를 조립해 사용자 맵을 만들 수 있습니다. 조립 결과는 방 상태에 함께 저장되어 모든 참가자에게 동일하게 동기화됩니다.</li><li>2인전은 각자 말 2개가 모두 도착해야 합니다. 3–4인전은 말 1개가 도착하면 최종 라운드가 발동합니다.</li><li>동률이면 획득 봉쇄 수, 그래도 같으면 가장 높은 봉쇄 수치로 비교합니다.</li></ul><div class="modal-actions"><button class="btn primary" data-close>닫기</button></div>`,m=>m.querySelector('[data-close]').onclick=closeModal);
+  modal(`<h2>🧭 규칙 요약</h2><ul style="line-height:1.7;color:#526057"><li>각자 시작 덱 8장(선원 1, 탐험가 3, 여행가 4)에서 손패 4장으로 시작합니다.</li><li>이동 카드는 같은 색 지형을 힘만큼 연속 이동할 수 있으며, 한 칸의 높은 요구치를 여러 카드로 합칠 수 없습니다.</li><li>🪨 돌무더기는 표시된 장수만큼 아무 카드를 사용합니다. 🏕 베이스캠프는 그 장수만큼 카드를 게임에서 제거합니다.</li><li>한 턴에 카드 1장만 구매합니다. 시장 칸이 비어 있으면 예비 시장 카드도 살 수 있고, 남은 같은 종류 카드가 빈 칸으로 들어옵니다.</li><li><b>추가 카드:</b> 특제 노, 정찰자, 식물학자, 선교사, 막일꾼, 등고선 지도, 길 안내도, 쌍안경, 전보를 예비 시장에 추가했습니다.</li><li><b>맵 설정:</b> 기존 프리셋 맵을 그대로 선택할 수 있고, 방장은 첫 행동 전에 기본 지형 타일 3~5개를 조립해 사용자 맵도 만들 수 있습니다. 조립 결과는 방 상태에 함께 저장되어 모든 참가자에게 동일하게 동기화됩니다.</li><li>2인전은 각자 말 2개가 모두 도착해야 합니다. 3–4인전은 말 1개가 도착하면 최종 라운드가 발동합니다.</li><li>동률이면 획득 봉쇄 수, 그래도 같으면 가장 높은 봉쇄 수치로 비교합니다.</li></ul><div class="modal-actions"><button class="btn primary" data-close>닫기</button></div>`,m=>m.querySelector('[data-close]').onclick=closeModal);
 }
 function modal(inner,onMount,modalClass=''){closeModal();const ov=document.createElement('div');ov.className='overlay';ov.id='modalOverlay';ov.innerHTML=`<div class="modal ${modalClass}">${inner}</div>`;document.body.appendChild(ov);onMount?.(ov.querySelector('.modal'))}
 function closeModal(){$('#modalOverlay')?.remove()}

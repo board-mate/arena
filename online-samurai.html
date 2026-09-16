@@ -9,7 +9,7 @@
 <meta name="board-mate-min-players" content="2"/>
 <meta name="board-mate-max-players" content="4"/>
 <meta name="board-mate-multiplayer" content="true"/>
-<script type="application/json" id="boardMateGameManifest">{"id":"samurai-pvp","name":"사무라이","version":"2.0.0","minPlayers":2,"maxPlayers":4,"multiplayer":true,"turnBased":true,"entry":"single-html","stateMode":"shared"}</script>
+<script type="application/json" id="boardMateGameManifest">{"id":"samurai-pvp","name":"사무라이","version":"2.1.0-vector-map","minPlayers":2,"maxPlayers":4,"multiplayer":true,"turnBased":true,"entry":"single-html","stateMode":"shared"}</script>
 <style>
 :root{
   --ink:#2a1f1a;--muted:#7a6a62;--paper:#fdf8f0;--panel:#ffffffee;
@@ -64,15 +64,14 @@ input[type=text],select{width:100%;border:1px solid #d0c0b0;border-radius:9px;pa
 .turn-dot{width:11px;height:11px;border-radius:50%}
 .phase-txt{font-size:.83rem;color:var(--muted)}
 /* ─── 보드 (육각 그리드) ─── */
-.board-wrap{overflow:auto;padding:8px}
-.map-reference{margin-top:10px;border:1px solid #dfd3c4;border-radius:12px;background:#fffaf2;overflow:hidden}.map-reference summary{cursor:pointer;padding:9px 11px;font-size:.78rem;font-weight:900;color:#694a2e}.map-reference-body{padding:0 10px 10px}.map-reference img{display:block;width:100%;height:auto;border-radius:8px;background:#e9f0f4}.map-reference-note{font-size:.7rem;line-height:1.45;color:var(--muted);margin-top:6px}.samurai-map-ref svg{display:block;width:100%;height:auto;border-radius:8px;background:#e9f0f4}
-.hex-board{position:relative;margin:0 auto}
-.hex-cell{position:absolute;cursor:default;user-select:none}
+.board-wrap{overflow:auto;padding:12px;border-radius:14px;background:radial-gradient(circle at 35% 30%,#dff1f8 0,#c8e2ef 42%,#a9ccdf 100%);box-shadow:inset 0 0 0 1px #8fb4c933,inset 0 0 35px #315a7324}
+.hex-board{position:relative;margin:0 auto;isolation:isolate}
+.hex-cell{position:absolute;cursor:default;user-select:none;z-index:2}
 .hex-cell svg{display:block;transition:filter .12s,transform .12s}
 .hex-cell.playable{cursor:pointer}
 .hex-cell.playable svg:hover{filter:brightness(1.12) drop-shadow(0 0 5px rgba(200,146,42,.7));transform:scale(1.04)}
 .hex-cell.selected svg{filter:drop-shadow(0 0 8px rgba(200,146,42,.9));transform:scale(1.06)}
-.hex-cell.last-played svg{filter:drop-shadow(0 0 5px rgba(139,26,26,.7))}
+.hex-cell.last-played svg{filter:drop-shadow(0 0 5px rgba(139,26,26,.7))}.board-coast{position:absolute;inset:0;z-index:0;pointer-events:none;overflow:visible}.board-coast .island{fill:#eadcb9;stroke:#9e8456;stroke-width:4;stroke-linejoin:round;filter:drop-shadow(0 4px 5px #36536655)}.board-coast .island-ring{fill:none;stroke:#fff8df;stroke-width:9;opacity:.55}.board-coast .island-label{font-size:12px;font-weight:900;fill:#745b37;paint-order:stroke;stroke:#f8efd9;stroke-width:4}.board-coast .wave{fill:none;stroke:#ffffff55;stroke-width:2;stroke-dasharray:5 8}.board-coast .title{font-size:13px;font-weight:950;fill:#3d6379;letter-spacing:1.5px}
 /* ─── 손패 ─── */
 .hand-grid{display:flex;flex-wrap:wrap;gap:8px}
 .token-card{width:82px;border:2px solid #d0c0b0;border-radius:10px;padding:6px;background:#fff;text-align:center;cursor:default;transition:all .12s}
@@ -213,7 +212,7 @@ if(roomId) window.addEventListener('DOMContentLoaded',()=>{
   <div class="brand">
     <div>
       <h1>⛩️ 사무라이</h1>
-      <div class="sub">Reiner Knizia · 2-4인 · BoardMate 온라인 · 실물 지도 레퍼런스 포함</div>
+      <div class="sub">Reiner Knizia · 2-4인 · BoardMate 온라인 · 겹침 없는 일본 열도 v2 맵</div>
     </div>
   </div>
   <div class="top-actions">
@@ -254,10 +253,6 @@ if(roomId) window.addEventListener('DOMContentLoaded',()=>{
         <strong>종료:</strong> 한 종류의 조각이 전부 없어지거나, 무승부 제거 조각이 4개가 되면 게임 종료.<br><br>
         <strong>승리:</strong> 2~3종류 최다 보유 → 즉시 승리. 그 외는 단계적 타이브레이크.
       </div>
-      <details class="map-reference" open>
-        <summary>🗾 실물 지도 레퍼런스 · 선택 인원 자동 전환</summary>
-        <div class="map-reference-body"><div id="setupMapRef" class="samurai-map-ref"></div><div class="map-reference-note">실물 보드의 2·3·4인 사용 구역을 참고해 그린 간이 벡터 지도입니다. 현재 클릭 판정은 기존 BoardMate 육각 좌표를 유지해 온라인 방 호환성을 보존합니다.</div></div>
-      </details>
     </section>
   </div>
 </main>
@@ -295,10 +290,6 @@ if(roomId) window.addEventListener('DOMContentLoaded',()=>{
         <div class="board-wrap" id="boardWrap">
           <div class="hex-board" id="hexBoard"></div>
         </div>
-        <details class="map-reference">
-          <summary>🗾 실물 지도 레퍼런스 보기</summary>
-          <div class="map-reference-body"><div id="gameMapRef" class="samurai-map-ref"></div><div class="map-reference-note">실물 보드의 2·3·4인 사용 지역 확인용 간이 지도입니다.</div></div>
-        </details>
       </section>
 
       <!-- 손패 -->
@@ -502,14 +493,6 @@ function receiveState(next){
 /* ══════════════════════════════════════════════════
    ④ 초기화 및 Arena 연결
 ══════════════════════════════════════════════════ */
-function samuraiMapReferenceSvg(count){
-  const n=Math.max(2,Math.min(4,Number(count)||2));
-  const active=n===2?['hokkaido','honshu-n','honshu-e','honshu-c','shikoku','kyushu']:(n===3?['hokkaido','honshu-n','honshu-e','honshu-c','honshu-w','shikoku','kyushu']:['hokkaido','honshu-n','honshu-e','honshu-c','honshu-w','shikoku','kyushu','okinawa']);
-  const reg=(id,label,path,x,y)=>`<g opacity="${active.includes(id)?1:.28}"><path d="${path}" fill="${active.includes(id)?'#efd39a':'#d9e0e6'}" stroke="#6e5a3a" stroke-width="3"/><text x="${x}" y="${y}" text-anchor="middle" fill="#513c23" font-size="16" font-weight="900">${label}</text></g>`;
-  return `<svg viewBox="0 0 780 420" role="img" aria-label="사무라이 ${n}인 지도 참고"><defs><linearGradient id="sea" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#dff3fb"/><stop offset="1" stop-color="#bdd8ea"/></linearGradient></defs><rect width="780" height="420" rx="18" fill="url(#sea)"/><g opacity=".28" fill="#fff"><circle cx="88" cy="80" r="28"/><circle cx="710" cy="96" r="42"/><circle cx="635" cy="355" r="32"/></g>${reg('hokkaido','홋카이도','M540 48 Q580 25 624 42 Q657 60 653 95 Q635 127 592 138 Q548 132 523 101 Q518 70 540 48',590,94)}${reg('honshu-n','북혼슈','M434 121 Q469 101 512 112 Q546 127 555 154 Q549 177 518 193 Q472 202 431 183 Q413 156 434 121',489,156)}${reg('honshu-e','동혼슈','M388 180 Q436 159 492 170 Q540 181 556 224 Q536 255 494 267 Q437 278 390 262 Q367 226 388 180',467,224)}${reg('honshu-c','중앙혼슈','M324 202 Q373 184 425 198 Q450 207 466 229 Q463 258 431 277 Q380 291 334 279 Q309 247 324 202',387,241)}${reg('honshu-w','서혼슈','M250 218 Q300 197 351 208 Q385 218 395 244 Q388 271 356 289 Q309 300 262 289 Q237 257 250 218',316,250)}${reg('shikoku','시코쿠','M300 297 Q333 285 367 293 Q384 304 379 322 Q359 338 326 343 Q296 337 286 322 Q286 307 300 297',336,321)}${reg('kyushu','규슈','M210 280 Q251 255 292 266 Q321 281 319 317 Q304 347 271 362 Q231 364 203 342 Q189 314 210 280',255,321)}${reg('okinawa','오키나와','M108 335 Q127 326 143 334 Q149 346 143 358 Q128 364 113 358 Q102 347 108 335',126,350)}<g opacity=".6" stroke="#47708a" stroke-dasharray="6 8"><path d="M534 116 L520 96"/><path d="M427 187 L451 170"/><path d="M362 283 L334 297"/></g><rect x="18" y="18" width="250" height="48" rx="14" fill="#fff8eb" stroke="#cfbf9b"/><text x="32" y="40" fill="#5b4429" font-size="21" font-weight="1000">SAMURAI · ${n}인용 참고 지도</text><text x="32" y="58" fill="#7a6959" font-size="12">실물 맵 구역을 참고한 간이 벡터 버전 · 실제 클릭 좌표는 기존 로직 유지</text><g transform="translate(516 338)"><rect width="240" height="60" rx="12" fill="#fff8eb" stroke="#cfbf9b"/><text x="14" y="23" fill="#5a4325" font-size="13" font-weight="900">강조 기준</text><text x="14" y="41" fill="#655849" font-size="12">• 진한 베이지: 해당 인원수에서 사용되는 섬/구역</text><text x="14" y="55" fill="#655849" font-size="12">• 흐린 회색: 이번 인원수에서는 제외되는 영역</text></g></svg>`;
-}
-function syncSamuraiReferenceMap(count){const html=samuraiMapReferenceSvg(count);for(const id of ['setupMapRef','gameMapRef']){const el=document.getElementById(id);if(el){el.innerHTML=html;el.setAttribute('aria-label',`사무라이 ${count}인 지도 참고`);}}}
-
 window.addEventListener('DOMContentLoaded',async()=>{
   // 버튼 바인딩
   document.querySelectorAll('#playerCountBtns button').forEach(btn=>{
@@ -517,11 +500,9 @@ window.addEventListener('DOMContentLoaded',async()=>{
       document.querySelectorAll('#playerCountBtns button').forEach(b=>b.classList.remove('active'));
       btn.classList.add('active');
       renderPlayerInputs(Number(btn.dataset.c));
-      syncSamuraiReferenceMap(Number(btn.dataset.c));
     });
   });
   renderPlayerInputs(2);
-  syncSamuraiReferenceMap(2);
   document.getElementById('startSetupBtn').addEventListener('click',onSetupStart);
   document.getElementById('rulesBtn').addEventListener('click',showRules);
   document.getElementById('newGameBtn').addEventListener('click',()=>{if(confirm('새 게임을 시작하시겠습니까?'))initNewGame();});
@@ -568,7 +549,6 @@ function populateArenaSetup(ctx){
     if(Number(b.dataset.c)!==count) b.disabled=true;
   });
   renderPlayerInputs(count,ctx.players.map(p=>p.nickname||p.name));
-  syncSamuraiReferenceMap(count);
   document.getElementById('startSetupBtn').disabled=!ctx.isHost;
   if(!ctx.isHost){
     document.getElementById('startSetupBtn').textContent='호스트 대기 중...';
@@ -1125,8 +1105,35 @@ function makeSvgHex(fill,stroke,opacity=1){
 }
 
 function cellFill(cell){
-  const TYPE_COLORS={sea:'#b8d4e8',land:'#e8dfc8',village:'#f5e8c0',city:'#e0c890',edo:'#d4a840'};
+  const TYPE_COLORS={sea:'rgba(233,247,252,.22)',land:'#efe5ca',village:'#f7e7b5',city:'#dfc47f',edo:'#c99c3f'};
   return TYPE_COLORS[cell.type]||'#ccc';
+}
+
+
+function convexHull(points){
+  const pts=[...new Map(points.map(p=>[`${p.x.toFixed(2)},${p.y.toFixed(2)}`,p])).values()].sort((a,b)=>a.x-b.x||a.y-b.y);
+  if(pts.length<=2)return pts;
+  const cross=(o,a,b)=>(a.x-o.x)*(b.y-o.y)-(a.y-o.y)*(b.x-o.x);
+  const lo=[];for(const p of pts){while(lo.length>=2&&cross(lo[lo.length-2],lo[lo.length-1],p)<=0)lo.pop();lo.push(p)}
+  const hi=[];for(let i=pts.length-1;i>=0;i--){const p=pts[i];while(hi.length>=2&&cross(hi[hi.length-2],hi[hi.length-1],p)<=0)hi.pop();hi.push(p)}
+  lo.pop();hi.pop();return lo.concat(hi);
+}
+function cellHexCorners(cell,pad=5){
+  const {x,y}=hexPos(cell.col,cell.row),cx=x+HEX_W/2,cy=y+HEX_H/2,rx=HEX_W/2+pad,ry=HEX_H/2+pad;
+  return [{x:cx,y:cy-ry},{x:cx+rx,y:cy-ry*.5},{x:cx+rx,y:cy+ry*.5},{x:cx,y:cy+ry},{x:cx-rx,y:cy+ry*.5},{x:cx-rx,y:cy-ry*.5}];
+}
+function samuraiBackdrop(width,height){
+  const groups={};
+  G.cells.filter(c=>c.type!=='sea').forEach(c=>{(groups[c.isIsland]??=[]).push(c)});
+  const names={honshu:'혼슈',kyushu:'규슈',shikoku:'시코쿠',ezo:'홋카이도'};
+  const islands=Object.entries(groups).map(([key,cells])=>{
+    const hull=convexHull(cells.flatMap(c=>cellHexCorners(c,6)));
+    const points=hull.map(p=>`${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
+    const centers=cells.map(c=>{const q=hexPos(c.col,c.row);return{x:q.x+HEX_W/2,y:q.y+HEX_H/2}});
+    const lx=centers.reduce((s,p)=>s+p.x,0)/centers.length,ly=centers.reduce((s,p)=>s+p.y,0)/centers.length;
+    return `<polygon class="island-ring" points="${points}"/><polygon class="island" points="${points}"/><text class="island-label" x="${lx}" y="${ly}" text-anchor="middle">${names[key]||key}</text>`;
+  }).join('');
+  return `<svg class="board-coast" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" aria-hidden="true"><path class="wave" d="M18 ${height*.18} C${width*.25} ${height*.08},${width*.55} ${height*.30},${width-18} ${height*.16}"/><path class="wave" d="M12 ${height*.76} C${width*.28} ${height*.62},${width*.58} ${height*.88},${width-12} ${height*.72}"/>${islands}<text class="title" x="18" y="22">SAMURAI · JAPAN ARCHIPELAGO</text></svg>`;
 }
 
 function renderBoard(){
@@ -1134,7 +1141,6 @@ function renderBoard(){
   board.innerHTML='';
 
   if(!G||!G.cells) return;
-  syncSamuraiReferenceMap(G.players?.length||2);
 
   let maxX=0,maxY=0;
   G.cells.forEach(cell=>{
@@ -1144,6 +1150,7 @@ function renderBoard(){
   });
   board.style.width=(maxX+20)+'px';
   board.style.height=(maxY+20)+'px';
+  board.insertAdjacentHTML('beforeend',samuraiBackdrop(maxX+20,maxY+20));
 
   G.cells.forEach(cell=>{
     const {x,y}=hexPos(cell.col,cell.row);
@@ -1160,7 +1167,7 @@ function renderBoard(){
     const placed=G.placed[cell.id];
     const figs=G.figures[cell.id]||[];
     const fill=cellFill(cell);
-    const stroke=placed?G.players[placed.playerId]?.color||'#888':'#a0886060';
+    const stroke=placed?G.players[placed.playerId]?.color||'#888':(cell.type==='sea'?'#7aaac155':'#9b835f88');
     const strokeW=placed?2.5:1.5;
 
     let innerHtml=`<svg width="${HEX_W}" height="${HEX_H}" viewBox="0 0 ${HEX_W} ${HEX_H}">`;
@@ -1184,7 +1191,7 @@ function renderBoard(){
 
     // 타입 아이콘
     if(!placed&&!figs.length){
-      if(cell.type==='sea') innerHtml+=`<text x="${HEX_W/2}" y="${HEX_H/2+4}" text-anchor="middle" font-size="10" fill="#6090b0">〰</text>`;
+      if(cell.type==='sea') innerHtml+=`<text x="${HEX_W/2}" y="${HEX_H/2+4}" text-anchor="middle" font-size="10" fill="#4f8aa5" opacity=".55">〰</text>`;
     }
 
     // 하이라이트
