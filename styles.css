@@ -179,3 +179,5 @@ html[data-boardmate-my-turn="1"] .top-date{visibility:hidden}
 @media(max-width:760px){#boardmate-turn-banner{top:10px;right:10px;padding:8px 12px;font-size:12px}}
 
 .game-pill.panam{background:#dff2ff;color:#075985}
+
+.game-pill.projectl{background:#dff8fb;color:#087087}.library-card.conservas .library-icon{background:#e5f7fb}.library-card.projectl .library-icon{background:#e4f9fb}
