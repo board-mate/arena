@@ -333,21 +333,33 @@ function endTurn() {
   render();
 }
 
+function canPlaySequence(hand,piles,need){
+  if(hand.length<need) return false;
+  const legalOn=(val,pileIdx,ps)=>{
+    const cur=ps[pileIdx];
+    return pileIdx<2 ? (val>cur||val===cur-10) : (val<cur||val===cur+10);
+  };
+  const dfs=(cards,ps,depth)=>{
+    if(depth>=need) return true;
+    for(let i=0;i<cards.length;i++){
+      for(let p=0;p<4;p++){
+        const val=cards[i];
+        if(!legalOn(val,p,ps)) continue;
+        const nextP=[...ps];nextP[p]=val;
+        const nextC=cards.slice(0,i).concat(cards.slice(i+1));
+        if(dfs(nextC,nextP,depth+1)) return true;
+      }
+    }
+    return false;
+  };
+  return dfs([...hand],[...piles],0);
+}
 function checkValidPlays() {
   const hand = G.hands[G.currentTurn];
   if (hand.length === 0) return;
-
   const minReq = G.deck.length > 0 ? 2 : 1;
-  let possibleMoves = 0;
-
-  hand.forEach(card => {
-    for (let i = 0; i < 4; i++) {
-      if (isValidMove(card, i)) possibleMoves++;
-    }
-  });
-
-  if (possibleMoves < minReq && hand.length >= minReq) {
-    gameOver(false, `P${G.currentTurn + 1}님이 필요한 카드를 낼 수 없어 패배했습니다.`);
+  if (!canPlaySequence(hand,G.piles,minReq)) {
+    gameOver(false, `P${G.currentTurn + 1}님이 필요한 장수만큼 연속해서 카드를 낼 수 없어 패배했습니다.`);
   }
 }
 

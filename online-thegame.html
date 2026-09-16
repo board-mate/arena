@@ -10,7 +10,25 @@ function initialState(){const deck=shuffle(Array.from({length:98},(_,i)=>i+2)),h
 function legal(v,p){const cur=state.piles[p];return p<2?(v>cur||v===cur-10):(v<cur||v===cur+10)}
 function legalWith(s,v,p){const cur=s.piles[p];return p<2?(v>cur||v===cur-10):(v<cur||v===cur+10)}
 function minNeed(s){return s.deck.length?2:1}
-function hasEnoughMoves(s,seat){const need=minNeed(s),hand=s.hands[seat];if(hand.length<need)return hand.length>0?false:true;let count=0;for(const v of hand)if([0,1,2,3].some(p=>legalWith(s,v,p)))count++;return count>=Math.min(need,hand.length)}
+function hasEnoughMoves(s,seat){
+  const need=minNeed(s),hand=[...(s.hands[seat]||[])];
+  if(hand.length<need) return false;
+  const dfs=(piles,cards,depth)=>{
+    if(depth>=need) return true;
+    for(let i=0;i<cards.length;i++){
+      const v=cards[i];
+      for(let p=0;p<4;p++){
+        const tmp={piles};
+        if(!legalWith(tmp,v,p)) continue;
+        const nextP=[...piles]; nextP[p]=v;
+        const nextCards=cards.slice(0,i).concat(cards.slice(i+1));
+        if(dfs(nextP,nextCards,depth+1)) return true;
+      }
+    }
+    return false;
+  };
+  return dfs([...s.piles],hand,0);
+}
 async function mutate(fn){if(saving||!state)return;saving=true;const next=clone(state);try{fn(next);const nr=await saveState(revision,next);revision=nr;state=next;selected=null;render();document.querySelector('#sync').textContent='자동 저장됨';if(next.over)maybeSubmit()}catch(e){document.querySelector('#sync').textContent='재동기화 중';const row=await loadState();revision=row.revision;state=row.state;render()}finally{saving=false}}
 function play(p){if(state.over||state.current!==mySeat||selected==null)return;const hand=state.hands[mySeat],v=hand[selected];if(!legal(v,p))return;mutate(s=>{const vv=s.hands[mySeat][selected];s.hands[mySeat].splice(selected,1);s.piles[p]=vv;s.played++;s.logs.unshift(`${members[mySeat].nickname}: ${vv} → ${p<2?'오름':'내림'} 더미`);if(s.deck.length===0&&s.hands.every(h=>h.length===0)){s.over=true;s.win=true;s.reason='모든 숫자 카드를 내려놓았습니다.';}})}
 function endTurn(){if(state.over||state.current!==mySeat)return;const need=minNeed(state),hand=state.hands[mySeat];if(state.played<Math.min(need,Math.max(1,hand.length)))return;mutate(s=>{const hs=limit(s.playerCount);while(s.hands[mySeat].length<hs&&s.deck.length)s.hands[mySeat].push(s.deck.pop());s.hands[mySeat].sort((a,b)=>a-b);s.played=0;let n=(s.current+1)%s.playerCount;s.current=n;s.turnNo++;if(s.deck.length===0&&s.hands.every(h=>h.length===0)){s.over=true;s.win=true;s.reason='모든 숫자 카드를 내려놓았습니다.';return;}if(!hasEnoughMoves(s,n)){s.over=true;s.win=false;s.reason=`${members[n].nickname}님이 필요한 장수만큼 카드를 낼 수 없습니다.`;}})}

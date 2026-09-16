@@ -236,15 +236,15 @@ const CARDS = [
   { id:'land1', type:'land', str:1, name:'증원',     kor:'증원',     ability:'⚡ 증원: 덱 맨 위 카드를 확인하고 인접한 전장에 뒷면으로 낼 수 있다.', kind:'instant', tag:'reinforce' },
   { id:'land2', type:'land', str:2, name:'매복',     kor:'매복',     ability:'⚡ 매복: 원하는 전장에서 카드 1장을 뒤집는다.',  kind:'instant',  tag:'ambush'      },
   { id:'land3', type:'land', str:3, name:'기동',     kor:'기동',     ability:'⚡ 기동: 인접한 전장에서 카드 1장을 뒤집는다.',  kind:'instant',  tag:'maneuver'    },
-  { id:'land4', type:'land', str:4, name:'재배치',   kor:'재배치',   ability:'⚡ 재배치: 뒷면 카드 1장을 손으로 회수. 회수했으면 추가 차례를 얻는다.', kind:'instant', tag:'redeploy'  },
-  { id:'land5', type:'land', str:5, name:'해상 봉쇄',kor:'해상 봉쇄',ability:'∞ 해상 봉쇄: 인접 전장에 카드가 3장 이상 있을 때 새 카드가 놓이면 효과 없이 버린다.', kind:'ongoing', tag:'blockade'},
+  { id:'land4', type:'land', str:4, name:'엄호 사격',kor:'엄호 사격',ability:'∞ 엄호 사격: 이 카드 아래에 덮인 모든 카드의 힘이 4가 된다.', kind:'ongoing', tag:'coverfire' },
+  { id:'land5', type:'land', str:5, name:'방해',     kor:'방해',     ability:'⚡ 방해: 나부터 시작해 두 플레이어가 자신의 덮이지 않은 카드 1장씩을 뒤집는다.', kind:'instant', tag:'disrupt' },
   { id:'land6', type:'land', str:6, name:'무거운 탱크',kor:'탱크',   ability:null, kind:null, tag:null },
   // SEA (6장)
   { id:'sea1',  type:'sea',  str:1, name:'이동',     kor:'이동',     ability:'⚡ 이동: 카드 1장을 다른 전장으로 이동한다.',     kind:'instant',  tag:'transport'   },
   { id:'sea2',  type:'sea',  str:2, name:'확대',     kor:'확대',     ability:'∞ 확대: 뒷면 카드 힘이 모두 4가 된다.',         kind:'ongoing',  tag:'escalation'  },
   { id:'sea3',  type:'sea',  str:3, name:'기동',     kor:'기동',     ability:'⚡ 기동: 인접한 전장에서 카드 1장을 뒤집는다.',  kind:'instant',  tag:'maneuver'    },
-  { id:'sea4',  type:'sea',  str:4, name:'엄호 사격',kor:'엄호 사격',ability:'∞ 엄호 사격: 이 카드 아래 덮인 모든 카드의 힘이 4가 된다.', kind:'ongoing', tag:'coverfire'  },
-  { id:'sea5',  type:'sea',  str:5, name:'방해',     kor:'방해',     ability:'⚡ 방해: 상대가 자신의 카드 1장을 선택해 뒤집고, 그 다음 당신도 1장을 뒤집는다.', kind:'instant', tag:'disrupt'},
+  { id:'sea4',  type:'sea',  str:4, name:'재배치',   kor:'재배치',   ability:'⚡ 재배치: 내 뒷면 카드 1장을 손으로 회수하면 즉시 카드 1장을 더 낸다.', kind:'instant', tag:'redeploy' },
+  { id:'sea5',  type:'sea',  str:5, name:'봉쇄',     kor:'봉쇄',     ability:'∞ 봉쇄: 인접 전장에 이미 다른 카드가 3장 이상 있으면 새로 플레이한 카드를 파괴한다.', kind:'ongoing', tag:'blockade' },
   { id:'sea6',  type:'sea',  str:6, name:'초전함',   kor:'초전함',   ability:null, kind:null, tag:null },
 ];
 
@@ -319,6 +319,7 @@ function createGame(members) {
     hands: [hand0, hand1],
     // 덱 나머지
     deck,
+    destroyed: [], // 이번 배틀에서 파괴된 카드
     // 상태 플래그
     airdropNext: null,    // seat: 다음 차례 공수 가능
     extraTurn: null,      // seat: 재배치 추가 차례
@@ -358,41 +359,21 @@ function hasOngoingFor(seat, tag, field) {
 
 function getTheaterStr(th, seat, state) {
   let total = 0;
-  for (const entry of state.field[th][seat] || []) {
-    let s = getEffectiveStr(entry, state.field, seat);
-    // 엄호 사격(coverfire): sea4가 앞면이면 덮인 카드 힘 = 4
-    // -> 위에서 덮인(covered) 카드인지 확인
-    // 덮인 카드 = 인덱스가 마지막이 아닌 카드
-    const arr = state.field[th][seat];
-    const idx = arr.indexOf(entry);
-    const isCovered = idx < arr.length - 1;
-    if (isCovered) {
-      // 같은 side의 어느 전장에 coverfire가 있는지
-      if (hasOngoingFor(seat, 'coverfire', state.field)) s = 4;
-    }
-    // 지원(support): air1 앞면이면 인접 전장에서 +3
-    // → 해당 전장이 air1 소유자의 전장에 인접해 있으면 +3
-    // (아래에서 계산)
-    total += s;
+  const arr = state.field[th][seat] || [];
+  // Cover Fire: 같은 전장에서 이 카드보다 아래(먼저 놓인) 카드만 힘 4.
+  const coverIndexes=arr.map((entry,idx)=>entry.face&&CARD_MAP[entry.id]?.tag==='coverfire'?idx:-1).filter(i=>i>=0);
+  const highestCover=coverIndexes.length?Math.max(...coverIndexes):-1;
+  for(let idx=0;idx<arr.length;idx++){
+    let strength=getEffectiveStr(arr[idx],state.field,seat);
+    if(idx<highestCover) strength=4;
+    total+=strength;
   }
-  // 지원(support) 보너스
-  const thIdx = state.theaters.indexOf(th);
-  for (const adjSeat of [seat]) {
-    for (const adjEntry of state.field[th][adjSeat] || []) {
-      // 이미 합산했음, 지원은 별도 처리
-    }
-  }
-  // 지원(support): air1이 앞면이고, 이 전장이 air1의 전장(air)에 인접한 경우 +3
-  for (const supportSeat of [0, 1]) {
-    // 자신 side에 support가 있고 이 전장 side가 해당 seat라면
-    if (supportSeat !== seat) continue;
-    const supportTh = THEATER_ORDER.find(t => {
-      return (state.field[t][seat] || []).some(e => e.face && CARD_MAP[e.id].tag === 'support');
-    });
-    if (!supportTh) continue;
-    const supportThIdx = state.theaters.indexOf(supportTh);
-    const adjacent = Math.abs(thIdx - supportThIdx) === 1;
-    if (adjacent && th !== supportTh) total += 3;
+  // Support: Support 카드가 위치한 전장의 양옆에 +3.
+  const thIdx=state.theaters.indexOf(th);
+  const supportTh=THEATER_ORDER.find(t=>(state.field[t][seat]||[]).some(e=>e.face&&CARD_MAP[e.id]?.tag==='support'));
+  if(supportTh){
+    const supportIdx=state.theaters.indexOf(supportTh);
+    if(Math.abs(thIdx-supportIdx)===1) total+=3;
   }
   return total;
 }
@@ -453,6 +434,7 @@ function nextBattle(s) {
   s.hands[0] = newDeck.splice(0, 6);
   s.hands[1] = newDeck.splice(0, 6);
   s.deck = newDeck;
+  s.destroyed = [];
   // 필드 초기화
   s.field = { air:{0:[],1:[]}, land:{0:[],1:[]}, sea:{0:[],1:[]} };
   s.airdropNext = null;
@@ -511,68 +493,49 @@ function startGame() {
 // ═══════════════════════════════════════════════════════
 // 카드 내기 (Deploy faceup)
 // ═══════════════════════════════════════════════════════
+function destroyPlayedCard(s,cardId,reason){
+  if(!Array.isArray(s.destroyed)) s.destroyed=[];
+  s.destroyed.push(cardId);
+  s.logs.unshift(`${reason} [${CARD_MAP[cardId]?.kor||cardId}] 파괴`);
+}
+function hasContainment(s){return hasOngoingFor(0,'containment',s.field)||hasOngoingFor(1,'containment',s.field)}
+function isBlockaded(theater,s){
+  const targetIdx=s.theaters.indexOf(theater);
+  if(targetIdx<0) return false;
+  const occupied=(s.field[theater][0]?.length||0)+(s.field[theater][1]?.length||0);
+  if(occupied<3) return false;
+  return s.theaters.some((source,pos)=>Math.abs(pos-targetIdx)===1&&[0,1].some(seat=>(s.field[source][seat]||[]).some(e=>e.face&&CARD_MAP[e.id]?.tag==='blockade')));
+}
 function playFaceup(handIdx, theater) {
   if (state.currentTurn !== mySeat) return;
-  const cardId = state.hands[mySeat][handIdx];
-  const card = CARD_MAP[cardId];
-  const canAny = state.airdropNext === mySeat ||
-    (hasOngoingFor(mySeat, 'aerodrome', state.field) && card.str <= 3);
-  if (!canAny && card.type !== theater) {
-    alert(`이 카드(${card.kor})는 ${typeLabel(theater)} 전장에 낼 수 없습니다.`); return;
-  }
-  mutate(s => {
-    s.hands[mySeat].splice(handIdx, 1);
-    s.field[theater][mySeat].push({ id: cardId, face: true });
-    s.logs.unshift(`P${mySeat+1} → [${card.kor}] 앞면으로 ${theater.toUpperCase()} 전장에 배치`);
-    if (s.airdropNext === mySeat) s.airdropNext = null;
-    // 봉쇄(containment) 체크: 다른 플레이어 앞면에 containment가 있으면 이 카드 즉시 버림
-    // (봉쇄는 뒷면 카드를 낼 때 적용, 앞면은 해당 없음)
-    // 즉시 능력 처리 → 여기서는 별도 UI 흐름으로
-    applyInstantAbility(s, cardId, theater, mySeat);
+  const cardId = state.hands[mySeat][handIdx], card = CARD_MAP[cardId];
+  const canAny = state.airdropNext === mySeat || (hasOngoingFor(mySeat,'aerodrome',state.field)&&card.str<=3);
+  if(!canAny&&card.type!==theater){alert(`이 카드(${card.kor})는 ${typeLabel(theater)} 전장에 낼 수 없습니다.`);return;}
+  mutate(s=>{
+    s.hands[mySeat].splice(handIdx,1);
+    if(s.airdropNext===mySeat) s.airdropNext=null;
+    if(isBlockaded(theater,s)) destroyPlayedCard(s,cardId,`P${mySeat+1} → Blockade! ${theater.toUpperCase()}에 플레이한`);
+    else{
+      s.field[theater][mySeat].push({id:cardId,face:true});
+      s.logs.unshift(`P${mySeat+1} → [${card.kor}] 앞면으로 ${theater.toUpperCase()} 전장에 배치`);
+      applyInstantAbility(s,cardId,theater,mySeat);
+    }
     checkBattleEnd(s);
   });
 }
-
-// ═══════════════════════════════════════════════════════
-// 카드 내기 (Improvise facedown)
-// ═══════════════════════════════════════════════════════
 function playFacedown(handIdx, theater) {
   if (state.currentTurn !== mySeat) return;
-  const cardId = state.hands[mySeat][handIdx];
-  const card = CARD_MAP[cardId];
-  mutate(s => {
-    // 봉쇄(containment): 상대방 any theater에 containment 앞면이 있으면 이 카드 즉시 버림
-    const oppHasContainment = hasOngoingFor(1 - mySeat, 'containment', s.field);
-    s.hands[mySeat].splice(handIdx, 1);
-    if (oppHasContainment) {
-      s.deck.push(cardId);
-      s.logs.unshift(`P${mySeat+1} → 봉쇄 전략! 뒷면 카드(${card.kor}) 즉시 버려짐`);
-    } else {
-      // 해상 봉쇄(blockade): 인접 전장에 총 3장 이상이면 버림
-      if (isBlockaded(theater, s)) {
-        s.deck.push(cardId);
-        s.logs.unshift(`P${mySeat+1} → 해상 봉쇄! ${theater.toUpperCase()} 인접에 카드가 많아 버려짐`);
-      } else {
-        s.field[theater][mySeat].push({ id: cardId, face: false });
-        s.logs.unshift(`P${mySeat+1} → 카드 뒷면으로 ${theater.toUpperCase()} 전장에 배치`);
-      }
+  const cardId=state.hands[mySeat][handIdx],card=CARD_MAP[cardId];
+  mutate(s=>{
+    s.hands[mySeat].splice(handIdx,1);
+    if(hasContainment(s)) destroyPlayedCard(s,cardId,`P${mySeat+1} → Containment! 뒷면`);
+    else if(isBlockaded(theater,s)) destroyPlayedCard(s,cardId,`P${mySeat+1} → Blockade! ${theater.toUpperCase()}에 플레이한 뒷면`);
+    else{
+      s.field[theater][mySeat].push({id:cardId,face:false});
+      s.logs.unshift(`P${mySeat+1} → 카드 뒷면으로 ${theater.toUpperCase()} 전장에 배치`);
     }
     checkBattleEnd(s);
   });
-}
-
-function isBlockaded(theater, s) {
-  const thIdx = s.theaters.indexOf(theater);
-  for (let pos = 0; pos < s.theaters.length; pos++) {
-    if (Math.abs(pos - thIdx) !== 1) continue;
-    const adjTh = s.theaters[pos];
-    const totalCards = (s.field[adjTh][0]?.length||0) + (s.field[adjTh][1]?.length||0);
-    // 해상 봉쇄: 인접 전장에 blockade가 앞면이고 3장 이상
-    if (hasOngoingFor(0,'blockade',s.field) || hasOngoingFor(1,'blockade',s.field)) {
-      if (totalCards >= 3) return true;
-    }
-  }
-  return false;
 }
 
 // ═══════════════════════════════════════════════════════
@@ -591,7 +554,7 @@ function applyInstantAbility(s, cardId, theater, seat) {
       // → 클라이언트 선택이 필요하므로, 플래그 설정 후 UI에서 처리
       if (s.deck.length > 0) {
         s.pendingAbility = { tag:'reinforce', seat, theater, topCard: s.deck[0] };
-        s.logs.unshift('⚡ 증원: 덱 맨 위 카드를 확인했습니다. 인접 전장에 뒷면으로 낼지 선택하세요.');
+        s.logs.unshift('⚡ 증원: 덱 맨 위 카드를 뽑아 인접 전장에 뒷면으로 플레이합니다.');
       }
       break;
     }
@@ -616,9 +579,9 @@ function applyInstantAbility(s, cardId, theater, seat) {
       s.logs.unshift('⚡ 재배치: 회수할 뒷면 카드를 선택하세요.');
       break;
     case 'disrupt':
-      // 상대가 자신 카드 1장 뒤집기, 그 다음 나도 1장 뒤집기
+      // 시전자부터 시작해 각자 자신의 덮이지 않은 카드 1장 뒤집기
       s.pendingAbility = { tag:'disrupt', seat, theater, step: 1 };
-      s.logs.unshift('⚡ 방해: 상대방이 자신의 카드 1장을 선택해 뒤집어야 합니다.');
+      s.logs.unshift('⚡ 방해: 시전자부터 자신의 덮이지 않은 카드 1장씩 뒤집습니다.');
       break;
   }
 }
@@ -664,11 +627,10 @@ function resolveAbility(decision) {
     switch(tag) {
       case 'reinforce': {
         if (decision.place && s.deck.length > 0) {
-          const topId = s.deck.shift();
-          s.field[decision.th][seat].push({ id: topId, face: false });
-          s.logs.unshift(`⚡ 증원: ${decision.th.toUpperCase()} 전장에 뒷면으로 배치`);
-        } else {
-          s.logs.unshift('⚡ 증원: 패스');
+          const topId=s.deck.shift();
+          if(hasContainment(s)) destroyPlayedCard(s,topId,'⚡ 증원 → Containment로 뒷면 카드');
+          else if(isBlockaded(decision.th,s)) destroyPlayedCard(s,topId,`⚡ 증원 → Blockade로 ${decision.th.toUpperCase()}의 뒷면 카드`);
+          else {s.field[decision.th][seat].push({id:topId,face:false});s.logs.unshift(`⚡ 증원: ${decision.th.toUpperCase()} 전장에 뒷면으로 배치`);}
         }
         break;
       }
@@ -696,7 +658,7 @@ function resolveAbility(decision) {
         // decision: { srcTh, srcOwner, srcIdx, dstTh }
         const { srcTh, srcOwner, srcIdx, dstTh } = decision;
         const arr = s.field[srcTh][srcOwner];
-        if (arr && arr[srcIdx]) {
+        if (srcOwner===seat && arr && arr[srcIdx]) {
           const [entry] = arr.splice(srcIdx, 1);
           s.field[dstTh][srcOwner].push(entry);
           const card = CARD_MAP[entry.id];
@@ -718,40 +680,34 @@ function resolveAbility(decision) {
         break;
       }
       case 'disrupt': {
-        if (pa.step === 1) {
-          // 상대가 선택 → decision: { th, owner(=opp), idx }
-          const { th: tgt, owner, idx } = decision;
-          const entry = s.field[tgt][owner]?.[idx];
-          if (entry) {
-            const arr = s.field[tgt][owner];
-            const isCovered = idx < arr.length - 1;
-            if (!isCovered) {
-              entry.face = !entry.face;
-              const card = CARD_MAP[entry.id];
-              s.logs.unshift(`⚡ 방해 1: P${owner+1} [${card.kor}] 뒤집기`);
-              if (entry.face && card.kind === 'instant') applyInstantAbility(s, entry.id, tgt, owner);
+        const actor=pa.step===1?seat:1-seat;
+        const {th:tgt,owner,idx}=decision;
+        const entry=s.field[tgt][owner]?.[idx];
+        let nested=false;
+        if(entry&&owner===actor){
+          const arr=s.field[tgt][owner],isCovered=idx<arr.length-1;
+          if(!isCovered){
+            entry.face=!entry.face;
+            const card=CARD_MAP[entry.id];
+            s.logs.unshift(`⚡ 방해 ${pa.step}: P${owner+1} [${card.kor}] 뒤집기`);
+            if(entry.face&&card.kind==='instant'){
+              applyInstantAbility(s,entry.id,tgt,owner);
+              nested=!!s.pendingAbility;
             }
           }
-          // 이제 시전자가 1장 뒤집기
-          s.pendingAbility = { tag:'disrupt', seat, theater, step:2 };
-          return; // mutate 루프 탈출 방지
-        } else if (pa.step === 2) {
-          const { th: tgt, owner, idx } = decision;
-          const entry = s.field[tgt][owner]?.[idx];
-          if (entry) {
-            const arr = s.field[tgt][owner];
-            const isCovered = idx < arr.length - 1;
-            if (!isCovered) {
-              entry.face = !entry.face;
-              const card = CARD_MAP[entry.id];
-              s.logs.unshift(`⚡ 방해 2: P${owner+1} [${card.kor}] 뒤집기`);
-              if (entry.face && card.kind === 'instant') applyInstantAbility(s, entry.id, tgt, owner);
-            }
-          }
+        }
+        if(pa.step===1){
+          const continuation={tag:'disrupt',seat,theater,step:2};
+          if(nested) s.pendingAbility.resume=continuation;
+          else s.pendingAbility=continuation;
+          return;
         }
         break;
       }
     }
+    // 개정판 타이밍: 먼저 발동한 능력의 남은 절차는 새로 발동한 능력이 완전히 해결된 뒤 이어진다.
+    if(s.pendingAbility&&pa.resume&&!s.pendingAbility.resume) s.pendingAbility.resume=pa.resume;
+    else if(!s.pendingAbility&&pa.resume) s.pendingAbility=pa.resume;
     if (!s.pendingAbility) checkBattleEnd(s);
   });
 }
@@ -1010,10 +966,7 @@ function renderFieldCard(entry, owner, th, idx, isCovered, isMine, state, mySeat
 function renderPendingAbilityUI(pa, mySeat, oppSeat, s) {
   if (!pa) return '';
   const isMyAbility = pa.seat === mySeat;
-  // disrupt step1: 상대가 선택
-  const isDisruptStep1 = pa.tag === 'disrupt' && pa.step === 1;
-  const mustAct = isMyAbility || isDisruptStep1;
-  if (!mustAct && pa.tag !== 'disrupt') {
+  if (!isMyAbility && pa.tag !== 'disrupt') {
     return `<div class="notice">⚡ 상대방이 능력을 처리 중입니다…</div>`;
   }
 
@@ -1025,7 +978,7 @@ function renderPendingAbilityUI(pa, mySeat, oppSeat, s) {
       const adjIdxs = getAdjacentIdxs(pa.theater, s.theaters);
       inner = `<h3>⚡ 증원</h3>
         <p>덱 맨 위 카드: ${topCard ? `<b>${topCard.kor}</b> (힘${topCard.str} · ${typeLabel(topCard.type)})` : '없음'}</p>
-        <p>인접 전장에 뒷면으로 배치하시겠습니까?</p>
+        <p>인접 전장 하나를 선택하세요. Containment/Blockade가 적용되면 그 카드는 파괴됩니다.</p>
         <div class="row">
           ${adjIdxs.map(pos => {
             const t = s.theaters[pos];
@@ -1033,7 +986,6 @@ function renderPendingAbilityUI(pa, mySeat, oppSeat, s) {
               ${t==='air'?'✈':t==='land'?'🚀':'⛵'} ${t==='air'?'공기':t==='land'?'육지':'바다'}에 배치
             </button>`;
           }).join('')}
-          <button class="btn btn-ghost ability-btn" data-resolve='${JSON.stringify({place:false})}'>패스</button>
         </div>`;
       break;
     }
@@ -1057,7 +1009,7 @@ function renderPendingAbilityUI(pa, mySeat, oppSeat, s) {
       inner = `<h3>⚡ 이동 — 카드를 다른 전장으로</h3>
         <p>이동할 카드를 선택하세요.</p>
         <div class="modal-grid">
-          ${renderSelectableFieldCards(THEATER_ORDER, s, 'transport-src')}
+          ${renderSelectableOwnerFieldCards(THEATER_ORDER,s,pa.seat,'transport-src',false)}
         </div>
         <button class="btn btn-ghost ability-btn" data-resolve='${JSON.stringify({skip:true})}' style="margin-top:8px">패스</button>`;
       break;
@@ -1073,26 +1025,11 @@ function renderPendingAbilityUI(pa, mySeat, oppSeat, s) {
       break;
     }
     case 'disrupt': {
-      const actSeat = pa.step === 1 ? oppSeat : mySeat;
-      if (pa.step === 1 && mySeat !== oppSeat) {
-        // 상대(상대=isDisruptStep1일 때 상대가 선택)
-        // mySeat가 아닌 사람이 선택
-      }
-      if (pa.step === 1 && mySeat === pa.seat) {
-        // 시전자 대기
-        return `<div class="notice">⚡ 방해 — 상대방이 뒤집을 카드를 선택하는 중입니다…</div>`;
-      }
-      if (pa.step === 2 && mySeat !== pa.seat) {
-        return `<div class="notice">⚡ 방해 2 — 시전자가 카드를 뒤집는 중입니다…</div>`;
-      }
-      const stepLabel = pa.step === 1
-        ? `⚡ 방해 1 — 당신의 카드 1장을 뒤집으세요`
-        : `⚡ 방해 2 — 카드 1장을 뒤집으세요`;
-      inner = `<h3>${stepLabel}</h3>
-        <div class="modal-grid">
-          ${renderSelectableFieldCards(THEATER_ORDER, s, 'disrupt-target')}
-        </div>
-        <button class="btn btn-ghost ability-btn" data-resolve='${JSON.stringify({skip:true})}' style="margin-top:8px">패스</button>`;
+      const actor=pa.step===1?pa.seat:1-pa.seat;
+      if(mySeat!==actor) return `<div class="notice">⚡ 방해 — P${actor+1}이 자신의 카드를 뒤집는 중입니다…</div>`;
+      const stepLabel=pa.step===1?'⚡ 방해 1 — 먼저 내 카드 1장을 뒤집기':'⚡ 방해 2 — 내 카드 1장을 뒤집기';
+      const selectable=(THEATER_ORDER.some(th=>(s.field[th][actor]||[]).some((_,i,arr)=>i===arr.length-1)));
+      inner=`<h3>${stepLabel}</h3><div class="modal-grid">${renderSelectableOwnerFieldCards(THEATER_ORDER,s,actor,'disrupt-target',true)}</div>${selectable?'':`<button class="btn btn-ghost ability-btn" data-resolve='${JSON.stringify({skip:true})}' style="margin-top:8px">뒤집을 카드 없음 · 계속</button>`}`;
       break;
     }
   }
@@ -1128,6 +1065,19 @@ function renderSelectableFieldCards(ths, s, cls) {
   return html || '<span style="color:var(--muted);font-size:11px">선택 가능한 카드가 없습니다.</span>';
 }
 
+function renderSelectableOwnerFieldCards(ths,s,seat,cls,uncoveredOnly=true){
+  let html='';
+  for(const th of ths){
+    const arr=s.field[th][seat]||[];
+    for(let i=0;i<arr.length;i++){
+      const entry=arr[i],card=CARD_MAP[entry.id],isCovered=i<arr.length-1;
+      if(uncoveredOnly&&isCovered) continue;
+      html+=`<button class="btn btn-${th} ${cls}" style="font-size:10px;padding:6px 8px" data-th="${th}" data-owner="${seat}" data-idx="${i}">P${seat+1} ${th==='air'?'✈':th==='land'?'🚀':'⛵'} [${entry.face?card.kor:'?'}] ${entry.face?'앞':'뒤'}${isCovered?' (덮임)':''}</button>`;
+    }
+  }
+  return html||'<span style="color:var(--muted);font-size:11px">선택 가능한 카드가 없습니다.</span>';
+}
+
 function renderSelectableFacedownCards(s, seat, cls) {
   let html = '';
   for (const th of THEATER_ORDER) {
@@ -1152,9 +1102,17 @@ function bindPendingAbilityButtons(pa, mySeat, oppSeat, s) {
     btn.addEventListener('click', () => {
       const decision = JSON.parse(btn.dataset.resolve);
       if (decision.skip) {
-        mutate(ss => {
-          delete ss.pendingAbility;
-          checkBattleEnd(ss);
+        mutate(ss=>{
+          const cur=ss.pendingAbility;if(!cur)return;
+          const resume=cur.resume||null;
+          if(cur.tag==='disrupt'&&cur.step===1){
+            ss.pendingAbility={tag:'disrupt',seat:cur.seat,theater:cur.theater,step:2};
+          }else if(resume){
+            ss.pendingAbility=resume;
+          }else{
+            delete ss.pendingAbility;
+            checkBattleEnd(ss);
+          }
         });
         return;
       }

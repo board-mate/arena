@@ -633,6 +633,7 @@ function initNewGame(count,names){
     playedSlowThisTurn:false,
     log:[],
     gameOver:false,
+    endTriggered:false,
     finalOrder:null,
   };
 
@@ -778,13 +779,12 @@ function placeToken(tokenIdx,cellId){
   // 포획 체크
   checkCaptures(cellId);
 
-  // 게임 종료 체크
-  if(!checkGameOver()){
-    selectedTokenIdx=null;
-    selectedCellId=null;
-    renderAll();
-    publishState('token-placed');
-  }
+  // 종료 조건이 생겨도 현재 플레이어는 이번 턴을 끝까지 진행할 수 있다.
+  markGameEndTrigger();
+  selectedTokenIdx=null;
+  selectedCellId=null;
+  renderAll();
+  publishState('token-placed');
 }
 
 // 인접한 마을/도시가 포획 조건인지 확인
@@ -915,8 +915,11 @@ function handleExchangeClick(cellId){
       }
       a[i1]=fig2; b[i2]=fig1;
       addLog(`${G.players[G.active].name}: 조각교환 ${figTypeKo(first)} ${FIG_ICON[fig1]} ↔ ${figTypeKo(cellId)} ${FIG_ICON[fig2]}`);
+      // 조각교환 자체도 빠른 타일 1장을 플레이한 것이므로, 교환 후 이미 둘러싸인 도시가 있다면 즉시 판정한다.
+      tryCapture(first);
+      tryCapture(cellId);
       exchangeStep=null;
-      checkGameOver();
+      markGameEndTrigger();
       renderAll();
       publishState('exchange');
     });
@@ -954,7 +957,7 @@ function handleExchangeClick(cellId){
       checkCaptures(cellId);
       checkCaptures(exchangeStep.first);
       exchangeStep=null;
-      checkGameOver();
+      markGameEndTrigger();
       renderAll();
       publishState('tokenswap');
       return true;
@@ -968,6 +971,11 @@ function endTurn(){
   const player=G.players[G.active];
   if(!G.playedFastThisTurn&&!G.playedSlowThisTurn){
     showToast('최소 1장의 타일을 내야 합니다.');return;
+  }
+  // 사무라이 공식 FAQ: 종료 조건이 생겨도 그 플레이어는 남은 빠른 타일까지 포함해 턴을 마친다.
+  if(G.endTriggered||gameEndConditionMet()){
+    finalizeGameOver();
+    return;
   }
   // 손패 보충
   const needed=5-player.hand.length;
@@ -984,21 +992,39 @@ function endTurn(){
   publishState('turn-end');
 }
 
-function checkGameOver(){
+function gameEndConditionMet(){
   if(!G) return false;
   const types=[FIG.HELMET,FIG.BUDDHA,FIG.RICE];
   const allSupplyGone=types.some(t=>G.supply[t]===0&&!Object.values(G.figures).some(arr=>arr.includes(t)));
-  const tooManyAside=Object.values(G.aside).reduce((s,v)=>s+v,0)>=4;
-  if(allSupplyGone||tooManyAside){
-    G.phase='game-over';
-    G.gameOver=true;
-    computeFinalOrder();
-    renderAll();
-    publishState('game-over');
-    setTimeout(showEndModal,500);
-    return true;
+  const tooManyAside=Object.values(G.aside).reduce((sum,v)=>sum+v,0)>=4;
+  return allSupplyGone||tooManyAside;
+}
+
+function markGameEndTrigger(){
+  if(!gameEndConditionMet()) return false;
+  if(!G.endTriggered){
+    G.endTriggered=true;
+    addLog('⚑ 게임 종료 조건 달성 — 현재 플레이어는 이번 턴을 끝까지 진행합니다.');
+    showToast('게임 종료 조건 달성 · 남은 빠른 타일을 낸 뒤 턴을 종료하세요.');
   }
-  return false;
+  return true;
+}
+
+function finalizeGameOver(){
+  if(!G||G.gameOver) return true;
+  G.phase='game-over';
+  G.gameOver=true;
+  G.endTriggered=true;
+  computeFinalOrder();
+  renderAll();
+  publishState('game-over');
+  setTimeout(showEndModal,500);
+  return true;
+}
+
+function checkGameOver(){
+  // 구버전 호출 호환: 즉시 종료하지 않고 종료 예약만 한다.
+  return markGameEndTrigger();
 }
 
 function computeFinalOrder(){
@@ -1038,25 +1064,25 @@ function computeFinalOrder(){
     return;
   }
 
-  // eligible 중 다른 종류 합산 최다
-  const withOthers=eligible.map(p=>{
-    const myBest=types.find(t=>mostOf(t).length===1&&mostOf(t)[0].id===p.id);
-    const others=types.filter(t=>t!==myBest).reduce((s,t)=>s+p.captured[t],0);
-    return{p,others};
-  }).sort((a,b)=>b.others-a.others);
-
-  if(withOthers[0].others>withOthers[1]?.others){
-    G.winner=[withOthers[0].p.id];
-    G.finalOrder=eligible.map(e=>e.p.id);
-    addLog(`🏆 ${withOthers[0].p.name} 승리! (다른 조각 최다)`);
-    return;
+  // 단독 다수 1종을 가진 후보끼리는 나머지 두 종류를 큰 값부터 비교한다.
+  // (두 번째로 강한 영역 → 세 번째 영역 → 전체 포획 수)
+  const scored=eligible.map(p=>{
+    const majorityType=types.find(t=>mostOf(t).length===1&&mostOf(t)[0].id===p.id);
+    const otherCounts=types.filter(t=>t!==majorityType).map(t=>p.captured[t]).sort((a,b)=>b-a);
+    return {p,key:[otherCounts[0]||0,otherCounts[1]||0,totalFigs(p)]};
+  });
+  scored.sort((a,b)=>b.key[0]-a.key[0]||b.key[1]-a.key[1]||b.key[2]-a.key[2]);
+  const best=scored[0];
+  const tied=scored.filter(x=>x.key.every((v,i)=>v===best.key[i]));
+  G.winner=tied.map(x=>x.p.id);
+  const eligibleOrder=scored.map(x=>x.p.id);
+  const rest=players.filter(p=>!eligibleOrder.includes(p.id)).sort((a,b)=>totalFigs(b)-totalFigs(a)).map(p=>p.id);
+  G.finalOrder=[...eligibleOrder,...rest];
+  if(tied.length===1){
+    addLog(`🏆 ${best.p.name} 승리! (나머지 세력 ${best.key[0]} → ${best.key[1]}, 총 ${best.key[2]})`);
+  }else{
+    addLog(`🏆 ${tied.map(x=>x.p.name).join(', ')} 공동 우세 (모든 타이브레이커 동률)`);
   }
-
-  // 동점이면 전체 합산
-  const tieSorted=[...eligible].sort((a,b)=>totalFigs(b)-totalFigs(a));
-  G.winner=[tieSorted[0].id];
-  G.finalOrder=tieSorted.map(p=>p.id);
-  addLog(`🏆 ${tieSorted[0].name} 승리! (전체 조각 최다)`);
 }
 
 function totalFigs(p){return p.captured.helmet+p.captured.buddha+p.captured.rice;}

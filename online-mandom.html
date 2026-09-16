@@ -487,8 +487,20 @@ function resetRound(s) {
   const aliveSet=new Set(s.players.filter(p => p.lives < 2).map(p => p.seat));
   const order=(Array.isArray(s.turnOrder)&&s.turnOrder.length?s.turnOrder:s.players.map(p=>p.seat)).filter(x=>aliveSet.has(x));
   if (!order.length) return;
-  const prevIdx=order.indexOf(previousChallenger);
-  s.currentTurn=order[(prevIdx>=0?prevIdx+1:0)%order.length];
+  // 직전 라운드에 던전에 들어간 플레이어가 다음 라운드의 시작 플레이어다.
+  // 직전 도전자가 탈락했다면 그 다음 생존자가 시작한다.
+  if(order.includes(previousChallenger)){
+    s.currentTurn=previousChallenger;
+  }else{
+    const fullOrder=Array.isArray(s.turnOrder)&&s.turnOrder.length?s.turnOrder:s.players.map(p=>p.seat);
+    const oldIdx=fullOrder.indexOf(previousChallenger);
+    let next=order[0];
+    for(let step=1;step<=fullOrder.length;step++){
+      const cand=fullOrder[(Math.max(0,oldIdx)+step)%fullOrder.length];
+      if(aliveSet.has(cand)){next=cand;break;}
+    }
+    s.currentTurn=next;
+  }
   s.logs.unshift(`── ${s.round}라운드 시작 · 순서 ${order.map(x=>members[x]?.nickname||x+1).join(' → ')}`);
 }
 
