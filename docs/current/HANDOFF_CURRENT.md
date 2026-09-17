@@ -1,8 +1,8 @@
 # 🤝 BoardMate Arena — CURRENT HANDOFF
 
-**Baseline:** v11.4.60  
-**Date:** 2026-09-10  
-**Service worker cache:** `boardmate-shell-v11.4.60`  
+**Baseline:** v11.4.79  
+**Date:** 2026-09-17  
+**Service worker cache:** `boardmate-shell-v11.4.79`  
 **New DB/RPC in this release:** 없음
 
 ---
@@ -107,11 +107,19 @@
 - 투명 배경 아이콘.
 - manifest/favicon/Apple Touch 아이콘 유지.
 
+### v11.4.79 알림 복귀 안정화
+- `alarm.js`의 방 목록/단일 방 알림 판정을 직렬화해 초기 로드와 복귀 이벤트가 겹쳐도 중복 알림을 줄임.
+- 숨겨진 탭의 polling을 멈추고 `visibilitychange`, `focus`, `pageshow`, `resume`, `online` 복귀 시 즉시 재확인.
+- 단일 방 watcher는 진행 중 요청 중 들어온 복귀 신호를 한 번 큐에 넣어 놓치지 않음.
+- 홈 진행 게임/다인플 방 목록도 복귀 직후 갱신하고 요청 중복을 직렬화.
+- 캐시 쿼리 및 서비스워커 캐시: `11.4.79`.
+- 신규 DB/RPC 없음.
+
 ---
 
 ## 5. DB / 보안
 
-- v11.4.60 신규 SQL/RPC 없음.
+- v11.4.79 신규 SQL/RPC 없음.
 - 현재 체인: `database/SUPABASE_CURRENT_UPDATE.sql`.
 - 과거 SQL 원문: `database/history/`.
 - DB 역적용은 자동으로 하지 말 것. 데이터 손실 위험을 따로 검토.
@@ -140,9 +148,9 @@
 
 ## 7. 다음 작업 우선순위 제안
 
-**P1 — 알림 신뢰성:** PC 브라우저 탭/상단 배너/시스템 알림과 모바일 최소화·복귀 시 재확인을 안정화. 완전 종료 Web Push는 현재 요구 범위 밖.  
-**P2 — 행성 X 실사용 회귀:** 진행 중 방에서 교차 검증 공개 기록, X 찾기 양옆 선택, 최종 공개까지 실제 2인 이상 E2E.  
-**P3 — 전체 게임 E2E 자동화:** 방 생성 → 참가 → 첫 행동 → 종료/취소를 게임별 최소 시나리오로 자동화.
+**완료 — 알림 신뢰성:** PC 브라우저 탭/상단 배너/시스템 알림과 모바일 최소화·복귀 시 재확인을 안정화했습니다. 완전 종료 Web Push는 현재 요구 범위 밖입니다.  
+**P1 — 행성 X 실사용 회귀:** 진행 중 방에서 교차 검증 공개 기록, X 찾기 양옆 선택, 최종 공개까지 실제 2인 이상 E2E.  
+**P2 — 전체 게임 E2E 자동화:** 방 생성 → 참가 → 첫 행동 → 종료/취소를 게임별 최소 시나리오로 자동화.
 
 ## v11.4.60 긴급 빈 화면 복구
 - 루트 `index.html`의 jsDelivr Supabase SDK가 parser-blocking이던 구조를 제거했다.

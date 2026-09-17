@@ -1,3 +1,13 @@
+BoardMate Arena v11.4.79 alarm resume verification
+- alarm evaluation queue regression: PASS
+- overlapping room refreshes do not share a first-load baseline: PASS (static contract test)
+- hidden-tab polling pause: PASS (static contract test)
+- pagehide/pageshow/resume/online/focus/visibilitychange hooks: PASS (static contract test)
+- home and multiplayer room list request serialization: PASS (static contract test)
+- local browser home + Calico game-start smoke: PASS
+- browser console errors/warnings: 0
+- fully closed-app Web Push: not implemented; outside current handoff scope
+
 BoardMate Arena v11.4.51 alarm verification
 - app.js syntax: PASS
 - alarm.js syntax: PASS

@@ -1,5 +1,15 @@
 # BoardMate Arena — MASTER CHANGELOG
 
+## v11.4.79 — 알림 복귀 안정화 (2026-09-17)
+
+- `alarm.js`의 방 목록/단일 방 알림 평가를 직렬화해 초기 로드와 복귀 이벤트가 겹쳐도 중복 알림을 줄였습니다.
+- `multi-common.js` watcher가 진행 중 poll 중에 들어온 복귀 신호를 한 번 큐에 넣습니다.
+- 숨겨진 탭의 polling을 멈추고 `visibilitychange`, `focus`, `pageshow`, `resume`, `online` 복귀 시 즉시 재확인합니다.
+- 홈 진행 게임과 다인플 방 목록도 복귀 직후 갱신하며 요청을 직렬화합니다.
+- `app.js`, `multi-common.js`, `sw.js`, `index.html` 캐시 버전을 `11.4.79`로 갱신했습니다.
+- Calico v11.4.78의 고양이 토큰 소진 대체 규칙과 공식 공급량/목표 점수 보정을 포함합니다.
+- 신규 DB/RPC/SQL 없음.
+
 ## v11.4.60 — Emergency boot syntax fix (2026-09-10)
 
 - `app.js`의 `renderRoom()` 종료 중괄호 누락을 수정.
@@ -10,14 +20,15 @@
 - 신규 DB/RPC/SQL 없음.
 
 
-## ⭐ Current baseline — v11.4.60
+## ⭐ Current baseline — v11.4.79
 
 - 행성 X 진행 중 구형 논문 패널티 로그를 공개 논문 상태와 합쳐 상세 표시.
 - 행성 X 찾기에서 후보 섹터의 왼쪽/오른쪽 인접 섹터 번호를 동적으로 안내.
 - 종료 시 전체 섹터 실제 개체 + 행성 X 위치 + X 양옆 실제 개체 공개.
 - 내 차례 브라우저 탭 제목 `🔔 내 차례 ·` 표시.
-- 실행 중 알림 재확인/dedupe 보강. 완전 종료 Web Push는 아직 미구현.
-- v11.4.60 신규 DB/RPC 없음.
+- 실행 중 알림 재확인/dedupe 보강, 숨김 탭 polling 중지, 복귀 이벤트 즉시 재확인.
+- 알림 평가와 홈/다인플 목록 요청 직렬화. 완전 종료 Web Push는 아직 미구현.
+- v11.4.79 신규 DB/RPC 없음.
 - 상세 현재 상태: `docs/current/HANDOFF_CURRENT.md`.
 
 

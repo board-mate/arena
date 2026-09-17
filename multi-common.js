@@ -1,4 +1,4 @@
-import {processSingleRoomAlarm} from './alarm.js?v=11.4.64';
+import {processSingleRoomAlarm} from './alarm.js?v=11.4.79';
 const CFG=window.BOARDMATE_CONFIG||{};
 export const configured=()=>Boolean(CFG.supabaseUrl&&CFG.supabaseAnonKey&&window.supabase?.createClient);
 export const sb=configured()?window.supabase.createClient(CFG.supabaseUrl,CFG.supabaseAnonKey,{auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}}):null;
@@ -227,15 +227,31 @@ async function pollRoomAlarm(){
 }
 function startAlarmWatcher(){
   if(alarmWatcherStarted||!roomId)return;alarmWatcherStarted=true;
-  let wakeBusy=false;
-  const wake=()=>{if(wakeBusy)return;wakeBusy=true;Promise.resolve(pollRoomAlarm()).finally(()=>{wakeBusy=false})};
+  let wakeBusy=false,wakeQueued=false;
+  const wake=()=>{
+    // Background tabs are throttled heavily on mobile. Queue one follow-up
+    // refresh when a lifecycle event arrives during an in-flight poll instead
+    // of dropping the resume/focus signal.
+    if(wakeBusy){wakeQueued=true;return;}
+    wakeBusy=true;
+    Promise.resolve(pollRoomAlarm()).finally(()=>{
+      wakeBusy=false;
+      if(wakeQueued){wakeQueued=false;queueMicrotask(wake);}
+    });
+  };
   void wake();
-  alarmWatcherTimer=setInterval(()=>void wake(),3000);
-  const onVisible=()=>{if(!document.hidden)void wake()};
+  const startTimer=()=>{if(!alarmWatcherTimer)alarmWatcherTimer=setInterval(()=>{if(!document.hidden)void wake()},3000)};
+  const stopTimer=()=>{if(alarmWatcherTimer){clearInterval(alarmWatcherTimer);alarmWatcherTimer=null}};
+  startTimer();
+  const onVisible=()=>{if(!document.hidden){startTimer();void wake()}};
+  const onPageHide=()=>stopTimer();
+  const onPageShow=()=>{startTimer();if(!document.hidden)void wake()};
   document.addEventListener('visibilitychange',onVisible);
   window.addEventListener('focus',wake);
-  window.addEventListener('pageshow',wake);
+  window.addEventListener('pageshow',onPageShow);
   window.addEventListener('online',wake);
-  window.addEventListener('beforeunload',()=>{if(alarmWatcherTimer)clearInterval(alarmWatcherTimer);document.removeEventListener('visibilitychange',onVisible);window.removeEventListener('focus',wake);window.removeEventListener('pageshow',wake);window.removeEventListener('online',wake);},{once:true});
+  window.addEventListener('resume',wake);
+  window.addEventListener('pagehide',onPageHide);
+  window.addEventListener('beforeunload',()=>{stopTimer();document.removeEventListener('visibilitychange',onVisible);window.removeEventListener('focus',wake);window.removeEventListener('pageshow',onPageShow);window.removeEventListener('online',wake);window.removeEventListener('resume',wake);window.removeEventListener('pagehide',onPageHide);},{once:true});
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(startAlarmWatcher,800),{once:true});else setTimeout(startAlarmWatcher,800);

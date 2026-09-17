@@ -9,7 +9,7 @@
 <meta name="board-mate-min-players" content="2" />
 <meta name="board-mate-max-players" content="4" />
 <meta name="board-mate-multiplayer" content="true" />
-<script type="application/json" id="boardMateGameManifest">{"id":"calico-pvp","name":"Calico PVP","version":"12.1.0-rumi-recovery-cancel","minPlayers":2,"maxPlayers":4,"multiplayer":true,"turnBased":true,"entry":"single-html","stateMode":"shared"}</script>
+<script type="application/json" id="boardMateGameManifest">{"id":"calico-pvp","name":"Calico PVP","version":"12.1.1-rule-audit","minPlayers":2,"maxPlayers":4,"multiplayer":true,"turnBased":true,"entry":"single-html","stateMode":"shared"}</script>
 <style>
   :root{
     --ink:#362d3c;
@@ -332,7 +332,7 @@ window.addEventListener('DOMContentLoaded',()=>{
 .goal-preview-slot .slot-hint{font-size:.56rem;color:#9e8fa5;margin-top:2px}
 .goal-preview-slot.pulse{animation:slotPulse .35s ease}
 @keyframes slotPulse{0%{transform:translate(-50%,-50%) scale(1)}50%{transform:translate(-50%,-50%) scale(1.13)}100%{transform:translate(-50%,-50%) scale(1)}}
-.goal-preview-help{font-size:.72rem;color:#756a78;text-align:center;margin-top:5px}.goal-player-preview{display:grid;grid-template-columns:minmax(0,1fr) minmax(260px,360px);gap:14px;align-items:start}.turn-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}.token-auto-note{padding:9px 11px;border-radius:11px;background:#f6f0f7;border:1px solid #e5d8e8;color:#625767;font-size:.78rem;line-height:1.45}.token-award{padding:8px 10px;border-radius:10px;background:#fff8e8;border:1px solid #efd79b;color:#6b5321;font-weight:800;font-size:.78rem;margin-top:7px}@media(max-width:820px){.goal-player-preview{grid-template-columns:1fr}.goal-preview{max-width:340px}.goal-preview-slot{width:48px;height:56px;font-size:.66rem}}@media(max-width:520px){.goal-preview{width:100%;aspect-ratio:1.25}.goal-preview-slot{width:43px;height:50px;font-size:.6rem}.market-row{display:grid;grid-template-columns:repeat(3,1fr)}.hand-row{display:grid;grid-template-columns:repeat(2,1fr)}.tile-card{width:100%;height:auto;aspect-ratio:.86;min-width:0}.board-viewport{overflow:hidden;-webkit-overflow-scrolling:auto}.cats-list{grid-template-columns:1fr}.right-column{gap:10px}.top-actions{display:grid;grid-template-columns:1fr 1fr;width:100%}.top-actions .arena-connection{grid-column:1/-1}.btn{min-height:42px}}</style></head>
+.goal-preview-help{font-size:.72rem;color:#756a78;text-align:center;margin-top:5px}.goal-player-preview{display:grid;grid-template-columns:minmax(0,1fr) minmax(260px,360px);gap:14px;align-items:start}.turn-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}.token-auto-note{padding:9px 11px;border-radius:11px;background:#f6f0f7;border:1px solid #e5d8e8;color:#625767;font-size:.78rem;line-height:1.45}.token-rule-note{padding:8px 10px;border-radius:10px;background:#f7f1e7;border:1px solid #ead7b4;color:#6e552a;font-size:.76rem;line-height:1.4;margin-bottom:8px}.token-award{padding:8px 10px;border-radius:10px;background:#fff8e8;border:1px solid #efd79b;color:#6b5321;font-weight:800;font-size:.78rem;margin-top:7px}@media(max-width:820px){.goal-player-preview{grid-template-columns:1fr}.goal-preview{max-width:340px}.goal-preview-slot{width:48px;height:56px;font-size:.66rem}}@media(max-width:520px){.goal-preview{width:100%;aspect-ratio:1.25}.goal-preview-slot{width:43px;height:50px;font-size:.6rem}.market-row{display:grid;grid-template-columns:repeat(3,1fr)}.hand-row{display:grid;grid-template-columns:repeat(2,1fr)}.tile-card{width:100%;height:auto;aspect-ratio:.86;min-width:0}.board-viewport{overflow:hidden;-webkit-overflow-scrolling:auto}.cats-list{grid-template-columns:1fr}.right-column{gap:10px}.top-actions{display:grid;grid-template-columns:1fr 1fr;width:100%}.top-actions .arena-connection{grid-column:1/-1}.btn{min-height:42px}}</style></head>
 <body>
 <div class="app">
   <header class="topbar">
@@ -477,7 +477,7 @@ window.addEventListener('DOMContentLoaded',()=>{
   const SAVE_KEY = 'calico-pvp-arena-v8';
   const VERSION = 12;
   const GAME_ID = 'calico-pvp';
-  const GAME_MANIFEST = Object.freeze({id:GAME_ID,name:'Calico PVP',version:'12.1.0-rumi-recovery-cancel',minPlayers:2,maxPlayers:4,multiplayer:true,turnBased:true});
+  const GAME_MANIFEST = Object.freeze({id:GAME_ID,name:'Calico PVP',version:'12.1.1-rule-audit',minPlayers:2,maxPlayers:4,multiplayer:true,turnBased:true});
 
   const COLORS = [
     {id:'darkBlue', ko:'남색', css:'#32467b'},
@@ -499,11 +499,11 @@ window.addEventListener('DOMContentLoaded',()=>{
   ];
   const GOALS = [
     {id:'all', formula:'≠', low:10, high:15, hist:[1,1,1,1,1,1], desc:'6개가 모두 서로 다름'},
-    {id:'333', formula:'AAA-BBB', low:7, high:13, hist:[3,3], desc:'서로 다른 3개 묶음 2개'},
+    {id:'333', formula:'AAA-BBB', low:8, high:13, hist:[3,3], desc:'서로 다른 3개 묶음 2개'},
     {id:'222', formula:'AA-BB-CC', low:7, high:11, hist:[2,2,2], desc:'서로 다른 2개 묶음 3개'},
     {id:'42', formula:'AAAA-BB', low:7, high:14, hist:[4,2], desc:'4개 묶음 + 다른 2개 묶음'},
     {id:'321', formula:'AAA-BB-C', low:7, high:11, hist:[3,2,1], desc:'3개 + 다른 2개 + 또 다른 1개'},
-    {id:'2211', formula:'AA-BB-C-D', low:5, high:7, hist:[2,2,1,1], desc:'서로 다른 2쌍 + 서로 다른 낱개 2개'}
+    {id:'2211', formula:'AA-BB-C-D', low:5, high:8, hist:[2,2,1,1], desc:'서로 다른 2쌍 + 서로 다른 낱개 2개'}
   ];
   const CATS = [
     {id:'millie', ko:'밀리', points:3, tier:1, kind:'size', size:3, rule:'같은 무늬가 3개 이상 연결된 그룹'},
@@ -517,6 +517,12 @@ window.addEventListener('DOMContentLoaded',()=>{
     {id:'gwen', ko:'기네비어(그웬)', points:11, tier:3, kind:'size', size:7, rule:'같은 무늬가 7개 이상 연결된 그룹'},
     {id:'leo', ko:'레오', points:11, tier:3, kind:'shape', shape:'leo', rule:'같은 무늬 5개가 일자로 이어진 그룹'}
   ];
+  // 80 physical cat tokens. The rulebook permits a scoring-tile-back substitute
+  // after a cat's physical tokens run out, so this count must never block scoring.
+  const CAT_TOKEN_COUNTS = Object.freeze({
+    millie:12, callie:10, tibbit:10, rumi:8, coconut:8,
+    tecolote:8, cira:6, almond:6, gwen:6, leo:6
+  });
 
   // 룰북 p.9의 고양이 점수 타일에 인쇄된 도형을 화면에서 직접 보여준다.
   // centers는 작은 SVG 안에서 각 육각형의 중심 좌표다. 도형은 회전해도 유효하다.
@@ -787,8 +793,7 @@ window.addEventListener('DOMContentLoaded',()=>{
         const targets=tokenTargetKeys(p,patternGroup);
         if(targets.length && !hasCatInComponent(p,patternGroup)){
           for(const cat of (sourceState.cats||[])){
-            if(Number(sourceState.inventories.cats?.[cat.id]||0)<=0 ||
-               !Array.isArray(cat.preferred) || !cat.preferred.includes(pattern)) continue;
+            if(!Array.isArray(cat.preferred) || !cat.preferred.includes(pattern)) continue;
             const ok=cat.kind==='size'
               ? patternGroup.length>=Number(cat.size)
               : !!componentHasShape(p,patternGroup,cat.shape);
@@ -1335,7 +1340,7 @@ window.addEventListener('DOMContentLoaded',()=>{
       _turnStartSnapshot:null,
       _manualTokenPlacementV9:true
     };
-    state.cats.forEach(c=>state.inventories.cats[c.id]=8);
+    state.cats.forEach(c=>state.inventories.cats[c.id]=CAT_TOKEN_COUNTS[c.id]);
     state.players.forEach(p=>{p.hand.push(drawTile(),drawTile());});
     state.players.forEach(p=>{p.edgeCatalog=CALICO_EDGE_CATALOG[p.boardColor];});
     if(state.players.some(p=>!p.edgeCatalog)){toast('보드 가장자리 데이터가 없습니다.');return;}
@@ -1652,7 +1657,7 @@ window.addEventListener('DOMContentLoaded',()=>{
       const cat=catById(choice.id);
       cell.cats=cell.cats||[];
       cell.cats.push(choice.id);
-      state.inventories.cats[choice.id]--;
+      state.inventories.cats[choice.id]=Math.max(0,Number(state.inventories.cats[choice.id]||0)-1);
       state._turnPlacedAwards=Array.isArray(state._turnPlacedAwards)?state._turnPlacedAwards:[];
       state._turnPlacedAwards.push(`cat:${choice.id}`);
       const label=`${cat?.ko||choice.id} 고양이`;
@@ -1783,7 +1788,7 @@ window.addEventListener('DOMContentLoaded',()=>{
     if(state.phase==='place')html+=`<p style="font-size:.83rem;color:var(--muted);line-height:1.5">손패에서 타일을 하나 선택한 뒤 빈 육각 칸을 누르세요. 조건을 만족하면 아래에서 고양이/단추를 선택하고, 해당 그룹의 타일을 눌러 직접 놓을 수 있습니다.</p><div class="turn-actions"><button type="button" class="btn small" id="awardRescanBtn">🐈 현재 보드 조건 다시 검사</button></div>`;
     else if(state.phase==='token'){
       const noChoices=!pendingTokenChoices.length;
-      html+=`<div class="token-placement-panel"><div class="token-placement-title">🐈 🔘 획득 토큰 배치</div><div style="font-size:.8rem;color:var(--muted);margin-bottom:7px">${noChoices?'저장된 토큰 배치 정보가 없으면 방금 놓은 타일 기준으로 다시 검색합니다.':'토큰을 선택한 뒤 보드에서 강조된 타일을 누르세요.'}</div><div class="token-choice-grid">${pendingTokenChoices.map((x,i)=>`<button type="button" class="token-choice ${tokenPlacementMode===x?'active':''}" data-token-index="${i}">${x.label}<small>${x.type==='rainbow'?'아무 패치 타일':x.type==='cat'?'해당 무늬 그룹':'해당 색상 그룹'}</small></button>`).join('')}</div>${noChoices?'<div class="token-recovery-actions"><button type="button" class="btn small" id="recoverTokensBtn" style="margin-top:8px">🔄 미배치 토큰 다시 검색</button><button type="button" class="btn small" id="skipEmptyTokenBtn" style="margin-top:8px">➡️ 토큰 없이 시장으로</button></div>':''}</div>`;
+      html+=`<div class="token-placement-panel"><div class="token-placement-title">🐈 🔘 획득 토큰 배치</div><div style="font-size:.8rem;color:var(--muted);margin-bottom:7px">${noChoices?'저장된 토큰 배치 정보가 없으면 방금 놓은 타일 기준으로 다시 검색합니다.':'토큰을 선택한 뒤 보드에서 강조된 타일을 누르세요.'}</div><div class="token-rule-note">고양이 실물 토큰이 모두 소진된 경우에도 점수 타일 뒷면의 같은 고양이 토큰을 사용해 획득합니다.</div><div class="token-choice-grid">${pendingTokenChoices.map((x,i)=>`<button type="button" class="token-choice ${tokenPlacementMode===x?'active':''}" data-token-index="${i}">${x.label}<small>${x.type==='rainbow'?'아무 패치 타일':x.type==='cat'?'해당 무늬 그룹':'해당 색상 그룹'}</small></button>`).join('')}</div>${noChoices?'<div class="token-recovery-actions"><button type="button" class="btn small" id="recoverTokensBtn" style="margin-top:8px">🔄 미배치 토큰 다시 검색</button><button type="button" class="btn small" id="skipEmptyTokenBtn" style="margin-top:8px">➡️ 토큰 없이 시장으로</button></div>':''}</div>`;
       if(tokenPlacementMode)html+=`<div class="action-line">현재 선택: <b>${tokenPlacementMode.label}</b> · 보드의 강조된 타일을 누르세요.</div>`;
       html+=`<div class="turn-actions"><button class="btn small" id="undoTurnBtn" ${dirtyTurn?'':'disabled'}>↶ 현재 차례 되돌리기</button></div>`;
     } else if(state.phase==='draft'||state.phase==='turn-end'){html+=`<div class="token-auto-note"><b>토큰 배치 완료</b><br>${state.phase==='draft'?'이제 시장에서 1개를 가져오세요.':'시장 선택이 끝났습니다. 턴 종료를 누르세요.'}</div>`;if(state.turnTokens?.length)html+=`<div class="token-award">이번 턴 획득 · ${state.turnTokens.join(' · ')}</div>`;html+=`<div class="turn-actions"><button class="btn small" id="awardRescanBtn">🐈 현재 보드 조건 다시 검사</button><button class="btn small" id="undoTurnBtn" ${dirtyTurn?'':'disabled'}>↶ 현재 차례 되돌리기</button><button class="btn primary" id="endTurnBtn" ${state.phase==='draft'?'disabled':''}>턴 종료</button></div>`;}
@@ -1920,11 +1925,10 @@ window.addEventListener('DOMContentLoaded',()=>{
       placed.buttons.push('rainbow');state.inventories.rainbow--;earned.push('무지개 단추');
     }
     for(const cat of state.cats){
-      if(Number(state.inventories.cats[cat.id]||0)<=0)continue;
       const pattern=placed.tile.pattern; if(!cat.preferred.includes(pattern))continue;
       const group=componentFor(p,placedKey,'pattern',pattern); if(hasCatInComponent(p,group))continue;
       const ok=cat.kind==='size'?group.length>=cat.size:!!componentHasShape(p,group,cat.shape);
-      if(ok){placed.cats.push(cat.id);state.inventories.cats[cat.id]--;earned.push(`${cat.ko} 고양이`);}
+      if(ok){placed.cats.push(cat.id);state.inventories.cats[cat.id]=Math.max(0,Number(state.inventories.cats[cat.id]||0)-1);earned.push(`${cat.ko} 고양이`);}
     }
     return earned;
   }
@@ -2003,7 +2007,7 @@ window.addEventListener('DOMContentLoaded',()=>{
     showModal(`<h2>규칙 요약 · PVP 2-4인</h2><div class="rules"><ol>
       <li><strong>준비:</strong> 각자 퀼트 보드 1개, 디자인 타일 6개 중 무작위 4개를 보고 3개 선택, 헝겊 타일 2개를 손에 듭니다. 중앙 시장에는 헝겊 타일 3개를 공개합니다.</li>
       <li><strong>차례 1 - 배치:</strong> 손의 헝겊 타일 2개 중 1개를 자기 퀼트의 빈 칸에 놓습니다.</li>
-      <li><strong>차례 2 - 토큰:</strong> 새로 완성한 같은 색 3개 이상의 연결 그룹은 단추를, 선택된 고양이의 선호 무늬와 그룹/도형 조건을 만족하면 해당 고양이 토큰을 얻을 수 있습니다. 일반 단추와 무지개 단추는 각 3점입니다.</li>
+      <li><strong>차례 2 - 토큰:</strong> 새로 완성한 같은 색 3개 이상의 연결 그룹은 단추를, 선택된 고양이의 선호 무늬와 그룹/도형 조건을 만족하면 해당 고양이 토큰을 얻을 수 있습니다. 고양이 토큰 실물이 소진되면 같은 점수의 고양이 점수 타일 뒷면으로 대체합니다. 일반 단추와 무지개 단추는 각 3점입니다.</li>
       <li><strong>차례 3 - 시장:</strong> 공개된 시장 3개 중 1개를 손으로 가져온 뒤 주머니에서 시장을 다시 3개로 보충합니다. 다음 플레이어가 시계 방향으로 진행합니다.</li>
       <li><strong>디자인 점수:</strong> 각 디자인 타일 주위의 6개 헝겊 타일을 색 또는 무늬로 검사합니다. 둘 중 한 조건만 만족하면 파란 점수, 색과 무늬를 모두 만족하면 더 높은 노란 점수만 얻습니다.</li>
       <li><strong>종료:</strong> 모두가 퀼트의 헝겊 칸을 채우면 디자인 + 고양이 + 단추 점수를 합산합니다. 동점이면 고양이 토큰 수, 다음으로 단추 토큰 수를 비교하며 그래도 같으면 공동 승리입니다.</li>

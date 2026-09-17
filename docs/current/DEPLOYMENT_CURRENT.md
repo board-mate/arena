@@ -1,9 +1,9 @@
-# 🚀 Deployment Guide — v11.4.57
+# 🚀 Deployment Guide — v11.4.79
 
 ## 권장 배포 순서
 
 1. 현재 GitHub 저장소의 정상 상태를 커밋합니다.
-2. 가능하면 태그를 생성합니다. 예: `v11.4.57-before-next-change`.
+2. 가능하면 태그를 생성합니다. 예: `v11.4.79-before-next-change`.
 3. 통합 FULL ZIP의 **내용물**을 저장소 루트에 반영합니다.
 4. Git diff를 확인합니다.
 5. `HANDOFF_VERSION.txt`와 `sw.js` 캐시 키를 확인합니다.
@@ -11,7 +11,7 @@
 7. 웹에서 BoardMate를 한 번 새로고침합니다.
 8. `docs/current/RELEASE_CHECKLIST.md`의 배포 후 점검을 수행합니다.
 
-## v11.4.57 확인 포인트
+## v11.4.79 확인 포인트
 
 - 행성 X 진행 중 방의 구형 `틀린 논문 패널티 시간 +1` 공개 기록이 상세 정보로 표시되는지
 - 행성 X 찾기에서 X=9 → 왼쪽 8 / 오른쪽 10인지
@@ -21,7 +21,7 @@
 
 ## PWA 캐시
 
-현재 캐시 키: `boardmate-shell-v11.4.57`
+현재 캐시 키: `boardmate-shell-v11.4.79`
 
 새 버전 릴리스에서는 반드시 캐시 키도 버전과 함께 올립니다. 배포 후 오래된 화면이 보이면:
 
@@ -34,6 +34,6 @@
 
 ## Database
 
-v11.4.57은 **새 Supabase SQL/RPC가 없습니다.**
+v11.4.79는 **새 Supabase SQL/RPC가 없습니다.**
 
 기존 DB를 새로 만들거나 복구해야 할 때만 `database/SUPABASE_CURRENT_UPDATE.sql`과 `database/history/`를 검토합니다. DB SQL을 되돌리는 작업은 코드 롤백과 별개입니다.

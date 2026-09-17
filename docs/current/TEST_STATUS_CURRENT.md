@@ -1,4 +1,4 @@
-# ✅ Current Test Status — v11.4.60
+# ✅ Current Test Status — v11.4.79
 
 ## 릴리스 판정
 
@@ -33,6 +33,9 @@
   - 목록 중 내 차례 방 존재 → prefix 복구
 - 최초 진입이 이미 내 차례인 경우 1회 알림 + 같은 턴 dedupe + 이후 새 턴 재알림: **PASS**
 - `visibilitychange`, `focus`, `pageshow`, `online` 재확인 hook: **설치 확인**
+- `resume`/`pagehide` 복귀·백그라운드 polling 제어: **설치 확인**
+- 겹친 방 목록/단일 방 알림 평가 직렬화: **PASS** (`tests/alarm-resume.test.cjs`)
+- 홈/다인플 목록 요청 직렬화 및 복귀 즉시 갱신: **PASS** (`tests/alarm-resume.test.cjs`)
 
 ### 알림 주의
 
@@ -43,10 +46,10 @@
 
 ## 패키지
 
-- 서비스워커 캐시 키: `boardmate-shell-v11.4.60`
+- 서비스워커 캐시 키: `boardmate-shell-v11.4.79`
 - 다인플 18개 / 1인플 7개 파일 유지
 - `docs/history/`, `database/history/` 유지
-- v11.4.60 DB migration: **불필요**
+- v11.4.79 DB migration: **불필요**
 - README/현재 인수인계 문서: **최종 정리 완료**
 
 ## 실서비스에서 배포 직후 확인할 것
@@ -65,3 +68,9 @@
 - 내 차례: 탭 제목 + 상단 배너 + favicon 표시.
 - 시스템 알림 성공 후에만 seen 처리.
 - DB 변경 없음.
+
+## v11.4.79 추가
+- `node tests/alarm-resume.test.cjs`: PASS (4개)
+- 숨김 탭 polling 중지 및 `pageshow`/`resume`/`online` 복귀 즉시 재확인: PASS
+- 진행 중 요청 중 발생한 복귀 이벤트 1회 큐잉: PASS
+- DB/RPC 변경 없음.

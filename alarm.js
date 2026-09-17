@@ -177,7 +177,7 @@ function hrefForRoom(room){
   return room?.status==='playing'&&room?.id?`./${page}?room=${encodeURIComponent(room.id)}`:'./index.html#/multi';
 }
 export function resetRoomAlarmBaseline(){roomSnapshot=null;}
-export async function processRoomAlarms(rooms,me,{gameName=x=>x?.game||'게임',gameHref=hrefForRoom}={}){
+async function processRoomAlarmsNow(rooms,me,{gameName=x=>x?.game||'게임',gameHref=hrefForRoom}={}){
   if(!Array.isArray(rooms)||!me?.user_id){setBrowserTurnIndicator(0);return;}
   const myTurnRooms=rooms.filter(r=>Boolean(r.mine)&&turnIsMine(r,me));
   setBrowserTurnIndicator(myTurnRooms.length,{href:myTurnRooms.length===1?gameHref(myTurnRooms[0]):'./index.html#/multi'});
@@ -210,8 +210,18 @@ export async function processRoomAlarms(rooms,me,{gameName=x=>x?.game||'게임',
   roomSnapshot=current;
 }
 
+// Room lists can refresh from the interval and from several lifecycle events at
+// the same time. Serialize alarm evaluation so two overlapping refreshes cannot
+// both see the same room as "new" and emit duplicate notifications.
+let roomAlarmQueue=Promise.resolve();
+export function processRoomAlarms(rooms,me,options={}){
+  const run=roomAlarmQueue.then(()=>processRoomAlarmsNow(rooms,me,options));
+  roomAlarmQueue=run.catch(()=>{});
+  return run;
+}
+
 const singleRoomState=new Map();
-export async function processSingleRoomAlarm(room,me,{gameName='게임',gameHref}={}){
+async function processSingleRoomAlarmNow(room,me,{gameName='게임',gameHref}={}){
   if(!room?.id||!me?.user_id){setBrowserTurnIndicator(0);return;}
   const id=String(room.id),prev=singleRoomState.get(id),myTurn=turnIsMine(room,me);
   setBrowserTurnIndicator(myTurn?1:0,{href:myTurn?(gameHref||hrefForRoom(room)):'./index.html#/multi'});
@@ -226,4 +236,13 @@ export async function processSingleRoomAlarm(room,me,{gameName='게임',gameHref
     const sent=await sendBoardMateAlarm('myTurn',{title:`🎯 내 차례 · ${gameName}`,body:`${room.title||'게임'}에서 내 차례가 되었습니다.`,url:href,tag:`turn-${id}-${encodeURIComponent(turnSignature(room))}`});
     if(sent)markTurnSeen(room);
   }
+}
+
+// Apply the same serialization to the single-room watcher. This also protects
+// the first-page-load baseline when a resume event races the initial poll.
+let singleRoomAlarmQueue=Promise.resolve();
+export function processSingleRoomAlarm(room,me,options={}){
+  const run=singleRoomAlarmQueue.then(()=>processSingleRoomAlarmNow(room,me,options));
+  singleRoomAlarmQueue=run.catch(()=>{});
+  return run;
 }
