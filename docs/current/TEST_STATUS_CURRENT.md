@@ -1,4 +1,4 @@
-# ✅ Current Test Status — v11.4.82
+# ✅ Current Test Status — v11.4.83
 
 ## 릴리스 판정
 
@@ -86,3 +86,10 @@
 - Instagram 프로필 embed 직접 표시 및 최신순 첫 게시물 확인: PASS
 - 로컬 홈 iframe 렌더링: 빈 프레임 관찰, HTTPS GitHub Pages에서 재확인 필요
 - 자동 피드는 Instagram 프로필 공개 설정/임베드 허용 상태에 따릅니다.
+
+## v11.4.83 — Note 공개 일정 필터
+- 홈페이지 일정 요청이 `arena_public_schedules` 뷰만 조회하는지: 정적 확인 PASS.
+- Note Supabase 공개 일정 뷰 GET (anon key): HTTP 200; 최대 5개 공개 행 조회 PASS.
+- `app.js`, `multi-common.js`, `sw.js` 문법 검사: PASS.
+- 기존 자동 검사 8개(alarm-resume 5, Calico 3): PASS.
+- 비공개 일정 미노출은 DB 공개 뷰의 `is_public = true` 조건에 의존합니다.

@@ -1,9 +1,15 @@
-# 🚀 Deployment Guide — v11.4.82
+# 🚀 Deployment Guide — v11.4.83
+
+## v11.4.83 확인 포인트
+
+- 공개 일정은 Arena 홈 달력과 예정 일정에 표시되는지
+- 비공개 일정은 Arena의 일정 목록과 달력에 표시되지 않는지
+- Note 일정 원본의 작성/수정/삭제가 Arena에서 호출되지 않는지
 
 ## 권장 배포 순서
 
 1. 현재 GitHub 저장소의 정상 상태를 커밋합니다.
-2. 가능하면 태그를 생성합니다. 예: `v11.4.82-before-next-change`.
+2. 가능하면 태그를 생성합니다. 예: `v11.4.83-before-next-change`.
 3. 통합 FULL ZIP의 **내용물**을 저장소 루트에 반영합니다.
 4. Git diff를 확인합니다.
 5. `HANDOFF_VERSION.txt`와 `sw.js` 캐시 키를 확인합니다.
@@ -21,7 +27,7 @@
 
 ## PWA 캐시
 
-현재 캐시 키: `boardmate-shell-v11.4.82`
+현재 캐시 키: `boardmate-shell-v11.4.83`
 
 새 버전 릴리스에서는 반드시 캐시 키도 버전과 함께 올립니다. 배포 후 오래된 화면이 보이면:
 
@@ -34,6 +40,6 @@
 
 ## Database
 
-v11.4.82는 **새 Supabase SQL/RPC가 없습니다.**
+v11.4.83은 **새 Supabase SQL/RPC가 없습니다.** 공개 일정 표시는 Note v10 `arena_public_schedules` 뷰에 의존합니다.
 
 기존 DB를 새로 만들거나 복구해야 할 때만 `database/SUPABASE_CURRENT_UPDATE.sql`과 `database/history/`를 검토합니다. DB SQL을 되돌리는 작업은 코드 롤백과 별개입니다.

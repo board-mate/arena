@@ -4,9 +4,18 @@
 
 <h1 align="center">🎲 BoardMate Arena</h1>
 <p align="center"><strong>모임에서 바로 열어 같이 플레이하는 온라인 보드게임 아레나</strong></p>
-<p align="center">v11.4.82 · Integrated Full + History · 2026-09-28</p>
+<p align="center">v11.4.83 · Integrated Full + History · 2026-09-28</p>
 
 ---
+
+## 🌐 v11.4.83 — 공개 일정만 Arena에 표시
+
+- 홈 일정은 Note의 `arena_public_schedules` 뷰만 읽으므로 비공개 일정은 Arena에 나오지 않습니다.
+- 일정 관리와 공개/비공개 선택은 Note에서 계속 사용할 수 있습니다. Arena는 읽기 전용입니다.
+- Note v10 공개 일정 뷰가 적용된 Supabase를 사용합니다. Arena DB 스키마 변경은 없습니다.
+- 앱 모듈과 서비스워커 캐시를 11.4.83으로 갱신했습니다.
+
+세부 내용은 [README_V11_4_83_PUBLIC_SCHEDULES.md](README_V11_4_83_PUBLIC_SCHEDULES.md)를 참고하세요.
 
 ## 🔄 v11.4.82 — 자동 최신 Instagram 피드
 
@@ -66,10 +75,10 @@
 
 | 항목 | 상태 |
 |---|---|
-| 릴리스 | **v11.4.82** |
+| 릴리스 | **v11.4.83** |
 | 다인플 | **18개 게임** |
 | 1인플 | **7개 게임** |
-| 서비스워커 캐시 | `boardmate-shell-v11.4.82` |
+| 서비스워커 캐시 | `boardmate-shell-v11.4.83` |
 | 신규 Supabase SQL/RPC | **없음** |
 | 기존 진행 중 게임 | **호환 유지** |
 | 롤백 자료 | `docs/history/`, `database/history/` 보존 |

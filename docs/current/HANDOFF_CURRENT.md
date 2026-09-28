@@ -1,9 +1,15 @@
 # 🤝 BoardMate Arena — CURRENT HANDOFF
 
-**Baseline:** v11.4.82  
+**Baseline:** v11.4.83
 **Date:** 2026-09-28  
-**Service worker cache:** `boardmate-shell-v11.4.82`  
+**Service worker cache:** `boardmate-shell-v11.4.83`
 **New DB/RPC in this release:** 없음
+
+## v11.4.83 Note 공개 일정만 표시
+- Arena 홈은 Note `schedules` 원본 대신 `arena_public_schedules` 공개 뷰만 조회합니다.
+- 공개 뷰는 `is_public = true` 일정만 반환합니다. 비공개 일정은 Note에서 관리할 수 있고 Arena에는 표시되지 않습니다.
+- Note v10 SQL에서 공개 뷰와 anon 읽기 권한을 적용해야 합니다. 현재 연결된 Note 프로젝트 공개 뷰가 HTTP 200으로 읽히는 것을 확인했습니다.
+- Arena는 읽기 전용이며 Note 일정에 쓰지 않습니다. 신규 DB/RPC/SQL 변경은 없습니다.
 
 ## v11.4.80 홈 공지·일정 조회
 - 홈은 `board-mate/note` 프로젝트의 공개 `announcements`, `schedules` 테이블을 조회 전용으로 읽습니다.

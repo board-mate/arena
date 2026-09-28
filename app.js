@@ -20,7 +20,7 @@ const unlockAlarmAudio=(...a)=>__alarmApi.unlockAlarmAudio(...a);
 window.__boardmateAppStarted=true;
 (async()=>{
   try{
-    const mod=await import('./alarm.js?v=11.4.82');
+    const mod=await import('./alarm.js?v=11.4.83');
     for(const key of Object.keys(__alarmApi)) if(typeof mod[key]==='function') __alarmApi[key]=mod[key];
     window.dispatchEvent(new Event('boardmate:alarm-ready'));
   }catch(err){
@@ -168,7 +168,7 @@ async function loadHomePublicInfo(){
       const client=noteFeedClient();if(!client)throw new Error('공개 일정 연결을 준비하지 못했습니다.');
       const [noticeResult,scheduleResult]=await Promise.all([
         client.from('announcements').select('id,title,body,pinned,created_at,updated_at').order('pinned',{ascending:false}).order('created_at',{ascending:false}).limit(100),
-        client.from('schedules').select('id,title,event_date,event_time,location,note').order('event_date',{ascending:true}).order('event_time',{ascending:true}).limit(300)
+        client.from('arena_public_schedules').select('id,title,event_date,event_time,location,note').order('event_date',{ascending:true}).order('event_time',{ascending:true}).limit(300)
       ]);
       if(noticeResult.error)throw noticeResult.error;if(scheduleResult.error)throw scheduleResult.error;
       homePublicData={notices:noticeResult.data||[],schedules:scheduleResult.data||[],loaded:true,error:false};
@@ -214,7 +214,7 @@ function ensureSiteFeatures(){
   if(!document.querySelector('link[rel="manifest"]')){const l=document.createElement('link');l.rel='manifest';l.href='./manifest.webmanifest';document.head.appendChild(l);}
   if(!document.querySelector('meta[name="theme-color"]')){const m=document.createElement('meta');m.name='theme-color';m.content='#141922';document.head.appendChild(m);}
   if(!document.querySelector('link[rel="manifest"]')){const l=document.createElement('link');l.rel='manifest';l.href='./manifest.webmanifest';document.head.appendChild(l);}
-  if('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js?v=11.4.82',{scope:'./'}).catch(()=>{});
+  if('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js?v=11.4.83',{scope:'./'}).catch(()=>{});
 }
 async function installBoardMate(){
   if(deferredInstallPrompt){

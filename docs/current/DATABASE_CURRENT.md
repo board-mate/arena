@@ -1,4 +1,4 @@
-# 🗄️ Current Database Status — v11.4.82
+# 🗄️ Current Database Status — v11.4.83
 
 - 이번 릴리스의 신규 SQL/RPC: **없음**
 - 현재 통합 repair/update 체인: `database/SUPABASE_CURRENT_UPDATE.sql`
@@ -8,6 +8,6 @@
 - `config.js`에는 브라우저에서 노출 가능한 Supabase URL + anon/publishable key만 사용합니다.
 - **service-role key, DB 비밀번호, 개인 access token을 프론트 파일/README/history에 넣지 않습니다.**
 
-## v11.4.82 호환성
+## v11.4.83 호환성
 
-BoardMate Note의 `announcements`와 `schedules` 공개 행을 홈에서 조회할 뿐 데이터 쓰기나 스키마 변경은 없습니다. 행성 X 공개 로그 복구, 알림 복귀 안정화, Calico 고양이 토큰 대체 규칙도 클라이언트 측 로직입니다.
+BoardMate Note의 공지와 `arena_public_schedules` 뷰의 일정만 홈에서 조회합니다. 비공개 일정은 뷰에서 제외됩니다. Arena 측 데이터 쓰기나 스키마 변경은 없습니다. 공개 일정 뷰는 Note v10 마이그레이션에 포함됩니다. 행성 X 공개 로그 복구, 알림 복귀 안정화, Calico 고양이 토큰 대체 규칙도 클라이언트 측 로직입니다.

@@ -34,10 +34,20 @@ test('home and room lists refresh immediately after returning to the page', () =
   assert.match(app, /let roomsLoadBusy=false,roomsLoadQueued=false/);
 });
 
-test('release cache bust points every alarm entry at v11.4.79', () => {
-  assert.match(app, /import\('\.\/alarm\.js\?v=11\.4\.79'\)/);
-  assert.match(app, /register\('\.\/sw\.js\?v=11\.4\.79'/);
-  assert.match(common, /import \{processSingleRoomAlarm\} from '\.\/alarm\.js\?v=11\.4\.79'/);
-  assert.match(read('sw.js'), /boardmate-shell-v11\.4\.79/);
-  assert.equal(read('HANDOFF_VERSION.txt').trim(), '11.4.79');
+test('release cache bust stays aligned with the current version', () => {
+  const version = read('HANDOFF_VERSION.txt').trim();
+  const escapedVersion = version.replaceAll('.', '\\.');
+  assert.match(app, new RegExp(`import\\('./alarm\\.js\\?v=${escapedVersion}'\\)`));
+  assert.match(app, new RegExp(`register\\('./sw\\.js\\?v=${escapedVersion}'`));
+  assert.match(common, new RegExp(`import \\{processSingleRoomAlarm\\} from '\\./alarm\\.js\\?v=${escapedVersion}'`));
+  assert.match(read('sw.js'), new RegExp(`boardmate-shell-v${escapedVersion}`));
+  assert.equal(version, '11.4.83');
+});
+
+test('home schedule feed reads only the public Note view', () => {
+  const loaderStart = app.indexOf('async function loadHomePublicInfo');
+  const loaderEnd = app.indexOf('function startHomePublicRefresh', loaderStart);
+  const loader = app.slice(loaderStart, loaderEnd);
+  assert.match(loader, /client\.from\('arena_public_schedules'\)/);
+  assert.doesNotMatch(loader, /client\.from\('schedules'\)/);
 });

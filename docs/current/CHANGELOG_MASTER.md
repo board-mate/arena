@@ -1,5 +1,11 @@
 # BoardMate Arena — MASTER CHANGELOG
 
+## v11.4.83 — Note 공개 일정만 Arena에 표시 (2026-09-28)
+
+- 홈 일정 조회를 schedules에서 `arena_public_schedules` 뷰로 전환했습니다. 비공개 일정은 Arena에 표시되지 않으며 Note 일정 편집 데이터는 변경하지 않습니다.
+- Note v10 SQL에서 만든 공개 일정 뷰 사용 가능 여부를 확인했습니다.
+- 모듈/서비스워커 캐시를 11.4.83으로 갱신했습니다. 신규 DB/RPC/SQL 변경은 없습니다.
+
 ## v11.4.82 — 자동 최신 Instagram 피드 (2026-09-28)
 
 - `instagramLatestPostUrl` 설정을 제거했습니다.
@@ -42,7 +48,7 @@
 - 신규 DB/RPC/SQL 없음.
 
 
-## ⭐ Current baseline — v11.4.82
+## ⭐ Current baseline — v11.4.83
 
 - 행성 X 진행 중 구형 논문 패널티 로그를 공개 논문 상태와 합쳐 상세 표시.
 - 행성 X 찾기에서 후보 섹터의 왼쪽/오른쪽 인접 섹터 번호를 동적으로 안내.
