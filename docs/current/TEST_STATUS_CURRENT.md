@@ -1,4 +1,4 @@
-# ✅ Current Test Status — v11.4.79
+# ✅ Current Test Status — v11.4.82
 
 ## 릴리스 판정
 
@@ -46,10 +46,10 @@
 
 ## 패키지
 
-- 서비스워커 캐시 키: `boardmate-shell-v11.4.79`
+- 서비스워커 캐시 키: `boardmate-shell-v11.4.82`
 - 다인플 18개 / 1인플 7개 파일 유지
 - `docs/history/`, `database/history/` 유지
-- v11.4.79 DB migration: **불필요**
+- v11.4.82 DB migration: **불필요**
 - README/현재 인수인계 문서: **최종 정리 완료**
 
 ## 실서비스에서 배포 직후 확인할 것
@@ -69,8 +69,20 @@
 - 시스템 알림 성공 후에만 seen 처리.
 - DB 변경 없음.
 
-## v11.4.79 추가
+## v11.4.79 알림 복귀 검증 (기준본에서 유지)
 - `node tests/alarm-resume.test.cjs`: PASS (4개)
 - 숨김 탭 polling 중지 및 `pageshow`/`resume`/`online` 복귀 즉시 재확인: PASS
 - 진행 중 요청 중 발생한 복귀 이벤트 1회 큐잉: PASS
 - DB/RPC 변경 없음.
+
+## 홈 공지·일정 읽기 기능
+- 앱/모듈 JavaScript 문법 검사: PASS
+- Note 연동은 `announcements`와 `schedules`의 `SELECT`만 사용: 정적 확인
+- 수정 폼/쓰기 요청 없음, 모임 기록은 읽지 않음: 정적 확인
+- 브라우저 화면 확인: 홈 레이아웃 및 Note 공개 일정 로드 PASS; 공지 읽기 전용 대화상자 PASS; 2026-10-02 일정 선택 PASS.
+
+## v11.4.82 Instagram 최신 피드
+- `config.js`에서 게시물 URL 설정 제거 확인: PASS
+- Instagram 프로필 embed 직접 표시 및 최신순 첫 게시물 확인: PASS
+- 로컬 홈 iframe 렌더링: 빈 프레임 관찰, HTTPS GitHub Pages에서 재확인 필요
+- 자동 피드는 Instagram 프로필 공개 설정/임베드 허용 상태에 따릅니다.

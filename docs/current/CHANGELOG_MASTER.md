@@ -1,5 +1,27 @@
 # BoardMate Arena — MASTER CHANGELOG
 
+## v11.4.82 — 자동 최신 Instagram 피드 (2026-09-28)
+
+- `instagramLatestPostUrl` 설정을 제거했습니다.
+- 홈 Instagram 카드를 `@board__mate` 공개 프로필 embed로 바꿔 최신 공개 게시물이 피드 앞에 표시되게 했습니다.
+- 캐시를 `11.4.82`로 갱신했습니다. 로컬 환경의 제3자 iframe은 비어 있어 GitHub Pages 확인이 필요합니다.
+- 신규 DB/RPC/SQL 없음.
+
+## v11.4.81 — 홈 Instagram 게시물 사진 (2026-09-28)
+
+- `config.js`에 홈에서 보여줄 최신 공개 게시물 permalink를 추가했습니다.
+- 홈 Instagram 카드는 개별 게시물 `/embed/`를 iframe으로 표시합니다.
+- 모듈/서비스워커 캐시 키를 `11.4.81`로 갱신했습니다. DB/RPC 변경 없음.
+- 개별 embed 페이지에서 사진을 확인했습니다. 로컬 홈 페이지의 외부 iframe은 빈 화면이므로 GitHub Pages에서 렌더링 확인이 필요합니다.
+
+## v11.4.80 — 홈 공지·일정 읽기 화면 (2026-09-28)
+
+- 홈에 Note 공개 공지와 일정을 `SELECT` 전용으로 연결했습니다. 공지 제목/목록, 날짜별 일정 달력, 예정 일정 목록을 표시합니다.
+- 일정 달력은 날짜 선택과 hover로 일정을 확인합니다. Note 편집 페이지로 가는 링크나 수정 UI는 넣지 않았습니다.
+- 공개 Instagram에서 확인한 최근 게시물 요약과 프로필 바로가기를 추가했습니다. 프로필 임베드는 홈 내 브라우저에서 빈 프레임으로 표시돼 사용하지 않습니다.
+- 홈 데이터는 `announcements` 및 `schedules`만 읽고, 모임 기록은 요청하지 않습니다.
+- 신규 DB/RPC/SQL 없음. 변경 파일: `app.js`, `config.js`, `index.html`, `styles.css`, `sw.js`, `multi-common.js`, 릴리스 문서.
+
 ## v11.4.79 — 알림 복귀 안정화 (2026-09-17)
 
 - `alarm.js`의 방 목록/단일 방 알림 평가를 직렬화해 초기 로드와 복귀 이벤트가 겹쳐도 중복 알림을 줄였습니다.
@@ -20,7 +42,7 @@
 - 신규 DB/RPC/SQL 없음.
 
 
-## ⭐ Current baseline — v11.4.79
+## ⭐ Current baseline — v11.4.82
 
 - 행성 X 진행 중 구형 논문 패널티 로그를 공개 논문 상태와 합쳐 상세 표시.
 - 행성 X 찾기에서 후보 섹터의 왼쪽/오른쪽 인접 섹터 번호를 동적으로 안내.
@@ -28,7 +50,7 @@
 - 내 차례 브라우저 탭 제목 `🔔 내 차례 ·` 표시.
 - 실행 중 알림 재확인/dedupe 보강, 숨김 탭 polling 중지, 복귀 이벤트 즉시 재확인.
 - 알림 평가와 홈/다인플 목록 요청 직렬화. 완전 종료 Web Push는 아직 미구현.
-- v11.4.79 신규 DB/RPC 없음.
+- v11.4.80 신규 DB/RPC 없음.
 - 상세 현재 상태: `docs/current/HANDOFF_CURRENT.md`.
 
 

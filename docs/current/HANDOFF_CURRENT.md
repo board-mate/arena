@@ -1,9 +1,27 @@
 # 🤝 BoardMate Arena — CURRENT HANDOFF
 
-**Baseline:** v11.4.79  
-**Date:** 2026-09-17  
-**Service worker cache:** `boardmate-shell-v11.4.79`  
+**Baseline:** v11.4.82  
+**Date:** 2026-09-28  
+**Service worker cache:** `boardmate-shell-v11.4.82`  
 **New DB/RPC in this release:** 없음
+
+## v11.4.80 홈 공지·일정 조회
+- 홈은 `board-mate/note` 프로젝트의 공개 `announcements`, `schedules` 테이블을 조회 전용으로 읽습니다.
+- 공지 전체 보기와 예정 일정 전체 보기 모두 읽기 전용 대화상자이며, 쓰기 요청/편집 링크를 제공하지 않습니다.
+- 달력은 월 이동, 날짜 선택, 일정 hover 도움말을 지원합니다.
+- Instagram의 공개 프로필 임베드는 홈 안에서 빈 화면으로 반환되어, 확인한 최근 게시물 요약 카드와 프로필 바로가기로 구성했습니다. 게시물 요약은 새 글 게시 후 갱신해야 합니다.
+- 이 기능은 모임 기록을 읽지 않으며 SQL/RPC 변경도 없습니다.
+- 공개 Supabase anon/publishable key가 `config.js`에 있어야 데이터 조회가 동작합니다. 비밀 service key를 사용하지 않습니다.
+
+## v11.4.81 Instagram 게시물 사진
+- `config.js`의 `instagramLatestPostUrl`이 홈페이지 게시물 embed의 기준 주소입니다.
+- 새 게시물이 나오면 이 값을 최신 permalink로 바꾸면 됩니다. 자동 탐색 API는 연결하지 않았습니다.
+- `/p/{shortcode}/embed/`를 직접 열면 사진이 보이지만, localhost를 부모로 둔 iframe에서는 빈 화면을 확인했습니다. HTTPS GitHub Pages 배포 후 최종 렌더링을 확인해야 합니다.
+
+## v11.4.82 최신 피드 자동 갱신
+- config에서 개별 게시물 URL을 지정하던 방식을 제거했습니다.
+- 홈 iframe은 Instagram 공개 프로필 embed를 사용하며 최신 게시물부터 표시됩니다.
+- 프로필 embed도 로컬 iframe에서 표시되지 않을 수 있으므로 HTTPS GitHub Pages에서 반드시 재확인합니다.
 
 ---
 
@@ -107,19 +125,19 @@
 - 투명 배경 아이콘.
 - manifest/favicon/Apple Touch 아이콘 유지.
 
-### v11.4.79 알림 복귀 안정화
+### v11.4.80 알림 복귀 안정화
 - `alarm.js`의 방 목록/단일 방 알림 판정을 직렬화해 초기 로드와 복귀 이벤트가 겹쳐도 중복 알림을 줄임.
 - 숨겨진 탭의 polling을 멈추고 `visibilitychange`, `focus`, `pageshow`, `resume`, `online` 복귀 시 즉시 재확인.
 - 단일 방 watcher는 진행 중 요청 중 들어온 복귀 신호를 한 번 큐에 넣어 놓치지 않음.
 - 홈 진행 게임/다인플 방 목록도 복귀 직후 갱신하고 요청 중복을 직렬화.
-- 캐시 쿼리 및 서비스워커 캐시: `11.4.79`.
+- 캐시 쿼리 및 서비스워커 캐시: `11.4.80`.
 - 신규 DB/RPC 없음.
 
 ---
 
 ## 5. DB / 보안
 
-- v11.4.79 신규 SQL/RPC 없음.
+- v11.4.80 신규 SQL/RPC 없음.
 - 현재 체인: `database/SUPABASE_CURRENT_UPDATE.sql`.
 - 과거 SQL 원문: `database/history/`.
 - DB 역적용은 자동으로 하지 말 것. 데이터 손실 위험을 따로 검토.

@@ -4,9 +4,26 @@
 
 <h1 align="center">🎲 BoardMate Arena</h1>
 <p align="center"><strong>모임에서 바로 열어 같이 플레이하는 온라인 보드게임 아레나</strong></p>
-<p align="center">v11.4.80 · Integrated Full + History · 2026-09-28</p>
+<p align="center">v11.4.82 · Integrated Full + History · 2026-09-28</p>
 
 ---
+
+## 🔄 v11.4.82 — 자동 최신 Instagram 피드
+
+- 게시물 주소를 설정에 직접 입력하지 않고 `@board__mate` 공개 프로필 피드를 홈에 표시합니다.
+- 새 글이 공개되면 Instagram 피드의 첫 게시물이 자동으로 바뀝니다.
+- 홈 iframe에서 피드가 표시되지 않는 로컬 미리보기 제한은 실제 GitHub Pages에서 확인이 필요합니다.
+
+세부 내용은 [`README_V11_4_82_INSTAGRAM_AUTO_FEED.md`](README_V11_4_82_INSTAGRAM_AUTO_FEED.md)를 참고하세요.
+
+## 📷 v11.4.81 — 홈 Instagram 게시물 사진
+
+- 공개 최신 게시물의 개별 Instagram embed URL을 홈 카드에 표시합니다.
+- `config.js`의 `instagramLatestPostUrl`을 다음 최신 게시물 주소로 바꾸면 임베드 대상을 갱신할 수 있습니다.
+- 서비스워커/모듈 캐시를 `11.4.81`로 갱신했습니다. DB 변경은 없습니다.
+- 개별 `/embed/` 주소는 브라우저에서 사진 표시를 확인했습니다. 로컬 홈의 제3자 iframe은 빈 화면으로 남아 GitHub Pages에서 최종 확인이 필요합니다.
+
+세부 내용은 [`README_V11_4_81_INSTAGRAM_PHOTO.md`](README_V11_4_81_INSTAGRAM_PHOTO.md)를 참고하세요.
 
 ## 📰 v11.4.80 — 홈 공지·일정 읽기 화면
 
@@ -49,10 +66,10 @@
 
 | 항목 | 상태 |
 |---|---|
-| 릴리스 | **v11.4.80** |
+| 릴리스 | **v11.4.82** |
 | 다인플 | **18개 게임** |
 | 1인플 | **7개 게임** |
-| 서비스워커 캐시 | `boardmate-shell-v11.4.80` |
+| 서비스워커 캐시 | `boardmate-shell-v11.4.82` |
 | 신규 Supabase SQL/RPC | **없음** |
 | 기존 진행 중 게임 | **호환 유지** |
 | 롤백 자료 | `docs/history/`, `database/history/` 보존 |

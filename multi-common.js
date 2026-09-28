@@ -1,4 +1,4 @@
-import {processSingleRoomAlarm} from './alarm.js?v=11.4.80';
+import {processSingleRoomAlarm} from './alarm.js?v=11.4.82';
 const CFG=window.BOARDMATE_CONFIG||{};
 export const configured=()=>Boolean(CFG.supabaseUrl&&CFG.supabaseAnonKey&&window.supabase?.createClient);
 export const sb=configured()?window.supabase.createClient(CFG.supabaseUrl,CFG.supabaseAnonKey,{auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}}):null;

@@ -20,7 +20,7 @@ const unlockAlarmAudio=(...a)=>__alarmApi.unlockAlarmAudio(...a);
 window.__boardmateAppStarted=true;
 (async()=>{
   try{
-    const mod=await import('./alarm.js?v=11.4.80');
+    const mod=await import('./alarm.js?v=11.4.82');
     for(const key of Object.keys(__alarmApi)) if(typeof mod[key]==='function') __alarmApi[key]=mod[key];
     window.dispatchEvent(new Event('boardmate:alarm-ready'));
   }catch(err){
@@ -35,6 +35,7 @@ const LINKS = {
   somoim: 'https://www.somoim.co.kr/e4ed5ffc-a013-11ee-8110-0a96f0ba00151',
   shop: 'https://marpple.shop/kr/mate'
 };
+const INSTAGRAM_FEED_EMBED_URL='https://www.instagram.com/board__mate/embed/';
 let noteReadClient=null;
 let homePublicData={notices:[],schedules:[],loaded:false,error:false};
 let homeCalendarMonth=new Date(new Date().getFullYear(),new Date().getMonth(),1);
@@ -213,7 +214,7 @@ function ensureSiteFeatures(){
   if(!document.querySelector('link[rel="manifest"]')){const l=document.createElement('link');l.rel='manifest';l.href='./manifest.webmanifest';document.head.appendChild(l);}
   if(!document.querySelector('meta[name="theme-color"]')){const m=document.createElement('meta');m.name='theme-color';m.content='#141922';document.head.appendChild(m);}
   if(!document.querySelector('link[rel="manifest"]')){const l=document.createElement('link');l.rel='manifest';l.href='./manifest.webmanifest';document.head.appendChild(l);}
-  if('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js?v=11.4.80',{scope:'./'}).catch(()=>{});
+  if('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js?v=11.4.82',{scope:'./'}).catch(()=>{});
 }
 async function installBoardMate(){
   if(deferredInstallPrompt){
@@ -415,7 +416,7 @@ async function renderHome(){
   shell(`<section class="home-notice-strip" id="homeNoticeStrip" aria-live="polite"><span class="home-notice-icon">📣</span><div class="home-notice-copy"><span class="home-card-kicker">BOARDMATE NOTICE</span><strong id="homeNoticeTitle">공지를 불러오는 중…</strong><small id="homeNoticeMeta"></small></div><button class="home-text-action" id="homeAllNoticesBtn" type="button">공지 전체 보기 <span aria-hidden="true">→</span></button></section>
   <section class="home-showcase">
     <section class="hero home-intro"><div><span class="home-card-kicker">BOARDMATE COMMUNITY</span><h1><span>BoardMate</span><br>Arcade</h1><p>보드메이트에서 같이 즐기는 웹 보드게임 공간.<br>미니게임, AI 연습, 로그인 기반 온라인 방을 한 곳에 모았습니다.</p><div class="social-links"><a class="social-link" href="${LINKS.instagram}" target="_blank" rel="noreferrer">📷 Instagram</a><a class="social-link" href="${LINKS.somoim}" target="_blank" rel="noreferrer">👥 소모임</a><a class="social-link" href="${LINKS.shop}" target="_blank" rel="noreferrer">🛍 마플샵</a></div></div><div class="hero-badge">🎲</div></section>
-    <article class="home-feature-card home-instagram-card"><div class="home-feature-head"><div><span class="home-card-kicker">INSTAGRAM · 2026.09.11</span><h2>정식 모임 후기</h2></div><a class="home-text-action" href="${LINKS.instagram}" target="_blank" rel="noreferrer">@board__mate ↗</a></div><a class="home-instagram-preview" href="${LINKS.instagram}" target="_blank" rel="noreferrer"><span class="home-instagram-preview-icon">📷</span><strong>25명의 메이트와 함께한 정모</strong><span>이번 모임에서 즐긴 보드게임 리뷰</span><span class="home-instagram-games"><i>서퍼사우루스 맥스</i><i>벨라티</i><i>기즈모</i><i>마스크맨</i><i>밀레니엄 블레이즈</i></span><b>Instagram에서 최신 글 보기 ↗</b></a><div class="home-instagram-foot"><span>계정의 공개 게시물을 요약해 보여줍니다.</span><a href="${LINKS.instagram}" target="_blank" rel="noreferrer">프로필 열기 ↗</a></div></article>
+    <article class="home-feature-card home-instagram-card"><div class="home-feature-head"><div><span class="home-card-kicker">INSTAGRAM</span><h2>최근 게시물</h2></div><a class="home-text-action" href="${LINKS.instagram}" target="_blank" rel="noreferrer">@board__mate ↗</a></div><iframe class="home-instagram-post" src="${INSTAGRAM_FEED_EMBED_URL}" title="보드메이트 Instagram 최신 게시물 사진 모음" loading="eager" allowfullscreen></iframe><div class="home-instagram-foot"><span>최신 공개 게시물 자동 표시</span><a href="${LINKS.instagram}" target="_blank" rel="noreferrer">Instagram에서 보기 ↗</a></div></article>
     <article class="home-feature-card home-calendar-card"><div class="home-feature-head"><div><span class="home-card-kicker">UPCOMING</span><h2>모임 일정</h2></div><span class="home-readonly-badge">읽기 전용</span></div><div id="homeMiniCalendar" class="home-mini-calendar" aria-label="읽기 전용 모임 일정 달력"></div><div id="homeCalendarSelection" class="home-calendar-selection" aria-live="polite"></div><button type="button" class="home-outline-action" id="homeAllSchedulesBtn">예정 일정 전체 보기 <span aria-hidden="true">→</span></button></article>
   </section>
   <section id="homeActiveGamesWrap" class="active-games-wrap hidden"><div class="section-title"><h2>▶ 진행 중인 게임</h2><small>자동 저장 · 재접속</small></div><div id="homeActiveGameList"></div></section>
