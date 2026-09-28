@@ -4,9 +4,18 @@
 
 <h1 align="center">🎲 BoardMate Arena</h1>
 <p align="center"><strong>모임에서 바로 열어 같이 플레이하는 온라인 보드게임 아레나</strong></p>
-<p align="center">v11.4.79 · Integrated Full + History · 2026-09-17</p>
+<p align="center">v11.4.80 · Integrated Full + History · 2026-09-28</p>
 
 ---
+
+## 📰 v11.4.80 — 홈 공지·일정 읽기 화면
+
+- BoardMate Note의 공개 공지와 일정만 `SELECT`로 읽어 홈에 표시합니다. 홈에는 수정/등록 UI가 없습니다.
+- 최신 공지 제목, 날짜별 일정 달력, 예정 일정 목록을 추가했습니다.
+- 공개 Instagram의 최근 게시물 요약 카드를 홈에 넣고, 프로필 링크에서 최신 글을 열 수 있게 했습니다.
+- 서비스워커/모듈 캐시 버전을 `11.4.80`으로 갱신했습니다. DB 변경은 없습니다.
+
+자세한 변경 내역은 [`README_V11_4_80_HOME_COMMUNITY_FEED.md`](README_V11_4_80_HOME_COMMUNITY_FEED.md)를 참고하세요.
 
 ## 🔔 v11.4.79 — 알림 복귀 안정화
 
@@ -40,10 +49,10 @@
 
 | 항목 | 상태 |
 |---|---|
-| 릴리스 | **v11.4.79** |
+| 릴리스 | **v11.4.80** |
 | 다인플 | **18개 게임** |
 | 1인플 | **7개 게임** |
-| 서비스워커 캐시 | `boardmate-shell-v11.4.79` |
+| 서비스워커 캐시 | `boardmate-shell-v11.4.80` |
 | 신규 Supabase SQL/RPC | **없음** |
 | 기존 진행 중 게임 | **호환 유지** |
 | 롤백 자료 | `docs/history/`, `database/history/` 보존 |

@@ -2,5 +2,8 @@
 // 비워두면 사이트/게임은 정상 동작하고, 순위표만 현재 브라우저에 저장됩니다.
 window.BOARDMATE_CONFIG = {
   supabaseUrl: "https://dtqhuorprcwehhoukbmu.supabase.co",
-  supabaseAnonKey: "sb_publishable_v35hfjspS2xmdTwSpTMKrg_DzB12N4o"
+  supabaseAnonKey: "sb_publishable_v35hfjspS2xmdTwSpTMKrg_DzB12N4o",
+  // Public read-only homepage feed from board-mate/note.
+  noteSupabaseUrl: "https://tpfinedodxwjtvyujryc.supabase.co",
+  noteSupabaseAnonKey: "sb_publishable_mIbETS_ZFhwgXcrQbhVoWg_-xQ_owbv"
 };

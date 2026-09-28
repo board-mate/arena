@@ -20,7 +20,7 @@ const unlockAlarmAudio=(...a)=>__alarmApi.unlockAlarmAudio(...a);
 window.__boardmateAppStarted=true;
 (async()=>{
   try{
-    const mod=await import('./alarm.js?v=11.4.79');
+    const mod=await import('./alarm.js?v=11.4.80');
     for(const key of Object.keys(__alarmApi)) if(typeof mod[key]==='function') __alarmApi[key]=mod[key];
     window.dispatchEvent(new Event('boardmate:alarm-ready'));
   }catch(err){
@@ -35,9 +35,13 @@ const LINKS = {
   somoim: 'https://www.somoim.co.kr/e4ed5ffc-a013-11ee-8110-0a96f0ba00151',
   shop: 'https://marpple.shop/kr/mate'
 };
+let noteReadClient=null;
+let homePublicData={notices:[],schedules:[],loaded:false,error:false};
+let homeCalendarMonth=new Date(new Date().getFullYear(),new Date().getMonth(),1);
 
 const esc = s => String(s ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
 const kstDate = () => new Date(Date.now() + 9*3600*1000).toISOString().slice(0,10);
+let homeCalendarSelected=kstDate();
 const formatDate = d => `${d.slice(0,4)}.${d.slice(5,7)}.${d.slice(8,10)}`;
 const formatClock = iso => new Intl.DateTimeFormat('ko-KR',{timeZone:'Asia/Seoul',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).format(new Date(iso));
 const configured = () => Boolean(CFG.supabaseUrl && CFG.supabaseAnonKey);
@@ -101,6 +105,83 @@ function gameEntryHref(room){
   return `./${gi.page||(`online-${room.game}.html`)}?room=${encodeURIComponent(room.id)}`;
 }
 
+function noteFeedClient(){
+  if(noteReadClient)return noteReadClient;
+  const url=CFG.noteSupabaseUrl,key=CFG.noteSupabaseAnonKey;
+  if(!url||!key||!window.supabase?.createClient)return null;
+  try{noteReadClient=window.supabase.createClient(url,key,{auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}});}catch(err){console.warn('[BoardMate] public notice feed setup failed',err);}
+  return noteReadClient;
+}
+function homeNoticeDate(row){
+  const stamp=String(row?.updated_at||row?.created_at||'').slice(0,10);
+  return /^\d{4}-\d{2}-\d{2}$/.test(stamp)?stamp.replaceAll('-','.'):'';
+}
+function scheduleDateLabel(date){
+  if(!date)return'';
+  const parts=String(date).slice(0,10).split('-');
+  return parts.length===3?`${Number(parts[1])}월 ${Number(parts[2])}일`:'';
+}
+function homeCalendarRows(date){return homePublicData.schedules.filter(row=>String(row.event_date).slice(0,10)===date).sort((a,b)=>String(a.event_time||'').localeCompare(String(b.event_time||'')))}
+function renderHomeMiniCalendar(){
+  const root=document.querySelector('#homeMiniCalendar'),selection=document.querySelector('#homeCalendarSelection');
+  if(!root||!selection)return;
+  const year=homeCalendarMonth.getFullYear(),month=homeCalendarMonth.getMonth(),first=new Date(year,month,1),start=new Date(year,month,1-first.getDay()),today=kstDate();
+  let cells='';
+  for(let i=0;i<42;i++){
+    const date=new Date(start);date.setDate(start.getDate()+i);
+    const key=`${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
+    const entries=homeCalendarRows(key),tooltip=entries.map(row=>`${row.event_time?String(row.event_time).slice(0,5)+' ':''}${row.title}${row.location?' · '+row.location:''}`).join('\n');
+    cells+=`<button type="button" class="home-calendar-day${date.getMonth()!==month?' other-month':''}${key===today?' today':''}${key===homeCalendarSelected?' selected':''}${entries.length?' has-events':''}" data-cal-day="${key}" title="${esc(tooltip||scheduleDateLabel(key))}" aria-label="${scheduleDateLabel(key)}${entries.length?` · 일정 ${entries.length}개`:''}"><span>${date.getDate()}</span>${entries.length?'<i aria-hidden="true"></i>':''}</button>`;
+  }
+  root.innerHTML=`<div class="home-calendar-toolbar"><button type="button" data-cal-action="prev" aria-label="이전 달">‹</button><strong>${year}년 ${month+1}월</strong><button type="button" data-cal-action="next" aria-label="다음 달">›</button></div><div class="home-calendar-weekdays">${['일','월','화','수','목','금','토'].map((day,index)=>`<span class="${index===0?'sunday':''}">${day}</span>`).join('')}</div><div class="home-calendar-grid">${cells}</div>`;
+  const selected=homeCalendarRows(homeCalendarSelected);
+  selection.innerHTML=`<div class="home-selected-date"><strong>${scheduleDateLabel(homeCalendarSelected)}</strong><span>${selected.length?`${selected.length}개 일정`:'일정 없음'}</span></div>${selected.length?`<div class="home-selected-events">${selected.slice(0,2).map(row=>`<div class="home-selected-event"><i aria-hidden="true"></i><div><strong>${esc(row.title)}</strong><small>${[row.event_time?String(row.event_time).slice(0,5):'',row.location||''].filter(Boolean).map(esc).join(' · ')||'모임 일정'}</small></div></div>`).join('')}${selected.length>2?`<small class="home-more-events">외 ${selected.length-2}개 일정 · 전체 보기에서 확인</small>`:''}</div>`:`<p class="home-calendar-empty">날짜를 누르거나 마우스를 올리면 일정을 확인할 수 있어요.</p>`}`;
+}
+function onHomeCalendarClick(event){
+  const action=event.target.closest('[data-cal-action]')?.dataset.calAction;
+  if(action){homeCalendarMonth=new Date(homeCalendarMonth.getFullYear(),homeCalendarMonth.getMonth()+(action==='next'?1:-1),1);renderHomeMiniCalendar();return;}
+  const day=event.target.closest('[data-cal-day]');if(!day)return;
+  homeCalendarSelected=day.dataset.calDay;const date=new Date(`${homeCalendarSelected}T12:00:00`);homeCalendarMonth=new Date(date.getFullYear(),date.getMonth(),1);renderHomeMiniCalendar();
+}
+function openHomePublicList(kind){
+  const isNotice=kind==='notices',dialog=document.createElement('dialog');dialog.className='home-readonly-dialog';
+  const rows=isNotice?homePublicData.notices:homePublicData.schedules.filter(row=>String(row.event_date).slice(0,10)>=kstDate()).sort((a,b)=>(`${a.event_date}${a.event_time||''}`).localeCompare(`${b.event_date}${b.event_time||''}`));
+  const content=rows.length?rows.map(row=>isNotice?`<article class="home-readonly-row"><span class="home-readonly-mark">${row.pinned?'📌':'📣'}</span><div><strong>${esc(row.title||'제목 없음')}</strong><p>${esc(row.body||'')}</p><small>${row.pinned?'상단 공지 · ':''}${homeNoticeDate(row)}</small></div></article>`:`<article class="home-readonly-row"><span class="home-readonly-mark">🗓️</span><div><strong>${esc(row.title||'제목 없음')}</strong><p>${[scheduleDateLabel(row.event_date),row.event_time?String(row.event_time).slice(0,5):'',row.location||''].filter(Boolean).map(esc).join(' · ')}</p>${row.note?`<small>${esc(row.note)}</small>`:''}</div></article>`).join(''):`<div class="home-readonly-empty">${homePublicData.error?'정보를 불러오지 못했습니다. 잠시 후 다시 확인해 주세요.':isNotice?'등록된 공지가 없습니다.':'예정된 일정이 없습니다.'}</div>`;
+  dialog.innerHTML=`<div class="home-readonly-head"><div><span class="home-card-kicker">READ ONLY</span><h2>${isNotice?'공지사항':'예정 일정'}</h2></div><button type="button" class="home-readonly-close" aria-label="닫기">×</button></div><div class="home-readonly-list">${content}</div><p class="home-readonly-foot">조회 전용 · 이 화면에서는 내용을 수정할 수 없습니다.</p>`;
+  dialog.querySelector('.home-readonly-close').addEventListener('click',()=>dialog.close());dialog.addEventListener('click',e=>{if(e.target===dialog)dialog.close()});dialog.addEventListener('close',()=>dialog.remove(),{once:true});document.body.appendChild(dialog);dialog.showModal();
+}
+function renderHomePublicInfo(){
+  const title=document.querySelector('#homeNoticeTitle'),meta=document.querySelector('#homeNoticeMeta');if(!title||!meta)return;
+  renderHomeMiniCalendar();
+  if(homePublicData.loaded||homePublicData.error){
+    const latest=[...homePublicData.notices].sort((a,b)=>String(b.created_at||'').localeCompare(String(a.created_at||'')))[0];title.textContent=latest?.title|| (homePublicData.error?'공지 정보를 불러오지 못했습니다':'등록된 공지가 없습니다');meta.textContent=latest?`${latest.pinned?'📌 고정 공지 · ':''}${homeNoticeDate(latest)}`:'보드메이트 공지사항';
+    document.querySelector('#homeNoticeStrip')?.classList.toggle('is-empty',!latest);
+  }
+}
+let homePublicLoadPromise=null;
+async function loadHomePublicInfo(){
+  if(homePublicLoadPromise)return homePublicLoadPromise;
+  homePublicLoadPromise=(async()=>{
+    try{
+      for(let i=0;i<12&&!window.supabase?.createClient;i++)await new Promise(resolve=>setTimeout(resolve,250));
+      const client=noteFeedClient();if(!client)throw new Error('공개 일정 연결을 준비하지 못했습니다.');
+      const [noticeResult,scheduleResult]=await Promise.all([
+        client.from('announcements').select('id,title,body,pinned,created_at,updated_at').order('pinned',{ascending:false}).order('created_at',{ascending:false}).limit(100),
+        client.from('schedules').select('id,title,event_date,event_time,location,note').order('event_date',{ascending:true}).order('event_time',{ascending:true}).limit(300)
+      ]);
+      if(noticeResult.error)throw noticeResult.error;if(scheduleResult.error)throw scheduleResult.error;
+      homePublicData={notices:noticeResult.data||[],schedules:scheduleResult.data||[],loaded:true,error:false};
+    }catch(err){homePublicData={...homePublicData,loaded:true,error:true};console.warn('[BoardMate] read-only notice/schedule feed unavailable',err);}
+    finally{homePublicLoadPromise=null;renderHomePublicInfo();}
+  })();
+  return homePublicLoadPromise;
+}
+function startHomePublicRefresh(){
+  const refresh=()=>{if(!document.hidden)void loadHomePublicInfo()};
+  const timer=setInterval(refresh,60000);document.addEventListener('visibilitychange',refresh);window.addEventListener('focus',refresh);window.addEventListener('pageshow',refresh);
+  addCleanup(()=>{clearInterval(timer);document.removeEventListener('visibilitychange',refresh);window.removeEventListener('focus',refresh);window.removeEventListener('pageshow',refresh)});
+}
+
 function playerId(){
   let id = localStorage.getItem(STORAGE_PREFIX+'player_id');
   if(!id){ id = crypto.randomUUID(); localStorage.setItem(STORAGE_PREFIX+'player_id', id); }
@@ -132,7 +213,7 @@ function ensureSiteFeatures(){
   if(!document.querySelector('link[rel="manifest"]')){const l=document.createElement('link');l.rel='manifest';l.href='./manifest.webmanifest';document.head.appendChild(l);}
   if(!document.querySelector('meta[name="theme-color"]')){const m=document.createElement('meta');m.name='theme-color';m.content='#141922';document.head.appendChild(m);}
   if(!document.querySelector('link[rel="manifest"]')){const l=document.createElement('link');l.rel='manifest';l.href='./manifest.webmanifest';document.head.appendChild(l);}
-  if('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js?v=11.4.79',{scope:'./'}).catch(()=>{});
+  if('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js?v=11.4.80',{scope:'./'}).catch(()=>{});
 }
 async function installBoardMate(){
   if(deferredInstallPrompt){
@@ -331,13 +412,24 @@ function rollOne(){const a=new Uint32Array(1);crypto.getRandomValues(a);return a
 
 // -------------------- pages --------------------
 async function renderHome(){
-  shell(`<section class="hero"><div><h1><span>BoardMate</span> Arcade</h1><p>보드메이트에서 같이 즐기는 웹 보드게임 공간.<br>미니게임, AI 연습, 로그인 기반 온라인 방을 한 곳에 모았습니다.</p><div class="social-links"><a class="social-link" href="${LINKS.instagram}" target="_blank" rel="noreferrer">📷 Instagram</a><a class="social-link" href="${LINKS.somoim}" target="_blank" rel="noreferrer">👥 소모임</a><a class="social-link" href="${LINKS.shop}" target="_blank" rel="noreferrer">🛍 마플샵</a></div></div><div class="hero-badge">🎲</div></section>
+  shell(`<section class="home-notice-strip" id="homeNoticeStrip" aria-live="polite"><span class="home-notice-icon">📣</span><div class="home-notice-copy"><span class="home-card-kicker">BOARDMATE NOTICE</span><strong id="homeNoticeTitle">공지를 불러오는 중…</strong><small id="homeNoticeMeta"></small></div><button class="home-text-action" id="homeAllNoticesBtn" type="button">공지 전체 보기 <span aria-hidden="true">→</span></button></section>
+  <section class="home-showcase">
+    <section class="hero home-intro"><div><span class="home-card-kicker">BOARDMATE COMMUNITY</span><h1><span>BoardMate</span><br>Arcade</h1><p>보드메이트에서 같이 즐기는 웹 보드게임 공간.<br>미니게임, AI 연습, 로그인 기반 온라인 방을 한 곳에 모았습니다.</p><div class="social-links"><a class="social-link" href="${LINKS.instagram}" target="_blank" rel="noreferrer">📷 Instagram</a><a class="social-link" href="${LINKS.somoim}" target="_blank" rel="noreferrer">👥 소모임</a><a class="social-link" href="${LINKS.shop}" target="_blank" rel="noreferrer">🛍 마플샵</a></div></div><div class="hero-badge">🎲</div></section>
+    <article class="home-feature-card home-instagram-card"><div class="home-feature-head"><div><span class="home-card-kicker">INSTAGRAM · 2026.09.11</span><h2>정식 모임 후기</h2></div><a class="home-text-action" href="${LINKS.instagram}" target="_blank" rel="noreferrer">@board__mate ↗</a></div><a class="home-instagram-preview" href="${LINKS.instagram}" target="_blank" rel="noreferrer"><span class="home-instagram-preview-icon">📷</span><strong>25명의 메이트와 함께한 정모</strong><span>이번 모임에서 즐긴 보드게임 리뷰</span><span class="home-instagram-games"><i>서퍼사우루스 맥스</i><i>벨라티</i><i>기즈모</i><i>마스크맨</i><i>밀레니엄 블레이즈</i></span><b>Instagram에서 최신 글 보기 ↗</b></a><div class="home-instagram-foot"><span>계정의 공개 게시물을 요약해 보여줍니다.</span><a href="${LINKS.instagram}" target="_blank" rel="noreferrer">프로필 열기 ↗</a></div></article>
+    <article class="home-feature-card home-calendar-card"><div class="home-feature-head"><div><span class="home-card-kicker">UPCOMING</span><h2>모임 일정</h2></div><span class="home-readonly-badge">읽기 전용</span></div><div id="homeMiniCalendar" class="home-mini-calendar" aria-label="읽기 전용 모임 일정 달력"></div><div id="homeCalendarSelection" class="home-calendar-selection" aria-live="polite"></div><button type="button" class="home-outline-action" id="homeAllSchedulesBtn">예정 일정 전체 보기 <span aria-hidden="true">→</span></button></article>
+  </section>
   <section id="homeActiveGamesWrap" class="active-games-wrap hidden"><div class="section-title"><h2>▶ 진행 중인 게임</h2><small>자동 저장 · 재접속</small></div><div id="homeActiveGameList"></div></section>
   <div class="section-title"><h2>미니게임</h2><small>${formatDate(kstDate())} · KST</small></div><section class="game-grid daily-two">${homeCard('pensterdam','🧩','펜토리니','도움칸 적게 사용 → 동률이면 먼저 클리어')} ${homeCard('yahtzee','🎲','Yahtzee','언제든 플레이 · 올타임 최고 점수')}</section>
   <section class="home-mode-grid"><button class="mode-card" data-go="solo"><span>🧠</span><b>1인플 · AI/솔로</b><small>마스크맨 / 어콰이어 / 에친스톤 / 캘리코 / 캐스캐디아 / 더 게임 / 커피 로스터 / 콘세르바스</small></button><button class="mode-card" data-go="multi"><span>🌐</span><b>다인플 · 온라인 방</b><small>자동 저장 · 재접속 · 게임별 티어</small></button></section>
     <div id="connection"></div>`);
 
   document.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>location.hash=`#/${b.dataset.go}`);
+  renderHomePublicInfo();
+  void loadHomePublicInfo();
+  startHomePublicRefresh();
+  document.querySelector('#homeAllNoticesBtn')?.addEventListener('click',()=>openHomePublicList('notices'));
+  document.querySelector('#homeAllSchedulesBtn')?.addEventListener('click',()=>openHomePublicList('schedules'));
+  document.querySelector('#homeMiniCalendar')?.addEventListener('click',onHomeCalendarClick);
   const activeWrap=document.querySelector('#homeActiveGamesWrap');
   const activeList=document.querySelector('#homeActiveGameList');
   const loadHomeActiveGamesRaw=async()=>{
