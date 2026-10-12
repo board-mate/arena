@@ -4,9 +4,15 @@
 
 <h1 align="center">🎲 BoardMate Arena</h1>
 <p align="center"><strong>모임에서 바로 열어 같이 플레이하는 온라인 보드게임 아레나</strong></p>
-<p align="center">v11.4.83 · Integrated Full + History · 2026-09-28</p>
+<p align="center">v11.4.85 · Splendor Event · 2026-10-12</p>
 
 ---
+
+## 💎 v11.4.85 — 이벤트와 공개 대진표
+
+Note 공지·일정 연동을 해제하고 메카배 스플렌더 대회 이벤트를 추가했습니다. 누구나 대진표를 조회하며, 지정된 기존 다섯 회원만 서버 권한 검사 후 결과를 기록할 수 있습니다. **신규 SQL 적용이 필요합니다.**
+
+[이용·권한·배포 안내](README_V11_4_84_SPLENDOR_EVENT.md)를 먼저 확인하세요.
 
 ## 🌐 v11.4.83 — 공개 일정만 Arena에 표시
 
@@ -75,11 +81,11 @@
 
 | 항목 | 상태 |
 |---|---|
-| 릴리스 | **v11.4.83** |
+| 릴리스 | **v11.4.85** |
 | 다인플 | **18개 게임** |
 | 1인플 | **7개 게임** |
-| 서비스워커 캐시 | `boardmate-shell-v11.4.83` |
-| 신규 Supabase SQL/RPC | **없음** |
+| 서비스워커 캐시 | `boardmate-shell-v11.4.85` |
+| 신규 Supabase SQL/RPC | **이벤트용 추가 SQL 필요** |
 | 기존 진행 중 게임 | **호환 유지** |
 | 롤백 자료 | `docs/history/`, `database/history/` 보존 |
 
