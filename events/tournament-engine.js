@@ -65,20 +65,37 @@ const TournamentEngine = (() => {
   function makeGame(id, playerIds) {
     return {id, playerIds: [...playerIds], ranks: playerIds.map(() => null), locked: false};
   }
-  function createTournament(title, rawNames, drawMode = 'random', randomInt = secureInt) {
+  function createTournament(title, rawNames, drawMode = 'random', randomInt = secureInt, rawSeedNames = []) {
+    const seedNames = rawSeedNames.map(cleanName);
+    rawNames = [...seedNames, ...rawNames];
     const names = rawNames.map(cleanName);
     const errors = nameErrors(names); assert(!errors.length, errors.join('\n'));
     const safeTitle = cleanName(title) || '스플랜더 대회';
     assert(safeTitle.length <= 60, '대회명은 60자 이하로 입력해 주세요.');
     assert(['random', 'ordered'].includes(drawMode), '지원하지 않는 편성 방식입니다.');
     const rule = getRule(names.length);
-    const players = names.map((name, i) => ({id: `p${i + 1}`, name}));
+    const players = names.map((name, i) => ({id: `p${i + 1}`, name, ...(i < seedNames.length ? {seed: true} : {})}));
     const order = drawMode === 'random' ? shuffle(players.map(p => p.id), randomInt) : players.map(p => p.id);
     let offset = 0;
     const prelims = rule.sizes.map((size, i) => {
       const game = makeGame(String.fromCharCode(65 + i), order.slice(offset, offset + size));
       offset += size; return game;
     });
+    if (seedNames.length && prelims.length) {
+      const groups = rule.sizes.map(() => []);
+      const groupOrder = drawMode === 'random' ? shuffle(groups.map((_, i) => i), randomInt) : groups.map((_, i) => i);
+      const seeds = order.filter(id => players.find(p => p.id === id).seed);
+      for (const id of seeds) {
+        const available = groupOrder.filter(i => groups[i].length < rule.sizes[i]);
+        const min = Math.min(...available.map(i => groups[i].length));
+        groups[available.find(i => groups[i].length === min)].push(id);
+      }
+      const regular = order.filter(id => !players.find(p => p.id === id).seed);
+      for (let i = 0; i < groups.length; i++) {
+        while (groups[i].length < rule.sizes[i]) groups[i].push(regular.shift());
+        prelims[i] = makeGame(String.fromCharCode(65 + i), drawMode === 'random' ? shuffle(groups[i], randomInt) : groups[i]);
+      }
+    }
     return {title: safeTitle, createdAt: new Date().toISOString(), drawMode, players, prelims,
       final: rule.sizes.length ? null : makeGame('final', order)};
   }
@@ -152,7 +169,8 @@ const TournamentEngine = (() => {
     assert(['random', 'ordered'].includes(t.drawMode), '대회 편성 방식이 올바르지 않습니다.');
     const players = t.players.map((p, i) => {
       assert(p && p.id === `p${i + 1}` && typeof p.name === 'string', '참가자 식별자가 올바르지 않습니다.');
-      return {id: p.id, name: cleanName(p.name)};
+      assert(p.seed === undefined || typeof p.seed === 'boolean', '시드 참가자 정보가 올바르지 않습니다.');
+      return {id: p.id, name: cleanName(p.name), ...(p.seed ? {seed: true} : {})};
     });
     assert(nameErrors(players.map(p => p.name)).length === 0, '참가자 이름 또는 인원이 올바르지 않습니다.');
     const allIds = new Set(players.map(p => p.id));

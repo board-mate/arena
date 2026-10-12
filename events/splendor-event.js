@@ -1,5 +1,5 @@
 import {createAdminPanel} from './event-admins.js?v=11.4.85';
-import E from './tournament-engine.js?v=11.4.85';
+import E from './tournament-engine.js?v=11.4.86';
 
 export const EVENT_ID = 'splendor-2026-10-30';
 const TITLE = '메카배 스플렌더 대회';
@@ -18,7 +18,7 @@ export function validateEventTournament(tournament) {
 export function renderEvents({shell,esc,addCleanup,memberToken},route) {
   if (!document.querySelector('#event-styles')) {
     const link = document.createElement('link');
-    link.id='event-styles';link.rel='stylesheet';link.href='./events/events.css?v=11.4.85';document.head.append(link);
+    link.id='event-styles';link.rel='stylesheet';link.href='./events/events.css?v=11.4.86';document.head.append(link);
   }
   if(route==='events') {
     shell(`<div class="page-head"><div><span class="ev-kicker">PLAY TOGETHER</span><h1>이벤트</h1><p>함께 모여 즐기는 보드메이트의 특별한 한 판.</p></div></div>
@@ -27,9 +27,9 @@ export function renderEvents({shell,esc,addCleanup,memberToken},route) {
   }
   if(route!==`events/${EVENT_ID}`) {shell('<div class="panel"><h1>이벤트를 찾을 수 없습니다.</h1><a class="primary link-btn" href="#/events">이벤트 목록</a></div>');return;}
   let stopped=false,busy=false,loading=false,dirty=false,record=null,canEdit=false,pendingRevision=null;
-  let drafts={ranks:{},names:null,notes:null};
-  const dirtyState=()=>{dirty=Object.keys(drafts.ranks).length>0||drafts.names!==null||drafts.notes!==null;};
-  const clearDrafts=()=>{drafts={ranks:{},names:null,notes:null};dirty=false;};
+  let drafts={ranks:{},names:null,seeds:null,notes:null};
+  const dirtyState=()=>{dirty=Object.keys(drafts.ranks).length>0||drafts.names!==null||drafts.seeds!==null||drafts.notes!==null;};
+  const clearDrafts=()=>{drafts={ranks:{},names:null,seeds:null,notes:null};dirty=false;};
   const cfg=window.BOARDMATE_CONFIG||{};
   const $=s=>document.querySelector(s);
   const rpc=async(name,args={})=>{
@@ -44,7 +44,7 @@ export function renderEvents({shell,esc,addCleanup,memberToken},route) {
     <div class="ev-access" id="ev-access">누구나 조회 가능 · 운영진만 기록 가능</div><p id="ev-status" role="status" aria-live="polite">대진표를 불러오는 중…</p><div id="ev-updates" hidden><span>다른 관리자가 기록을 변경했습니다. 최신 내용을 불러와 주세요.</span> <button class="ghost" id="ev-reload" type="button">최신 기록 불러오기</button></div><div id="ev-board"></div><div id="ev-editor"></div><div id="ev-admin-permissions" hidden></div></section>
     <header class="ev-hero"><div><span class="ev-kicker">BOARDMATE · MECHA CUP</span><h1>보석처럼 빛나는<br>당신의 한 수.</h1><h2>${TITLE}</h2><p>평소 스플렌더를 좋아하셨다면,<br>이번 기회에 실력을 마음껏 뽐내보세요.</p><a class="ev-hero-link" href="${URL}" id="ev-jump">대진표 바로 보기 ↑</a></div><div class="ev-hero-art">${gem}<span>SPLENDOR<br><small>TOURNAMENT 2026</small></span></div></header>
     <section class="ev-facts" aria-label="대회 기본 안내"><div><span>WHEN</span><strong>10.30 <small>금요일</small></strong><p>2026년 · 오후 7시 30분</p></div><div><span>PLAYERS</span><strong>12–16 <small>명</small></strong><p>보드메이트 회원 누구나</p></div><div><span>FORMAT</span><strong>추첨 토너먼트</strong><p>최대 4개 조 · 기본판만 사용</p></div></section>
-    <div class="ev-info-grid"><section class="ev-info"><span class="ev-kicker">HOW TO PLAY</span><h2>네 개의 조, 하나의 결승</h2><ol><li><b>무작위 추첨</b><span>12~16명을 A~D 네 개 조로 편성합니다.</span></li><li><b>조별 예선</b><span>각 조 1위가 결승에 진출합니다. 확장은 사용하지 않습니다.</span></li><li><b>4인 결승</b><span>결승 결과로 최종 순위를 결정합니다.</span></li></ol><p class="ev-muted">시작 플레이어와 동점 처리는 현장에서 운영진이 안내합니다.</p></section><section class="ev-prizes"><span class="ev-kicker">THE PRIZES</span><h2>우승의 즐거움을 더해줄 선물</h2><div><span>01</span><p><small>1등</small><strong>스트라이크</strong><span>보드게임</span></p><b aria-hidden="true">🏆</b></div><div><span>02</span><p><small>2등</small><strong>컬러레또</strong><span>보드게임</span></p><b aria-hidden="true">🎁</b></div><p class="ev-muted">※ 상품은 당일 사정에 따라 변경될 수 있습니다.</p></section></div>
+    <div class="ev-info-grid"><section class="ev-info"><span class="ev-kicker">HOW TO PLAY</span><h2>네 개의 조, 하나의 결승</h2><ol><li><b>무작위 추첨</b><span>시드(룰마)를 각 조에 고르게 배치한 뒤, 12~16명을 A~D 네 개 조로 무작위 편성합니다.</span></li><li><b>조별 예선</b><span>각 조 1위가 결승에 진출합니다. 확장은 사용하지 않습니다.</span></li><li><b>4인 결승</b><span>결승 결과로 최종 순위를 결정합니다.</span></li></ol><p class="ev-muted">시작 플레이어와 동점 처리는 현장에서 운영진이 안내합니다.</p></section><section class="ev-prizes"><span class="ev-kicker">THE PRIZES</span><h2>우승의 즐거움을 더해줄 선물</h2><div><span>01</span><p><small>1등</small><strong>스트라이크</strong><span>보드게임</span></p><b aria-hidden="true">🏆</b></div><div><span>02</span><p><small>2등</small><strong>컬러레또</strong><span>보드게임</span></p><b aria-hidden="true">🎁</b></div><p class="ev-muted">※ 상품은 당일 사정에 따라 변경될 수 있습니다.</p></section></div>
 </article>`);
   const adminPanel=createAdminPanel({root:$('#ev-admin-permissions'),rpc,eventId:EVENT_ID,memberToken,esc});
   const status=(message,error=false)=>{if(stopped)return;$('#ev-status').textContent=message;$('#ev-status').classList.toggle('ev-error',error);};
@@ -65,11 +65,12 @@ export function renderEvents({shell,esc,addCleanup,memberToken},route) {
     permission();
     $('#ev-export').disabled=!t;
     $('#ev-board').innerHTML=`<div class="ev-progress"><strong>${labels[E.phase(t)]}</strong><span>${t?t.players.length+'명 · 예선 '+t.prelims.filter(g=>g.locked).length+'/4조 확정':'운영진이 참가 명단을 확정하면 대진표가 공개됩니다.'}</span></div>${record.notes?`<div class="ev-notice"><b>운영 안내</b><p>${esc(record.notes)}</p></div>`:''}`+(t?`<div class="ev-groups">${t.prelims.map(g=>gameCard(g,t)).join('')}</div><div class="ev-connector">각 조 1위 <span aria-hidden="true">↓</span> 4인 결승</div><div class="ev-final-wrap">${t.final?gameCard(t.final,t,true):`<section class="ev-match ev-final"><div class="ev-match-head"><h3>결승</h3><span>진출자 대기</span></div>${t.prelims.map(g=>`<div class="ev-player"><span class="ev-seat">${g.id}</span><strong>${g.locked?esc(t.players.find(p=>p.id===g.playerIds[g.ranks.indexOf(1)]).name):g.id+'조 1위'}</strong><span class="ev-rank">${g.locked?'진출':'대기'}</span></div>`).join('')}</section>`}</div>${t.final?.locked?`<section class="ev-podium"><span class="ev-kicker">CONGRATULATIONS</span><h3>🏆 ${esc(t.players.find(p=>p.id===t.final.playerIds[t.final.ranks.indexOf(1)]).name)} 님, 우승을 축하합니다!</h3><p>${E.rankedPlayers(t.final).slice(0,3).map(p=>`${p.rank}위 ${esc(t.players.find(x=>x.id===p.id).name)}`).join(' · ')}</p></section>`:''}`:'<div class="ev-empty">'+gem+'<h3>아직 추첨 전입니다</h3><p>대진표가 등록되면 이곳에서 확인할 수 있어요.</p></div>');
-    $('#ev-editor').innerHTML=canEdit?`<details class="ev-admin" ${t?'':'open'}><summary>대회 운영 · 참가자 및 안내 관리</summary><div class="ev-editor-grid"><form id="ev-draw-form"><label for="ev-names">참가자 명단 <small>12~16명 · 한 줄에 한 명</small></label><textarea id="ev-names" rows="8" maxlength="1000" placeholder="참가자 닉네임을 입력하세요" required>${esc(t?t.players.map(p=>p.name).join('\n'):'')}</textarea><p class="ev-muted">동명이인은 번호 등으로 구분해 주세요. ${t?'재추첨하면 기존 경기 결과가 초기화됩니다.':''}</p><button class="primary" type="submit">${t?'명단으로 다시 추첨':'무작위 추첨·공개'}</button></form><form id="ev-note-form"><label for="ev-notes">공개 운영 안내</label><textarea id="ev-notes" rows="5" maxlength="2000" placeholder="현장 안내나 진행 상황을 남겨 주세요">${esc(record.notes||'')}</textarea><p class="ev-muted">저장하면 모든 방문자에게 공개됩니다.</p><button class="ghost" type="submit">운영 안내 저장</button></form></div></details>`:'';
+    $('#ev-editor').innerHTML=canEdit?`<details class="ev-admin" ${t?'':'open'}><summary>대회 운영 · 참가자 및 안내 관리</summary><div class="ev-editor-grid"><form id="ev-draw-form"><div class="ev-roster-grid"><section id="ev-seeds-page"><label for="ev-seeds">시드 명단 <small>룰마 가능한 참가자 · 한 줄에 한 명</small></label><textarea id="ev-seeds" rows="8" maxlength="1000" placeholder="룰마 가능한 참가자 닉네임을 입력하세요">${esc(t?t.players.filter(p=>p.seed).map(p=>p.name).join('\n'):'')}</textarea><p class="ev-muted">각 조에 최대한 고르게 배치합니다. 시드가 4명이면 A~D조에 1명씩 배치됩니다.</p></section><section id="ev-names-page"><label for="ev-names">일반 명단 <small>시드를 제외한 참가자 · 한 줄에 한 명</small></label><textarea id="ev-names" rows="8" maxlength="1000" placeholder="일반 참가자 닉네임을 입력하세요">${esc(t?t.players.filter(p=>!p.seed).map(p=>p.name).join('\n'):'')}</textarea><p class="ev-muted">시드 명단에 입력한 참가자는 다시 입력하지 마세요.</p></section></div><p class="ev-muted" id="ev-roster-count" role="status"></p><p class="ev-muted">두 명단을 합쳐 12~16명 · 동명이인은 번호 등으로 구분해 주세요. ${t?'재추첨하면 기존 경기 결과가 초기화됩니다.':''}</p><button class="primary" type="submit">${t?'명단으로 다시 추첨':'시드 배치·무작위 추첨·공개'}</button></form><form id="ev-note-form"><label for="ev-notes">공개 운영 안내</label><textarea id="ev-notes" rows="5" maxlength="2000" placeholder="현장 안내나 진행 상황을 남겨 주세요">${esc(record.notes||'')}</textarea><p class="ev-muted">저장하면 모든 방문자에게 공개됩니다.</p><button class="ghost" type="submit">운영 안내 저장</button></form></div></details>`:'';
     if(canEdit){
       if(drafts.names!==null)$('#ev-names').value=drafts.names;
+      if(drafts.seeds!==null)$('#ev-seeds').value=drafts.seeds;
       if(drafts.notes!==null)$('#ev-notes').value=drafts.notes;
-      if(drafts.names!==null||drafts.notes!==null)$('#ev-editor details').open=true;
+      if(drafts.names!==null||drafts.seeds!==null||drafts.notes!==null)$('#ev-editor details').open=true;
       $('#ev-board').querySelectorAll('[data-game]').forEach(card=>card.querySelectorAll('[data-rank]').forEach(select=>{
         const value=drafts.ranks[card.dataset.game]?.[select.dataset.rank];if(value!==undefined)select.value=value;
       }));
@@ -85,12 +86,19 @@ export function renderEvents({shell,esc,addCleanup,memberToken},route) {
       if(!confirm(isFinal?'결승 결과를 다시 수정할까요?':t.final?'예선을 수정하면 결승 대진과 결승 결과가 초기화됩니다. 계속할까요?':'이 조의 확정 결과를 수정할까요?'))return;
       void mutate(next=>{if(isFinal)next.state.final.locked=false;else E.unlockPrelim(next.state,button.dataset.unlock);},'unlock:'+button.dataset.unlock);
     });
-    $('#ev-draw-form')?.addEventListener('submit',event=>{event.preventDefault();const names=E.parseNames($('#ev-names').value);if(t&&!confirm('재추첨하면 현재 대진과 모든 순위가 초기화됩니다. 계속할까요?'))return;void mutate(next=>{next.state=validateEventTournament(E.createTournament(TITLE,names));});});
+    const updateRoster=()=>{
+      if(!canEdit)return;
+      const seeds=E.parseNames($('#ev-seeds').value).length,names=E.parseNames($('#ev-names').value).length;
+      $('#ev-roster-count').textContent=`시드 ${seeds}명 · 일반 ${names}명 · 총 ${seeds+names}명`;
+    };
+    updateRoster();
+    $('#ev-draw-form')?.addEventListener('submit',event=>{event.preventDefault();const names=E.parseNames($('#ev-names').value),seeds=E.parseNames($('#ev-seeds').value);if(t&&!confirm('재추첨하면 현재 대진과 모든 순위가 초기화됩니다. 계속할까요?'))return;void mutate(next=>{next.state=validateEventTournament(E.createTournament(TITLE,names,'random',undefined,seeds));});});
     $('#ev-note-form')?.addEventListener('submit',event=>{event.preventDefault();const notes=$('#ev-notes').value;void mutate(next=>{next.notes=notes;},'notes');});
     for(const node of [$('#ev-board'),$('#ev-editor')])node.oninput=event=>{
       const target=event.target;
       if(target.matches('[data-rank]')){const id=target.closest('[data-game]').dataset.game;drafts.ranks[id]||={};drafts.ranks[id][target.dataset.rank]=target.value;}
-      else if(target.id==='ev-names')drafts.names=target.value;
+      else if(target.id==='ev-names'){drafts.names=target.value;updateRoster();}
+      else if(target.id==='ev-seeds'){drafts.seeds=target.value;updateRoster();}
       else if(target.id==='ev-notes')drafts.notes=target.value;
       dirtyState();status('저장하지 않은 입력이 있습니다. 해당 항목의 저장 버튼을 눌러 주세요.');
     };
