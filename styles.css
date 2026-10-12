@@ -197,3 +197,7 @@ html[data-boardmate-my-turn="1"] .top-date{visibility:hidden}
 .home-instagram-post{display:block;width:100%;height:400px;border:0;border-radius:13px;background:#faf8f4;overflow:auto}
 @media(max-width:1050px){.home-instagram-post{height:410px}}
 @media(max-width:680px){.home-instagram-post{height:420px}}
+
+/* v11.4.84: event navigation and independent homepage banner. */
+.event-home-banner{display:flex;align-items:center;justify-content:space-between;gap:16px;background:#173f35;color:#faf5dc;padding:18px 22px;border-radius:15px;margin-bottom:18px;font-size:13px}.event-home-banner>span:first-child{color:#ebcf87;font-size:10px;letter-spacing:.12em;font-weight:900}.event-home-banner strong{font-size:17px}.home-showcase{grid-template-columns:minmax(0,1.45fr) minmax(0,1fr)}
+@media(max-width:700px){.event-home-banner{flex-wrap:wrap;gap:8px;padding:16px}.event-home-banner>span:first-child{width:100%}.event-home-banner strong{font-size:15px}.event-home-banner>span:last-child{font-size:11px}.home-showcase{grid-template-columns:1fr}.topnav{gap:1px}.topnav button{padding:7px 8px;font-size:12px}}

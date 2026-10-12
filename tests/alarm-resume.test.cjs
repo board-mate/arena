@@ -41,13 +41,12 @@ test('release cache bust stays aligned with the current version', () => {
   assert.match(app, new RegExp(`register\\('./sw\\.js\\?v=${escapedVersion}'`));
   assert.match(common, new RegExp(`import \\{processSingleRoomAlarm\\} from '\\./alarm\\.js\\?v=${escapedVersion}'`));
   assert.match(read('sw.js'), new RegExp(`boardmate-shell-v${escapedVersion}`));
-  assert.equal(version, '11.4.83');
+  assert.equal(version, '11.4.85');
 });
 
-test('home schedule feed reads only the public Note view', () => {
-  const loaderStart = app.indexOf('async function loadHomePublicInfo');
-  const loaderEnd = app.indexOf('function startHomePublicRefresh', loaderStart);
-  const loader = app.slice(loaderStart, loaderEnd);
-  assert.match(loader, /client\.from\('arena_public_schedules'\)/);
-  assert.doesNotMatch(loader, /client\.from\('schedules'\)/);
+test('Arena no longer connects to Note and offers the event destination', () => {
+  assert.doesNotMatch(app, /noteFeedClient|noteReadClient|homePublicData|arena_public_schedules|loadHomePublicInfo/);
+  assert.doesNotMatch(read('config.js'), /noteSupabase|tpfinedodxwjtvyujryc/);
+  assert.match(app, /data-nav="events"/);
+  assert.match(app, /events\/splendor-2026-10-30/);
 });
