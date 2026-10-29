@@ -18,6 +18,7 @@ async function fixture() {
     await db.query("insert into boardmate_sessions values($1,$2,now()+interval '1 day')",['fixture-token-'+i,uid(i)]);
   }
   await db.exec(migration);
+  await db.exec(fs.readFileSync(path.join(__dirname,'../database/SUPABASE_EVENTS_V11_4_87.sql'),'utf8'));
   return db;
 }
 module.exports={fixture,migration,uid,nicknames};

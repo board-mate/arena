@@ -1,7 +1,7 @@
 // Event-scoped roles only. The server resolves session tokens and enforces every change.
 export function createAdminPanel({root,rpc,eventId,memberToken,esc}) {
   let allowed=false,stopped=false,busy=false,data=null,generation=0,proposed=null;
-  root.innerHTML=`<details class="ev-admin"><summary>관리자 권한 관리</summary><p>대회 관리자는 기록 작성과 다른 회원의 관리자 권한 추가·해지를 할 수 있습니다. 상현·관리자는 해지할 수 없는 최상위 관리자입니다.</p><p class="ev-role-status" role="status" aria-live="polite"></p><div class="ev-role-list"></div><form class="ev-role-search"><label for="ev-member-query">관리자로 추가할 회원 검색</label><div><input id="ev-member-query" maxlength="20" required placeholder="회원 닉네임"><button class="ghost" type="submit">검색</button><button class="ghost" type="button" data-role-refresh>목록 새로고침</button></div></form><div class="ev-role-results"></div></details>`;
+  root.innerHTML=`<details class="ev-admin"><summary>관리자 권한 관리</summary><p>대회 관리자는 기록 작성과 다른 회원의 관리자 권한 추가·해지를 할 수 있습니다. 상현·관리자는 해지할 수 없는 최상위 관리자입니다.</p><p class="ev-role-status" role="status" aria-live="polite"></p><div class="ev-role-list"></div><form class="ev-role-search"><label for="ev-member-query">관리자로 추가할 회원</label><div><input id="ev-member-query" maxlength="20" placeholder="닉네임 검색 · 비우면 전체 회원"><button class="ghost" type="submit">회원 목록 보기</button><button class="ghost" type="button" data-role-refresh>목록 새로고침</button></div></form><div class="ev-role-results"></div></details>`;
   const $=s=>root.querySelector(s);
   const confirmation=document.createElement('div');confirmation.className='ev-role-confirm';confirmation.hidden=true;confirmation.setAttribute('role','group');confirmation.setAttribute('aria-label','권한 변경 확인');root.querySelector('details').append(confirmation);
   function propose(person,grant){
@@ -39,13 +39,13 @@ export function createAdminPanel({root,rpc,eventId,memberToken,esc}) {
   }
   $('.ev-role-search').onsubmit=async e=>{
     e.preventDefault();if(!allowed||stopped||busy)return;
-    const query=$('#ev-member-query').value.trim();if(!query)return;
+    const query=$('#ev-member-query').value.trim();
     const n=++generation;busy=true;disable(true);say('회원을 검색하는 중…');
     try {
       const people=await rpc('boardmate_search_event_members',{...args(),p_query:query});if(!active(n))return;
       $('.ev-role-results').innerHTML=people.map(p=>`<div class="ev-role-row"><strong>${esc(p.nickname)}</strong><span>${p.is_super_admin?'최상위 관리자':p.is_admin?'이미 관리자입니다':'일반 회원'}</span>${!p.is_admin?`<button class="primary" type="button" data-grant="${esc(p.user_id)}">관리자 추가</button>`:''}</div>`).join('');
       $('.ev-role-results').querySelectorAll('[data-grant]').forEach(b=>b.onclick=()=>propose(people.find(p=>p.user_id===b.dataset.grant),true));
-      say(people.length?`${people.length}명 검색됨${people.length===20?' · 최대 20명, 닉네임을 더 정확히 입력하세요.':''}`:'검색된 회원이 없습니다.');
+      say(people.length?`${people.length}명 · ${query?'검색 결과':'전체 회원 목록'}`:'검색된 회원이 없습니다.');
     }catch(e){if(active(n))say(e.message,true);}
     finally {if(active(n)){busy=false;disable(false);}}
   };

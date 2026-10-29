@@ -7,3 +7,5 @@
 .ev-back + .ev-board-section{margin-top:0;margin-bottom:36px}
 
 .ev-editor-grid{grid-template-columns:1fr}.ev-roster-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}.ev-roster-grid section{min-width:0}.ev-roster-grid textarea{box-sizing:border-box}.ev-roster-grid label small{display:block;margin-top:4px}@media(max-width:560px){.ev-roster-grid{gap:10px}.ev-roster-grid textarea{padding:8px;min-height:150px}}
+
+.ev-semis{grid-template-columns:repeat(2,minmax(0,1fr));max-width:740px;margin:0 auto}

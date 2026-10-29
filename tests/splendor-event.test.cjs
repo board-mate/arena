@@ -17,7 +17,7 @@ test('12–16 entrants form four balanced groups; every winner advances exactly 
     assert.deepEqual(t.prelims.map(g=>g.playerIds.length),Array.from({length:4},(_,i)=>i<n-12?4:3));
     assert.equal(new Set(t.prelims.flatMap(g=>g.playerIds)).size,n);
     for(const g of t.prelims){g.playerIds.forEach((id,i)=>E.setRank(g,id,i+1));E.lockGame(g);}
-    E.buildFinal(t);validate(t);assert.deepEqual(t.final.playerIds,t.prelims.map(g=>g.playerIds[0]));
+    E.buildSemifinals(t); for(const g of t.semifinals){g.playerIds.forEach((id,i)=>E.setRank(g,id,i+1));E.lockGame(g);} E.buildFinal(t);validate(t);assert.deepEqual(t.final.playerIds,t.semifinals.flatMap(g=>g.playerIds.slice(0,2)));
     t.final.playerIds.forEach((id,i)=>E.setRank(t.final,id,i+1));E.lockGame(t.final);assert.equal(E.phase(t),'done');
     E.unlockPrelim(t,'A');assert.equal(t.final,null);assert.equal(t.prelims[0].locked,false);
   }
@@ -67,7 +67,7 @@ test('database validates bracket, rankings, group membership, progression and no
 test('valid final and later correction round-trip through SQL',async()=>{
   const t=tournament(16);
   for(const g of t.prelims){g.playerIds.forEach((id,i)=>E.setRank(g,id,i+1));E.lockGame(g);}
-  E.buildFinal(t);t.final.playerIds.forEach((id,i)=>E.setRank(t.final,id,i+1));E.lockGame(t.final);
+  E.buildSemifinals(t); for(const g of t.semifinals){g.playerIds.forEach((id,i)=>E.setRank(g,id,i+1));E.lockGame(g);} E.buildFinal(t);t.final.playerIds.forEach((id,i)=>E.setRank(t.final,id,i+1));E.lockGame(t.final);
   await save('fixture-token-0',t,5);assert.deepEqual((await read()).state,t);
   const forged=structuredClone(t);forged.final.playerIds[0]='p2';await assert.rejects(save('fixture-token-0',forged,6));
   E.unlockPrelim(t,'A');await save('fixture-token-1',t,6);assert.equal((await read()).state.final,null);
