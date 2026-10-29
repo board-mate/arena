@@ -1,4 +1,6 @@
-# Current Test Status — v11.4.89
+# Current Test Status — v11.4.90
+
+전체 자동 테스트 55개 통과. v90은 운영 브라우저에서 발견한 에친스톤 역할 버튼 충돌을 추가 수정합니다.
 
 최신 게임 점검 범위는 README_V11_4_88_GAME_AUDIT.md와 README_V11_4_89_SOLO_RULES.md를 참고하세요. 실물 기본판 전체 교체 및 전 게임 전체 규칙 검증은 미완료입니다. 아래는 이전 v80 검증 기록입니다.
 

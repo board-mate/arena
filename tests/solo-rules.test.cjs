@@ -38,6 +38,11 @@ test('Etchinstone requires available cards to fill action roles before resolving
  const c=etch({s:{hand:['a','b'],roles:{spell:'a'}}},['rolesReady']);assert.equal(c.rolesReady(),false);c.s.roles.element='b';assert.equal(c.rolesReady(),true);
  c.s={phase:'finalEnemy',hand:['a','b','c','d','e','f'],finalAssign:{a:'A-spell',b:'B-spell'}};vm.runInContext(fn('solo-etchinstone.html','finalReady'),c);assert.equal(c.finalReady(),false);
 });
+test('Etchinstone role buttons work even when the button has the DOM role property',()=>{
+ const c=etch({s:{hand:['a'],roles:{}},mage:id=>({id,name:id,element:'water',focus:'dual'}),st:()=>({level:2}),E:{water:{name:'물',icon:'',color:'blue'}},esc:x=>x},['currentRole','roleLabel','reserveId','cardHtml','setCardRole','assignMageRole']);
+ const html=c.cardHtml('a',true),handler=html.match(/onclick="(event\.stopPropagation\(\);[^\"]+)"/)[1];
+ c.button={role:null};c.event={stopPropagation(){}};vm.runInContext('with(button){'+handler+'}',c);assert.equal(c.s.roles.spell,'a');
+});
 const TYPES=['sardine','mussel','scallop','octopus','water'];
 function conservas(state,names,extra={}){
  const c={state,TYPES,KOR:{},MONTH:{rounds:7},hasUp:()=>false,save(){},render(){},log(){},$:()=>null,shuffle:a=>[...a],...extra};vm.createContext(c);vm.runInContext(names.map(n=>fn('solo-conservas.html',n)).join('\n'),c);return c;
