@@ -297,7 +297,7 @@ function endTurn() {
   const minRequired = G.deck.length > 0 ? (G.totalPlayers === 1 ? 2 : 2) : 1;
   const currentHand = G.hands[G.currentTurn];
 
-  if (G.playedCount < minRequired && currentHand.length > 0) return;
+  if (G.playedCount < minRequired) return;
 
   // 불꽃 규칙 검증: 덮이지 않고 방치된 불꽃 확인
   for (let i = 0; i < 4; i++) {
@@ -326,7 +326,7 @@ function endTurn() {
 
   // 턴 전환
   G.playedCount = 0;
-  G.currentTurn = (G.currentTurn + 1) % G.totalPlayers;
+  do { G.currentTurn = (G.currentTurn + 1) % G.totalPlayers; } while (G.deck.length === 0 && G.hands[G.currentTurn].length === 0);
 
   // 다음 플레이어가 낼 카드가 있는지 체크
   checkValidPlays();
@@ -382,7 +382,7 @@ function render() {
     document.getElementById('status-msg').innerText = 
       `카드를 최소 ${minReq}장 이상 내야 합니다. (현재 낸 장수: ${G.playedCount}장)`;
     document.getElementById('btn-end-turn').disabled = 
-      (G.playedCount < minReq && currentHand.length > 0);
+      (G.playedCount < minReq);
   }
 
   // 열 렌더링

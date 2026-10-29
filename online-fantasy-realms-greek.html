@@ -495,7 +495,7 @@ async function boot(){
   const row=await withTimeout(loadFantasyState(),10000,'게임 상태를 불러오지 못했습니다.');revision=Number(row?.revision||0);if(row?.state){const ctrl=String(row.state.controllerUserId||row.controller_user_id||roomInfo.host_id);isController=ctrl===String(me.user_id);if(isController)reconstructController(row.state,row.private);else fullState=null;view=makeView(row.state,row.private,mySeat);renderAll();if(view.gameOver&&view.result)showEnd(view.result);}else{isController=true;await startNewGame();if(!view)await syncState(true);}pollTimer=setInterval(()=>void syncState(false),10000);window.addEventListener('beforeunload',()=>{if(pollTimer)clearInterval(pollTimer);});setInterval(()=>void touchPresence(true),15000);
 }
 $('detailClose').onclick=()=>$('detailDialog').close();$('endClose').onclick=()=>$('endDialog').close();['choiceDialog','omegaDialog','instantDialog'].forEach(id=>$(id)?.addEventListener('cancel',e=>e.preventDefault()));
-boot().catch(e=>{console.error(e);$('netBadge').textContent='연결 실패';showFatal(e.message||'게임을 열 수 없습니다.');});
+boot().catch(e=>{console.error(e);const badge=$('netBadge');if(!badge)return;badge.textContent='연결 실패';showFatal(e.message||'게임을 열 수 없습니다.');});
 })();
 </script>
 </body>

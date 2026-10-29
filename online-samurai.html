@@ -1058,20 +1058,20 @@ function computeFinalOrder(){
   if(!eligible.length){
     // 아무도 단독 최다 없으면 전체 조각 합산
     const sorted=[...players].sort((a,b)=>totalFigs(b)-totalFigs(a));
-    G.winner=[sorted[0].id];
+    G.winner=sorted.filter(p=>totalFigs(p)===totalFigs(sorted[0])).map(p=>p.id);
     G.finalOrder=sorted.map(p=>p.id);
     addLog(`🏆 ${sorted[0].name} 승리! (총 조각 최다)`);
     return;
   }
 
-  // 단독 다수 1종을 가진 후보끼리는 나머지 두 종류를 큰 값부터 비교한다.
-  // (두 번째로 강한 영역 → 세 번째 영역 → 전체 포획 수)
+  // 단독 다수 종류를 제외한 나머지 조각 합계를 비교한다.
+  // 합계 동률이면 전체 포획 수, 다시 동률이면 공동 승리.
   const scored=eligible.map(p=>{
     const majorityType=types.find(t=>mostOf(t).length===1&&mostOf(t)[0].id===p.id);
     const otherCounts=types.filter(t=>t!==majorityType).map(t=>p.captured[t]).sort((a,b)=>b-a);
-    return {p,key:[otherCounts[0]||0,otherCounts[1]||0,totalFigs(p)]};
+    return {p,key:[otherCounts.reduce((sum,n)=>sum+n,0),totalFigs(p)]};
   });
-  scored.sort((a,b)=>b.key[0]-a.key[0]||b.key[1]-a.key[1]||b.key[2]-a.key[2]);
+  scored.sort((a,b)=>b.key[0]-a.key[0]||b.key[1]-a.key[1]);
   const best=scored[0];
   const tied=scored.filter(x=>x.key.every((v,i)=>v===best.key[i]));
   G.winner=tied.map(x=>x.p.id);
@@ -1079,7 +1079,7 @@ function computeFinalOrder(){
   const rest=players.filter(p=>!eligibleOrder.includes(p.id)).sort((a,b)=>totalFigs(b)-totalFigs(a)).map(p=>p.id);
   G.finalOrder=[...eligibleOrder,...rest];
   if(tied.length===1){
-    addLog(`🏆 ${best.p.name} 승리! (나머지 세력 ${best.key[0]} → ${best.key[1]}, 총 ${best.key[2]})`);
+    addLog(`🏆 ${best.p.name} 승리! (나머지 조각 ${best.key[0]}, 총 ${best.key[1]})`);
   }else{
     addLog(`🏆 ${tied.map(x=>x.p.name).join(', ')} 공동 우세 (모든 타이브레이커 동률)`);
   }

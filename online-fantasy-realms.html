@@ -344,7 +344,7 @@ async function boot(){
   setInterval(()=>{void touchPresence(true);},15000);
 }
 $('detailClose').onclick=()=>$('detailDialog').close();$('endClose').onclick=()=>$('endDialog').close();
-boot().catch(e=>{console.error(e);$('netBadge').textContent='연결 실패';showFatal(e.message||'판타지 왕국을 열 수 없습니다.');});
+boot().catch(e=>{console.error(e);const badge=$('netBadge');if(!badge)return;badge.textContent='연결 실패';showFatal(e.message||'판타지 왕국을 열 수 없습니다.');});
 })();
 </script>
 </body>
