@@ -41,7 +41,7 @@ test('release cache bust stays aligned with the current version', () => {
   assert.match(app, new RegExp(`register\\('./sw\\.js\\?v=${escapedVersion}'`));
   assert.match(common, new RegExp(`import \\{processSingleRoomAlarm\\} from '\\./alarm\\.js\\?v=${escapedVersion}'`));
   assert.match(read('sw.js'), new RegExp(`boardmate-shell-v${escapedVersion}`));
-  assert.equal(version, '11.4.88');
+  assert.equal(version, '11.4.89');
 });
 
 test('Arena no longer connects to Note and offers the event destination', () => {

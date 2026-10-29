@@ -1,3 +1,7 @@
+# Current Test Status — v11.4.89
+
+최신 게임 점검 범위는 README_V11_4_88_GAME_AUDIT.md와 README_V11_4_89_SOLO_RULES.md를 참고하세요. 실물 기본판 전체 교체 및 전 게임 전체 규칙 검증은 미완료입니다. 아래는 이전 v80 검증 기록입니다.
+
 # ✅ Current Test Status — v11.4.80
 
 ## 릴리스 판정

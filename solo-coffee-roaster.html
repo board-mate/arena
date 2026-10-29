@@ -749,20 +749,17 @@ function calcScore(challenge) {
 
   // 2) 플레이버 점수
   const desired = bean.flavorReq;
-  const present={
-    body:cup.some(t=>t==='body'),
-    acidity:cup.some(t=>t==='acidity'),
-    aroma:cup.some(t=>t==='aroma'),
-    sweetness:cup.some(t=>t==='sweetness'),
-  };
-  // 와일드는 Body/Acidity/Aroma 중 하나로만 계산할 수 있고 Sweetness를 대신할 수 없음
-  let wildLeft=cup.filter(t=>t==='wild').length,flavorCount=0;
-  for(const f of ['body','acidity','aroma']){
-    if(!desired.includes(f))continue;
-    if(present[f])flavorCount++;
-    else if(wildLeft>0){flavorCount++;wildLeft--;}
+  const available={};
+  for(const t of cup)if(t)available[t]=(available[t]||0)+1;
+  let flavorCount=0;
+  // Consume matching tokens individually: some coffees ask for the same flavor twice.
+  const missing=[];
+  for(const flavor of desired){if(available[flavor]>0){available[flavor]--;flavorCount++;}else missing.push(flavor);}
+  for(const flavor of missing){
+    if(flavor==='sweetness')continue;
+    if(available.wild>0){available.wild--;flavorCount++;}
+    else if(!desired.includes('sweetness')&&available.sweetness>0){available.sweetness--;flavorCount++;}
   }
-  if(desired.includes('sweetness')&&present.sweetness)flavorCount++;
   const flavorMap = {1:1,2:3,3:6,4:10};
   const flavorPts = flavorMap[flavorCount] || 0;
 
@@ -786,7 +783,7 @@ function calcScore(challenge) {
   let minusPts = 0;
   const tokenCount = cup.filter(t => t).length;
   if (tokenCount < 10) { minusPts += 5; addLog('⚠️ 컵 10칸 미달 → -5점'); }
-  const hasMinFlavor = flavorCount >= 1;
+  const hasMinFlavor = cup.some(t=>['body','acidity','aroma','wild','sweetness'].includes(t));
   if (!hasMinFlavor) { minusPts += 3; addLog('⚠️ 플레이버 없음 → -3점'); }
   for (const t of cup) {
     if (!t) continue;
@@ -840,7 +837,7 @@ function beanCardHTML(bean, selected = false) {
     <div class="bc-group">그룹 ${bean.group}</div>
     <div class="bc-name">${bean.name}</div>
     <div class="bc-origin">🌍 ${bean.origin}</div>
-    <div class="bc-contents">${contentsStr}<br>합계: ${bean.total}</div>
+    <div class="bc-contents">${contentsStr}<br>합계: ${Object.values(bean.contents).reduce((sum,n)=>sum+n,0)}</div>
     <div class="bc-roast-row">
       <span class="bc-diff ${bean.diff}">${diffLabel}</span>
       <span style="font-size:9px;color:var(--muted)">로스트: ${roastVals}</span>
