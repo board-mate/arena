@@ -168,7 +168,13 @@ async function persist(reason){
 
 function flattenEnergy(results){return (results||[]).flatMap(e=>Array.isArray(e)?e:[e]).map(normalizeEnergyType).filter(Boolean);}
 function energyCounts(results){const c={};for(const e of flattenEnergy(results))c[e]=(c[e]||0)+1;return c;}
-function canPay(cost,results){const energies=flattenEnergy(results);for(const [rawType,reqN] of cost){const reqType=normalizeEnergyType(rawType);if(reqType==='colorless'){if(energies.length<reqN)return false;}else{const count=energies.filter(t=>t===reqType||t==='colorless').length;if(count<reqN)return false;}}return true;}
+function canPay(cost,results){
+  const energies=flattenEnergy(results),available=energyCounts(results),required={};let total=0;
+  for(const [rawType,n] of cost){if(!Number.isSafeInteger(n)||n<0)return false;total+=n;const type=normalizeEnergyType(rawType);if(type!=='colorless')required[type]=(required[type]||0)+n;}
+  if(total>energies.length)return false;
+  const missing=Object.entries(required).reduce((sum,[type,n])=>sum+Math.max(0,n-(available[type]||0)),0);
+  return missing<=(available.colorless||0);
+}
 function rollEnergy(seat,n){const sets=full.energyFaces[seat]||[];return Array.from({length:n},(_,i)=>{const die=sets[i%3]||Array(6).fill('colorless');const face=die[Math.floor(Math.random()*6)];return Array.isArray(face)?face.slice():face;});}
 function rollDir(){return DIR_POOL[Math.floor(Math.random()*DIR_POOL.length)];}
 function extraForAttack(state,seat,w,dir,energy){
@@ -199,7 +205,7 @@ async function hostAction(seat,action,payload={}){
   if(action==='ROLL'){
     if(seat!==full.current)return;const id=String(payload.id||'');const w=(full.attacks[seat]||[]).find(x=>x.id===id);if(!w||blockedBy(full,seat,w)||full.lastAttack[seat]===w.id||full.pendingChoice)return;
     localSelectedAttack=null;const st=full.statuses[seat],opp=seat===0?1:0;let n=3+(st.energyBonus||0)-(st.energyPenalty||0);if(full.turn===0&&seat===0)n-=1;n=Math.max(1,Math.min(5,n));st.energyBonus=0;st.energyPenalty=0;
-    const energy=rollEnergy(seat,n),dir=rollDir();full.lastEnergy[seat]=energy;const success=canPay(w.cost,energy);let damage=0,msg=[];
+    const energy=rollEnergy(seat,n),dir=rollDir();full.lastEnergy[seat]=energy;const success=canPay(w.cost,energy);let damage=0,msg=[];const defendingShield=full.statuses[opp].shield||0;full.statuses[opp].shield=0;
     if(success){
       if(w.branch){const raw=dir==='up'?70:(dir==='front'||dir==='back'?40:20);damage=raw;msg.push(`마구뛰기 ${raw} 피해`);}
       else if(w.reflect){damage=Number(full.lastDamage?.[opp]||0);if(['up','left','right'].includes(dir))damage*=2;msg.push('캐릭코로 효과 무시 · 마지막 피해 반사');}
@@ -208,12 +214,13 @@ async function hostAction(seat,action,payload={}){
       if(!w.branch&&!w.reflect&&!w.id.endsWith('-barrier')){const ex=extraForAttack(full,seat,w,dir,energy);damage+=ex.bonus;msg.push(...ex.msg);}else if(w.id.endsWith('-barrier')){const shield=20+(['up','front'].includes(dir)?30:0);st.shield=(st.shield||0)+shield;msg.push(`다음 턴 받는 데미지 -${shield}`);}
       if(w.id.endsWith('-volttackle')){full.players[seat].hp=Math.max(0,full.players[seat].hp-30);msg.push('자신도 30 데미지');}
       if(w.type===full.players[opp].weak&&!w.noWeak&&damage>0){damage+=20;msg.push('약점 +20');}
-      const shield=full.statuses[opp].shield||0;if(shield&&damage>0){damage=Math.max(0,damage-shield);msg.push(`피해 감소 -${shield}`);full.statuses[opp].shield=0;}
+      const shield=defendingShield;if(shield&&damage>0){damage=Math.max(0,damage-shield);msg.push(`피해 감소 -${shield}`);full.statuses[opp].shield=0;}
       full.players[opp].hp=Math.max(0,full.players[opp].hp-damage);
     }else msg.push('에너지 조건 불충족 · 턴 종료');
     full.lastDamage[seat]=damage;full.lastResult={seat,attackId:w.id,name:w.name,success,damage,charDir:dir,energy,msg,turn:full.turn,at:new Date().toISOString()};full.lastAttack[seat]=w.id;st.blocked=null;
     if(full.players[0].hp<=0&&full.players[1].hp<=0){full.gameOver=true;full.winner=opp;msg.push('동시에 0 HP → 공격한 플레이어가 패배합니다.');}
     else if(full.players[opp].hp<=0){full.gameOver=true;full.winner=seat;}
+    else if(full.players[seat].hp<=0){full.gameOver=true;full.winner=opp;}
     else if(w.block&&success&&full.statuses[opp].blocked){full.pendingChoice=null;full.current=opp;full.turn++;}
     else{full.current=opp;full.turn++;}
     addLog(`${full.players[seat].name} · ${w.name} · ${success?'성공':'실패'} · ${damage} 피해 · ${faceLabel(dir)}${msg.length?' · '+msg.join(' · '):''}`);
