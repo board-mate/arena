@@ -2483,7 +2483,8 @@ begin
  if cards is null then raise exception '연구 주제 정보를 찾을 수 없습니다.'; end if;
  return jsonb_build_object(
    'A',cards->'A'->>'topic','B',cards->'B'->>'topic','C',cards->'C'->>'topic',
-   'D',cards->'D'->>'topic','E',cards->'E'->>'topic','F',cards->'F'->>'topic'
+   'D',cards->'D'->>'topic','E',cards->'E'->>'topic','F',cards->'F'->>'topic',
+   'X1',cards->'X1'->>'topic','X2',cards->'X2'->>'topic'
  );
 end; $$;
 grant execute on function public.boardmate_planetx_research_topics(text,uuid) to anon,authenticated;

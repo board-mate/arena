@@ -164,7 +164,7 @@ let uiRecordOpen=false;
 const RECORD_LAYOUT_KEY='boardmate:planetx:record-layout';
 function initialRecordLayout(){try{return localStorage.getItem(RECORD_LAYOUT_KEY)==='square'?'square':'circle'}catch{return'circle'}}
 let uiRecordLayout=initialRecordLayout();
-let researchTopics={};
+let researchTopics={},researchTopicsCode=null;
 let priv={hints:[],season:'',difficulty:'',observations:[],marks:{},research:{}};
 
 function mySeat(){return members.findIndex(m=>m.user_id===me?.user_id)}
@@ -172,7 +172,7 @@ function memberName(i){return members[i]?.nickname||members[i]?.name||`플레이
 function sectorCount(s=state){return s?.mode==='expert'?18:12}
 function cometSectors(s=state){return s?.mode==='expert'?[2,3,5,7,11,13,17]:[2,3,5,7,11]}
 function oppositeSector(sec,s=state){const n=sectorCount(s);return ((Number(sec)-1+n/2)%n)+1}
-async function ensureResearchTopics(){if(Object.keys(researchTopics||{}).length===6)return researchTopics;try{const r=await rpc('boardmate_planetx_research_topics',{p_token:token(),p_room_id:roomId});if(r&&typeof r==='object')researchTopics=r}catch(e){console.warn('[planetx research topics]',e)}return researchTopics||{}}
+async function ensureResearchTopics(){if(researchTopicsCode!==state?.code){researchTopics={};researchTopicsCode=state?.code}if(['A','B','C','D','E','F','X1',...(state?.mode==='expert'?['X2']:[])].every(k=>researchTopics?.[k]))return researchTopics;try{const r=await rpc('boardmate_planetx_research_topics',{p_token:token(),p_room_id:roomId});if(r&&typeof r==='object')researchTopics=r}catch(e){console.warn('[planetx research topics]',e)}return researchTopics||{}}
 function visibleSectors(s=state){const n=sectorCount(s),half=n/2,start=((Number(s?.earth||1)-1)%n+n)%n+1;return Array.from({length:half},(_,i)=>((start-1+i)%n)+1)}
 function playerOrder(s=state){return [...s.players].sort((a,b)=>a.time-b.time||a.tie-b.tie).map(p=>p.seat)}
 function activeSeat(s=state){return playerOrder(s)[0]??0}
@@ -189,12 +189,12 @@ function logPublic(s,text){s.log??=[];s.log.unshift({at:new Date().toLocaleTimeS
 function cloneState(){return structuredClone(state)}
 async function commit(s,reason='update'){
   if(saving)return false;saving=true;setSync(`저장 중 · ${reason}`);
-  try{const nr=await saveState(revision,s);revision=nr;state=s;render();setSync('동기화됨');return true}
+  try{const nr=await saveState(revision,s);revision=nr;state=s;await ensureResearchTopics();render();setSync('동기화됨');return true}
   catch(e){console.warn(e);toast(e.message||'동기화 충돌. 최신 상태를 다시 불러옵니다.','error');await refreshState();return false}
   finally{saving=false}
 }
 function setSync(x){const el=document.querySelector('#sync');if(el)el.textContent=x}
-async function refreshState(){try{const row=await loadState();if(row){revision=Number(row.revision||0);state=row.state;render()}}catch(e){console.warn(e)}}
+async function refreshState(){try{const row=await loadState();if(row){revision=Number(row.revision||0);state=row.state;await ensureResearchTopics();render()}}catch(e){console.warn(e)}}
 
 function theoryEvents(mode){return mode==='expert'?[3,6,9,12,15,18]:[3,6,9,12]}
 function conferenceAt(mode,sector){if(mode==='expert'){if(sector===8)return'X1';if(sector===16)return'X2'}else if(sector===10)return'X1';return null}
@@ -226,7 +226,7 @@ function renderNoState(){
  const seat=mySeat(),host=room?.host_id===me?.user_id;
  document.querySelector('#app').innerHTML=`<section class="setup"><div class="card"><h1>🪐 행성 X를 찾아서 · 온라인 PVP</h1><p class="sub">실물 보조 앱이 아니라, 이 화면에서 관찰·타임 트랙·논문·교차 검증·점수까지 진행하는 완전 플레이 모드입니다. 정답 태양계는 Supabase의 비공개 게임 카탈로그에만 저장됩니다.</p><h3 style="margin-top:18px">게임 모드</h3><div class="mode-row"><button class="choice selected" data-mode="standard"><b>표준 모드</b><span class="sub">12 섹터 · 첫 게임 권장</span></button><button class="choice" data-mode="expert"><b>전문가 모드</b><span class="sub">18 섹터 · 논문 2개 / X2 회의</span></button></div><div style="margin-top:16px">${host?`<button id="initGame" class="btn gold">숨은 태양계 생성</button>`:`<div class="notice">방장이 숨은 태양계를 생성할 때까지 기다리고 있습니다.</div>`}</div></div></section>`;
  document.querySelectorAll('[data-mode]').forEach(b=>b.onclick=()=>{selectedMode=b.dataset.mode;document.querySelectorAll('[data-mode]').forEach(x=>x.classList.toggle('selected',x===b))});
- document.querySelector('#initGame')?.addEventListener('click',async()=>{try{busy=true;const r=await rpc('boardmate_planetx_start',{p_token:token(),p_room_id:roomId,p_mode:selectedMode});const s=makeInitial(r.mode,r.code);const nr=await saveState(Math.max(0,revision),s);revision=nr;state=s;render()}catch(e){toast((e.message||e)+' · SUPABASE_PLANETX_PVP_V1.sql 실행 여부를 확인하세요.','error')}finally{busy=false}})
+ document.querySelector('#initGame')?.addEventListener('click',async()=>{try{busy=true;const r=await rpc('boardmate_planetx_start',{p_token:token(),p_room_id:roomId,p_mode:selectedMode});const s=makeInitial(r.mode,r.code);const nr=await saveState(Math.max(0,revision),s);revision=nr;state=s;await ensureResearchTopics();render()}catch(e){toast((e.message||e)+' · SUPABASE_PLANETX_PVP_V1.sql 실행 여부를 확인하세요.','error')}finally{busy=false}})
 }
 function renderSetupReady(){
  const readyHtml=state.setupStatus||[];const myReady=readyHtml.find(x=>x.seat===mySeat())?.ready;const allReady=readyHtml.length===members.length&&readyHtml.every(x=>x.ready);
@@ -274,11 +274,17 @@ function orbitPanel(){
  const playerKey=state.players.map(p=>`<span><i style="background:${playerColor(p.seat)}"></i>${p.seat+1} ${esc(memberName(p.seat))}</span>`).join('');
  return`<div class="orbit-wrap"><div class="orbit-board ${state.mode==='expert'?'expert':''}">${spokes}${eventMarkers}<i class="orbit-lane-ring r1"></i><i class="orbit-lane-ring r2"></i><i class="orbit-lane-ring r3"></i>${tokens.join('')}${nodes}<div class="orbit-sun"><span>☀️</span><small>태양</small></div></div></div>${eventSchedule}<div class="theory-player-key">${playerKey}</div><div class="orbit-legend-row"><span>논문: <b>바깥=신규 · 중간=1단계 전 · 안쪽=검증 직전</b></span><span>색/숫자 = 제출자</span><span>공개되면 천체 이모지 표시</span></div><div class="orbit-help">🌍 지구 기준 <b>${earth}</b> · 청록 = 관찰 가능 · 금색 = 지구 위치 · 맞은편은 +${n/2}섹터</div>`
 }
+function conferencePanel(){
+ return (state.mode==='expert'?['X1','X2']:['X1']).map(k=>{
+  const clue=state.conferences?.[k],title=clue?.topic||researchTopics?.[k],sector=state.mode==='expert'?(k==='X1'?8:16):10;
+  return `<div class="conference"><b>${k} 회의 · ${esc(title?topicKo(title):'제목 정보를 불러오지 못함')}</b><div class="sub" style="color:#f3e7bd">${clue?esc(ruleKo(clue.rule||'')):`지구가 ${sector}번 섹터에 도달하면 단서가 공개됩니다.`}</div></div>`;
+ }).join('');
+}
 function renderGame(){stopSetupPoll();const n=sectorCount(),vis=new Set(visibleSectors()),current=state.current;const eventNote=state.phase==='theory-select'?'📄 논문 비공개 선택':state.phase==='theory-place'?'📄 논문 배치':state.phase==='final'?'🏁 마지막 점수 기회':state.phase==='finished'?'🏆 게임 종료':'🔭 관측 중';
  const playerCards=state.players.map(p=>`<div class="player ${p.seat===current?'active':''} ${p.seat===mySeat()?'me':''}" style="--pc:${playerColor(p.seat)}"><div class="pname"><span class="player-dot"></span>${esc(memberName(p.seat))}${p.seat===mySeat()?' · 나':''}<span class="player-color-name">${playerColorName(p.seat)}</span></div><div class="ptime">시간 ${p.time} · 섹터 ${((p.time-1)%n)+1}</div><div style="margin-top:5px"><span class="badge">타겟 ${2-p.targetUsed}/2</span>${p.xScore?` <span class="badge gold">X ${p.xScore}점</span>`:''}</div></div>`).join('');
  const sectors=Array.from({length:n},(_,i)=>i+1).map(sec=>{const cf=state.confirmed?.[sec],ts=(state.theories||[]).filter(t=>t.sector===sec&&!t.removed);return`<div class="sector ${vis.has(sec)?'visible':''} ${cf?'confirmed':''}"><div style="display:flex;justify-content:space-between;align-items:flex-start"><div><span class="no">${sec}</span><span class="opposite-tag">↔ 맞은편 ${oppositeSector(sec)}</span></div>${vis.has(sec)?'<span class="vis">관찰 가능</span>':''}</div>${cf?`<div class="confirmed-label">${objLabel(cf)}</div>`:'<div class="sub" style="margin-top:8px">미확인</div>'}<div class="track">${ts.map(t=>`<div class="theory ${t.faceUp?'face':''} ${t.correct===false?'wrong':''}" style="border-color:${playerColor(t.ownerSeat)};box-shadow:inset 0 0 0 1px ${playerColor(t.ownerSeat)}55" title="${esc(memberName(t.ownerSeat))} (${playerColorName(t.ownerSeat)}) · 깊이 ${t.depth}">${t.faceUp?OBJICON[t.object]||'?':'?'}<small class="theory-owner" style="background:${playerColor(t.ownerSeat)};color:#07111f">${t.ownerSeat+1}</small></div>`).join('')}</div><div class="depth">${ts.length?`논문 · ${ts.map(t=>`${t.ownerSeat+1}번 제출자 · ${t.submitRound?`${t.submitRound}차 · `:''}${Math.max(1,Number(t.depth||1))}/3`).join(' / ')}`:'논문 없음'}</div></div>`}).join('');
  const ticks=Array.from({length:n},(_,i)=>i+1).map(sec=>{const here=state.players.filter(p=>((p.time-1)%n)+1===sec);return`<div class="tick ${((state.earth-1)%n)+1===sec?'earth':''} ${isTheorySector(state.mode,sec)?'theory-event':''} ${conferenceAt(state.mode,sec)?'conf-event':''}"><span class="tick-num">${sec}</span><span class="tick-pawns">${here.map(p=>`<i class="pawn-dot ${p.seat===current?'active':''}" style="background:${playerColor(p.seat)}" title="${esc(memberName(p.seat))} · 시간 ${p.time}"></i>`).join('')}</span></div>`}).join('');
- const conf=Object.entries(state.conferences||{}).map(([k,v])=>`<div class="conference"><b>${k} 회의 · ${esc(topicKo(v.topic||''))}</b><div class="sub" style="color:#f3e7bd">${esc(ruleKo(v.rule||''))}</div></div>`).join('');
+ const conf=conferencePanel();
  document.querySelector('#app').innerHTML=`<div class="players" data-scroll-key="players">${playerCards}</div><div class="grid"><section class="card board-card"><div class="board-head"><div><h2>태양계 게임판 · ${state.mode==='expert'?'전문가':'표준'} 모드</h2><div class="sub">게임 코드 ${esc(state.code)} · 지구 위치 ${((state.earth-1)%n)+1} · 관찰 가능 하늘 ${visibleSectors().join(', ')}</div></div><span class="badge gold">${eventNote}</span></div>${orbitPanel()}<div class="time-line" data-scroll-key="time-line">${ticks}</div><div class="sub board-legend">📚 학술제(논문 단계) · 🔭 회의 · 원형 보드 바깥 배지에 발생 시점을 표시합니다. 색 점은 플레이어 시간 위치입니다.</div>${privateObservationPanel()}<details class="sector-detail-box"><summary>🧩 섹터 상세 · 논문 트랙</summary><div class="sky ${state.mode==='expert'?'expert':''}">${sectors}</div></details></section><aside class="game-side"><section class="card"><h3>현재 진행</h3>${phasePanel()}${reviewResultPanel()}</section><section class="card"><h3>공개 회의 정보</h3>${conf||'<div class="sub">아직 공개된 회의 정보가 없습니다.</div>'}</section><section class="card"><h3>공개 기록</h3><div class="log" data-scroll-key="public-log">${publicLogRows().map(x=>`<div class="line"><b>${esc(x.at)}</b> · ${publicLogHtml(x.text)}</div>`).join('')||'<div class="sub">기록 없음</div>'}</div></section><details class="card private private-sheet private-sheet-box" ${uiRecordOpen?'open':''}><summary>🔒 내 기록지</summary><div class="private-sheet-body"><div class="sub">시작 정보·조사 기록·섹터 메모는 로그인 계정에 비공개로 저장됩니다.</div>${privatePanel()}</div></details></aside>${state.phase==='finished'?`${finalSolutionPanel()}<section class="card full">${scorePanel()}</section>`:''}<section class="card full reference-bottom"><h3>참조표</h3>${referencePanel()}</section></div>`;
  bindGameControls();
  maybeAutoPlaceTheory();
@@ -339,7 +345,7 @@ async function maybeSubmitResult(){if(state.matchSubmitted||state.sharedTie||myS
 
 async function boot(){
  if(!configured()||!roomId)showFatal('Supabase 설정 또는 room 파라미터가 없습니다.');
- try{me=await getMe();if(!me)showFatal('로그인이 필요합니다.');({room,members}=await loadRoom());members=[...members].sort((a,b)=>Number(a.seat)-Number(b.seat));if(room.game!=='planetx')showFatal('행성 X 방이 아닙니다.');if(!members.some(m=>m.user_id===me.user_id))showFatal('이 방의 참가자가 아닙니다.');await loadPrivate();const row=await loadState();if(row){revision=Number(row.revision||0);state=row.state}else{const status=await rpc('boardmate_planetx_status',{p_token:token(),p_room_id:roomId}).catch(()=>null);if(status?.started){state=makeInitial(status.mode,status.code);revision=await saveState(Math.max(0,revision),state)}}if(state)await ensureResearchTopics();render();startStatePoll(async row=>{if(Number(row.revision)<=revision)return;revision=Number(row.revision);state=row.state;render()},{interval:5000});await subscribeRoomBroadcast('planetx_theory_ready',()=>void updateTheoryStatus());setSync('동기화됨')
+ try{me=await getMe();if(!me)showFatal('로그인이 필요합니다.');({room,members}=await loadRoom());members=[...members].sort((a,b)=>Number(a.seat)-Number(b.seat));if(room.game!=='planetx')showFatal('행성 X 방이 아닙니다.');if(!members.some(m=>m.user_id===me.user_id))showFatal('이 방의 참가자가 아닙니다.');await loadPrivate();const row=await loadState();if(row){revision=Number(row.revision||0);state=row.state}else{const status=await rpc('boardmate_planetx_status',{p_token:token(),p_room_id:roomId}).catch(()=>null);if(status?.started){state=makeInitial(status.mode,status.code);revision=await saveState(Math.max(0,revision),state)}}if(state)await ensureResearchTopics();render();startStatePoll(async row=>{if(Number(row.revision)<=revision)return;revision=Number(row.revision);state=row.state;await ensureResearchTopics();render()},{interval:5000});await subscribeRoomBroadcast('planetx_theory_ready',()=>void updateTheoryStatus());setSync('동기화됨')
  }catch(e){showFatal((e.message||e)+(String(e.message||'').includes('boardmate_planetx')?' · SUPABASE_PLANETX_PVP_V1.sql을 먼저 실행하세요.':''))}
 }
 boot();
