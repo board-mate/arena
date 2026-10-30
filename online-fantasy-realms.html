@@ -146,7 +146,7 @@ function renderRoom(){
   $('roomHint').textContent=isHost?'판타지 왕국은 BoardMate 공통 방으로 실행됩니다.':'방장과 다른 참가자의 행동이 Realtime으로 동기화됩니다.';
 }
 function publicSnapshot(){
-  const s=fullState;return {version:GAME_VERSION,gameId:GAME_ID,_gameId:GAME_ID,started:true,controllerUserId:s.controllerUserId||me?.user_id||null,playerCount:s.playerCount,players:s.players.map(p=>({seat:p.seat,name:p.name})),current:s.current,startingPlayer:s.startingPlayer,turnNumber:s.turnNumber,phase:s.phase,discardPile:s.discardPile.slice(),drawCount:s.drawPile.length,handCounts:s.hands.map(h=>h.length),gameOver:s.gameOver,finalizeSeat:s.finalizeTask?.seat??null,result:s.result||null};
+  const s=fullState;return {version:GAME_VERSION,gameId:GAME_ID,_gameId:GAME_ID,started:true,controllerUserId:s.controllerUserId||me?.user_id||null,playerCount:s.playerCount,twoPlayerVariant:!!s.twoPlayerVariant,players:s.players.map(p=>({seat:p.seat,name:p.name})),current:s.current,startingPlayer:s.startingPlayer,turnNumber:s.turnNumber,phase:s.phase,discardPile:s.discardPile.slice(),drawCount:s.drawPile.length,handCounts:s.hands.map(h=>h.length),gameOver:s.gameOver,finalizeSeat:s.finalizeTask?.seat??null,result:s.result||null};
 }
 function privateSnapshotMap(){
   const out={};
@@ -172,7 +172,7 @@ function reconstructController(publicState,privateMap){
     const remaining=shuffle(BASE_IDS.filter(id=>!used.has(id)));
     h={drawPile:remaining,hands,actionData,finalizeQueue:[],finalizeTask:null};
   }
-  fullState={version:GAME_VERSION,gameId:GAME_ID,_gameId:GAME_ID,started:true,controllerUserId:publicState.controllerUserId||roomInfo.host_id,playerCount:publicState.playerCount,players:deepClone(publicState.players),current:publicState.current,startingPlayer:publicState.startingPlayer,turnNumber:publicState.turnNumber,phase:publicState.phase,discardPile:deepClone(publicState.discardPile),drawPile:(h.drawPile||[]).slice(),hands:(h.hands||[]).map(x=>x.slice()),actionData:deepClone(h.actionData||[]),gameOver:!!publicState.gameOver,finalizeQueue:deepClone(h.finalizeQueue||[]),finalizeTask:deepClone(h.finalizeTask||null),result:deepClone(publicState.result||null)};
+  fullState={version:GAME_VERSION,gameId:GAME_ID,_gameId:GAME_ID,started:true,controllerUserId:publicState.controllerUserId||roomInfo.host_id,playerCount:publicState.playerCount,twoPlayerVariant:!!publicState.twoPlayerVariant,players:deepClone(publicState.players),current:publicState.current,startingPlayer:publicState.startingPlayer,turnNumber:publicState.turnNumber,phase:publicState.phase,discardPile:deepClone(publicState.discardPile),drawPile:(h.drawPile||[]).slice(),hands:(h.hands||[]).map(x=>x.slice()),actionData:deepClone(h.actionData||[]),gameOver:!!publicState.gameOver,finalizeQueue:deepClone(h.finalizeQueue||[]),finalizeTask:deepClone(h.finalizeTask||null),result:deepClone(publicState.result||null)};
 }
 async function syncState(force=false){
   try{
@@ -198,12 +198,15 @@ async function persist(reason){
   if(!isController||!fullState||saveBusy)return false;saveBusy=true;
   try{const pub=publicSnapshot(),priv=privateSnapshotMap();const newRev=await saveFantasyState(revision,pub,priv);revision=Number(newRev);view=makeView(pub,priv,mySeat);renderAll();if(fullState.gameOver&&fullState.result&&!matchSubmitted){matchSubmitted=true;const order=fullState.result.order.map(x=>members[Number(x.p)]?.user_id).filter(Boolean);try{await submitMatch(order);}catch(e){matchSubmitted=false;console.warn('Fantasy match submit',e);}}$('netBadge').textContent='BoardMate Realtime · 연결됨';return true;}catch(e){console.warn('Fantasy save failed',e);$('netBadge').textContent='저장 실패 · 다시 시도';return false;}finally{saveBusy=false;}}
 function buildGame(){
-  playerCount=members.length;const pile=shuffle(BASE_IDS.slice()),hands=Array.from({length:playerCount},()=>[]);for(let r=0;r<7;r++)for(let p=0;p<playerCount;p++)hands[p].push(pile.pop());const first=Math.floor(Math.random()*playerCount);
-  fullState={version:GAME_VERSION,gameId:GAME_ID,_gameId:GAME_ID,started:true,controllerUserId:me.user_id,playerCount,players:members.map((m,i)=>({seat:i,name:m.nickname})),drawPile:pile,discardPile:[],hands,current:first,startingPlayer:first,turnNumber:0,phase:'draw',actionData:Array.from({length:playerCount},()=>({})),gameOver:false,finalizeQueue:[],finalizeTask:null,result:null};
+  playerCount=members.length;const pile=shuffle(BASE_IDS.slice()),hands=Array.from({length:playerCount},()=>[]);for(let r=0;r<(playerCount===2?0:7);r++)for(let p=0;p<playerCount;p++)hands[p].push(pile.pop());const first=Math.floor(Math.random()*playerCount);
+  fullState={version:GAME_VERSION,gameId:GAME_ID,_gameId:GAME_ID,started:true,controllerUserId:me.user_id,playerCount,twoPlayerVariant:playerCount===2,players:members.map((m,i)=>({seat:i,name:m.nickname})),drawPile:pile,discardPile:[],hands,current:first,startingPlayer:first,turnNumber:0,phase:'draw',actionData:Array.from({length:playerCount},()=>({})),gameOver:false,finalizeQueue:[],finalizeTask:null,result:null};
 }
 async function startNewGame(){if(!isController||fullState)return;buildGame();const ok=await persist('game-start');if(!ok){isController=false;fullState=null;await syncState(true);}}
 function renderAll(){if(!view)return;$('gamePanel').style.display='block';$('playersPanel').style.display='block';$('discardPanel').style.display='block';renderGame();}
 function sendAction(action,payload={}){if(!view||view.gameOver)return;if(isController)hostAction(mySeat,action,payload);else void sendRoomBroadcast('fantasy_action',{seat:mySeat,action,payload});}
+function buildingHand(s,seat){return !!s.twoPlayerVariant&&(s.hands?.[seat]?.length??s.handCounts?.[seat]??0)<7;}
+function discardTarget(s){return s.twoPlayerVariant?12:10;}
+async function completeFantasyTurn(){if(fullState.discardPile.length>=discardTarget(fullState)&&(!fullState.twoPlayerVariant||fullState.hands.every(h=>h.length>=7))){beginFinalize();return;}fullState.turnNumber++;fullState.current=(fullState.current+1)%fullState.playerCount;fullState.phase='draw';await persist('turn-complete');}
 async function hostAction(seat,action,payload={}){
   if(!fullState||fullState.gameOver||seat!==fullState.current&&action!=='SET_SPECIAL'&&action!=='NECRO')return;
   if(action==='SET_SPECIAL'){
@@ -223,14 +226,13 @@ async function hostAction(seat,action,payload={}){
     nextFinalize();return;
   }
   if(fullState.phase==='finalize'||seat!==fullState.current)return;
-  if(action==='DRAW'&&fullState.phase==='draw'){if(!fullState.drawPile.length)return;fullState.hands[seat].push(fullState.drawPile.pop());fullState.phase='discard';await persist('draw');return;}
+  if(action==='DRAW'&&fullState.phase==='draw'){const count=buildingHand(fullState,seat)?2:1;if(fullState.drawPile.length<count)return;for(let i=0;i<count;i++)fullState.hands[seat].push(fullState.drawPile.pop());fullState.phase='discard';await persist('draw');return;}
   if(action==='TAKE'&&fullState.phase==='draw'&&!(fullState.turnNumber===0&&fullState.current===fullState.startingPlayer)){
-    const i=Number(payload.index);if(!Number.isInteger(i)||i<0||i>=fullState.discardPile.length)return;fullState.hands[seat].push(fullState.discardPile.splice(i,1)[0]);fullState.phase='discard';await persist('take');return;
+    const i=Number(payload.index);if(!Number.isInteger(i)||i<0||i>=fullState.discardPile.length)return;const building=buildingHand(fullState,seat);fullState.hands[seat].push(fullState.discardPile.splice(i,1)[0]);if(building){await completeFantasyTurn();return;}fullState.phase='discard';await persist('take');return;
   }
   if(action==='DISCARD'&&fullState.phase==='discard'){
     const i=Number(payload.index);if(!Number.isInteger(i)||i<0||i>=fullState.hands[seat].length)return;fullState.discardPile.push(fullState.hands[seat].splice(i,1)[0]);
-    if(fullState.discardPile.length>=10){beginFinalize();return;}
-    fullState.turnNumber++;fullState.current=(fullState.current+1)%fullState.playerCount;fullState.phase='draw';await persist('discard');
+    await completeFantasyTurn();
   }
 }
 function beginFinalize(){fullState.phase='finalize';const q=[];for(let p=0;p<fullState.playerCount;p++){if(fullState.hands[p].includes('FR28'))q.push({seat:p,cardId:'FR28'});for(const id of ACTION_IDS)if(fullState.hands[p].includes(id))q.push({seat:p,cardId:id});}fullState.finalizeQueue=q;nextFinalize();}
@@ -247,9 +249,9 @@ function renderGame(){
   const scrollState=captureScrollState();
   const active=view.players[view.current];const myTurn=view.current===mySeat&&!view.gameOver&&view.phase!=='finalize';
   $('message').textContent=view.gameOver?'게임 종료':myTurn?'내 차례':`${esc(active?.name||'플레이어')} 차례`;
-  $('hint').textContent=view.gameOver?'최종 점수 계산 완료':view.phase==='draw'?(view.current===view.startingPlayer&&view.turnNumber===0?'첫 턴: 덱에서 뽑으세요.':'덱 또는 버린 카드에서 1장 가져오세요.'):'손에서 1장을 버리세요.';
-  $('deckBadge').textContent=`덱 ${view.drawCount}장`;$('discardCount').textContent=`${view.discardPile.length}장 / 10장`;
-  $('drawBtn').disabled=!(myTurn&&view.phase==='draw'&&view.drawCount);$('drawBtn').onclick=()=>sendAction('DRAW');
+  $('hint').textContent=view.gameOver?'최종 점수 계산 완료':view.phase==='draw'&&buildingHand(view,view.current)?'2인 손패 준비: 덱에서 2장 뽑고 1장 버리거나, 버린 카드 1장을 가져와 차례를 마칩니다.':view.phase==='draw'?(view.current===view.startingPlayer&&view.turnNumber===0?'첫 턴: 덱에서 뽑으세요.':'덱 또는 버린 카드에서 1장 가져오세요.'):'손에서 1장을 버리세요.';
+  $('deckBadge').textContent=`덱 ${view.drawCount}장`;$('discardCount').textContent=`${view.discardPile.length}장 / ${discardTarget(view)}장`;
+  $('drawBtn').textContent=buildingHand(view,view.current)?'덱에서 2장 뽑기':'덱에서 1장 뽑기';$('drawBtn').disabled=!(myTurn&&view.phase==='draw'&&view.drawCount);$('drawBtn').onclick=()=>sendAction('DRAW');
   const order=Array.from({length:view.playerCount},(_,offset)=>(mySeat+offset)%view.playerCount);
   $('players').innerHTML='';
   for(const p of order){

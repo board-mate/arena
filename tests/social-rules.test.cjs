@@ -28,5 +28,24 @@ test('social games enforce private roles, voting restrictions, mission threshold
  await t.test('One Night no deaths when every player gets one vote; werewolf dies on majority',async()=>{
  for(const wolves of [false,true]){const id=await create('onenightwerewolf',3,{role_counts:{werewolf:2,villager:3,seer:1}}),{state:s,secrets:sec}=await get(id);s.phase='day';sec.cards={'0':wolves?'werewolf':'villager','1':'villager','2':'seer'};await set(id,s,sec);const votes=wolves?[1,0,0]:[1,2,0];for(let p=0;p<3;p++)await act(id,p,{type:'day_vote',seat:votes[p]});const end=(await get(id)).state;assert.equal(end.over,true);assert.equal(end.result.village_win,true);assert.equal(end.dead.length,wolves?1:0);}
  });
+ await t.test('Avalon three successes reach assassination and only the assassin can decide the outcome',async()=>{
+  for(const target of [1,2]){
+   const id=await create('avalon',5),{state:s,secrets:sec}=await get(id);s.phase='quest_vote';s.good_score=2;s.proposal=[1,2];sec.roles={'0':'assassin','1':'merlin','2':'loyal','3':'loyal','4':'minion_of_mordred'};await set(id,s,sec);
+   await act(id,1,{type:'quest_vote',success:true});await act(id,2,{type:'quest_vote',success:true});assert.equal((await get(id)).state.phase,'assassination');
+   await assert.rejects(act(id,2,{type:'assassinate',seat:1}));await act(id,0,{type:'assassinate',seat:target});assert.equal((await get(id)).state.winner,target===1?'evil':'good');
+  }
+ });
+ await t.test('Secret Hitler legislative policy wins and executing Hitler end the game',async()=>{
+  for(const policy of ['L','F']){
+   const id=await create('secrethitler',5),{state:s,secrets:sec}=await get(id);s.phase='legislative_chancellor';s.president=0;s.current_chancellor=1;s.liberal_policies=4;s.fascist_policies=5;sec.legislative={hand2:[policy,policy]};await set(id,s,sec);await act(id,1,{type:'chancellor_policy',index:0});const end=(await get(id)).state;assert.equal(end.over,true);assert.equal(end.winner,policy==='L'?'liberal':'fascist');
+  }
+  const id=await create('secrethitler',7),{state:s,secrets:sec}=await get(id);s.phase='executive';s.power='execute';s.president=0;sec.roles['1']='hitler';await set(id,s,sec);await act(id,0,{type:'executive',seat:1});assert.equal((await get(id)).state.winner,'liberal');
+ });
+ await t.test('One Night hunter chains and tanner votes use final roles',async()=>{
+  for(const tanner of [false,true]){
+   const id=await create('onenightwerewolf',3,{role_counts:{werewolf:2,villager:3,seer:1}}),{state:s,secrets:sec}=await get(id);s.phase='day';sec.cards={'0':tanner?'tanner':'hunter','1':'werewolf','2':'villager'};await set(id,s,sec);for(let p=0;p<3;p++)await act(id,p,{type:'day_vote',seat:[1,0,0][p]});const end=(await get(id)).state;
+   if(tanner){assert.equal(end.result.tanner_dead,true);assert.ok(end.winners.includes(0));assert.equal(end.result.werewolf_win,false)}else{assert.ok(end.dead.includes(1));assert.equal(end.result.village_win,true)}
+  }
+ });
  }finally{await db.close();}
 });
