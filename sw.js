@@ -1,4 +1,4 @@
-const CACHE='boardmate-shell-v11.4.91-planetx-titles';
+const CACHE='boardmate-shell-v11.4.91-game-audit-20261030';
 self.addEventListener('install',()=>self.skipWaiting());
 self.addEventListener('activate',event=>event.waitUntil((async()=>{for(const key of await caches.keys())if(key.startsWith('boardmate-shell-')&&key!==CACHE)await caches.delete(key);await self.clients.claim();})()));
 self.addEventListener('fetch',event=>{

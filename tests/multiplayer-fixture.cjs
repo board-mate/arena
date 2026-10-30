@@ -7,7 +7,8 @@ function game(name){
  source=source.replace(/^import\s+[\s\S]*?from\s+['"][^'"]+['"];?/gm,'');
  source=source.replace(/\(\(\)\s*=>\s*\{\s*['"]use strict['"];?/,'');
  const boots=[...source.matchAll(/\(async\s*\(\)\s*=>/g)];
- if(boots.length)source=source.slice(0,boots.at(-1).index);
+ if(source.includes('\nawait loadContext();'))source=source.slice(0,source.indexOf('\nawait loadContext();'));
+ else if(boots.length)source=source.slice(0,boots.at(-1).index);
  else if(source.includes('boot().catch'))source=source.slice(0,source.indexOf('boot().catch'));
  const el=()=>({style:{},dataset:{},classList:{add(){},remove(){},toggle(){}},querySelector(){return el();},querySelectorAll(){return[];},addEventListener(){},appendChild(){},insertAdjacentHTML(){},children:[]});
  const context={console,Math,Date,structuredClone,URLSearchParams,Map,Set,configured:()=>false,roomId:'fixture',showFatal(){},setInterval(){},setTimeout(){},clearInterval(){},clearTimeout(){},alert(){},confirm:()=>true,localStorage:{getItem(){return null;},setItem(){}},sessionStorage:{getItem(){return null;}},location:{search:'',hash:''},window:{addEventListener(){},BOARDMATE_CONFIG:{}},document:{querySelector:el,getElementById:el,querySelectorAll:()=>[],createElement:el,addEventListener(){},body:el()}};

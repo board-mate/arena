@@ -528,6 +528,7 @@ function playFacedown(handIdx, theater) {
   const cardId=state.hands[mySeat][handIdx],card=CARD_MAP[cardId];
   mutate(s=>{
     s.hands[mySeat].splice(handIdx,1);
+    if(s.airdropNext===mySeat) s.airdropNext=null;
     if(hasContainment(s)) destroyPlayedCard(s,cardId,`P${mySeat+1} → Containment! 뒷면`);
     else if(isBlockaded(theater,s)) destroyPlayedCard(s,cardId,`P${mySeat+1} → Blockade! ${theater.toUpperCase()}에 플레이한 뒷면`);
     else{

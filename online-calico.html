@@ -381,7 +381,7 @@ window.addEventListener('DOMContentLoaded',()=>{
           </select>
         </div>
         <label class="checkbox"><input type="checkbox" id="twoPlayerVariant" checked><span><strong>2인 게임용 변형 규칙</strong> - 36종의 색/무늬 조합을 1장씩 제거해 같은 조합을 2장씩만 사용</span></label>
-        <label class="checkbox"><input type="checkbox" id="lowerVariance"><span><strong>저분산 변형</strong> - 36종의 색/무늬 조합을 1장씩 제거</span></label>
+        <label class="checkbox"><input type="checkbox" id="lowerVariance"><span><strong>저분산 변형 (2인 전용)</strong> - 36종의 색/무늬 조합을 1장씩 제거</span></label>
         <label class="checkbox"><input type="checkbox" id="familyVariant"><span><strong>가족용 변형</strong> - 디자인 타일은 장애물로만 두고 점수 계산하지 않음</span></label>
         <label class="checkbox hidden" id="privacyScreenRow"><input type="checkbox" id="privacyScreen"><span><strong>로컬 턴 전환 가림막</strong> - Arena 밖에서 단일 기기 테스트할 때만 사용</span></label>
         <div style="display:flex;gap:9px;flex-wrap:wrap;margin-top:16px">
@@ -1173,8 +1173,10 @@ window.addEventListener('DOMContentLoaded',()=>{
 
   function updateVariantAvailability(){
     const two=$('#twoPlayerVariant');
+    const lower=$('#lowerVariance');
     two.disabled = playerCount !== 2;
-    if(playerCount !== 2) two.checked=false;
+    lower.disabled = playerCount !== 2;
+    if(playerCount !== 2){two.checked=false;lower.checked=false;}
     else if(!two.dataset.touched) two.checked=true;
   }
 
@@ -1312,7 +1314,7 @@ window.addEventListener('DOMContentLoaded',()=>{
     if(isArenaMode() && !isSetupHost()){toast('게임 시작은 방장만 할 수 있습니다.');return;}
     if(!pendingSetup.goalChoices.every(x=>Array.isArray(x.selected)&&x.selected.length===3)){toast('모든 플레이어가 디자인 타일 3개를 선택해야 합니다.');return;}
     const settings=pendingSetup.settings;
-    const copies=(settings.lowerVariance || (pendingSetup.players.length===2 && settings.twoPlayerVariant)) ? 2 : 3;
+    const copies=(pendingSetup.players.length===2 && (settings.lowerVariance || settings.twoPlayerVariant)) ? 2 : 3;
     state={
       version:VERSION, gameId:GAME_ID, _gameId:GAME_ID,
       createdAt:new Date().toISOString(),
