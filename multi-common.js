@@ -1,4 +1,4 @@
-import {processSingleRoomAlarm} from './alarm.js?v=11.4.92';
+import {processSingleRoomAlarm} from './alarm.js?v=11.4.93';
 const CFG=window.BOARDMATE_CONFIG||{};
 export const configured=()=>Boolean(CFG.supabaseUrl&&CFG.supabaseAnonKey&&window.supabase?.createClient);
 export const sb=configured()?window.supabase.createClient(CFG.supabaseUrl,CFG.supabaseAnonKey,{auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}}):null;
@@ -222,7 +222,7 @@ async function pollRoomAlarm(){
     if(!me||!room)return;
     const gameLabel=String(room.title||room.game||'BoardMate 게임');
     const href=`./${location.pathname.split('/').pop()}?room=${encodeURIComponent(roomId)}`;
-    await processSingleRoomAlarm(room,me,{gameName:gameLabel,gameHref:href});
+    await processSingleRoomAlarm(room,me,{gameName:gameLabel,gameHref:href,members:data.members,rpc:(name,args)=>rpc(name,{...args,p_token:token()})});
   }catch{}
 }
 function startAlarmWatcher(){
@@ -251,7 +251,8 @@ function startAlarmWatcher(){
   window.addEventListener('pageshow',onPageShow);
   window.addEventListener('online',wake);
   window.addEventListener('resume',wake);
+  window.addEventListener('boardmate:room-action-updated',wake);
   window.addEventListener('pagehide',onPageHide);
-  window.addEventListener('beforeunload',()=>{stopTimer();document.removeEventListener('visibilitychange',onVisible);window.removeEventListener('focus',wake);window.removeEventListener('pageshow',onPageShow);window.removeEventListener('online',wake);window.removeEventListener('resume',wake);window.removeEventListener('pagehide',onPageHide);},{once:true});
+  window.addEventListener('beforeunload',()=>{stopTimer();document.removeEventListener('visibilitychange',onVisible);window.removeEventListener('focus',wake);window.removeEventListener('pageshow',onPageShow);window.removeEventListener('online',wake);window.removeEventListener('resume',wake);window.removeEventListener('boardmate:room-action-updated',wake);window.removeEventListener('pagehide',onPageHide);},{once:true});
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(startAlarmWatcher,800),{once:true});else setTimeout(startAlarmWatcher,800);

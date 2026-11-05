@@ -1,4 +1,4 @@
-const CACHE='boardmate-shell-v11.4.92-event-retired-20261105';
+const CACHE='boardmate-shell-v11.4.93-planetx-theory-alarm-20261105';
 self.addEventListener('install',()=>self.skipWaiting());
 self.addEventListener('activate',event=>event.waitUntil((async()=>{for(const key of await caches.keys())if(key.startsWith('boardmate-shell-')&&key!==CACHE)await caches.delete(key);await self.clients.claim();})()));
 self.addEventListener('fetch',event=>{

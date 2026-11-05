@@ -126,6 +126,26 @@ export function setBrowserTurnIndicator(count=0,options={}){
 function turnIsMine(room,me){
   return Boolean(room&&me?.user_id&&room.status==='playing'&&room.play_mode!=='realtime'&&room.turn_user_id===me.user_id);
 }
+async function resolvePlanetXTurn(room,me,{rpc,members}={}){
+  if(room?.game!=='planetx'||room.status!=='playing'||!me?.user_id||!rpc)return room;
+  try{
+    const row=await rpc('get_boardmate_room_state',{p_room_id:room.id});
+    const state=row?.state;
+    if(!state?.phase)return room;
+    if(state.over||!['turn','final','theory-select'].includes(state.phase))return {...room,turn_user_id:null};
+    if(state.phase!=='theory-select')return room;
+    // The time-track leader is not the active player during simultaneous
+    // theory selection. Read the protected per-player ready status instead.
+    const [status,roster]=await Promise.all([
+      rpc('boardmate_planetx_theory_status',{p_room_id:room.id,p_phase_id:state.theoryRound}),
+      members?Promise.resolve(members):rpc('boardmate_get_room',{p_room_id:room.id}).then(data=>data?.members)
+    ]);
+    const seat=roster?.find(m=>m.user_id===me.user_id)?.seat;
+    if(seat==null||!Array.isArray(status))return room;
+    const submitted=status.some(x=>Number(x.seat)===Number(seat)&&x.ready);
+    return {...room,turn_user_id:submitted?null:me.user_id};
+  }catch{return room;}
+}
 function loadSeenTurns(){
   try{const v=JSON.parse(localStorage.getItem(SEEN_KEY)||'{}');return v&&typeof v==='object'?v:{};}catch{return{}}
 }
@@ -177,8 +197,9 @@ function hrefForRoom(room){
   return room?.status==='playing'&&room?.id?`./${page}?room=${encodeURIComponent(room.id)}`:'./index.html#/multi';
 }
 export function resetRoomAlarmBaseline(){roomSnapshot=null;}
-async function processRoomAlarmsNow(rooms,me,{gameName=x=>x?.game||'게임',gameHref=hrefForRoom}={}){
+async function processRoomAlarmsNow(rooms,me,{gameName=x=>x?.game||'게임',gameHref=hrefForRoom,rpc}={}){
   if(!Array.isArray(rooms)||!me?.user_id){setBrowserTurnIndicator(0);return;}
+  rooms=await Promise.all(rooms.map(room=>room.mine?resolvePlanetXTurn(room,me,{rpc}):room));
   const myTurnRooms=rooms.filter(r=>Boolean(r.mine)&&turnIsMine(r,me));
   setBrowserTurnIndicator(myTurnRooms.length,{href:myTurnRooms.length===1?gameHref(myTurnRooms[0]):'./index.html#/multi'});
   const current=new Map(rooms.map(r=>[String(r.id),r]));
@@ -221,8 +242,9 @@ export function processRoomAlarms(rooms,me,options={}){
 }
 
 const singleRoomState=new Map();
-async function processSingleRoomAlarmNow(room,me,{gameName='게임',gameHref}={}){
+async function processSingleRoomAlarmNow(room,me,{gameName='게임',gameHref,rpc,members}={}){
   if(!room?.id||!me?.user_id){setBrowserTurnIndicator(0);return;}
+  room=await resolvePlanetXTurn(room,me,{rpc,members});
   const id=String(room.id),prev=singleRoomState.get(id),myTurn=turnIsMine(room,me);
   setBrowserTurnIndicator(myTurn?1:0,{href:myTurn?(gameHref||hrefForRoom(room)):'./index.html#/multi'});
   singleRoomState.set(id,{...room});

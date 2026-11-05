@@ -20,7 +20,7 @@ const unlockAlarmAudio=(...a)=>__alarmApi.unlockAlarmAudio(...a);
 window.__boardmateAppStarted=true;
 (async()=>{
   try{
-    const mod=await import('./alarm.js?v=11.4.92');
+    const mod=await import('./alarm.js?v=11.4.93');
     for(const key of Object.keys(__alarmApi)) if(typeof mod[key]==='function') __alarmApi[key]=mod[key];
     window.dispatchEvent(new Event('boardmate:alarm-ready'));
   }catch(err){
@@ -62,6 +62,7 @@ function clearRouteCleanups(){ routeCleanups.splice(0).forEach(fn=>{try{fn();}ca
 function memberToken(){return localStorage.getItem(MEMBER_SESSION_KEY)||sessionStorage.getItem(MEMBER_SESSION_KEY)||'';}
 function saveMemberToken(t,remember=true){localStorage.removeItem(MEMBER_SESSION_KEY);sessionStorage.removeItem(MEMBER_SESSION_KEY);if(t)(remember?localStorage:sessionStorage).setItem(MEMBER_SESSION_KEY,t);}
 async function callRpc(name,args={}){const client=initSupabaseClient();if(!client)throw new Error('Supabase 연결을 준비 중입니다. 잠시 후 다시 시도하세요.');const {data,error}=await client.rpc(name,args);if(error)throw error;return data;}
+function turnAlarmRpc(name,args){return callRpc(name,{...args,p_token:memberToken()});}
 async function authSession(){return memberToken()||null;}
 async function authProfile(){const token=memberToken();if(!token)return null;try{return await callRpc('boardmate_me',{p_token:token});}catch(e){return null;}}
 function tierInfo(row){
@@ -133,7 +134,7 @@ function ensureSiteFeatures(){
   if(!document.querySelector('link[rel="manifest"]')){const l=document.createElement('link');l.rel='manifest';l.href='./manifest.webmanifest';document.head.appendChild(l);}
   if(!document.querySelector('meta[name="theme-color"]')){const m=document.createElement('meta');m.name='theme-color';m.content='#141922';document.head.appendChild(m);}
   if(!document.querySelector('link[rel="manifest"]')){const l=document.createElement('link');l.rel='manifest';l.href='./manifest.webmanifest';document.head.appendChild(l);}
-  if('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js?v=11.4.92',{scope:'./'}).catch(()=>{});
+  if('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js?v=11.4.93',{scope:'./'}).catch(()=>{});
 }
 async function installBoardMate(){
   if(deferredInstallPrompt){
@@ -352,7 +353,7 @@ async function renderHome(){
     if(!me){activeWrap.classList.add('hidden');return;}
     try{
       const rooms=await callRpc('boardmate_list_rooms',{p_token:memberToken()})||[];
-      void processRoomAlarms(rooms,me,{gameName:r=>gameInfo(r.game).name,gameHref:gameEntryHref});
+      void processRoomAlarms(rooms,me,{gameName:r=>gameInfo(r.game).name,gameHref:gameEntryHref,rpc:turnAlarmRpc});
       const active=rooms.filter(r=>r.mine&&r.status==='playing');
       if(!active.length){activeWrap.classList.add('hidden');return;}
       activeWrap.classList.remove('hidden');
@@ -513,7 +514,7 @@ async function renderMulti(){
   <div class="section-title"><h2>열린 방</h2><button class="ghost mini" id="refreshRooms">새로고침</button></div><div id="roomList"><div class="empty">방을 불러오는 중…</div></div>`);
   const roomCard=r=>{const gi=gameInfo(r.game),mine=Boolean(r.mine),full=Number(r.member_count)>=Number(r.max_players),playing=r.status==='playing',realtime=(r.play_mode==='realtime'||gi.mode==='realtime'),myTurn=!realtime&&playing&&mine&&r.turn_user_id===me.user_id,modeText=realtime?'⚡ 실시간':'⏳ 턴 기반';return `<article class="room-row ${playing&&mine?'resume-room':''} ${myTurn?'my-turn-room':''}"><div><div class="room-title"><span class="game-pill ${r.game}">${gi.icon} ${gi.name}</span><b>${esc(r.title)}</b>${myTurn?'<span class="turn-alert">내 차례</span>':''}</div><small>${modeText} · ${esc(r.host_nickname||'방장')} · ${r.member_count}명${r.online_count!=null?` · 접속 ${r.online_count}명`:''} · ${r.status==='open'?'대기 중':realtime?'실시간 진행 중':r.turn_nickname?`현재 ${esc(r.turn_nickname)} 차례`:'게임 중'}</small></div><button class="${mine?'primary':'ghost'}" data-room-action="${r.id}" data-mine="${mine?'1':'0'}" data-status="${r.status}" data-game-href="${gameEntryHref(r)}" ${!mine&&r.status==='open'&&full?'disabled':''}>${mine?(playing?(myTurn?'내 차례 플레이':'이어하기'):'방으로'):r.status==='open'?(full?'가득 참':'참가'):'관전 불가'}</button></article>`;};
   const bindRoomButtons=root=>root.querySelectorAll('[data-room-action]').forEach(b=>b.onclick=async()=>{if(b.dataset.mine==='1'){if(b.dataset.status==='playing'){location.href=b.dataset.gameHref;return;}location.hash=`#/room/${b.dataset.roomAction}`;return;}if(b.dataset.status!=='open'||b.disabled)return;try{await callRpc('join_boardmate_room',{p_token:memberToken(),p_room_id:b.dataset.roomAction});location.hash=`#/room/${b.dataset.roomAction}`;}catch(err){toast(err.message);}});
-  const loadRoomsRaw=async()=>{const box=document.querySelector('#roomList'),activeBox=document.querySelector('#activeGameList'),wrap=document.querySelector('#activeGamesWrap');if(!box)return;try{const rooms=await callRpc('boardmate_list_rooms',{p_token:memberToken()})||[];void processRoomAlarms(rooms,me,{gameName:r=>gameInfo(r.game).name,gameHref:gameEntryHref});const active=rooms.filter(r=>r.mine&&r.status==='playing'),open=rooms.filter(r=>r.status==='open');if(active.length){wrap.classList.remove('hidden');activeBox.innerHTML=active.map(roomCard).join('');bindRoomButtons(activeBox);}else wrap.classList.add('hidden');box.innerHTML=open.length?open.map(roomCard).join(''):'<div class="empty">현재 열린 방이 없습니다.</div>';bindRoomButtons(box);}catch(err){box.innerHTML=`<div class="empty">${esc(err.message)}</div>`;}};
+  const loadRoomsRaw=async()=>{const box=document.querySelector('#roomList'),activeBox=document.querySelector('#activeGameList'),wrap=document.querySelector('#activeGamesWrap');if(!box)return;try{const rooms=await callRpc('boardmate_list_rooms',{p_token:memberToken()})||[];void processRoomAlarms(rooms,me,{gameName:r=>gameInfo(r.game).name,gameHref:gameEntryHref,rpc:turnAlarmRpc});const active=rooms.filter(r=>r.mine&&r.status==='playing'),open=rooms.filter(r=>r.status==='open');if(active.length){wrap.classList.remove('hidden');activeBox.innerHTML=active.map(roomCard).join('');bindRoomButtons(activeBox);}else wrap.classList.add('hidden');box.innerHTML=open.length?open.map(roomCard).join(''):'<div class="empty">현재 열린 방이 없습니다.</div>';bindRoomButtons(box);}catch(err){box.innerHTML=`<div class="empty">${esc(err.message)}</div>`;}};
   let roomsLoadBusy=false,roomsLoadQueued=false;
   const loadRooms=async()=>{if(roomsLoadBusy){roomsLoadQueued=true;return;}roomsLoadBusy=true;try{await loadRoomsRaw();}finally{roomsLoadBusy=false;if(roomsLoadQueued){roomsLoadQueued=false;queueMicrotask(loadRooms);}}};
   document.querySelector('#refreshRooms').onclick=loadRooms;await loadRooms();let timer=setInterval(()=>{if(!document.hidden)void loadRooms()},3000);const wakeRooms=()=>{if(!document.hidden)void loadRooms()};const pauseRooms=()=>{if(timer){clearInterval(timer);timer=null}};const resumeRooms=()=>{if(!timer)timer=setInterval(()=>{if(!document.hidden)void loadRooms()},3000);wakeRooms()};document.addEventListener('visibilitychange',wakeRooms);window.addEventListener('focus',wakeRooms);window.addEventListener('pageshow',resumeRooms);window.addEventListener('online',wakeRooms);window.addEventListener('resume',wakeRooms);window.addEventListener('pagehide',pauseRooms);addCleanup(()=>{if(timer)clearInterval(timer);document.removeEventListener('visibilitychange',wakeRooms);window.removeEventListener('focus',wakeRooms);window.removeEventListener('pageshow',resumeRooms);window.removeEventListener('online',wakeRooms);window.removeEventListener('resume',wakeRooms);window.removeEventListener('pagehide',pauseRooms)});
@@ -527,7 +528,7 @@ async function renderRoom(roomId){
   let touchBusy=false;
   const touch=async()=>{if(touchBusy)return;touchBusy=true;try{await callRpc('touch_boardmate_room',{p_token:memberToken(),p_room_id:roomId});}catch{}finally{touchBusy=false;}};
   await touch();
-  const draw=async()=>{data=await load();const {room,members}=data,isHost=room.host_id===me.user_id,gi=gameInfo(room.game),min=(room.game==='powergrid'?Math.max(3,Number(room.min_players||gi.min)):Number(room.min_players||gi.min));void processSingleRoomAlarm(room,me,{gameName:gi.name,gameHref:gameEntryHref(room)});
+  const draw=async()=>{data=await load();const {room,members}=data,isHost=room.host_id===me.user_id,gi=gameInfo(room.game),min=(room.game==='powergrid'?Math.max(3,Number(room.min_players||gi.min)):Number(room.min_players||gi.min));void processSingleRoomAlarm(room,me,{gameName:gi.name,gameHref:gameEntryHref(room),members,rpc:turnAlarmRpc});
     let cancelled=room.status==='cancelled';
     if(!cancelled&&room.status==='finished'&&['maskmen','acquire','calico','cascadia','pocketnova','thegame','kraken','fantasyrealms','fantasyrealmsgreek','powergrid','avalon','secrethitler','onenightwerewolf','plakoro','quacks','mandom','samurai','eldorado','panam','projectl','airlandsea','planetx'].includes(room.game)){
       try{cancelled=Boolean((await callRpc('boardmate_get_cancel_status',{p_token:memberToken(),p_room_id:roomId}))?.cancelled);}catch{}
