@@ -72,7 +72,7 @@ button:disabled{opacity:.4;cursor:not-allowed}
 <main class="wrap"><div id="app">불러오는 중…</div></main>
 
 <script type="module">
-import {configured,roomId,getMe,loadRoom,loadState,saveState,startStatePoll,submitMatch,ratingBadges,esc,showFatal,endPanel} from './multi-common.js?v=11.4.94';
+import {configured,roomId,getMe,loadRoom,loadState,saveState,startStatePoll,submitMatch,ratingBadges,esc,showFatal,endPanel} from './multi-common.js?v=11.4.95';
 if(!configured()||!roomId) showFatal('Supabase 설정 또는 room 주소가 없습니다.');
 
 const clone=x=>JSON.parse(JSON.stringify(x));
@@ -81,7 +81,7 @@ let me,room,members,badges={},mySeat=-1,state=null,revision=0,saving=false,submi
 /* ── 세트1 성분책 규칙(공식 룰북 기준, 첫 게임 권장 세트) ─────────────────
    흰색/주황: 능력 없음. 초록(거미)/파랑(까마귀해골)/빨강(버섯)/노랑(맨드레이크)
    /보라(유령의 숨결)/검정(해골나방) = 세트1 능력을 그대로 구현.
-   v11.4.94: 제공된 실물 냄비 이미지의 53칸 점수/구매력/루비 표를 새 게임에 적용합니다.
+   v11.4.95: 제공된 실물 냄비 이미지의 53칸 점수/구매력/루비 표를 새 게임에 적용합니다.
    구형 진행방은 저장된 위치의 의미를 유지합니다. 쥐 마커와 점쟁이 카드는 아직 제외됩니다. */
 
 const COST={ // [1칩,2칩,4칩] 비용, null=해당 가치 없음

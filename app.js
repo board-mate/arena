@@ -20,7 +20,7 @@ const unlockAlarmAudio=(...a)=>__alarmApi.unlockAlarmAudio(...a);
 window.__boardmateAppStarted=true;
 (async()=>{
   try{
-    const mod=await import('./alarm.js?v=11.4.94');
+    const mod=await import('./alarm.js?v=11.4.95');
     for(const key of Object.keys(__alarmApi)) if(typeof mod[key]==='function') __alarmApi[key]=mod[key];
     window.dispatchEvent(new Event('boardmate:alarm-ready'));
   }catch(err){
@@ -86,6 +86,7 @@ function gameInfo(game){
     powergrid:{name:'파워그리드',icon:'🔌',min:3,max:6,page:'online-powergrid.html'},
     quacks:{name:'돌팔이 약장수',icon:'🧪',min:2,max:4,page:'online-quacks.html',mode:'realtime',tier:'alpha'},
     mandom:{name:'맨덤의 던전',icon:'⚔️',min:2,max:4,page:'online-mandom.html'},
+    cryptid:{name:'크립티드',icon:'🐾',min:3,max:5,page:'online-cryptid.html',tier:'alpha'},
     planetx:{name:'행성 X를 찾아서',icon:'🪐',min:2,max:4,page:'online-planetx.html'},
     samurai:{name:'사무라이',icon:'⛩️',min:2,max:4,page:'online-samurai.html',tier:'alpha'},
     eldorado:{name:'엘도라도',icon:'🧭',min:2,max:4,page:'online-eldorado.html',tier:'alpha'},
@@ -134,7 +135,7 @@ function ensureSiteFeatures(){
   if(!document.querySelector('link[rel="manifest"]')){const l=document.createElement('link');l.rel='manifest';l.href='./manifest.webmanifest';document.head.appendChild(l);}
   if(!document.querySelector('meta[name="theme-color"]')){const m=document.createElement('meta');m.name='theme-color';m.content='#141922';document.head.appendChild(m);}
   if(!document.querySelector('link[rel="manifest"]')){const l=document.createElement('link');l.rel='manifest';l.href='./manifest.webmanifest';document.head.appendChild(l);}
-  if('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js?v=11.4.94',{scope:'./'}).catch(()=>{});
+  if('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js?v=11.4.95',{scope:'./'}).catch(()=>{});
 }
 async function installBoardMate(){
   if(deferredInstallPrompt){
@@ -453,7 +454,7 @@ async function renderMyPage(){
 
 async function renderCreateRoom(){
   if(!onlineConfigured())return renderMulti();const me=await authProfile();if(!me){location.hash='#/login';return;}
-  const games=['maskmen','acquire','calico','cascadia','plakoro','powergrid','quacks','mandom','planetx','samurai','eldorado','panam','projectl','airlandsea','thegame','kraken','fantasyrealms','fantasyrealmsgreek','avalon','secrethitler','onenightwerewolf'];let selected='maskmen';
+  const games=['maskmen','acquire','calico','cascadia','plakoro','powergrid','quacks','mandom','planetx','samurai','eldorado','panam','projectl','airlandsea','thegame','kraken','fantasyrealms','fantasyrealmsgreek','avalon','secrethitler','onenightwerewolf','cryptid'];let selected='maskmen';
   const tierLabel=(x)=>x.tier==='alpha'?'ALPHA · 보완 필요':x.tier==='beta'?'BETA · 보완 중':'정상 작동';
   const tierClass=(x)=>x.tier==='alpha'?'tier-alpha':x.tier==='beta'?'tier-beta':'tier-stable';
   const renderGame=(g)=>{const x=gameInfo(g);return `<button class="library-card game-choice ${g==='maskmen'?'selected':''}" data-room-game="${g}"><div class="library-icon">${x.icon}</div><div class="game-tier ${tierClass(x)}">${tierLabel(x)}</div><h2>${x.name}</h2><p>${x.min}명부터 · 최대 ${x.max}명</p></button>`;};
@@ -468,6 +469,7 @@ async function renderCreateRoom(){
     const v21Games=['quacks','mandom','samurai','eldorado','panam','projectl','airlandsea','planetx'];
     try{
       let id;
+      if(selected==='cryptid'){id=await callRpc('create_boardmate_cryptid_room',{p_token:memberToken(),p_title:title});location.hash=`#/room/${id}`;return;}
       try{
         id=await callRpc('create_boardmate_room_v10',{p_token:memberToken(),p_title:title,p_game:selected});
       }catch(v10e){

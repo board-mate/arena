@@ -28,7 +28,7 @@
 <header class="top"><div class="row"><a href="./index.html#/"><b>←</b> 홈</a><a href="./index.html#/multi">다인플</a></div><div class="brand">PROJECT <b>L</b></div><div id="sync">연결 중…</div></header>
 <main id="app" class="app"><div class="card">게임을 불러오는 중…</div></main>
 <script type="module">
-import {configured,roomId,getMe,loadRoom,loadState,saveState,startStatePoll,submitMatch,ratingBadges,showFatal,openCancelVotePanel} from './multi-common.js?v=11.4.94';
+import {configured,roomId,getMe,loadRoom,loadState,saveState,startStatePoll,submitMatch,ratingBadges,showFatal,openCancelVotePanel} from './multi-common.js?v=11.4.95';
 if(!configured()||!roomId)showFatal('Supabase 설정 또는 room 주소가 없습니다.');
 const $=s=>document.querySelector(s),clone=x=>JSON.parse(JSON.stringify(x)),shuffle=a=>{a=[...a];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a},esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const COLORS={dot:'#f4d334',domino:'#1cbf7f',triI:'#27a1e6',triL:'#f28b24',tetI:'#924aa0',tetL:'#00b7c7',tetT:'#e8008d',tetS:'#f26f21',tetO:'#e91e63'};

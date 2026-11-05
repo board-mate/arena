@@ -4,9 +4,13 @@
 
 <h1 align="center">🎲 BoardMate Arena</h1>
 <p align="center"><strong>모임에서 바로 열어 같이 플레이하는 온라인 보드게임 아레나</strong></p>
-<p align="center">v11.4.94 · Game materials and alarm audit · 2026-11-05</p>
+<p align="center">v11.4.95 · Cryptid alpha · 2026-11-05</p>
 
 ---
+
+## v11.4.95 — 크립티드 ALPHA와 기존 게임 검증
+
+3~5인 기본·고급 모드, 비공개 단서, 자동 질문 응답과 탐색·승리 판정을 추가했습니다. 다인플의 새 방 만들기에서 크립티드를 선택하세요. 운영 DB 설정과 기존 22개 온라인 게임 인원 제한 확인, 자동 테스트 123개 및 데스크톱·390px 모바일 검증을 완료했습니다. [이용 방법·ALPHA 범위·검증](README_V11_4_95_CRYPTID_ALPHA.md).
 
 ## v11.4.94 — 제공 자료 반영과 알림 점검
 

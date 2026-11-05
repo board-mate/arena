@@ -3,8 +3,8 @@ const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('n
 const root=path.join(__dirname,'..');
 function read(file){return fs.readFileSync(path.join(root,file),'utf8');}
 function fn(file,name){const s=read(file),start=s.indexOf('function '+name+'(');assert.ok(start>=0);const end=s.slice(start+1).search(/\n(?:async )?function /);return s.slice(start,end<0?undefined:start+1+end);}
-test('all 29 game pages have parseable scripts, JSON metadata and existing local assets',()=>{
- const files=fs.readdirSync(root).filter(f=>/^(online|solo)-.*\.html$/.test(f));assert.equal(files.length,29);
+test('all 30 game pages have parseable scripts, JSON metadata and existing local assets',()=>{
+ const files=fs.readdirSync(root).filter(f=>/^(online|solo)-.*\.html$/.test(f));assert.equal(files.length,30);
  for(const f of files){const s=read(f);for(const m of s.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)){
   if(!m[2].trim())continue;if(/application\/(?:ld\+)?json/.test(m[1])){JSON.parse(m[2]);continue;}
   const check=cp.spawnSync(process.execPath,['--check','--input-type='+(/type=["']module/.test(m[1])?'module':'commonjs')],{input:m[2],encoding:'utf8'});assert.equal(check.status,0,f+' '+check.stderr);
