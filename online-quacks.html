@@ -61,6 +61,7 @@ button:disabled{opacity:.4;cursor:not-allowed}
 .status{text-align:center;font-weight:900;margin:4px 0}
 .result{background:#203c2e;border:1px solid #3f7a5d;border-radius:12px;padding:14px;text-align:center;margin-top:10px}
 .track-wrap{overflow-x:auto;padding:8px 2px 4px}.track{display:flex;gap:4px;min-width:max-content;align-items:stretch}.track-cell{position:relative;width:50px;min-width:50px;height:62px;border:1px solid #4b5064;border-radius:10px;background:#20232e;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:10px}.track-cell b{font-size:13px}.track-cell.ruby{box-shadow:inset 0 -4px 0 #c94e78}.track-cell.jackpot{background:#3b3420;border-color:#d4b04c}.track-markers{position:absolute;left:3px;right:3px;top:2px;display:flex;flex-wrap:wrap;gap:2px;justify-content:center}.track-marker{width:16px;height:16px;border-radius:50%;display:grid;place-items:center;font-size:9px;font-weight:1000;color:#111;background:#f1c40f;border:1px solid #fff}.track-marker.m1{background:#60a5fa}.track-marker.m2{background:#f472b6}.track-marker.m3{background:#34d399}.bag-summary{margin-top:8px;border:1px dashed #555b72;border-radius:11px;padding:8px;background:#1b1e28}.bag-summary summary{cursor:pointer;font-size:12px;font-weight:900}.bag-grid{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}.bag-chip{display:inline-flex;align-items:center;gap:4px;background:#303443;border-radius:8px;padding:5px 7px;font-size:11px}.bag-chip .chip{min-width:22px}.bag-total{font-size:11px;color:#c8cedc;margin-top:6px}
+.chip-art{background:transparent!important;padding:0}.chip-art img{width:30px;height:30px;object-fit:contain;border-radius:50%}.cauldron-reference{margin-top:10px}.cauldron-reference img{display:block;width:min(100%,540px);margin:8px auto}
 </style></head>
 <body>
 <header class="bar">
@@ -71,7 +72,7 @@ button:disabled{opacity:.4;cursor:not-allowed}
 <main class="wrap"><div id="app">불러오는 중…</div></main>
 
 <script type="module">
-import {configured,roomId,getMe,loadRoom,loadState,saveState,startStatePoll,submitMatch,ratingBadges,esc,showFatal,endPanel} from './multi-common.js?v=11.4.57';
+import {configured,roomId,getMe,loadRoom,loadState,saveState,startStatePoll,submitMatch,ratingBadges,esc,showFatal,endPanel} from './multi-common.js?v=11.4.94';
 if(!configured()||!roomId) showFatal('Supabase 설정 또는 room 주소가 없습니다.');
 
 const clone=x=>JSON.parse(JSON.stringify(x));
@@ -80,11 +81,8 @@ let me,room,members,badges={},mySeat=-1,state=null,revision=0,saving=false,submi
 /* ── 세트1 성분책 규칙(공식 룰북 기준, 첫 게임 권장 세트) ─────────────────
    흰색/주황: 능력 없음. 초록(거미)/파랑(까마귀해골)/빨강(버섯)/노랑(맨드레이크)
    /보라(유령의 숨결)/검정(해골나방) = 세트1 능력을 그대로 구현.
-   ⚠ 냄비 칸별 정확한 승점/루비 배치표는 원문에 전체 수치가 없어(일부 예시만
-   제공됨: 15→3점·15원, 19→5점·19원, 23→7점·23원) 그 예시에 100% 들어맞는
-   공식으로 근사했습니다. 실물 보드와 다를 수 있으니, 필요하면 아래 GOLD_OF/
-   POINTS_OF/RUBY_POS 만 바꾸면 됩니다. 쥐 마커·점쟁이 카드(24장)는 이번
-   버전에서는 생략했습니다(추후 추가 가능). */
+   v11.4.94: 제공된 실물 냄비 이미지의 53칸 점수/구매력/루비 표를 새 게임에 적용합니다.
+   구형 진행방은 저장된 위치의 의미를 유지합니다. 쥐 마커와 점쟁이 카드는 아직 제외됩니다. */
 
 const COST={ // [1칩,2칩,4칩] 비용, null=해당 가치 없음
   orange:[3,null,null], green:[4,8,14], blue:[5,10,19], red:[6,10,16],
@@ -92,11 +90,17 @@ const COST={ // [1칩,2칩,4칩] 비용, null=해당 가치 없음
 };
 const VIDX=v=>v===1?0:v===2?1:2;
 const bookAvailable=(c,round)=> c==='yellow'?round>=2 : c==='purple'?round>=3 : true;
-const RUBY_POS=new Set([3,7,11,15,19,23,27,31]); // 근사치
-const GOLD_OF=pos=>pos; // 냄비 숫자칸 = 구매력(원문 예시와 일치)
-const POINTS_OF=pos=> pos<=8?0:Math.floor((pos-9)/2); // 15→3,19→5,23→7 예시와 일치하는 근사식
+const LEGACY_RUBY_POS=new Set([3,7,11,15,19,23,27,31]);
+const CAULDRON_GOLD=[0,...Array.from({length:14},(_,i)=>i+1),...Array.from({length:19},(_,i)=>[i+15,i+15]).flat(),35];
+const CAULDRON_POINTS=[0,0,0,0,0,0,1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4,5,5,5,5,6,6,6,7,7,7,8,8,8,9,9,9,10,10,10,11,11,11,12,12,12,13,13,13,13,14,14,15];
+const CAULDRON_RUBIES=new Set([5,9,13,16,20,24,28,30,34,36,40,42,46,50,52]);
+const physicalRules=(s=state)=>Number(s?.rulesVersion||1)>=2;
+const MAX_POS=(s=state)=>physicalRules(s)?53:33;
+const GOLD_OF=(pos,s=state)=>physicalRules(s)?CAULDRON_GOLD[pos]:pos;
+const POINTS_OF=(pos,s=state)=>physicalRules(s)?CAULDRON_POINTS[pos]:(pos<=8?0:Math.floor((pos-9)/2));
+const HAS_RUBY=(pos,s=state)=>(physicalRules(s)?CAULDRON_RUBIES:LEGACY_RUBY_POS).has(pos);
 const JACKPOT={gold:35,points:15};
-const BONUS_FACES=['1점','2점','루비','물방울','호박칩'];
+const BONUS_FACES=['1점','2점','1점','루비','물방울','호박칩'];
 
 function freshBag(){
   const a=[];
@@ -112,7 +116,7 @@ function newPlayer(m){
     exploded:false,stopped:false,flaskUsed:false,rubies:1,score:0,pendingBlue:null,scoring:null};
 }
 function initialState(){
-  return {kind:'quacks-v1',round:1,phase:'drawing',
+  return {kind:'quacks-v1',rulesVersion:2,round:1,phase:'drawing',
     players:members.map(newPlayer),
     finalOrder:null,
     log:[`게임 시작 (${members.length}인) · 세트1 · 1라운드`]};
@@ -129,7 +133,7 @@ function placeChip(p,chip){
     const or=p.pot.filter(x=>x.c==='orange').length;
     advance+= or===0?0:(or<=2?1:2);
   }
-  const pos=Math.min(p.cursor+advance,33);
+  const pos=Math.min(p.cursor+advance,MAX_POS());
   p.pot.push({c:chip.c,v:chip.v,pos});
   p.cursor=pos;
   if(chip.c==='white')p.whiteSum+=chip.v;
@@ -150,7 +154,7 @@ function drawExtraForBlue(p,chip){
   for(let i=0;i<n;i++){const c=drawOne(p); if(c)drawn.push(c);}
   if(drawn.length)p.pendingBlue={options:drawn};
 }
-function checkForcedStop(p){ if(!p.bag.length && !p.pendingBlue) p.stopped=true; }
+function checkForcedStop(p){ if((!p.bag.length || (physicalRules()&&p.cursor>=MAX_POS())) && !p.pendingBlue) p.stopped=true; }
 
 function allDoneDrawing(next){
   return next.players.every(p=>(p.stopped||p.exploded)&&!p.pendingBlue);
@@ -159,8 +163,8 @@ function computeScoring(next){
   const n=next.players.length;
   next.players.forEach(p=>{
     let scoringPos,gold,points,hasRuby,jackpot=false;
-    if(p.cursor>=33){jackpot=true;gold=JACKPOT.gold;points=JACKPOT.points;hasRuby=false;scoringPos=34;}
-    else{scoringPos=Math.min(p.cursor+1,33);gold=GOLD_OF(scoringPos);points=POINTS_OF(scoringPos);hasRuby=RUBY_POS.has(scoringPos);}
+    if(p.cursor>=MAX_POS(next)){jackpot=true;gold=JACKPOT.gold;points=JACKPOT.points;hasRuby=false;scoringPos=physicalRules(next)?53:34;}
+    else{scoringPos=Math.min(p.cursor+1,MAX_POS(next));gold=GOLD_OF(scoringPos,next);points=POINTS_OF(scoringPos,next);hasRuby=HAS_RUBY(scoringPos,next);}
     p.scoring={scoringPos,gold,points,hasRuby,jackpot,bonusEligible:false,bonusRolled:false,bonusResult:null,
       choice:p.exploded?null:'both',shopBudget:gold,shopPurchased:[],pointsApplied:false,endReady:false,
       chipLog:[],vpBoughtGold:0,vpBoughtRuby:0};
@@ -220,7 +224,7 @@ function checkAdvance(next){
   if(next.round===6) next.players.forEach(p=>p.bag.push({c:'white',v:1}));
   next.players.forEach(p=>{
     p.pot.forEach(ch=>p.bag.push({c:ch.c,v:ch.v}));
-    p.pot=[];p.cursor=p.dropletBase;p.whiteSum=0;p.exploded=false;p.stopped=false;p.flaskUsed=false;p.scoring=null;
+    p.pot=[];p.cursor=p.dropletBase;p.whiteSum=0;p.exploded=false;p.stopped=false;if(!physicalRules(next))p.flaskUsed=false;p.scoring=null;
   });
   next.phase='drawing';
   next.log.unshift(`${next.round}라운드 시작`);
@@ -320,17 +324,18 @@ async function maybeSubmit(){
 }
 
 /* ── 렌더링 ───────────────────────────────────────────────── */
-function chip(c){ return `<span class="chip chip-${c.c}">${c.v}${c.pos!=null?`<small>${c.pos}</small>`:''}</span>`; }
+const CHIP_ART=Object.fromEntries(['orange-1','blue-1','blue-2','blue-4','green-1','green-2','red-1','red-2','red-4','yellow-1','yellow-2'].map(key=>[key,`./assets/quacks/${key}.webp`]));
+function chip(c){const key=`${c.c}-${c.v}`;if(CHIP_ART[key])return `<span class="chip chip-art"><img src="${CHIP_ART[key]}" alt="${CHIP_KO[c.c]} ${c.v}" loading="lazy">${c.pos!=null?`<small>${c.pos}</small>`:''}</span>`; return `<span class="chip chip-${c.c}">${c.v}${c.pos!=null?`<small>${c.pos}</small>`:''}</span>`; }
 const CHIP_KO={white:'흰색',orange:'주황',green:'초록',blue:'파랑',red:'빨강',yellow:'노랑',purple:'보라',black:'검정'};
-function scoreCellForPlayer(p){return p.scoring?.scoringPos||Math.min(34,Math.max(1,(p.cursor||0)+1));}
+function scoreCellForPlayer(p){return p.scoring?.scoringPos||Math.min(physicalRules()?53:34,Math.max(1,(p.cursor||0)+1));}
 function trackHtml(){
   const cells=[];
-  for(let pos=1;pos<=34;pos++){
-    const jackpot=pos===34,markers=state.players.map((p,i)=>scoreCellForPlayer(p)===pos?`<span class="track-marker m${i}" title="${esc(p.name)}">${i+1}</span>`:'').join('');
-    const coins=jackpot?JACKPOT.gold:GOLD_OF(pos),vp=jackpot?JACKPOT.points:POINTS_OF(pos),ruby=!jackpot&&RUBY_POS.has(pos);
+  for(let pos=1;pos<=(physicalRules()?53:34);pos++){
+    const jackpot=pos===(physicalRules()?53:34),markers=state.players.map((p,i)=>scoreCellForPlayer(p)===pos?`<span class="track-marker m${i}" title="${esc(p.name)}">${i+1}</span>`:'').join('');
+    const coins=jackpot?JACKPOT.gold:GOLD_OF(pos),vp=jackpot?JACKPOT.points:POINTS_OF(pos),ruby=!jackpot&&HAS_RUBY(pos);
     cells.push(`<div class="track-cell ${ruby?'ruby':''} ${jackpot?'jackpot':''}"><div class="track-markers">${markers}</div><b>${jackpot?'🏁':pos}</b><span>🪙${coins} · 🏆${vp}</span>${ruby?'<span>💎</span>':''}</div>`);
   }
-  return `<div class="card"><div class="hdr"><b>🫕 냄비 점수 트랙</b><span class="note">원형 숫자 = 플레이어 · 💎 = 루비칸</span></div><div class="track-wrap"><div class="track">${cells.join('')}</div></div><div class="note">현재 칩 위치의 다음 칸을 정산 칸으로 표시합니다. 34는 냄비 완주 보너스입니다.</div></div>`;
+  return `<div class="card"><div class="hdr"><b>🫕 냄비 점수 트랙</b><span class="note">원형 숫자 = 플레이어 · 💎 = 루비칸</span></div><div class="track-wrap"><div class="track">${cells.join('')}</div></div><details class="cauldron-reference"><summary>실물 냄비 참조</summary><img src="./assets/quacks/cauldron.webp" alt="냄비의 구매력·승점·루비 칸" loading="lazy"></details><div class="note">현재 칩 위치의 다음 칸을 정산 칸으로 표시합니다. ${physicalRules()?53:34}번 칸은 냄비 완주 보너스입니다.</div></div>`;
 }
 function bagInventoryHtml(p,includePot=false){
   let list=[...(p.bag||[])];
@@ -374,7 +379,7 @@ function playerBlock(i,p){
   } else if(state.phase==='scoring' && p.scoring){
     const s=p.scoring;
     html+=`<div class="scorebox">
-      <b>${s.jackpot?'🏁 완주(33칸+)':`점수 칸 ${s.scoringPos}`}</b> · 원 ${s.gold} · 승점 ${s.points}${s.hasRuby?' · 💎루비칸':''}
+      <b>${s.jackpot?`🏁 완주(${MAX_POS()}칸)`:`점수 칸 ${s.scoringPos}`}</b> · 원 ${s.gold} · 승점 ${s.points}${s.hasRuby?' · 💎루비칸':''}
       ${s.chipLog.length?`<div class="log">${s.chipLog.join(' · ')}</div>`:''}
     </div>`;
     if(isMe){

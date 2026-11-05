@@ -1,0 +1,32 @@
+{
+  "projectL": {
+    "sources": [
+      "httpssteamusercontentaakamaihdnetugc119970299444070287029B10EA6CA7A965985EA7B82514F8EEB16E81D4E2.jpg",
+      "httpssteamusercontentaakamaihdnetugc1433849664758257866269C3D239B649247D85D7131C780714FB5D1689EA.jpg"
+    ],
+    "whitePuzzles": 32,
+    "blackPuzzles": 20
+  },
+  "greekCards": {
+    "source": "판타지왕국 그리스전설_카드.pdf",
+    "cards": 80,
+    "manifest": "fantasy-realms-greek/source-manifest.json"
+  },
+  "quacks": {
+    "source": "Quacksalber_Rules_KOR_v1.2.pdf",
+    "images": [
+      "httpssteamusercontentaakamaihdnetugc829135754399258082F169BA9AF89CABFB8E15CFC88C554B696C9B89B0.png",
+      "httpssteamusercontentaakamaihdnetugc7931101292326551442F486FF339D0AF80BABCB3CFA807D32905428FED.jpg",
+      "httpssteamusercontentaakamaihdnetugc9743524638895316617B547619BD1B31B496F749D6968AFEC0BC10E999.png",
+      "httpssteamusercontentaakamaihdnetugc974352463889532662D718A7B3851689F47A4EF316C4052C99B2719FE8.png",
+      "httpssteamusercontentaakamaihdnetugc9743524638895340208B40FF1E0F9A369FF20132E07D0A4E795946AF53.png",
+      "httpssteamusercontentaakamaihdnetugc974352463889603897CA56E1B321E2435946C6FE26542892A62B3D5F42.png",
+      "httpssteamusercontentaakamaihdnetugc974352463889604772EA638543EAA738E7254A0A64ADEE8CD0AFA77416.png",
+      "httpssteamusercontentaakamaihdnetugc974352463889606199C86EA33136D1B805F27FA91DCBF9BEF67CBC8A5D.png",
+      "httpssteamusercontentaakamaihdnetugc974352463889606986FE0DC8E38619E0B898773F4399DDC3C75B0A751B.png",
+      "httpssteamusercontentaakamaihdnetugc9743524638896078770CE24B7BB13FA7B6D326FE0A5AC29CBA49564AF3.png",
+      "httpssteamusercontentaakamaihdnetugc974352463889612214FDBC4AEBF7D02369224C80CD8C729A60B09AED1C.png",
+      "httpssteamusercontentaakamaihdnetugc974352463889612948A2C5157E52D83C8CF5EB26F5F8D483DDF114E78F.png"
+    ]
+  }
+}

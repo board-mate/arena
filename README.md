@@ -4,9 +4,13 @@
 
 <h1 align="center">🎲 BoardMate Arena</h1>
 <p align="center"><strong>모임에서 바로 열어 같이 플레이하는 온라인 보드게임 아레나</strong></p>
-<p align="center">v11.4.93 · Planet X theory alarm fix · 2026-11-05</p>
+<p align="center">v11.4.94 · Game materials and alarm audit · 2026-11-05</p>
 
 ---
+
+## v11.4.94 — 제공 자료 반영과 알림 점검
+
+프로젝트 L 실물 퍼즐 52개, 약장수 새 게임의 정확한 냄비 표·6면 주사위·플라스크 규칙, 그리스 전설 한글 카드 80장을 반영했습니다. 알림 전송 실패 재시도와 같은 차례 중복 알림을 수정했습니다. 테스트 117개 통과. 실제 OS 알림 수신은 미검증입니다. [상세 변경·검증·호환성](README_V11_4_94_MATERIALS_ALARM_AUDIT.md).
 
 ## v11.4.93 — 행성 X 논문 제출 후 내 차례 알림 수정
 
@@ -91,10 +95,10 @@ Note 공지·일정 연동을 해제하고 메카배 스플렌더 대회 이벤�
 
 | 항목 | 상태 |
 |---|---|
-| 릴리스 | **v11.4.93** |
+| 릴리스 | **v11.4.94** |
 | 다인플 | **18개 게임** |
 | 1인플 | **7개 게임** |
-| 서비스워커 캐시 | `boardmate-shell-v11.4.93-planetx-theory-alarm-20261105` |
+| 서비스워커 캐시 | `boardmate-shell-v11.4.94-materials-alarm-audit-20261105` |
 | 신규 Supabase SQL/RPC | **없음** |
 | 기존 진행 중 게임 | **호환 유지** |
 | 롤백 자료 | `docs/history/`, `database/history/` 보존 |

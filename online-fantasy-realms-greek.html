@@ -74,6 +74,7 @@ select,input{background:#0f172a;color:white;border:1px solid #475569;border-radi
 .checkbox-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px;margin-top:6px}
 .checkbox-list label{display:flex;gap:6px;align-items:center;font-size:12px;background:#0b1220;border:1px solid var(--line);border-radius:8px;padding:6px}
 @media(max-width:720px){.status{grid-template-columns:1fr}.card{width:118px;flex-basis:118px}.app{padding:10px}.panel{padding:11px}}
+.card.illustrated-card{padding:4px;background:#111;justify-content:flex-start}.card-art{display:block;width:100%;height:auto;aspect-ratio:5/7;object-fit:contain;border-radius:8px}.illustrated-card .card-copy{display:none}.detail-card-art{display:block;width:min(100%,400px);height:auto;margin:0 auto 14px;border-radius:10px}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="./config.js"></script>
@@ -128,7 +129,7 @@ select,input{background:#0f172a;color:white;border:1px solid #475569;border-radi
 <dialog id="endDialog"><div id="endBody"></div><div style="display:flex;justify-content:flex-end;margin-top:14px"><button class="btn primary" id="endClose">닫기</button></div></dialog>
 
 <script type="module">
-import {configured,roomId,getMe,loadRoom,loadFantasyState,saveFantasyState,submitMatch,subscribeRoomBroadcast,sendRoomBroadcast,touchPresence,showFatal} from './multi-common.js?v=11.4.62';
+import {configured,roomId,getMe,loadRoom,loadFantasyState,saveFantasyState,submitMatch,subscribeRoomBroadcast,sendRoomBroadcast,touchPresence,showFatal} from './multi-common.js?v=11.4.94';
 (() => {
 'use strict';
 
@@ -300,16 +301,20 @@ function scoreHandDetailed(handIds,afterIds,special={}){
   return{rows,aftPenalty,total,state:st};
 }
 
+const CARD_ART_IDS=new Set(RAW_DB.map(c=>c.id));
+const cardArt=id=>CARD_ART_IDS.has(id)?`./assets/fantasy-realms-greek/${id}.webp`:'';
+
 // ── UI card helpers ─────────────────────────────────────────────────────────
 function cardEl(id,opt={}){
   const c=byId(id);if(!c)return document.createElement('div');
   const d=document.createElement('div');d.className=`card ${SUIT_COLOR[c.s]||''}${opt.click?' click':''}${opt.afterlife?' afterlife-card':''}`;
-  d.innerHTML=`<div><div class="name">${esc(c.n)}</div><div class="meta">${SUIT_KO[c.s]} · 기본 ${c.b}</div><div class="tags">${(c.t||[]).map(esc).join(' · ')||'태그 없음'}</div><div class="effect">${esc(c.e)}</div></div>${opt.showPts?`<div class="pts" id="pts_${c.id}">계산 중</div>`:''}`;
+  d.innerHTML=`${cardArt(id)?`<img class="card-art" src="${cardArt(id)}" alt="${esc(c.n)} · 기본 ${c.b}" loading="lazy">`:""}<div class="card-copy"><div class="name">${esc(c.n)}</div><div class="meta">${SUIT_KO[c.s]} · 기본 ${c.b}</div><div class="tags">${(c.t||[]).map(esc).join(' · ')||'태그 없음'}</div><div class="effect">${esc(c.e)}</div></div>${opt.showPts?`<div class="pts" id="pts_${c.id}">계산 중</div>`:''}`;
+  if(cardArt(id)){d.classList.add('illustrated-card');d.setAttribute('aria-label',`${c.n} · ${c.e}`);d.querySelector('.card-art').addEventListener('error',e=>{e.target.remove();d.classList.remove('illustrated-card')},{once:true});}
   d.addEventListener('click',e=>{if(e.target.closest('button,select,input,label'))return;if(opt.click)opt.click();else showDetail(id);});
   return d;
 }
 function backEl(count){const d=document.createElement('div');d.className='card back-card';d.innerHTML=`<div class="name">비공개 손패</div><div class="effect">상대 카드 내용은 게임 종료 전까지 공개되지 않습니다.</div><div class="pts">${count}장</div>`;return d;}
-function showDetail(id){const c=byId(id);if(!c)return;$('detailTitle').textContent=`${c.n} · ${SUIT_KO[c.s]} · 기본 ${c.b}`;$('detailBody').innerHTML=`<div style="margin-bottom:8px">${(c.t||[]).length?(c.t||[]).map(t=>`<span style="display:inline-block;background:#334155;border-radius:6px;padding:2px 7px;margin:2px;font-size:13px">${esc(t)}</span>`).join(''):'태그 없음'}</div><div style="font-size:14px;line-height:1.7;color:#e2e8f0">${esc(c.e)}</div>${MAY_AFTERLIFE.has(id)?'<div style="margin-top:8px;color:#fbbf24;font-size:13px">🌑 사후세계에 버릴 수 있음</div>':''}`;$('detailDialog').showModal();}
+function showDetail(id){const c=byId(id);if(!c)return;$('detailTitle').textContent=`${c.n} · ${SUIT_KO[c.s]} · 기본 ${c.b}`;$('detailBody').innerHTML=`${cardArt(id)?`<img class="detail-card-art" src="${cardArt(id)}" alt="${esc(c.n)}">`:''}<div style="margin-bottom:8px">${(c.t||[]).length?(c.t||[]).map(t=>`<span style="display:inline-block;background:#334155;border-radius:6px;padding:2px 7px;margin:2px;font-size:13px">${esc(t)}</span>`).join(''):'태그 없음'}</div><div style="font-size:14px;line-height:1.7;color:#e2e8f0">${esc(c.e)}</div>${MAY_AFTERLIFE.has(id)?'<div style="margin-top:8px;color:#fbbf24;font-size:13px">🌑 사후세계에 버릴 수 있음</div>':''}`;$('detailDialog').showModal();}
 
 // ── room state ──────────────────────────────────────────────────────────────
 let me=null,roomInfo=null,members=[],mySeat=null,isHost=false;

@@ -1,0 +1,405 @@
+{
+  "source": "사용자 제공: 판타지왕국 그리스전설_카드.pdf",
+  "cards": [
+    {
+      "id": "apollo",
+      "name": "아폴론",
+      "sourceNumber": 1
+    },
+    {
+      "id": "ares",
+      "name": "아레스",
+      "sourceNumber": 2
+    },
+    {
+      "id": "artemis",
+      "name": "아르테미스",
+      "sourceNumber": 3
+    },
+    {
+      "id": "athena",
+      "name": "아테나",
+      "sourceNumber": 4
+    },
+    {
+      "id": "demeter",
+      "name": "데메테르",
+      "sourceNumber": 5
+    },
+    {
+      "id": "moirai",
+      "name": "모이라이",
+      "sourceNumber": 6
+    },
+    {
+      "id": "hades",
+      "name": "하데스",
+      "sourceNumber": 7
+    },
+    {
+      "id": "hecate",
+      "name": "헤카테",
+      "sourceNumber": 8
+    },
+    {
+      "id": "hephaestus",
+      "name": "헤파이스토스",
+      "sourceNumber": 9
+    },
+    {
+      "id": "hera",
+      "name": "헤라",
+      "sourceNumber": 10
+    },
+    {
+      "id": "hermes",
+      "name": "헤르메스",
+      "sourceNumber": 11
+    },
+    {
+      "id": "muse",
+      "name": "무사",
+      "sourceNumber": 12
+    },
+    {
+      "id": "persephone",
+      "name": "페르세포네",
+      "sourceNumber": 13
+    },
+    {
+      "id": "poseidon",
+      "name": "포세이돈",
+      "sourceNumber": 14
+    },
+    {
+      "id": "zeus",
+      "name": "제우스",
+      "sourceNumber": 15
+    },
+    {
+      "id": "achilles",
+      "name": "아킬레우스",
+      "sourceNumber": 16
+    },
+    {
+      "id": "agamemnon",
+      "name": "아가멤논",
+      "sourceNumber": 17
+    },
+    {
+      "id": "andromeda",
+      "name": "안드로메다",
+      "sourceNumber": 18
+    },
+    {
+      "id": "arachne",
+      "name": "아라크네",
+      "sourceNumber": 19
+    },
+    {
+      "id": "atalanta",
+      "name": "아탈란타",
+      "sourceNumber": 20
+    },
+    {
+      "id": "circe",
+      "name": "키르케",
+      "sourceNumber": 21
+    },
+    {
+      "id": "hector",
+      "name": "헥토르",
+      "sourceNumber": 22
+    },
+    {
+      "id": "helen",
+      "name": "헬레네",
+      "sourceNumber": 23
+    },
+    {
+      "id": "heracles",
+      "name": "헤라클레스",
+      "sourceNumber": 24
+    },
+    {
+      "id": "hippolyta",
+      "name": "히폴리타",
+      "sourceNumber": 25
+    },
+    {
+      "id": "homer",
+      "name": "호메로스",
+      "sourceNumber": 26
+    },
+    {
+      "id": "jason",
+      "name": "이아손",
+      "sourceNumber": 27
+    },
+    {
+      "id": "medea",
+      "name": "메데이아",
+      "sourceNumber": 28
+    },
+    {
+      "id": "odysseus",
+      "name": "오디세우스",
+      "sourceNumber": 29
+    },
+    {
+      "id": "orpheus",
+      "name": "오르페우스",
+      "sourceNumber": 30
+    },
+    {
+      "id": "penelope",
+      "name": "페넬로페",
+      "sourceNumber": 31
+    },
+    {
+      "id": "perseus",
+      "name": "페르세우스",
+      "sourceNumber": 32
+    },
+    {
+      "id": "theseus",
+      "name": "테세우스",
+      "sourceNumber": 33
+    },
+    {
+      "id": "tiresias",
+      "name": "테이레시아스",
+      "sourceNumber": 34
+    },
+    {
+      "id": "apple_of_discord",
+      "name": "불화의 사과",
+      "sourceNumber": 35
+    },
+    {
+      "id": "argo",
+      "name": "아르고호",
+      "sourceNumber": 36
+    },
+    {
+      "id": "magic_bridle",
+      "name": "마법 고삐",
+      "sourceNumber": 37
+    },
+    {
+      "id": "cornucopia",
+      "name": "코르누코피아",
+      "sourceNumber": 38
+    },
+    {
+      "id": "golden_apple",
+      "name": "황금 사과",
+      "sourceNumber": 39
+    },
+    {
+      "id": "golden_fleece",
+      "name": "황금 양털",
+      "sourceNumber": 40
+    },
+    {
+      "id": "helmet_of_hades",
+      "name": "하데스의 투구",
+      "sourceNumber": 41
+    },
+    {
+      "id": "moly",
+      "name": "몰리",
+      "sourceNumber": 42
+    },
+    {
+      "id": "pomegranate",
+      "name": "석류",
+      "sourceNumber": 43
+    },
+    {
+      "id": "trojan_horse",
+      "name": "트로이의 목마",
+      "sourceNumber": 44
+    },
+    {
+      "id": "winged_sandals",
+      "name": "날개 달린 샌들",
+      "sourceNumber": 45
+    },
+    {
+      "id": "daphne_spring",
+      "name": "다프네의 개울",
+      "sourceNumber": 46
+    },
+    {
+      "id": "garden_hesperides",
+      "name": "헤스페리데스의 정원",
+      "sourceNumber": 47
+    },
+    {
+      "id": "lotus_eaters",
+      "name": "연꽃 자생지",
+      "sourceNumber": 48
+    },
+    {
+      "id": "mount_olympus",
+      "name": "올림푸스산",
+      "sourceNumber": 49
+    },
+    {
+      "id": "oracle_delphi",
+      "name": "델포이의 신탁",
+      "sourceNumber": 50
+    },
+    {
+      "id": "palace",
+      "name": "궁전",
+      "sourceNumber": 51
+    },
+    {
+      "id": "garden_persephone",
+      "name": "페르세포네의 정원",
+      "sourceNumber": 52
+    },
+    {
+      "id": "river_lethe",
+      "name": "레테강",
+      "sourceNumber": 53
+    },
+    {
+      "id": "river_styx",
+      "name": "스틱스강",
+      "sourceNumber": 54
+    },
+    {
+      "id": "sacrificial_altar",
+      "name": "희생제단",
+      "sourceNumber": 55
+    },
+    {
+      "id": "temple",
+      "name": "신전",
+      "sourceNumber": 56
+    },
+    {
+      "id": "labyrinth",
+      "name": "미궁",
+      "sourceNumber": 57
+    },
+    {
+      "id": "antaeus",
+      "name": "안타이오스",
+      "sourceNumber": 58
+    },
+    {
+      "id": "calydonian_boar",
+      "name": "칼리돈의 멧돼지",
+      "sourceNumber": 59
+    },
+    {
+      "id": "cerberus",
+      "name": "케르베로스",
+      "sourceNumber": 60
+    },
+    {
+      "id": "chiron",
+      "name": "케이론",
+      "sourceNumber": 61
+    },
+    {
+      "id": "dryad",
+      "name": "드라이어드",
+      "sourceNumber": 62
+    },
+    {
+      "id": "hydra",
+      "name": "레르네의 히드라",
+      "sourceNumber": 63
+    },
+    {
+      "id": "medusa",
+      "name": "메두사",
+      "sourceNumber": 64
+    },
+    {
+      "id": "minotaur",
+      "name": "미노타우로스",
+      "sourceNumber": 65
+    },
+    {
+      "id": "pegasus",
+      "name": "페가수스",
+      "sourceNumber": 66
+    },
+    {
+      "id": "scylla_charybdis",
+      "name": "스킬라와 카리브디스",
+      "sourceNumber": 67
+    },
+    {
+      "id": "sirens",
+      "name": "세이렌",
+      "sourceNumber": 68
+    },
+    {
+      "id": "twelve_labors",
+      "name": "열두 과업",
+      "sourceNumber": 69
+    },
+    {
+      "id": "apotheosis",
+      "name": "신격화",
+      "sourceNumber": 70
+    },
+    {
+      "id": "eleusinian_mysteries",
+      "name": "엘레우시스 제전",
+      "sourceNumber": 71
+    },
+    {
+      "id": "legendary_threat",
+      "name": "전설적인 위협",
+      "sourceNumber": 72
+    },
+    {
+      "id": "glimpse_divinity",
+      "name": "신성을 엿보다",
+      "sourceNumber": 73
+    },
+    {
+      "id": "long_journey",
+      "name": "긴 여정",
+      "sourceNumber": 74
+    },
+    {
+      "id": "lost_knowledge",
+      "name": "잃어버린 지식",
+      "sourceNumber": 75
+    },
+    {
+      "id": "olympic_games",
+      "name": "올림픽 게임",
+      "sourceNumber": 76
+    },
+    {
+      "id": "resisting_kingdom",
+      "name": "저항하는 왕국",
+      "sourceNumber": 77
+    },
+    {
+      "id": "trojan_war",
+      "name": "트로이 전쟁",
+      "sourceNumber": 78
+    },
+    {
+      "id": "visit_underworld",
+      "name": "지하세계 방문",
+      "sourceNumber": 79
+    },
+    {
+      "id": "dionysus",
+      "name": "디오니소스",
+      "sourceNumber": 80
+    }
+  ]
+}

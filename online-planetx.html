@@ -76,7 +76,7 @@
 <main id="app" class="wrap"></main>
 <div id="modalRoot"></div>
 <script type="module">
-import {configured,roomId,sb,getMe,loadRoom,loadState,saveState,startStatePoll,sendRoomBroadcast,subscribeRoomBroadcast,submitMatch,showFatal,endPanel,esc} from './multi-common.js?v=11.4.93';
+import {configured,roomId,sb,getMe,loadRoom,loadState,saveState,startStatePoll,sendRoomBroadcast,subscribeRoomBroadcast,submitMatch,showFatal,endPanel,esc} from './multi-common.js?v=11.4.94';
 const SESSION_KEY='boardmate:member_session';
 const token=()=>localStorage.getItem(SESSION_KEY)||sessionStorage.getItem(SESSION_KEY)||'';
 const rpc=async(name,args={})=>{const {data,error}=await sb.rpc(name,args);if(error)throw error;return data};
