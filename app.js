@@ -20,7 +20,7 @@ const unlockAlarmAudio=(...a)=>__alarmApi.unlockAlarmAudio(...a);
 window.__boardmateAppStarted=true;
 (async()=>{
   try{
-    const mod=await import('./alarm.js?v=11.4.91');
+    const mod=await import('./alarm.js?v=11.4.92');
     for(const key of Object.keys(__alarmApi)) if(typeof mod[key]==='function') __alarmApi[key]=mod[key];
     window.dispatchEvent(new Event('boardmate:alarm-ready'));
   }catch(err){
@@ -133,7 +133,7 @@ function ensureSiteFeatures(){
   if(!document.querySelector('link[rel="manifest"]')){const l=document.createElement('link');l.rel='manifest';l.href='./manifest.webmanifest';document.head.appendChild(l);}
   if(!document.querySelector('meta[name="theme-color"]')){const m=document.createElement('meta');m.name='theme-color';m.content='#141922';document.head.appendChild(m);}
   if(!document.querySelector('link[rel="manifest"]')){const l=document.createElement('link');l.rel='manifest';l.href='./manifest.webmanifest';document.head.appendChild(l);}
-  if('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js?v=11.4.91',{scope:'./'}).catch(()=>{});
+  if('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js?v=11.4.92',{scope:'./'}).catch(()=>{});
 }
 async function installBoardMate(){
   if(deferredInstallPrompt){
@@ -180,7 +180,7 @@ function footer(){
 }
 function shell(content){
   ensureSiteFeatures();
-  app.innerHTML=`<div class="app-shell"><header class="topbar"><button class="brand-btn" id="homeBtn"><span class="brand-mark">●</span> BOARDMATE</button><nav class="topnav"><button data-nav="">미니게임</button><button data-nav="solo">1인플</button><button data-nav="multi">다인플</button><button data-nav="events">이벤트</button><button data-nav="mypage">마이페이지</button></nav><div class="top-date">${formatDate(kstDate())}</div><button class="top-alarm" id="topAlarmBtn" title="알림 설정">🔔 알림</button><button class="top-install" id="topInstallBtn">📲 앱 설치</button></header><main class="container">${content}${footer()}</main></div>`;
+  app.innerHTML=`<div class="app-shell"><header class="topbar"><button class="brand-btn" id="homeBtn"><span class="brand-mark">●</span> BOARDMATE</button><nav class="topnav"><button data-nav="">미니게임</button><button data-nav="solo">1인플</button><button data-nav="multi">다인플</button><button data-nav="mypage">마이페이지</button></nav><div class="top-date">${formatDate(kstDate())}</div><button class="top-alarm" id="topAlarmBtn" title="알림 설정">🔔 알림</button><button class="top-install" id="topInstallBtn">📲 앱 설치</button></header><main class="container">${content}${footer()}</main></div>`;
   document.querySelector('#homeBtn')?.addEventListener('click',()=>location.hash='#/');
   document.querySelector('#topInstallBtn')?.addEventListener('click',installBoardMate);
   document.querySelector('#topAlarmBtn')?.addEventListener('click',()=>location.hash='#/alarms');
@@ -332,7 +332,7 @@ function rollOne(){const a=new Uint32Array(1);crypto.getRandomValues(a);return a
 
 // -------------------- pages --------------------
 async function renderHome(){
-  shell(`<a class="event-home-banner" href="#/events/splendor-2026-10-30"><span>BOARDMATE EVENT</span><strong>💎 메카배 스플렌더 대회</strong><span>10.30 (금) 19:30 · 공지 & 대진표 →</span></a>
+  shell(`
   <section class="home-showcase">
     <section class="hero home-intro"><div><span class="home-card-kicker">BOARDMATE COMMUNITY</span><h1><span>BoardMate</span><br>Arcade</h1><p>보드메이트에서 같이 즐기는 웹 보드게임 공간.<br>미니게임, AI 연습, 로그인 기반 온라인 방을 한 곳에 모았습니다.</p><div class="social-links"><a class="social-link" href="${LINKS.instagram}" target="_blank" rel="noreferrer">📷 Instagram</a><a class="social-link" href="${LINKS.somoim}" target="_blank" rel="noreferrer">👥 소모임</a><a class="social-link" href="${LINKS.shop}" target="_blank" rel="noreferrer">🛍 마플샵</a></div></div><div class="hero-badge">🎲</div></section>
     <article class="home-feature-card home-instagram-card"><div class="home-feature-head"><div><span class="home-card-kicker">INSTAGRAM</span><h2>최근 게시물</h2></div><a class="home-text-action" href="${LINKS.instagram}" target="_blank" rel="noreferrer">@board__mate ↗</a></div><iframe class="home-instagram-post" src="${INSTAGRAM_FEED_EMBED_URL}" title="보드메이트 Instagram 최신 게시물 사진 모음" loading="eager" allowfullscreen></iframe><div class="home-instagram-foot"><span>최신 공개 게시물 자동 표시</span><a href="${LINKS.instagram}" target="_blank" rel="noreferrer">Instagram에서 보기 ↗</a></div></article>
@@ -425,7 +425,7 @@ async function renderLoginPage(){
   const rememberBox=document.querySelector('#autoLogin'); if(rememberBox) rememberBox.checked=localStorage.getItem(STORAGE_PREFIX+'auto_login')!=='0';
   document.querySelector('#backHome').onclick=()=>location.hash='#/';let mode='login';
   document.querySelectorAll('[data-auth-tab]').forEach(b=>b.onclick=()=>{mode=b.dataset.authTab;document.querySelectorAll('[data-auth-tab]').forEach(x=>x.classList.toggle('active',x===b));document.querySelector('#authSubmit').textContent=mode==='login'?'로그인':'회원가입';});
-  document.querySelector('#authForm').onsubmit=async e=>{e.preventDefault();const n=document.querySelector('#authNick').value.trim(),pw=document.querySelector('#authPass').value,st=document.querySelector('#authStatus'),btn=document.querySelector('#authSubmit');if(!n||pw.length<4){st.textContent='닉네임과 4자 이상 비밀번호를 입력하세요.';return;}btn.disabled=true;st.textContent='처리 중…';try{const data=await callRpc(mode==='signup'?'boardmate_register':'boardmate_login',{p_nickname:n,p_password:pw});if(!data?.token)throw new Error('로그인 토큰을 받지 못했습니다.');const remember=Boolean(document.querySelector('#autoLogin')?.checked);saveMemberToken(data.token,remember);localStorage.setItem(STORAGE_PREFIX+'auto_login',remember?'1':'0');const eventReturn=sessionStorage.getItem('boardmate:event_return');sessionStorage.removeItem('boardmate:event_return');location.hash=eventReturn==='#/events/splendor-2026-10-30'?eventReturn:mode==='signup'?'#/mypage':'#/multi';}catch(err){st.textContent=String(err.message||err).replace(/^.*?exception:\s*/i,'');}finally{btn.disabled=false;}};
+  document.querySelector('#authForm').onsubmit=async e=>{e.preventDefault();const n=document.querySelector('#authNick').value.trim(),pw=document.querySelector('#authPass').value,st=document.querySelector('#authStatus'),btn=document.querySelector('#authSubmit');if(!n||pw.length<4){st.textContent='닉네임과 4자 이상 비밀번호를 입력하세요.';return;}btn.disabled=true;st.textContent='처리 중…';try{const data=await callRpc(mode==='signup'?'boardmate_register':'boardmate_login',{p_nickname:n,p_password:pw});if(!data?.token)throw new Error('로그인 토큰을 받지 못했습니다.');const remember=Boolean(document.querySelector('#autoLogin')?.checked);saveMemberToken(data.token,remember);localStorage.setItem(STORAGE_PREFIX+'auto_login',remember?'1':'0');sessionStorage.removeItem('boardmate:event_return');location.hash=mode==='signup'?'#/mypage':'#/multi';}catch(err){st.textContent=String(err.message||err).replace(/^.*?exception:\s*/i,'');}finally{btn.disabled=false;}};
 }
 
 async function renderMyPage(){
@@ -588,10 +588,8 @@ async function router(){
   if(route==='pensterdam')return renderPensterdam();
   if(route==='yahtzee')return renderYahtzee();
   if(route==='events'||route.startsWith('events/')){
-    const requestedHash=location.hash;
-    const mod=await import('./events/splendor-event.js?v=11.4.91');
-    if(location.hash!==requestedHash)return;
-    return mod.renderEvents({shell,esc,addCleanup,memberToken},route);
+    location.replace('#/');
+    return;
   }
   if(route==='solo')return renderSolo();
   if(route==='alarms')return renderAlarmSettings();

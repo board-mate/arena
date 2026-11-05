@@ -41,12 +41,11 @@ test('release cache bust stays aligned with the current version', () => {
   assert.match(app, new RegExp(`register\\('./sw\\.js\\?v=${escapedVersion}'`));
   assert.match(common, new RegExp(`import \\{processSingleRoomAlarm\\} from '\\./alarm\\.js\\?v=${escapedVersion}'`));
   assert.match(read('sw.js'), new RegExp(`boardmate-shell-v${escapedVersion}`));
-  assert.equal(version, '11.4.91');
+  assert.equal(version, '11.4.92');
 });
 
-test('Arena no longer connects to Note and offers the event destination', () => {
+test('Arena no longer connects to Note or advertises the retired event', () => {
   assert.doesNotMatch(app, /noteFeedClient|noteReadClient|homePublicData|arena_public_schedules|loadHomePublicInfo/);
   assert.doesNotMatch(read('config.js'), /noteSupabase|tpfinedodxwjtvyujryc/);
-  assert.match(app, /data-nav="events"/);
-  assert.match(app, /events\/splendor-2026-10-30/);
+  assert.doesNotMatch(app, /data-nav="events"|event-home-banner|import\('\.\/events\//);
 });
