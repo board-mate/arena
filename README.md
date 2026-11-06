@@ -4,9 +4,13 @@
 
 <h1 align="center">🎲 BoardMate Arena</h1>
 <p align="center"><strong>모임에서 바로 열어 같이 플레이하는 온라인 보드게임 아레나</strong></p>
-<p align="center">v11.4.95 · Cryptid alpha · 2026-11-05</p>
+<p align="center">v11.4.96 · Planet X comfort · 2026-11-06</p>
 
 ---
+
+## v11.4.96 — 행성 X 기록지와 연구 결과 개선
+
+기록지를 중앙의 넓은 영역에 기본으로 펼치고 비공개 조사 기록을 오른쪽에 배치합니다. 연구주제 옆에 본인의 결과를 표시하며 기록 되돌리기, 조사 필터, 중복 연구 방지와 패널·스크롤 유지를 지원합니다. DB 변경 없음. 자동 테스트 131개 통과, 브라우저 시각 검증 미완료. [변경·검증·적용 안내](README_PLANETX_COMFORT_20261106.md).
 
 ## v11.4.95 — 크립티드 ALPHA와 기존 게임 검증
 
@@ -99,10 +103,10 @@ Note 공지·일정 연동을 해제하고 메카배 스플렌더 대회 이벤�
 
 | 항목 | 상태 |
 |---|---|
-| 릴리스 | **v11.4.94** |
+| 릴리스 | **v11.4.96** |
 | 다인플 | **18개 게임** |
 | 1인플 | **7개 게임** |
-| 서비스워커 캐시 | `boardmate-shell-v11.4.94-materials-alarm-audit-20261105` |
+| 서비스워커 캐시 | `boardmate-shell-v11.4.96-planetx-comfort-20261106` |
 | 신규 Supabase SQL/RPC | **없음** |
 | 기존 진행 중 게임 | **호환 유지** |
 | 롤백 자료 | `docs/history/`, `database/history/` 보존 |

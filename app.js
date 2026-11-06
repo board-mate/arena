@@ -20,7 +20,7 @@ const unlockAlarmAudio=(...a)=>__alarmApi.unlockAlarmAudio(...a);
 window.__boardmateAppStarted=true;
 (async()=>{
   try{
-    const mod=await import('./alarm.js?v=11.4.95');
+    const mod=await import('./alarm.js?v=11.4.96');
     for(const key of Object.keys(__alarmApi)) if(typeof mod[key]==='function') __alarmApi[key]=mod[key];
     window.dispatchEvent(new Event('boardmate:alarm-ready'));
   }catch(err){
@@ -135,7 +135,7 @@ function ensureSiteFeatures(){
   if(!document.querySelector('link[rel="manifest"]')){const l=document.createElement('link');l.rel='manifest';l.href='./manifest.webmanifest';document.head.appendChild(l);}
   if(!document.querySelector('meta[name="theme-color"]')){const m=document.createElement('meta');m.name='theme-color';m.content='#141922';document.head.appendChild(m);}
   if(!document.querySelector('link[rel="manifest"]')){const l=document.createElement('link');l.rel='manifest';l.href='./manifest.webmanifest';document.head.appendChild(l);}
-  if('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js?v=11.4.95',{scope:'./'}).catch(()=>{});
+  if('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js?v=11.4.96',{scope:'./'}).catch(()=>{});
 }
 async function installBoardMate(){
   if(deferredInstallPrompt){
